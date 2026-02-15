@@ -1,0 +1,246 @@
+# ===================================
+# MONOREPO .gitattributes
+# Client: React TypeScript
+# Server: ASP.NET Core (Clean Architecture)
+# Services: Python
+# ===================================
+
+# Auto detect text files and normalize line endings
+* text=auto
+
+# ===================================
+# SOURCE CODE
+# ===================================
+
+# React/TypeScript/JavaScript
+client/**/*.js text eol=lf
+client/**/*.jsx text eol=lf
+client/**/*.ts text eol=lf
+client/**/*.tsx text eol=lf
+client/**/*.json text eol=lf
+client/**/*.mjs text eol=lf
+client/**/*.cjs text eol=lf
+
+# C#/.NET
+server/**/*.cs text eol=lf diff=csharp
+server/**/*.cshtml text eol=lf
+server/**/*.csx text eol=lf
+server/**/*.csproj text eol=lf
+server/**/*.sln text eol=crlf
+server/**/*.slnx text eol=lf
+server/**/*.props text eol=lf
+server/**/*.targets text eol=lf
+
+# Python
+services/**/*.py text eol=lf diff=python
+services/**/*.pyx text eol=lf
+services/**/*.pyi text eol=lf
+services/**/*.pyw text eol=lf
+
+# ===================================
+# CONFIGURATION & MARKUP
+# ===================================
+
+# Web files
+*.html text eol=lf diff=html
+*.css text eol=lf diff=css
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# Markup
+*.xml text eol=lf
+*.svg text eol=lf
+*.md text eol=lf diff=markdown
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+
+# Configuration files
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.editorconfig text eol=lf
+*.config text eol=lf
+*.conf text eol=lf
+*.http text eol=lf
+
+# Package managers
+package.json text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+pnpm-lock.yaml text eol=lf
+requirements.txt text eol=lf
+Pipfile text eol=lf
+pyproject.toml text eol=lf
+setup.py text eol=lf
+
+# ===================================
+# SCRIPTS
+# ===================================
+
+*.sh text eol=lf
+*.bash text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ===================================
+# DOCUMENTATION
+# ===================================
+
+*.txt text eol=lf
+*.rst text eol=lf
+*.adoc text eol=lf
+AUTHORS text eol=lf
+CHANGELOG text eol=lf
+CHANGES text eol=lf
+CONTRIBUTING text eol=lf
+COPYING text eol=lf
+LICENSE text eol=lf
+README text eol=lf
+
+# ===================================
+# BINARY FILES
+# ===================================
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.bmp binary
+*.tiff binary
+*.tif binary
+*.svg text
+
+# Fonts
+*.ttf binary
+*.otf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.bz2 binary
+*.7z binary
+*.rar binary
+
+# Executables
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.pyd binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Databases
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Media
+*.mp3 binary
+*.mp4 binary
+*.avi binary
+*.mov binary
+*.wav binary
+
+# ===================================
+# LANGUAGE SERVER & BUILD ARTIFACTS
+# ===================================
+
+# Prevent merge conflicts in generated files
+*.min.js binary
+*.min.css binary
+*-lock.json linguist-generated=true
+yarn.lock linguist-generated=true
+pnpm-lock.yaml linguist-generated=true
+package-lock.json linguist-generated=true
+
+# ===================================
+# LINGUIST OVERRIDES
+# ===================================
+
+# Mark test files
+client/**/*test.ts linguist-language=TypeScript
+client/**/*test.tsx linguist-language=TypeScript
+client/**/*.spec.ts linguist-language=TypeScript
+client/**/*.spec.tsx linguist-language=TypeScript
+server/**/*Tests.cs linguist-language=C#
+server/**/*.Tests.cs linguist-language=C#
+services/**/*test.py linguist-language=Python
+services/**/*_test.py linguist-language=Python
+services/**/test_*.py linguist-language=Python
+
+# Documentation
+*.md linguist-detectable
+*.rst linguist-detectable
+
+# Vendored code (exclude from language stats)
+client/**/node_modules/** linguist-vendored
+server/**/packages/** linguist-vendored
+services/**/venv/** linguist-vendored
+services/**/.venv/** linguist-vendored
+
+# Generated code
+client/**/dist/** linguist-generated=true
+client/**/build/** linguist-generated=true
+server/**/obj/** linguist-generated=true
+server/**/bin/** linguist-generated=true
+
+# ===================================
+# DIFF SETTINGS
+# ===================================
+
+# Better diff for certain file types
+*.cs diff=csharp
+*.py diff=python
+*.html diff=html
+*.css diff=css
+*.md diff=markdown
+*.ts diff=typescript
+*.tsx diff=typescript
+*.json diff=json
+
+# Binary files that should not be diffed
+*.min.js -diff
+*.min.css -diff
+
+# ===================================
+# MERGE STRATEGIES
+# ===================================
+
+# Lock files should not be merged
+package-lock.json merge=binary
+yarn.lock merge=binary
+pnpm-lock.yaml merge=binary
+Pipfile.lock merge=binary
+poetry.lock merge=binary
+
+# ===================================
+# EXPORT IGNORE
+# ===================================
+
+# Files to exclude from git archive exports
+.gitattributes export-ignore
+.gitignore export-ignore
+.github/ export-ignore
+.vscode/ export-ignore
+.idea/ export-ignore
+*.test.* export-ignore
+*.spec.* export-ignore

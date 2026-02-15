@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/API/">
+    <Project Path="SkillSense.Api/SkillSense.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Core/">
+    <Project Path="SkillSense.Application/SkillSense.Application.csproj" />
+    <Project Path="SkillSense.Domain/SkillSense.Domain.csproj" Id="b11ed3d3-84c7-49fc-8674-ada176ad4eec" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="SkillSense.Infrastructure/SkillSense.Infrastructure.csproj" Id="af7ed5f2-b7df-40d9-98f6-d934896b836c" />
+    <Project Path="SkillSense.Persistence/SkillSense.Persistence.csproj" Id="70395fc3-0190-4d22-8c32-63f0133faed2" />
+  </Folder>
+  <Folder Name="/tests/" />
+</Solution>

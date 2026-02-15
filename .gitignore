@@ -1,0 +1,327 @@
+# ===================================
+# MONOREPO .gitignore
+# Client: React TypeScript
+# Server: ASP.NET Core (Clean Architecture)
+# Services: Python
+# ===================================
+
+# ===================================
+# REACT TYPESCRIPT CLIENT
+# ===================================
+
+# Dependencies
+client/**/node_modules/
+client/**/.pnp
+client/**/.pnp.js
+
+# Testing
+client/**/coverage/
+
+# Production
+client/**/build/
+client/**/dist/
+
+# Misc
+client/**/.DS_Store
+client/**/.env.local
+client/**/.env.development.local
+client/**/.env.test.local
+client/**/.env.production.local
+
+# Logs
+client/**/npm-debug.log*
+client/**/yarn-debug.log*
+client/**/yarn-error.log*
+client/**/lerna-debug.log*
+
+# React/Vite specific
+client/**/.vite/
+client/**/.cache/
+
+# TypeScript
+client/**/*.tsbuildinfo
+client/**/.eslintcache
+
+# ===================================
+# ASP.NET CORE SERVER
+# ===================================
+
+# Build results
+server/**/[Dd]ebug/
+server/**/[Dd]ebugPublic/
+server/**/[Rr]elease/
+server/**/[Rr]eleases/
+server/**/x64/
+server/**/x86/
+server/**/[Ww][Ii][Nn]32/
+server/**/[Aa][Rr][Mm]/
+server/**/[Aa][Rr][Mm]64/
+server/**/bld/
+server/**/[Bb]in/
+server/**/[Oo]bj/
+server/**/[Ll]og/
+server/**/[Ll]ogs/
+
+# Visual Studio cache/options
+server/**/.vs/
+server/**/.vscode/
+
+# User-specific files
+server/**/*.rsuser
+server/**/*.suo
+server/**/*.user
+server/**/*.userosscache
+server/**/*.sln.docstates
+
+# Mono auto generated files
+server/**/mono_crash.*
+
+# Build Results of an ATL Project
+server/**/[Dd]ebugPS/
+server/**/[Rr]eleasePS/
+server/**/dlldata.c
+
+# .NET Core
+server/**/project.lock.json
+server/**/project.fragment.lock.json
+server/**/artifacts/
+
+# ASP.NET Scaffolding
+server/**/ScaffoldingReadMe.txt
+
+# Files built by Visual Studio
+server/**/*_i.c
+server/**/*_p.c
+server/**/*_h.h
+server/**/*.ilk
+server/**/*.meta
+server/**/*.obj
+server/**/*.iobj
+server/**/*.pch
+server/**/*.pdb
+server/**/*.ipdb
+server/**/*.pgc
+server/**/*.pgd
+server/**/*.rsp
+server/**/*.sbr
+server/**/*.tlb
+server/**/*.tli
+server/**/*.tlh
+server/**/*.tmp
+server/**/*.tmp_proj
+server/**/*_wpftmp.csproj
+server/**/*.log
+server/**/*.tlog
+server/**/*.vspscc
+server/**/*.vssscc
+server/**/.builds
+server/**/*.pidb
+server/**/*.svclog
+server/**/*.scc
+
+# NuGet Packages
+server/**/*.nupkg
+server/**/*.snupkg
+server/**/[Pp]ackages/*
+server/*!**/[Pp]ackages/build/
+server/**/*.nuget.props
+server/**/*.nuget.targets
+
+# Entity Framework
+server/**/*.mdf
+server/**/*.ldf
+server/**/*.ndf
+
+# SQL Server files
+server/**/*.mdf
+server/**/*.ldf
+
+# Rider
+server/**/.idea/
+server/**/*.sln.iml
+
+# User secrets
+server/**/appsettings.Development.json
+server/**/appsettings.Local.json
+
+# ===================================
+# PYTHON SERVICES
+# ===================================
+
+# Byte-compiled / optimized / DLL files
+services/**/__pycache__/
+services/**/*.py[cod]
+services/**/*$py.class
+
+# C extensions
+services/**/*.so
+
+# Distribution / packaging
+services/**/.Python
+services/**/build/
+services/**/develop-eggs/
+services/**/dist/
+services/**/downloads/
+services/**/eggs/
+services/**/.eggs/
+services/**/lib/
+services/**/lib64/
+services/**/parts/
+services/**/sdist/
+services/**/var/
+services/**/wheels/
+services/**/share/python-wheels/
+services/**/*.egg-info/
+services/**/.installed.cfg
+services/**/*.egg
+services/**/MANIFEST
+
+# PyInstaller
+services/**/*.manifest
+services/**/*.spec
+
+# Installer logs
+services/**/pip-log.txt
+services/**/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+services/**/htmlcov/
+services/**/.tox/
+services/**/.nox/
+services/**/.coverage
+services/**/.coverage.*
+services/**/.cache
+services/**/nosetests.xml
+services/**/coverage.xml
+services/**/*.cover
+services/**/*.py,cover
+services/**/.hypothesis/
+services/**/.pytest_cache/
+services/**/cover/
+
+# Translations
+services/**/*.mo
+services/**/*.pot
+
+# Django stuff:
+services/**/*.log
+services/**/local_settings.py
+services/**/db.sqlite3
+services/**/db.sqlite3-journal
+
+# Flask stuff:
+services/**/instance/
+services/**/.webassets-cache
+
+# Scrapy stuff:
+services/**/.scrapy
+
+# Sphinx documentation
+services/**/docs/_build/
+
+# PyBuilder
+services/**/.pybuilder/
+services/**/target/
+
+# Jupyter Notebook
+services/**/.ipynb_checkpoints
+
+# IPython
+services/**/profile_default/
+services/**/ipython_config.py
+
+# pyenv
+services/**/.python-version
+
+# pipenv
+services/**/Pipfile.lock
+
+# poetry
+services/**/poetry.lock
+
+# pdm
+services/**/.pdm.toml
+services/**/.pdm-python
+services/**/.pdm-build/
+
+# PEP 582
+services/**/__pypackages__/
+
+# Celery stuff
+services/**/celerybeat-schedule
+services/**/celerybeat.pid
+
+# SageMath parsed files
+services/**/*.sage.py
+
+# Environments
+services/**/.env
+services/**/.venv
+services/**/env/
+services/**/venv/
+services/**/ENV/
+services/**/env.bak/
+services/**/venv.bak/
+
+# Spyder project settings
+services/**/.spyderproject
+services/**/.spyproject
+
+# Rope project settings
+services/**/.ropeproject
+
+# mkdocs documentation
+services/**/site
+
+# mypy
+services/**/.mypy_cache/
+services/**/.dmypy.json
+services/**/dmypy.json
+
+# Pyre type checker
+services/**/.pyre/
+
+# pytype static type analyzer
+services/**/.pytype/
+
+# Cython debug symbols
+services/**/cython_debug/
+
+# ===================================
+# COMMON / SHARED
+# ===================================
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sqlite
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
