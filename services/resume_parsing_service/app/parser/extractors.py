@@ -61,12 +61,23 @@ def extract_text_from_upload(filename: str, content: bytes) -> str:
 
     if name.endswith(".docx"):
         doc = Document(io.BytesIO(content))
-        return "\n".join(p.text for p in doc.paragraphs if p.text and p.text.strip())
-
-    try:
-        return content.decode("utf-8", errors="ignore")
-    except Exception:
-        return content.decode(errors="ignore")
+        parts: List[str] = []
+        for p in doc.paragraphs:
+            txt = (p.text or "").strip()
+            if txt:
+                parts.append(txt)
+        #return "\n".join(p.text for p in doc.paragraphs if p.text and p.text.strip())
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    txt = (cell.text or "").strip()
+                    if txt:
+                        parts.append(txt)
+        return "\n".join(parts)
+    #try:
+    #    return content.decode("utf-8", errors="ignore")
+    #except Exception:
+    #    return content.decode(errors="ignore")
 
 
 def normalize_text(text: str) -> str:
