@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -13,14 +14,12 @@ from app.resources import (
 from app.parser.orchestrator import parse_resume
 from app.parser.matchers import build_phrase_matcher
 
-
 class AppState:
     nlp = None
     skill_matcher = None
     exp_titles = set()
     exp_firms = set()
     edu_programs = set()
-
 
 state = AppState()
 
@@ -50,26 +49,25 @@ async def lifespan(app: FastAPI):
 
     yield
 
-
 app = FastAPI(title="Resume Parser Microservice", version="2.0.1", lifespan=lifespan)
-
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
 @app.post("/parse")
 async def parse(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
-
+    
     content = await file.read()
+
     if not content:
         raise HTTPException(status_code=400, detail="Empty file")
-
     try:
-        return parse_resume(
+
+        result = await asyncio.to_thread(
+            parse_resume,
             filename=file.filename,
             content=content,
             nlp=state.nlp,
@@ -77,5 +75,8 @@ async def parse(file: UploadFile = File(...)):
             exp_titles=state.exp_titles,
             edu_programs=state.edu_programs,
         )
+
+        return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
