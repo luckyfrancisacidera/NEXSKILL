@@ -24,16 +24,6 @@ def parse_resume(
 ) -> Dict[str, Any]:
     raw = extract_text_from_upload(filename, content)
 
-    print("\n" + "="*80)
-    print("RAW EXTRACT (FIRST 120 LINES)")
-    print("="*80)
-
-    for i, line in enumerate(raw.splitlines(), start=1):
-        print(f"{i:03d} | {line}")
-        if i >= 120:
-            print("... (truncated)")
-            break
-
     raw_text = normalize_text(raw)
     sections = split_sections(raw_text)
 
