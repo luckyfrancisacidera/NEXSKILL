@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Validators;
 
 namespace SkillSense.Api.Controllers
 {
@@ -22,18 +23,12 @@ namespace SkillSense.Api.Controllers
         [HttpPost("parse")]
         public async Task<ActionResult<ResumeParseResult>> Parse([FromForm] IFormFile file, CancellationToken ct)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-            try
-            {
-                using var stream = file.OpenReadStream();
-                var result = await _parser.ParseAsync(stream, file.FileName, file.ContentType, ct);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error parsing resume: {ex.Message}");
-            }
+           var (isValid, error) = ResumeFileValidator.Validate(file?.FileName ?? "", file?.ContentType ?? "", file?.Length ?? 0);
+            if(!isValid) return BadRequest(error);
+
+           using var stream = file!.OpenReadStream();
+           var result = await _parser.ParseAsync(stream, file.FileName, file.ContentType, ct);
+           return Ok(result);
         }
     }
 }
