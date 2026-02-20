@@ -1,6 +1,113 @@
 import re
 import phonenumbers
+from typing import Set
+
+from spacy.matcher import PhraseMatcher
+from rapidfuzz import process, fuzz
+
 from .config import EMAIL_RE, PHONE_CANDIDATE_RE
+
+
+def _top_lines(raw_text: str, max_lines: int = 35, max_chars: int = 3500) -> str:
+    lines = [l.rstrip() for l in raw_text.splitlines()]
+    head = "\n".join(lines[:max_lines])
+    return head[:max_chars]
+
+
+def _first_nonempty_line(text: str) -> str:
+    for l in text.splitlines():
+        s = l.strip()
+        if s:
+            return s
+    return ""
+
+
+def _best_match_from_matches(doc, matches):
+    best = None 
+    best_key = None
+    for _mid, start, end in matches:
+        span_len = end - start
+        key = (start, -span_len)
+        if best_key is None or key < best_key:
+            best_key = key
+            best = (start, end)
+    if not best:
+        return ""
+    s, e = best
+    return doc[s:e].text.strip()
+
+
+def extract_job_target(
+    nlp,
+    raw_text: str,
+    title_matcher: PhraseMatcher,
+    exp_titles: Set[str],
+    *,
+    max_lines: int = 35,
+) -> str:
+    if not title_matcher:
+        return ""
+
+    head = _top_lines(raw_text, max_lines=max_lines)
+
+    # ---- A) HEADER-FIRST detection (most reliable) ----
+    lines = [l.strip() for l in head.splitlines() if l.strip()]
+    if not lines:
+        return ""
+
+    line1 = lines[0]
+    line2 = lines[1] if len(lines) > 1 else ""
+
+    # Case A1: "Name, Title"
+    candidate = line1.split(",", 1)[1].strip() if "," in line1 else ""
+
+    # Case A2: Two-line header: NAME then TITLE on next line (common in PDFs)
+    # Only use line2 if line1 looks like a name-ish line (letters/spaces) and line2 is short
+    if not candidate and line2:
+        line1_letters = re.sub(r"[^A-Za-z\s]", "", line1).strip()
+        if len(line1_letters) >= 6 and len(line1.split()) <= 6 and 2 <= len(line2.split()) <= 6:
+            candidate = line2.strip()
+
+    # 1) Exact phrase match on header candidate
+    if candidate:
+        doc_c = nlp(candidate)
+        m = title_matcher(doc_c)
+        if m:
+            return _best_match_from_matches(doc_c, m)
+
+        # 2) Fuzzy fallback on header candidate (handles typos like ENGINEEER)
+        if exp_titles:
+            r = process.extractOne(
+                candidate,
+                exp_titles,
+                scorer=fuzz.token_sort_ratio,
+                score_cutoff=85,
+            )
+            if r:
+                return r[0]
+
+    # ---- B) Controlled scan over top lines ----
+    first_k_lines = "\n".join(lines[:3])
+    doc_top = nlp(first_k_lines)
+    m_top = title_matcher(doc_top)
+    if m_top:
+        return _best_match_from_matches(doc_top, m_top)
+
+    # ---- C) Last resort fuzzy over first 3 lines ----
+    if exp_titles:
+
+        fuzzy_text = first_k_lines
+        r = process.extractOne(
+            fuzzy_text,
+            exp_titles,
+            scorer=fuzz.token_sort_ratio,
+            score_cutoff=88,  
+        )
+        if r:
+            return r[0]
+
+    return ""
+
 
 def extract_email(text: str) -> str:
     m = EMAIL_RE.search(text)

@@ -4,20 +4,28 @@ from spacy.matcher import PhraseMatcher
 
 from .extractors import extract_text_from_upload, normalize_text
 from .sections import split_sections
-from .personal_info import extract_email, extract_phone, extract_full_name, extract_location
+from .personal_info import (
+    extract_email,
+    extract_phone,
+    extract_full_name,
+    extract_location,
+    extract_job_target,
+)
 from .summary import guess_summary, split_sentences
-from .skills import extract_skills_robust  
+from .skills import extract_skills_robust
 from .experience import parse_experience
 from .education import parse_education
 from .projects import parse_projects
 from .certifications import parse_certifications
 from .events import parse_events
 
+
 def parse_resume(
     filename: str,
     content: bytes,
     nlp,
     skill_matcher: PhraseMatcher,
+    title_matcher: Optional[PhraseMatcher] = None,
     exp_titles: Optional[Set[str]] = None,
     edu_institutions: Optional[Set[str]] = None,
     edu_programs: Optional[Set[str]] = None,
@@ -26,6 +34,16 @@ def parse_resume(
 
     raw_text = normalize_text(raw)
     sections = split_sections(raw_text)
+
+    exp_titles = exp_titles or set()
+    edu_institutions = edu_institutions or set()
+    edu_programs = edu_programs or set()
+
+    job_target = (
+        extract_job_target(nlp, raw_text, title_matcher, exp_titles)
+        if title_matcher
+        else ""
+    )
 
     email = extract_email(raw_text)
     phone = extract_phone(raw_text, default_region="PH")
@@ -44,10 +62,6 @@ def parse_resume(
     cert_text = sections.get("certifications", "") or ""
     events_text = sections.get("events", "") or ""
 
-    exp_titles = exp_titles or set()
-    edu_institutions = edu_institutions or set()
-    edu_programs = edu_programs or set()
-
     experience_items = parse_experience(exp_text, exp_titles) if exp_text else []
     education_items = parse_education(edu_text, edu_programs) if edu_text else []
     project_items = parse_projects(proj_text, nlp, skill_matcher) if proj_text else []
@@ -60,15 +74,11 @@ def parse_resume(
             "full_name": full_name,
             "email": email,
             "phone": phone,
-            "location": location
+            "location": location,
+            "job_target": job_target,
         },
-        "summary": {
-            "sentences": [{"text": s} for s in summary_sentences]
-        },
-        "skills": {
-            "items": skill_items,
-            "text": skills_text.strip()
-        },
+        "summary": {"sentences": [{"text": s} for s in summary_sentences]},
+        "skills": {"items": skill_items, "text": skills_text.strip()},
         "work_experience": experience_items,
         "education": education_items,
         "projects": project_items,
