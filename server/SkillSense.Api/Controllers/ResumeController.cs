@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 
@@ -12,6 +11,13 @@ namespace SkillSense.Api.Controllers
         private readonly IResumeParserClient _parser;
 
         public ResumeController(IResumeParserClient parser) => _parser = parser;
+
+        [HttpPost("upload")]
+        public async Task<ActionResult<ResumeUploadResponse>> Upload([FromForm] IFormFile file, [FromForm]Guid jobId, [FromForm] string appliedPosition, CancellationToken ct)
+        {
+            var (isValid, error) = ResumeFileValidator
+        }
+
 
         [HttpPost("parse")]
         public async Task<ActionResult<ResumeParseResult>> Parse([FromForm] IFormFile file, CancellationToken ct)

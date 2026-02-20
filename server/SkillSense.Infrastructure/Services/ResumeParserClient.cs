@@ -22,7 +22,7 @@ namespace SkillSense.Infrastructure.Services
             );
 
             form.Add(fileContent, "file", fileName);
-
+            
             using var resp = await _http.PostAsync("parse", form, ct);
             var body = await resp.Content.ReadAsStringAsync(ct);
 
