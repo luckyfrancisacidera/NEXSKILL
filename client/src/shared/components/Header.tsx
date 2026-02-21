@@ -1,5 +1,5 @@
-import Lightbrand_logo from '../../assets/Lightbrand_logo.png'
-import Darkbrand_logo from '../../assets/Darkbrand_logo.png'
+import Lightbrand_logo from '../assets/Lightbrand_logo.png'
+import Darkbrand_logo from '../assets/Darkbrand_logo.png'
 import { Button } from 'flowbite-react'
 import Searchbar from './Searchbar'
 import { TextAlignJustify,Bell } from 'lucide-react'
