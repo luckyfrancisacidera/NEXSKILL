@@ -21,7 +21,7 @@ const CandidateTable = () => {
             </TableCell>
 
             <TableCell className="!bg-transparent text-black">
-              Sales Engineer
+              Sales Engineer 
             </TableCell>
             <TableCell className="!bg-transparent text-black">
               Full-time
