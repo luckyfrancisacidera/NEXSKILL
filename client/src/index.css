@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "flowbite";
+
+@custom-variant dark (&:is(.dark *));
+@font-face {
+  font-family: Inter-Regular;
+  src: url('../public//fonts//Inter-Regular.woff2');
+}
+@theme{
+  --font-inter: Inter-Regular, 'san-serif';
+  --color-primary-dark: #27272a;
+  --color-primarty-light: #e5e4db;
+}
+
