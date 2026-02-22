@@ -45,6 +45,9 @@ namespace SkillSense.Application.Contracts.Response
 
         [JsonPropertyName("location")]
         public string Location { get; set; } = "";
+
+        [JsonPropertyName("job_target")]
+        public string JobTarget { get; set; } = "";
     }
 
     public sealed class Summary
