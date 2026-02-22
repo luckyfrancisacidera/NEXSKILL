@@ -1,7 +1,7 @@
 import { useState } from "react"
 import CandidateTable from "./CandidateTable"
 const CandidateSummary : React.FC = () =>{
-  const [applicantCount, setApplicantCount] = useState<number>(5)
+  const [applicantCount] = useState<number>(5)
   return(
     <div>
         <div className="flex flex-row gap-4 font-bold text-xl items-center">
