@@ -5,6 +5,7 @@ import Searchbar from './Searchbar'
 import { TextAlignJustify,Bell } from 'lucide-react'
 
 export default function Header() {
+  
   return (
     <div className="flex flex-row justify-between items-center w-full h-auto bg-primary-dark text-primarty-light px-8 py-1 ">
       

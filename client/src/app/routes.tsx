@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import HRLayout from '../shared/layouts/HRLayout';
+import HRLayout from './layouts/HRLayout';
 export default function AppRouter() {
     return (
         <Routes>
