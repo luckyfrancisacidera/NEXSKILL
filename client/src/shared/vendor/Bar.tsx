@@ -1,1 +1,4 @@
-export const Bar = (_props: Record<string, unknown>) => null;
+export const Bar = (props: Record<string, unknown>) => {
+  void props;
+  return null;
+};
