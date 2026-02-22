@@ -2,10 +2,11 @@ import Lightbrand_logo from '../assets/Lightbrand_logo.png'
 import Darkbrand_logo from '../assets/Darkbrand_logo.png'
 import { Button } from 'flowbite-react'
 import Searchbar from './Searchbar'
+import {useNavigate} from 'react-router-dom'
 import { TextAlignJustify,Bell } from 'lucide-react'
 
 export default function Header() {
-  
+  const navigate = useNavigate()
   return (
     <div className="flex flex-row justify-between items-center w-full h-auto bg-primary-dark text-primarty-light px-8 py-1 ">
       
@@ -23,10 +24,10 @@ export default function Header() {
 
         <div className="md:flex hidden justify-end items-center w-auto">
           <ul className="flex flex-row gap-8  mr-7 p-2 w-full text-[0.85em]" >
-            <li className='relative cursor-pointer before:content-[""] before:w-0 before:h-1
+            <li onClick={() => navigate('/candidate')} className='relative cursor-pointer before:content-[""] before:w-0 before:h-1
             before:bg-white  before:absolute before:-bottom-2 before:rounded-full before:left-0 
             hover:before:w-full before:transition-all before:ease-out'>Candidates</li>
-            <li className='cursor-pointer before:content-[""] before:w-0 before:h-1 
+            <li onClick={() => navigate('/job')} className='cursor-pointer before:content-[""] before:w-0 before:h-1 
             before:bg-white relative before:absolute before:rounded-full before:-bottom-2  before:left-0 
              hover:before:w-full before:transition-all before:ease-out '>Jobs</li>
             <li className='cursor-pointer before:content-[""] before:w-0 before:h-1 

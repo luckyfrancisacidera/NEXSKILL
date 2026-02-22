@@ -1,11 +1,4 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeadCell,
-  TableRow,
-} from "flowbite-react";
+import {Table,TableBody,TableCell,TableHead,TableHeadCell,TableRow,} from "flowbite-react";
 
 const CandidateTable = () => {
   return (
