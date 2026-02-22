@@ -1,28 +1,36 @@
-import type { Role } from '@shared/types';
+import type { Role } from "@shared/types";
 
 export type AppRouteKey =
-  | 'dashboard'
-  | 'jobs'
-  | 'applications'
-  | 'messages'
-  | 'saved'
-  | 'profile'
-  | 'settings'
-  | 'recruiterDashboard'
-  | 'recruiterJobs'
-  | 'adminDashboard'
-  | 'adminUsers';
+  | "dashboard"
+  | "jobs"
+  | "applications"
+  | "messages"
+  | "saved"
+  | "profile"
+  | "settings"
+  | "recruiterDashboard"
+  | "recruiterJobs"
+  | "recruiterCandidates"
+  | "recruiterInterviews"
+  | "recruiterAutomations"
+  | "recruiterSettings"
+  | "adminDashboard"
+  | "adminUsers";
 
 export const routeAccess: Record<AppRouteKey, Role[]> = {
-  dashboard: ['jobseeker', 'admin'],
-  jobs: ['jobseeker', 'admin'],
-  applications: ['jobseeker', 'admin'],
-  messages: ['jobseeker', 'admin'],
-  saved: ['jobseeker', 'admin'],
-  profile: ['jobseeker', 'admin'],
-  settings: ['jobseeker', 'recruiter', 'admin'],
-  recruiterDashboard: ['recruiter', 'admin'],
-  recruiterJobs: ['recruiter', 'admin'],
-  adminDashboard: ['admin'],
-  adminUsers: ['admin'],
+  dashboard: ["jobseeker", "admin"],
+  jobs: ["jobseeker", "admin"],
+  applications: ["jobseeker", "admin"],
+  messages: ["jobseeker", "admin"],
+  saved: ["jobseeker", "admin"],
+  profile: ["jobseeker", "admin"],
+  settings: ["jobseeker", "recruiter", "admin"],
+  recruiterDashboard: ["recruiter", "admin"],
+  recruiterJobs: ["recruiter", "admin"],
+  recruiterCandidates: ["recruiter", "admin"],
+  recruiterInterviews: ["recruiter", "admin"],
+  recruiterAutomations: ["recruiter", "admin"],
+  recruiterSettings: ["recruiter", "admin"],
+  adminDashboard: ["admin"],
+  adminUsers: ["admin"],
 };
