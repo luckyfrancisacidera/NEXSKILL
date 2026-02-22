@@ -44,8 +44,8 @@ export const DashboardPage = () => {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         {Object.entries(data.status).map(([label, value]) => (
-          <Card key={label} className="space-y-2 bg-zinc-900 text-zinc-50">
-            <p className="text-sm capitalize text-zinc-300">{label}</p>
+          <Card key={label} className="space-y-2 bg-zinc-900 text-zinc-600">
+            <p className="text-sm capitalize text-zinc-900">{label}</p>
             <p className="text-3xl font-semibold">{value}</p>
             <Progress value={Math.min(100, value * 15)} />
           </Card>
