@@ -9,26 +9,19 @@ namespace SkillSense.Api.Controllers
     [ApiController]
     public class ResumeController : ControllerBase
     {
-        private readonly IResumeParserClient _parser;
+        private readonly IResumeQueueService _queue;
 
-        public ResumeController(IResumeParserClient parser) => _parser = parser;
+        public ResumeController(IResumeQueueService queue) => _queue = queue;
 
         [HttpPost("upload")]
-        public async Task<ActionResult<ResumeUploadResponse>> Upload([FromForm] IFormFile file, [FromForm]Guid jobId, [FromForm] string appliedPosition, CancellationToken ct)
+        public async Task<ActionResult<ResumeUploadResponse>> Upload([FromForm] IFormFile file, [FromForm]Guid jobId, [FromForm] string appliedJobPosition, CancellationToken ct)
         {
-            var (isValid, error) = ResumeFileValidator
-        }
+            var (isValid, error) = ResumeFileValidator.Validate(file?.FileName ?? "", file?.ContentType ?? "", file?.Length ?? 0);
+            if (!isValid) return BadRequest(error);
 
-
-        [HttpPost("parse")]
-        public async Task<ActionResult<ResumeParseResult>> Parse([FromForm] IFormFile file, CancellationToken ct)
-        {
-           var (isValid, error) = ResumeFileValidator.Validate(file?.FileName ?? "", file?.ContentType ?? "", file?.Length ?? 0);
-            if(!isValid) return BadRequest(error);
-
-           using var stream = file!.OpenReadStream();
-           var result = await _parser.ParseAsync(stream, file.FileName, file.ContentType, ct);
-           return Ok(result);
+            await using var stream = file!.OpenReadStream();
+            var result = await _queue.EnqueueUploadAsync(stream, file.FileName, file.ContentType, jobId, appliedJobPosition, ct);
+            return Accepted(result);
         }
     }
 }

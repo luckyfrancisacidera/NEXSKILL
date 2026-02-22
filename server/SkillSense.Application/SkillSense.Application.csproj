@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Services\" />
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SkillSense.Domain\SkillSense.Domain.csproj" />
+    <ProjectReference Include="..\SkillSense.Persistence\SkillSense.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

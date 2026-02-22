@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using SkillSense.Application.Contracts.Response;
 
 namespace SkillSense.Application.Interfaces

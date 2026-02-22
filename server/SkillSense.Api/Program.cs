@@ -1,17 +1,21 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
 using SkillSense.Infrastructure;
+using SkillSense.Application;
+using SkillSense.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddApplicationServices();
+builder.Services.AddPersistenceServices(builder.Configuration);
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartHeadersLengthLimit = 1024 * 1024;  // 1 MB header limit
-    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB file limit
+    options.MultipartHeadersLengthLimit = 1024 * 1024;
+    options.MultipartBodyLengthLimit = 10 * 1024 * 1024;
     options.ValueLengthLimit = 1024 * 1024;
 });
 
@@ -32,9 +36,6 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 }));
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
