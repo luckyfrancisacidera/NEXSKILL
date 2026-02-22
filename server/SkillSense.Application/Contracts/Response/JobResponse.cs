@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace SkillSense.Application.Contracts.Response
 {
@@ -15,5 +12,8 @@ namespace SkillSense.Application.Contracts.Response
 
         [JsonPropertyName("description")]
         public string Description { get; set; } = string.Empty;
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
     }
 }

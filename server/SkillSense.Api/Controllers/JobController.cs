@@ -9,14 +9,14 @@ namespace SkillSense.Api.Controllers
     [ApiController]
     public class JobController: ControllerBase
     {
-        private readonly IJobService _jobservice;
+        private readonly IJobService _jobService;
 
-        public JobController(IJobService jobService) => _jobservice = jobService;
+        public JobController(IJobService jobService) => _jobService = jobService;
 
-        [HttpPost("upload")]
+        [HttpPost]
         public async Task<ActionResult<JobResponse>> Create([FromBody] CreateJobRequest request, CancellationToken ct)
         {
-            var result = await _jobservice.CreateAsync(request, ct);
+            var result = await _jobService.CreateAsync(request, ct);
             return CreatedAtAction(nameof(Create), new { jobId = result.JobId }, result);
         }
     }
