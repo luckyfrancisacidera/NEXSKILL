@@ -27,7 +27,7 @@ export const JobsPage = () => {
   const data = useLoaderData() as Awaited<ReturnType<typeof jobsLoader>>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-zinc-900">Find Jobs</h2>
