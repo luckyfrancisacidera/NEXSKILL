@@ -8,12 +8,20 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SkillSense.Application\SkillSense.Application.csproj" />
     <ProjectReference Include="..\SkillSense.Infrastructure\SkillSense.Infrastructure.csproj" />
     <ProjectReference Include="..\SkillSense.Persistence\SkillSense.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="models\all-MiniLM-L6-v2\" />
   </ItemGroup>
 
 </Project>
