@@ -48,6 +48,7 @@ import {
   upsertJobAction,
 } from "@features/recruiter";
 import { AdminPlaceholderPage } from "@features/admin/AdminPlaceholderPage";
+import {Register}
 
 const withRoleGate = (
   allowedRoles: (typeof routeAccess)[keyof typeof routeAccess],
@@ -57,6 +58,7 @@ const withRoleGate = (
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
   { path: "/not-authorized", element: <NotAuthorized /> },
+  { path: "/Login", element: }
   {
     path: "/",
     element: <JobseekerLayout />,
