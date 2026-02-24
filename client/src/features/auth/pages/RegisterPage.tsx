@@ -1,50 +1,76 @@
 import React from 'react';
-import BuildingImage from '../../../shared/assets/BuildingImage.jpg'
+import LightLogo from '../../../shared/assets/Lightbrand_logo.png';
+import BuildingImage from '../../../shared/assets/BuildingImage.jpg';
+
 const RegisterPage = () => {
     return (
-        <div className='flex justify-center items-center bg-gray-100 w-full h-screen'>
-            <div className='grid grid-cols-2 '>
-                <div className='bg-zinc-600 w-130 h-135 rounded-l-xl p-3'>
-                   <img  className='w-full h-full rounded-xl ' src={BuildingImage} alt="Building.jpg" />
-                </div>
-                <div className='bg-zinc-800 w-130 h-135 rounded-r-xl px-14 py-12'>
-                    <h1 className='text-3xl text-white font-inter tracking-wider font-medium'>Create an account</h1>
+      <div className='grid grid-cols-2 bg-zinc-800 w-full h-screen text-white'>
+          <div className='p-8'>
+              <div className='bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]' 
+              style={{backgroundImage:`url(${BuildingImage})`}}>
+                 <div className='grid grid-rows-2 w-full h-full'>
+                     <div className='w-full h-full'>
+                       <img src={LightLogo} alt="LightLogo.png" className='w-15' />
+                     </div>
+                     
+                     <div className='flex w-full h-full p-12 items-end justify-center'>
+                        <h2 className='text-5xl text-center font-bold tracking-widest leading-15'>Hire Smarter. Match Faster.</h2>
+                     </div>
+                 </div>
+              </div>
+          </div>
+          
+          <div className='flex justify-center font-inter items-center bg-zinc-800 p-8'>
+             <div className='w-full max-w-md'>
+                 
+                 <div className='mb-8'>
+                    <h1 className='text-3xl font-bold tracking-tight text-white'>Create an account</h1>
+                    <p className='text-sm text-zinc-400 mt-2'>Enter your details to get started.</p>
+                 </div>
 
-                    <form className='w-full h-auto  ' action="">
-                        <div className='flex flex-row gap-2 mt-9'>
-                            <input className='rounded-md w-full bg-zinc-600  text-white' placeholder='Full name' type="text" />
-                            <input className='rounded-md w-full bg-zinc-600  text-white' placeholder='Last name' type="text" />
+                 <form action="" className='flex flex-col gap-4'>
+                    <div className='flex flex-row gap-4'>
+                        <div className='w-full'>
+                             <input type="text" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='First name' />
                         </div>
-
-                        <div className='w-full h-auto mt-6'>
-                            <input type="email" className='rounded-md bg-zinc-600 w-full  text-white' placeholder='Email' />
+                        <div className='w-full'>
+                             <input type="text" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Last name'/>
                         </div>
+                    </div>
+                    
+                    <div>
+                         <input type="email" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Email address'/>
+                    </div>
+                    
+                    <div>
+                         <input type="password" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Create a password'/>
+                    </div>
 
-                        <div className='w-full h-auto mt-6'>
-                            <input type="password" className='rounded-md bg-zinc-600 w-full  text-white' placeholder='Password' />
+                    <div className='flex flex-col gap-4 w-full mt-4'>
+                        <button className='w-full h-11 bg-white text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800'>
+                            Create account
+                        </button>
+                        
+                        <div className='flex items-center gap-4 my-2 w-full'>
+                            <div className='flex-1 bg-zinc-700 h-px'></div>
+                            <p className='text-xs text-zinc-500 tracking-wider font-medium uppercase'>Or register with</p>
+                            <div className='flex-1 bg-zinc-700 h-px'></div>
                         </div>
                         
-                        <div className='w-full h-auto  mt-15'>
-                            <button className='w-full bg-zinc-600 h-auto p-3 rounded-md text-white'>
-                              Create an account
+                        <div className='grid grid-cols-2 w-full gap-4'>
+                            <button type='button' className='flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors'>
+                                Gmail
+                            </button>
+                            <button type='button' className='flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors'>
+                                Apple
                             </button>
                         </div>
-
-                        <div className='flex w-full mt-3 text-white h-auto justify-center items-center'>
-                            <p>Or sign in with</p>
-                        </div>
-
-                        <div className='flex flex-row justify-center items-center gap-8 mt-2'>
-                            <button className='bg-transparent text-white border-1 border-white px-7 w-full py-2 rounded-md '>Google</button>
-                            <button className='bg-transparent text-white border-1 border-white px-7 w-full py-2 rounded-md '>Apple</button>
-                        </div>
-                   
-
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
+                    </div>
+                 </form>
+             </div>
+          </div>         
+      </div>  
+    )
 }
 
 export default RegisterPage;
