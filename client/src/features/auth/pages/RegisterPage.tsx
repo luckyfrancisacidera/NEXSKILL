@@ -1,6 +1,8 @@
 import React from 'react';
 import LightLogo from '../../../shared/assets/Lightbrand_logo.png';
 import BuildingImage from '../../../shared/assets/BuildingImage.jpg';
+import GoogleLogo from '@shared/assets/GoogleLogo.svg'
+import AppleLogo from '@shared/assets/AppleLogo.svg'
 
 const RegisterPage = () => {
     return (
@@ -59,9 +61,11 @@ const RegisterPage = () => {
                         
                         <div className='grid grid-cols-2 w-full gap-4'>
                             <button type='button' className='flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors'>
+                                <span><img src={GoogleLogo} className='w-4' alt="" /></span>
                                 Gmail
                             </button>
                             <button type='button' className='flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors'>
+                                <span><img src={AppleLogo} className='w-4' alt="" /></span>                              
                                 Apple
                             </button>
                         </div>
