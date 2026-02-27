@@ -143,7 +143,7 @@ server/**/*.sln.iml
 # User secrets
 server/**/appsettings.Development.json
 server/**/appsettings.Local.json
-
+server/**/appsettings.json
 # ===================================
 # PYTHON SERVICES
 # ===================================
