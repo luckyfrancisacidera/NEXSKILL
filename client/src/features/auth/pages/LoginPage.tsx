@@ -2,6 +2,7 @@ import BuildingImage from '@shared/assets/BuildingImage.jpg'
 import LightLogo from '@shared/assets/Lightbrand_logo.png'
 import GoogleLogo from '@shared/assets/GoogleLogo.svg'
 import AppleLogo from '@shared/assets/AppleLogo.svg'
+
 const LoginPage = () => {
      return (
       
