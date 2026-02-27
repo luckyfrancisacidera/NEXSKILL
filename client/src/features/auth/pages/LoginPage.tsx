@@ -3,10 +3,11 @@ import BuildingImage from '@shared/assets/BuildingImage.jpg'
 import LightLogo from '@shared/assets/Lightbrand_logo.png'
 import GoogleLogo from '@shared/assets/GoogleLogo.svg'
 import AppleLogo from '@shared/assets/AppleLogo.svg'
+
 const LoginPage = () => {
      return (
       
-      <div className='grid grid-cols-[60%_40%] bg-zinc-800 w-full h-screen text-white'>
+      <div className={`grid grid-cols-[60%_40%] bg-zinc-800 w-full h-screen text-white`}>
         {/* Left panel */}
           <div className='p-8'>
               <div className='bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]' 
