@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { JobseekerLayout } from "@app/layouts/JobseekerLayout";
+import { AppShell } from "@app/layouts/AppShell";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
 import { RouteGuard } from "@app/routes/routes.guard";
 import { routeAccess } from "@app/routes/route.config";
@@ -65,7 +65,7 @@ export const router = createBrowserRouter([
   { path: "/login", element: <LoginAccount/>},
   {
     path: "/",
-    element: <JobseekerLayout />,
+    element: <AppShell />,
     children: [
       {
         path: "dashboard",

@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 @font-face {
   font-family: Inter-Regular;
-  src: url('../public//fonts//Inter-Regular.woff2');
+  src: url('/fonts//Inter-Regular.woff2');
 }
 @theme{
   --font-inter: Inter-Regular, 'san-serif';
