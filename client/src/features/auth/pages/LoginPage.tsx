@@ -1,4 +1,3 @@
-import React from 'react';
 import BuildingImage from '@shared/assets/BuildingImage.jpg'
 import LightLogo from '@shared/assets/Lightbrand_logo.png'
 import GoogleLogo from '@shared/assets/GoogleLogo.svg'
@@ -6,7 +5,7 @@ import AppleLogo from '@shared/assets/AppleLogo.svg'
 const LoginPage = () => {
      return (
       
-      <div className='grid grid-cols-[60%_40%] bg-zinc-800 w-full h-screen text-white'>
+      <div className='grid grid-cols-[60%_40%] bg-zinc-800 w-full h-screen text-white font-inter'>
         {/* Left panel */}
           <div className='p-8'>
               <div className='bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]' 
@@ -17,7 +16,7 @@ const LoginPage = () => {
                      </div>
                      
                      <div className='flex w-full h-full  items-start justify-start flex-col gap-5 p-7'>
-                        <h2 className='text-5xl text-center font-bold tracking-widest leading-15'>Welcome back!</h2>
+                        <h2 className='text-5xl text-center font-extrabold tracking-widest leading-15'>Welcome back!</h2>
                         <p className='text-sm tracking-wider'>You can sign in to access with your existing account</p>
                      </div>
                  </div>
@@ -35,11 +34,11 @@ const LoginPage = () => {
 
                  <form action="" className='flex flex-col gap-4'> 
                     <div>
-                         <input type="email" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Email address'/>
+                         <input type="email" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Email Address'/>
                     </div>
                     
                     <div>
-                         <input type="password" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Create a password'/>
+                         <input type="password" className='bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all' placeholder='Password'/>
                     </div>
 
                     <div className='flex flex-col gap-4 w-full mt-4'>
