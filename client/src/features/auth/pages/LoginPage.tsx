@@ -46,13 +46,18 @@ const LoginPage = () => {
                         <button className='w-full h-11 bg-white text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800'>
                             Sign in
                         </button>
+
+                        <span className='text-[0.8em] text-zinc-300'>Dont have an account? <a href="/register" className=' hover:text-zinc-300 text-zinc-400'>Create an account</a></span>
                         
+
                         <div className='flex items-center gap-4 my-2 w-full'>
                             <div className='flex-1 bg-zinc-700 h-px'></div>
                             <p className='text-xs text-zinc-500 tracking-wider font-medium uppercase'>Or sign in with</p>
                             <div className='flex-1 bg-zinc-700 h-px'></div>
                         </div>
-                        
+
+
+                        {/* Alternative Login through social medias */}
                         <div className='grid grid-cols-2 w-full gap-4'>
                             <button type='button' className='flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors'>
                                 <span><img src={GoogleLogo} className='w-4' alt="" /></span>
