@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@shared/utils/cn";
-import { useSession } from "@app/providers/session-store";
+import { useAuth } from "@app/providers/AuthProvider";
 
 const jobseekerItems = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
@@ -34,17 +34,22 @@ const recruiterItems = [
   { label: 'Global Settings', to: '/settings', icon: UserRound },
 ];
 
-export const Sidebar = () => {
-  const {
-    state: { role },
-  } = useSession();
+const adminItems = [
+  { label: 'Admin Dashboard', to: '/admin', icon: LayoutDashboard },
+  { label: 'Manage Users', to: '/admin/users', icon: Users },
+];
 
-  const navItems = role === 'recruiter' ? recruiterItems : jobseekerItems;
+export const Sidebar = () => {
+  const { roles } = useAuth();
+
+  const role = roles.includes('admin') ? 'admin' : roles.includes('recruiter') ? 'recruiter' : 'jobseeker';
+
+  const navItems = role === 'admin' ? adminItems : role === 'recruiter' ? recruiterItems : jobseekerItems;
 
   return (
     <aside className="fixed w-64 border-r border-zinc-200 bg-zinc-50/50 p-4">
       <div className="mb-6 rounded-xl bg-white p-4 text-lg font-semibold text-zinc-900 shadow-sm">
-        {role === 'recruiter' ? 'Recruiter' : 'Dashboard'}
+        {role === 'admin' ? 'Admin' : role === 'recruiter' ? 'Recruiter' : 'Dashboard'}
       </div>
       <nav className="space-y-1">
         {navItems.map((item) => (
