@@ -1,11 +1,32 @@
-import { Bell, ChevronDown, Search } from 'lucide-react';
-import { Avatar } from '@shared/components/Avatar';
-import { useSession } from '@app/providers/session-store';
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { Bell, ChevronDown, LogOut, Search } from "lucide-react";
+import { Avatar } from "@shared/components/Avatar";
+import { useAuth } from "@app/providers/AuthProvider";
 
 export const Topbar = () => {
-  const {
-    state: { user },
-  } = useSession();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  const onLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   return (
     <header className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-6 py-4">
@@ -18,13 +39,39 @@ export const Topbar = () => {
         />
       </label>
       <button className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100">
-        {user.location}
+        Remote
         <ChevronDown className="h-4 w-4" />
       </button>
-      <button className="rounded-lg border border-zinc-200 p-2 hover:bg-zinc-100" aria-label="Notifications">
+      <button
+        className="rounded-lg border border-zinc-200 p-2 hover:bg-zinc-100"
+        aria-label="Notifications"
+      >
         <Bell className="h-5 w-5 text-zinc-700" />
       </button>
-      <Avatar name={user.name} />
+      <div className="relative" ref={menuRef}>
+        <button
+          type="button"
+          className="rounded-full"
+          aria-haspopup="menu"
+          aria-expanded={isUserMenuOpen}
+          onClick={() => setIsUserMenuOpen((current) => !current)}
+        >
+          <Avatar name={user?.email ?? "User"} />
+        </button>
+
+        {isUserMenuOpen && (
+          <div className="absolute right-0 top-12 z-20 min-w-44 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg">
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-100"
+              onClick={onLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 };
