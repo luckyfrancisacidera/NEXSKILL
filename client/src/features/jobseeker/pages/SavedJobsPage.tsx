@@ -1,12 +1,11 @@
 import { Card } from '@shared/components/Card';
 import { jobs } from '@features/jobseeker/data';
-import { useSession } from '@app/providers/session-store';
+import { readStorage } from '@shared/utils/storage';
+
+const SAVED_KEY = 'nexskill.savedJobs';
 
 export const SavedJobsPage = () => {
-  const {
-    state: { savedJobs },
-  } = useSession();
-
+  const savedJobs = readStorage<string[]>(SAVED_KEY, []);
   const saved = jobs.filter((job) => savedJobs.includes(job.id));
 
   return (
