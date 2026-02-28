@@ -1,13 +1,13 @@
 import { RouterProvider } from 'react-router-dom';
-import { SessionProvider } from '@app/providers/session-store';
 import { router } from '@app/routes/router';
 import { ThemeProvider } from '@app/providers/ThemeProviders'
+import { AuthProvider } from '@app/providers/AuthProvider';
 
 const App = () => (
   <ThemeProvider>
-  <SessionProvider>
+  <AuthProvider >
     <RouterProvider router={router} />
-  </SessionProvider>
+  </AuthProvider>
   </ThemeProvider>
 );
 
