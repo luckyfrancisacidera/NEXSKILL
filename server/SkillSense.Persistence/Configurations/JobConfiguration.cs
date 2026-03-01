@@ -20,6 +20,32 @@ namespace SkillSense.Persistence.Configurations
                 .HasColumnType("jsonb")
                 .IsRequired()
                 .HasDefaultValueSql("'{}'::jsonb");
+
+            builder.Property(x => x.ResponsibilitiesText)
+                .HasColumnType("text")
+                .IsRequired()
+                .HasDefaultValue(string.Empty);
+
+            builder.Property(x => x.RequiredSkillsJson)
+                .HasColumnType("jsonb")
+                .IsRequired()
+                .HasDefaultValueSql("'[]'::jsonb");
+
+            builder.Property(x => x.PreferredSkillsJson)
+                .HasColumnType("jsonb")
+                .IsRequired()
+                .HasDefaultValueSql("'[]'::jsonb");
+
+            builder.Property(x => x.ExperienceLevel)
+                .HasColumnType("text");
+
+            builder.Property(x => x.Education)
+                .HasColumnType("text");
+
+            builder.Property(x => x.JobDescriptionStructuredJson)
+                .HasColumnType("jsonb")
+                .IsRequired()
+                .HasDefaultValueSql("'{}'::jsonb");
         }
     }
 }

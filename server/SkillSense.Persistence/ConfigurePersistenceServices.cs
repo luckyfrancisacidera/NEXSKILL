@@ -1,6 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
 using SkillSense.Persistence.Repositories;
@@ -16,9 +18,24 @@ public static class ConfigurePersistenceServices
 
         services.AddDbContext<SkillSenseDbContext>(options => options.UseNpgsql(connectionString));
 
+        services.AddIdentityCore<AppUser>(options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.Password.RequireDigit = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.User.RequireUniqueEmail = true;
+        })
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<SkillSenseDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
+
         services.AddScoped<IJobRepository, JobRepository>();
         services.AddScoped<IResumeSubmissionRepository, ResumeSubmissionRepository>();
         services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
+        services.AddScoped<IResumeEmbeddingRepository, ResumeEmbeddingRepository>();
 
         return services;
     }

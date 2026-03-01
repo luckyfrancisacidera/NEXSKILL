@@ -5,7 +5,6 @@ import { Badge } from '@shared/components/Badge';
 import { Button } from '@shared/components/Button';
 import { Card } from '@shared/components/Card';
 import { formatSalary } from '@shared/utils/format';
-import { useSession } from '@app/providers/session-store';
 
 interface JobCardProps {
   job: Job;
@@ -13,7 +12,6 @@ interface JobCardProps {
 
 export const JobCard = ({ job }: JobCardProps) => {
   const fetcher = useFetcher();
-  const { applyToJob } = useSession();
 
   return (
     <Card className="space-y-4 p-4">
@@ -35,7 +33,6 @@ export const JobCard = ({ job }: JobCardProps) => {
           <input type="hidden" name="jobId" value={job.id} />
           <Button
             type="submit"
-            onClick={() => applyToJob(job.id)}
             disabled={fetcher.state !== 'idle'}
           >
             {fetcher.state === 'idle' ? 'Apply' : 'Applying...'}
