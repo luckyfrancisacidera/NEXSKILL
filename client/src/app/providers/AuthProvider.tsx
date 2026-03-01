@@ -63,6 +63,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const login = useCallback(async (email: string, password: string) => {
     await fetchCsrfToken();
     const response = await http.post<AuthResponsePayload>('/api/auth/login', { email, password });
+    await fetchCsrfToken();
 
     const userId = response.data.user?.userId;
     const userEmail = response.data.user?.email;
@@ -80,6 +81,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const register = useCallback(async (email: string, password: string) => {
     await fetchCsrfToken();
     const response = await http.post<AuthResponsePayload>('/api/auth/register', { email, password });
+    await fetchCsrfToken();
 
     const userId = response.data.user?.userId;
     const userEmail = response.data.user?.email;
