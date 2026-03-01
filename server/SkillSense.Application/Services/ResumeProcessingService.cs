@@ -16,14 +16,33 @@ public sealed class ResumeProcessingService(
     IResumeEmbeddingRepository resumeEmbeddingRepository,
     IResumeScoringOrchestrator scoringOrchestrator) : IResumeProcessingService
 {
-    public async Task ProcessPendingAsync(CancellationToken ct = default)
+    public async Task<int> ProcessPendingBatchAsync(int batchSize, CancellationToken ct = default)
     {
-        var submission = await resumeSubmissionRepository.GetNextPendingAsync(ct);
-        if (submission is null)
+        if (batchSize <= 0)
         {
-            return;
+            throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
+        }
+        var processedCount = 0;
+
+        for (var i = 0; i < batchSize; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var submission = await resumeSubmissionRepository.GetNextPendingAsync(ct);
+            if (submission is null)
+            {
+                break;
+            }
+
+            await ProcessSubmissionAsync(submission, ct);
+            processedCount++;
         }
 
+        return processedCount;
+    }
+
+    private async Task ProcessSubmissionAsync(ResumeSubmissionEntity submission, CancellationToken ct)
+    {
         submission.Status = ResumeSubmissionStatus.Processing;
         submission.UpdatedAtUtc = DateTime.UtcNow;
         await resumeSubmissionRepository.SaveChangesAsync(ct);

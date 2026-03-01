@@ -2,5 +2,5 @@
 
 public interface IResumeProcessingService
 {
-    Task ProcessPendingAsync(CancellationToken ct = default);
+    Task<int> ProcessPendingBatchAsync(int batchSize, CancellationToken ct = default);
 }
