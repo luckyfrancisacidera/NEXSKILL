@@ -63,7 +63,7 @@ class AxiosLike {
       return { data: (await response.json()) as T };
     } catch (error) {
       if (this.shouldRetryWithHttp(error, targetUrl)) {
-        const insecureUrl = targetUrl.replace('https://localhost', 'http://localhost');
+        const insecureUrl = targetUrl.replace('http://localhost', 'http://localhost');
         const response = await this.fetchJson(insecureUrl, method, config, body);
         return { data: (await response.json()) as T };
       }
@@ -103,7 +103,7 @@ class AxiosLike {
       return false;
     }
 
-    return requestUrl.startsWith('https://localhost');
+    return requestUrl.startsWith('http://localhost');
   }
 }
 
