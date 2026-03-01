@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
-using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
-using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Recruiter;
 
 namespace SkillSense.Api.Controllers;
@@ -82,6 +80,10 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     [HttpGet("dashboard")]
     public async Task<ActionResult<RecruiterDashboardResponse>> Dashboard([FromQuery] string? range = "last30", CancellationToken ct = default)
         => Ok(await recruiterService.GetDashboardAsync(GetUserId(), range, ct));
+
+    [HttpGet("applicants/scores")]
+    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, CancellationToken ct = default)
+        => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, stage, search, ct));
 
     private Guid GetUserId()
         => Guid.Parse(User.FindFirstValue("userId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException());
