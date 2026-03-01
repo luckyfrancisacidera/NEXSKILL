@@ -7,13 +7,11 @@ from .utils import clean
 
 def _looks_like_institution(line: str) -> bool:
     l = clean(line)
-    # Primary keywords indicating institution
     primary_keywords = ["university", "college", "institute", "school", "academy", "polytechnic"]
     if any(k in l for k in primary_keywords):
         return True
     
-    # Secondary: common institution patterns
-    # Check for capitalized words or patterns that indicate institution names
+    # Check for capitalized words or patterns
     if len(line.strip()) > 5 and len(line.strip()) < 100:
         # Institution names are typically 10-80 chars with mixed capitalization
         words = line.strip().split()
@@ -25,11 +23,10 @@ def _looks_like_institution(line: str) -> bool:
 def _looks_like_degree(line: str, program_set: Set[str]) -> bool:
     l = clean(line)
     
-    # Check against education programs CSV
     if l in {clean(x) for x in program_set}:
         return True
     
-    if len(l) > 50:  # Degrees are typically short
+    if len(l) > 50: 
         return False
     
     # Primary degree keywords
@@ -40,7 +37,6 @@ def _looks_like_degree(line: str, program_set: Set[str]) -> bool:
     if any(k in l for k in primary_keywords):
         return True
     
-    # Check for degree abbreviations at start of line
     if re.match(r"^(b\.?[as]|m\.?[as]|phd|b\.?tech|m\.?tech|b\.?e|m\.?e)", l):
         return True
     
@@ -57,11 +53,10 @@ def parse_education(section_text: str, edu_programs: Set[str]) -> List[Dict[str,
     while i < len(lines):
         ln = lines[i]
         
-        # Pattern 1: Date-forward pattern (Month Year - Month Year | Present followed by degree/institution)
+        # Pattern 1: Date forward pattern 
         m = DATE_RANGE_RE.search(ln)
         if m:
             date_part = m.group(0)
-            # Extract institution from the line with date
             before_date = ln[:m.start()].strip(" -–—|,")
             after_date = ln[m.end():].strip(" -–—|,")
             institution = before_date or after_date
@@ -72,13 +67,11 @@ def parse_education(section_text: str, edu_programs: Set[str]) -> List[Dict[str,
             else:
                 j = i + 1
             
-            # Next line could be degree if not already captured
             degree = ""
             if j < len(lines) and _looks_like_degree(lines[j], edu_programs):
                 degree = lines[j]
                 j += 1
             
-            # Collect description items
             desc = []
             while j < len(lines):
                 if DATE_RANGE_RE.search(lines[j]) and _looks_like_institution(lines[j]):
@@ -125,7 +118,7 @@ def parse_education(section_text: str, edu_programs: Set[str]) -> List[Dict[str,
             i += 2
             continue
         
-        # Pattern 3: Degree + Institution (reverse order)
+        # Pattern 3: Degree + Institution
         if _looks_like_degree(ln, edu_programs) and i + 1 < len(lines) and _looks_like_institution(lines[i + 1]):
             degree = ln
             institution = lines[i + 1]
@@ -146,13 +139,12 @@ def parse_education(section_text: str, edu_programs: Set[str]) -> List[Dict[str,
             i += 2
             continue
         
-        # Pattern 4: Degree with 'in' or 'from' (e.g., "Master in Computer Science from MIT")
+        # Pattern 4: Degree with 'in' or 'from'
         degree_from_match = re.search(r"^(bachelor|master|phd|b\.?[as]|m\.?[as]|associate|diploma)[^,]*\s+(in|from|at)\s+(.+)$", ln, re.I)
         if degree_from_match:
             degree_text = degree_from_match.group(0).split(" in " if " in " in ln.lower() else " from ")[0]
             institution = degree_from_match.group(3)
             
-            # Check if it's a valid program/institution
             if _looks_like_degree(degree_text, edu_programs) or _looks_like_institution(institution):
                 rest = lines[i + 1:]
                 start_date, end_date = parse_date_range("\n".join(rest))

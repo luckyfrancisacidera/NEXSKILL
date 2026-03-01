@@ -1,18 +1,9 @@
-import sys
-import pathlib
 import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
 import spacy
-
-# Ensure the project package root (parent of this `app` package) is on sys.path
-# so absolute imports like `app.parser.orchestrator` work even when uvicorn is
-# started from a different working directory.
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from app.resources import (
     load_experience_gazetteer,
@@ -87,4 +78,7 @@ async def parse(file: UploadFile = File(...)):
         )
         return result
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"ERROR in /parse: {error_details}")
         raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
