@@ -25,6 +25,10 @@ namespace SkillSense.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(x => x.AppliedJobPosition).HasMaxLength(200);
+            builder.Property(x => x.FullName).HasMaxLength(200);
+            builder.Property(x => x.Email).HasMaxLength(320);
+            builder.Property(x => x.PostalCode).HasMaxLength(40);
+            builder.Property(x => x.Location).HasMaxLength(200);
 
             builder.Property(x => x.Status)
                 .HasConversion<string>()
@@ -37,6 +41,7 @@ namespace SkillSense.Persistence.Configurations
 
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.JobId);
+            builder.HasIndex(x => x.ApplicantUserId);
         }
     }
 }

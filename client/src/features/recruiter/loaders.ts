@@ -1,84 +1,35 @@
 import type { LoaderFunctionArgs } from 'react-router-dom';
 import { getRecruiterState } from '@features/recruiter/data/storage';
+import { recruiterService } from '@features/recruiter/service/recruiter.service';
 
-export const recruiterDashboardLoader = async () => {
-  const state = getRecruiterState();
-  const openRoles = state.jobs.filter((job) => job.status === 'Open').length;
-  const interviewsThisWeek = state.interviews.filter((item) => {
-    const date = new Date(item.startsAt).getTime();
-    const now = Date.now();
-    return date > now && date < now + 7 * 24 * 60 * 60 * 1000 && item.status === 'Scheduled';
-  }).length;
-  const totalApplicants = state.candidates.length;
-  const stageDistribution = state.candidates.reduce<Record<string, number>>((acc, candidate) => {
-    acc[candidate.stage] = (acc[candidate.stage] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  return {
-    kpis: { openRoles, totalApplicants, interviewsThisWeek, timeToHire: '24 days' },
-    stageDistribution: Object.entries(stageDistribution).map(([name, value]) => ({ day: name, applications: value })),
-    recentActivity: state.auditLog.slice(0, 8),
-  };
+export const recruiterDashboardLoader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const range = (url.searchParams.get('range') as 'last30' | 'last90' | 'ytd' | null) ?? 'last30';
+  return recruiterService.getDashboardStats(range);
 };
 
 export const recruiterJobsLoader = async ({ request }: LoaderFunctionArgs) => {
-  const state = getRecruiterState();
   const url = new URL(request.url);
-  const search = url.searchParams.get('search')?.toLowerCase() ?? '';
-  const status = url.searchParams.get('status') ?? 'all';
-  const location = url.searchParams.get('location') ?? 'all';
-  const department = url.searchParams.get('department') ?? 'all';
-  const type = url.searchParams.get('type') ?? 'all';
-  const sort = url.searchParams.get('sort') ?? 'updatedAt';
-  const page = Number(url.searchParams.get('page') ?? '1');
+  const pageNumber = Number(url.searchParams.get('page') ?? '1');
   const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
-
-  const filtered = state.jobs.filter((job) => {
-    const textMatch = [job.title, job.department, job.location].join(' ').toLowerCase().includes(search);
-    const statusMatch = status === 'all' || job.status === status;
-    const locationMatch = location === 'all' || job.location === location;
-    const departmentMatch = department === 'all' || job.department === department;
-    const typeMatch = type === 'all' || job.type === type;
-    return textMatch && statusMatch && locationMatch && departmentMatch && typeMatch;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sort === 'applicants') {
-      const aCount = state.candidates.filter((candidate) => candidate.jobId === a.id).length;
-      const bCount = state.candidates.filter((candidate) => candidate.jobId === b.id).length;
-      return bCount - aCount;
-    }
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
-
-  const offset = (page - 1) * pageSize;
-  const paginated = sorted.slice(offset, offset + pageSize);
-
+  const search = url.searchParams.get('search') ?? undefined;
+  const data = await recruiterService.getRecruiterJobs({ pageNumber, pageSize, search });
+  
   return {
-    jobs: paginated,
-    total: sorted.length,
-    page,
-    pageSize,
-    filters: { search, status, location, department, type, sort },
-    candidates: state.candidates,
-    options: {
-      locations: [...new Set(state.jobs.map((job) => job.location))],
-      departments: [...new Set(state.jobs.map((job) => job.department))],
-      types: [...new Set(state.jobs.map((job) => job.type))],
-    },
+    jobs: data.items,
+    total: data.totalCount,
+    page: data.pageNumber,
+    pageSize: data.pageSize,
+    filters: { search: search ?? '' },
+    candidates: [],
+    options: { locations: [], departments: [], types: [] },
   };
 };
 
 export const recruiterJobDetailLoader = async ({ params }: LoaderFunctionArgs) => {
-  const state = getRecruiterState();
-  const job = state.jobs.find((item) => item.id === params.jobId);
-  if (!job) throw new Response('Job not found', { status: 404 });
-  return {
-    job,
-    applicants: state.candidates.filter((item) => item.jobId === job.id),
-    trend: [5, 8, 12, 9, 14, 16].map((value, index) => ({ day: `W${index + 1}`, applications: value })),
-  };
+  if (!params.jobId) throw new Response('Job not found', { status: 404 });
+  const job = await recruiterService.getRecruiterJob(params.jobId);
+  return { job, applicants: [], trend: [] };
 };
 
 export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs) => {

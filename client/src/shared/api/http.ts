@@ -1,27 +1,37 @@
-import axios from '@shared/vendor/axios';
+import axios, { AxiosError } from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5062';
-let csrfToken: string | null = null;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5062";
+
+export class ApiError extends Error {
+  public readonly status?: number;
+  public readonly data?: unknown;
+
+  constructor(message: string, status?: number, data?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
 
 export const http = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
+  timeout: 10_000,
 });
 
-export const setCsrfToken = (token: string | null) => {
-  csrfToken = token;
-};
-
-export const fetchCsrfToken = async () => {
-  const response = await http.get<{ csrfToken: string }>('/api/auth/csrf');
-  setCsrfToken(response.data.csrfToken);
-};
-
-http.interceptors.request.use((config) => {
-  const method = config.method?.toLowerCase();
-  if (csrfToken && method && ['post', 'put', 'patch', 'delete'].includes(method)) {
-    config.headers['X-CSRF-TOKEN'] = csrfToken;
-  }
-
-  return config;
-});
+http.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    const responseData = error.response?.data as
+      | { message?: string }
+      | undefined;
+    const apiError = new ApiError(
+      responseData?.message ?? "Request failed",
+      error.response?.status,
+      error.response?.data,
+    );
+    return Promise.reject(apiError);
+  },
+);

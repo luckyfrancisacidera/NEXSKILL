@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
@@ -67,11 +68,11 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
     {
         if (string.IsNullOrWhiteSpace(status))
         {
-            return JobStatus.Pending;
+            return JobStatus.Draft;
         }
 
         return Enum.TryParse<JobStatus>(status, ignoreCase: true, out var parsed)
             ? parsed
-            : JobStatus.Pending;
+            : JobStatus.Draft;
     }
 }

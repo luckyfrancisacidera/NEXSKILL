@@ -1,49 +1,60 @@
 /* eslint-disable react-refresh/only-export-components */
-import { Form, useLoaderData, type ActionFunctionArgs } from 'react-router-dom';
-import { jobs } from '@features/jobseeker/data';
-import { JobCard } from '@shared/components/JobCard';
+import { Link, useLoaderData, useSearchParams, type LoaderFunctionArgs } from 'react-router-dom';
 import { Card } from '@shared/components/Card';
-import type { ApplicationRecord } from '@shared/types';
-import { readStorage, writeStorage } from '@shared/utils/storage';
+import { JobCard } from '@shared/components/JobCard';
+import type { Job, JobType } from '@shared/types';
+import { jobseekerService } from '@features/jobseeker/service/jobseeker.service';
 
-const APPLIED_KEY = 'nexskill.appliedJobs';
+export const jobsLoader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const pageNumber = Number(url.searchParams.get('page') ?? '1');
+  const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
+  const search = url.searchParams.get('search') ?? undefined;
+  return jobseekerService.getPublicJobs({ pageNumber, pageSize, search });
+};
 
-export const jobsLoader = async () => ({ jobs });
-
-export const applyToJobAction = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const jobId = String(formData.get('jobId') ?? '');
-  if (!jobId) return null;
-
-  const applied = readStorage<ApplicationRecord[]>(APPLIED_KEY, []);
-  if (!applied.some((entry) => entry.jobId === jobId)) {
-    writeStorage(APPLIED_KEY, [{ jobId, appliedAt: new Date().toISOString(), status: 'Applied' }, ...applied]);
-  }
-
-  return { ok: true };
+const toJobType = (employmentType?: string): JobType => {
+  if (!employmentType) return 'Contract';
+  if (employmentType.toLowerCase().includes('part')) return 'Part-time';
+  if (employmentType.toLowerCase().includes('contract')) return 'Contract';
+  if (employmentType.toLowerCase().includes('remote')) return 'Remote';
+  return 'Full-time';
 };
 
 export const JobsPage = () => {
   const data = useLoaderData() as Awaited<ReturnType<typeof jobsLoader>>;
+  const [params] = useSearchParams();
 
   return (
     <div className="space-y-6">
       <Card>
-        <div className="flex items-center justify-between">
+        <form className="flex items-center justify-between gap-2">
           <h2 className="text-2xl font-semibold text-zinc-900">Find Jobs</h2>
-          <Form>
-            <input
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-sm"
-              placeholder="Filter by keyword"
-              aria-label="Filter jobs"
-            />
-          </Form>
-        </div>
+          <input name="search" defaultValue={params.get('search') ?? ''} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="Search" aria-label="Filter jobs" />
+        </form>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
-        {data.jobs.map((job) => (
-          <JobCard key={job.id} job={job} />
-        ))}
+        {data.items.map((job) => {
+          const cardJob: Job = {
+            id: job.id,
+            title: job.title,
+            company: job.company_name ?? 'Company',
+            salaryMin: job.salary_min_per_annum ?? 0,
+            salaryMax: job.salary_max_per_annum ?? 0,
+            location: job.location,
+            type: toJobType(job.employment_type),
+            snippet: job.description,
+          };
+
+          return <JobCard key={job.id} job={cardJob} />;
+        })}
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm">Page {data.pageNumber} of {data.totalPages}</span>
+        <div className="flex gap-2">
+          <Link to={`/jobs?page=${Math.max(1, data.pageNumber - 1)}&pageSize=${data.pageSize}&search=${params.get('search') ?? ''}`} className="rounded border border-zinc-300 px-3 py-1">Prev</Link>
+          <Link to={`/jobs?page=${Math.min(data.totalPages, data.pageNumber + 1)}&pageSize=${data.pageSize}&search=${params.get('search') ?? ''}`} className="rounded border border-zinc-300 px-3 py-1">Next</Link>
+        </div>
       </div>
     </div>
   );

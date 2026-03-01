@@ -1,6 +1,5 @@
 using System.Text;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
@@ -14,6 +13,7 @@ using SkillSense.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
@@ -25,14 +25,6 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
         return new BadRequestObjectResult(new { message = "Validation failed.", errors });
     };
-});
-
-builder.Services.AddAntiforgery(options =>
-{
-    options.Cookie.Name = "XSRF-TOKEN";
-    options.Cookie.HttpOnly = false;
-    options.Cookie.SameSite = SameSiteMode.Lax;
-    options.HeaderName = "X-CSRF-TOKEN";
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -151,38 +143,6 @@ app.UseCors("client");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.Use(async (context, next) =>
-{
-    if (HttpMethods.IsPost(context.Request.Method) || HttpMethods.IsPut(context.Request.Method) ||
-        HttpMethods.IsPatch(context.Request.Method) || HttpMethods.IsDelete(context.Request.Method))
-    {
-        if (context.Request.Path.StartsWithSegments("/api"))
-        {
-            var isAnonymousAuthEndpoint =
-                context.Request.Path.StartsWithSegments("/api/auth/login") ||
-                context.Request.Path.StartsWithSegments("/api/auth/register");
-
-            if (!isAnonymousAuthEndpoint)
-            {
-                var antiForgery = context.RequestServices.GetRequiredService<IAntiforgery>();
-                try
-                {
-                    await antiForgery.ValidateRequestAsync(context);
-                }
-                catch (AntiforgeryValidationException)
-                {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    await context.Response.WriteAsJsonAsync(new { message = "Validation failed.", errors = new[] { "Invalid CSRF token." } });
-                    return;
-                }
-            }
-        }
-    }
-
-    await next();
-});
-
 
 app.MapControllers();
 app.Run();
