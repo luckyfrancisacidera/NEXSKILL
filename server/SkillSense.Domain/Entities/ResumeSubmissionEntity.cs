@@ -10,7 +10,6 @@ public sealed class ResumeSubmissionEntity
     public string AppliedJobPosition { get; set; } = string.Empty;
     public ResumeSubmissionStatus Status { get; set; }
     public string ParsedResumeJson { get; set; } = "{}";
-    public string ResumeEmbeddingJson { get; set; } = "[]";
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

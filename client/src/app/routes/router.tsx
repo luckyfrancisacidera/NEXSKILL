@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@app/layouts/AppShell";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
-import { RouteGuard } from "@app/routes/routes.guard";
+import { PublicOnly, RequireAuth, RequireRole } from "@app/routes/routes.guard";
 import { routeAccess } from "@app/routes/route.config";
 import {
   ApplicationsPage,
@@ -48,24 +48,45 @@ import {
   upsertJobAction,
 } from "@features/recruiter";
 import { AdminPlaceholderPage } from "@features/admin/AdminPlaceholderPage";
-import { 
- RegisterAccount,
- LoginAccount 
-} from "@features/auth"
+import { RegisterAccount, LoginAccount } from "@features/auth";
 
 const withRoleGate = (
   allowedRoles: (typeof routeAccess)[keyof typeof routeAccess],
   element: ReactElement,
-) => <RouteGuard allowedRoles={allowedRoles}>{element}</RouteGuard>;
+) => (
+  <RequireAuth>
+    <RequireRole allowedRoles={allowedRoles}>{element}</RequireRole>
+  </RequireAuth>
+);
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
   { path: "/not-authorized", element: <NotAuthorized /> },
-  { path: "/register", element:<RegisterAccount/> },
-  { path: "/login", element: <LoginAccount/>},
+
+  {
+    path: "/register",
+    element: (
+      <PublicOnly>
+        <RegisterAccount />
+      </PublicOnly>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <PublicOnly>
+        <LoginAccount />
+      </PublicOnly>
+    ),
+  },
   {
     path: "/",
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
+
     children: [
       {
         path: "dashboard",
@@ -77,10 +98,7 @@ export const router = createBrowserRouter([
         loader: jobsLoader,
         element: withRoleGate(routeAccess.jobs, <JobsPage />),
       },
-      {
-        path: "jobs/apply",
-        action: applyToJobAction,
-      },
+      { path: "jobs/apply", action: applyToJobAction },
       {
         path: "applications",
         loader: applicationsLoader,
@@ -102,8 +120,6 @@ export const router = createBrowserRouter([
         path: "settings",
         element: withRoleGate(routeAccess.settings, <SettingsPage />),
       },
-
-    //   RECRUITER ROUTES
       {
         path: "recruiter/dashboard",
         loader: recruiterDashboardLoader,
@@ -140,10 +156,7 @@ export const router = createBrowserRouter([
           <JobFormPage mode="edit" />,
         ),
       },
-      {
-        path: "recruiter/job-posts/:jobId/delete",
-        action: deleteJobAction,
-      },
+      { path: "recruiter/job-posts/:jobId/delete", action: deleteJobAction },
       {
         path: "recruiter/job-posts/:jobId/status",
         action: updateJobStatusAction,
@@ -204,10 +217,7 @@ export const router = createBrowserRouter([
           <AutomationsPage />,
         ),
       },
-      {
-        path: "recruiter/automations/:ruleId",
-        action: automationRuleAction,
-      },
+      { path: "recruiter/automations/:ruleId", action: automationRuleAction },
       {
         path: "recruiter/automations/run-offer",
         action: runOfferAutomationAction,
@@ -235,6 +245,8 @@ export const router = createBrowserRouter([
           <AdminPlaceholderPage title="Admin Users" />,
         ),
       },
+      { path: "*", element: <Navigate to="/dashboard" replace /> },
     ],
   },
+  { path: "*", element: <Navigate to="/login" replace /> },
 ]);

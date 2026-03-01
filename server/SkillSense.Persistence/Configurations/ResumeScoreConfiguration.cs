@@ -10,9 +10,10 @@ namespace SkillSense.Persistence.Configurations
         {
             builder.ToTable("resume_scores");
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.SectionSimilaritiesJson).HasColumnType("jsonb");
-            builder.Property(x => x.JobId);
-            builder.Property(x => x.ResumeSubmissionId);
+            builder.Property(x => x.JobDescriptionText).HasColumnType("text");
+            builder.Property(x => x.ScoreBreakdownJson).HasColumnType("jsonb");
+            builder.HasIndex(x => x.ResumeSubmissionId);
+            builder.HasIndex(x => x.JobId);
         }
     }
 }

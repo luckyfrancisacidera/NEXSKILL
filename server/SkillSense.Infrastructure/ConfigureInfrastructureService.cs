@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Auth;
+using SkillSense.Infrastructure.Auth;
 using SkillSense.Infrastructure.BackgroundJobs;
 using SkillSense.Infrastructure.Options;
 using SkillSense.Infrastructure.Services;
@@ -34,6 +36,12 @@ public static class ConfigureInfrastructureService
         .ValidateOnStart();
             services.AddSingleton<IObjectStorageService, CloudflareR2StorageService>();
 
+        services.AddScoped<ITokenService, JwtTokenService>();
+
+        services
+            .AddOptions<ResumeProcessingWorkerOptions>()
+            .Bind(configuration.GetSection(ResumeProcessingWorkerOptions.SectionName))
+            .ValidateOnStart();
         services.AddHostedService<ResumeProcessingWorker>();
 
         return services;
