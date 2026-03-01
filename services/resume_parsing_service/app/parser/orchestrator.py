@@ -1,17 +1,15 @@
-import uuid
-from typing import Any, Dict, Optional, Set
-from spacy.matcher import PhraseMatcher
+from typing import Any, Dict
 
 from .extractors import extract_text_from_upload, normalize_text
 from .sections import split_sections
+from .summary import guess_summary
 from .personal_info import (
+    extract_full_name,
     extract_email,
     extract_phone,
-    extract_full_name,
     extract_location,
     extract_job_target,
 )
-from .summary import guess_summary, split_sentences
 from .skills import extract_skills_robust
 from .experience import parse_experience
 from .education import parse_education
@@ -24,64 +22,46 @@ def parse_resume(
     filename: str,
     content: bytes,
     nlp,
-    skill_matcher: PhraseMatcher,
-    title_matcher: Optional[PhraseMatcher] = None,
-    exp_titles: Optional[Set[str]] = None,
-    edu_institutions: Optional[Set[str]] = None,
-    edu_programs: Optional[Set[str]] = None,
+    skill_matcher,
+    title_matcher,
+    exp_titles,
+    edu_programs,
 ) -> Dict[str, Any]:
     raw = extract_text_from_upload(filename, content)
+    text = normalize_text(raw)
 
-    raw_text = normalize_text(raw)
-    sections = split_sections(raw_text)
+    sections = split_sections(text)
 
-    exp_titles = exp_titles or set()
-    edu_institutions = edu_institutions or set()
-    edu_programs = edu_programs or set()
+    summary = guess_summary(sections, text)
 
-    job_target = (
-        extract_job_target(nlp, raw_text, title_matcher, exp_titles)
-        if title_matcher
-        else ""
-    )
+    name = extract_full_name(nlp, text)
+    email = extract_email(text)
+    phone = extract_phone(text)
+    location = extract_location(text)
+    job_target = extract_job_target(nlp, text, title_matcher, exp_titles)
 
-    email = extract_email(raw_text)
-    phone = extract_phone(raw_text, default_region="PH")
-    full_name = extract_full_name(nlp, raw_text)
-    location = extract_location(raw_text)
+    skills = extract_skills_robust(sections.get("skills", ""), text, skill_matcher, nlp)
 
-    summary_text = guess_summary(sections, raw_text)
-    summary_sentences = split_sentences(summary_text) if summary_text else []
-
-    skills_text = sections.get("skills", "") or ""
-    skill_items = extract_skills_robust(skills_text, raw_text, skill_matcher, nlp)
-
-    exp_text = sections.get("work_experience", "") or ""
-    edu_text = sections.get("education", "") or ""
-    proj_text = sections.get("projects", "") or ""
-    cert_text = sections.get("certifications", "") or ""
-    events_text = sections.get("events", "") or ""
-
-    experience_items = parse_experience(exp_text, exp_titles) if exp_text else []
-    education_items = parse_education(edu_text, edu_programs) if edu_text else []
-    project_items = parse_projects(proj_text, nlp, skill_matcher) if proj_text else []
-    cert_items = parse_certifications(cert_text) if cert_text else []
-    event_items = parse_events(events_text, nlp, skill_matcher) if events_text else []
+    experience = parse_experience(sections.get("work_experience", sections.get("experience", "")), exp_titles)
+    education = parse_education(sections.get("education", ""), edu_programs)
+    projects = parse_projects(sections.get("projects", ""), nlp, skill_matcher)
+    certifications = parse_certifications(sections.get("certifications", ""))
+    events = parse_events(sections.get("events", ""), nlp, skill_matcher)
 
     return {
-        "resume_id": str(uuid.uuid4()),
-        "personal_info": {
-            "full_name": full_name,
-            "email": email,
-            "phone": phone,
-            "location": location,
-            "job_target": job_target,
-        },
-        "summary": {"sentences": [{"text": s} for s in summary_sentences]},
-        "skills": {"items": skill_items, "text": skills_text.strip()},
-        "work_experience": experience_items,
-        "education": education_items,
-        "projects": project_items,
-        "events": event_items,
-        "certifications": cert_items,
+        "filename": filename,
+        "full_text": text,
+        "sections": sections,
+        "summary": summary,
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "location": location,
+        "job_target": job_target,
+        "skills": skills,
+        "experience": experience,
+        "education": education,
+        "projects": projects,
+        "certifications": certifications,
+        "events": events,
     }
