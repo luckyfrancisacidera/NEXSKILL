@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SkillSense.Application.Contracts.Auth;
@@ -9,19 +8,11 @@ namespace SkillSense.Api.Controllers;
 
 [Route("api/auth")]
 [ApiController]
-public sealed class AuthController(IAuthService authService, IConfiguration configuration, IAntiforgery antiforgery) : ControllerBase
+public sealed class AuthController(IAuthService authService, IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly IConfiguration _configuration = configuration;
-    private readonly IAntiforgery _antiforgery = antiforgery;
 
-    [HttpGet("csrf")]
-    [AllowAnonymous]
-    public IActionResult GetCsrfToken()
-    {
-        var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        return Ok(new { csrfToken = tokens.RequestToken });
-    }
 
     [HttpPost("register")]
     [AllowAnonymous]
@@ -93,7 +84,7 @@ public sealed class AuthController(IAuthService authService, IConfiguration conf
         {
             HttpOnly = true,
             Secure = isProduction,
-            SameSite = SameSiteMode.Lax, // Lax works for same-site SPA requests while mitigating CSRF on cross-site navigations.
+            SameSite = SameSiteMode.Lax, 
             Path = "/",
             Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
         });

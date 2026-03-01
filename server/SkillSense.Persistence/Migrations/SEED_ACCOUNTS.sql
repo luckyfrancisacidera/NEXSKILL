@@ -93,11 +93,80 @@ WHERE NOT EXISTS (
     SELECT 1 FROM "AspNetUserRoles" ur WHERE ur."UserId" = a.user_id AND ur."RoleId" = r.role_id
 );
 
-INSERT INTO recruiter_profiles ("Id", "UserId", "CreatedAtUtc")
-SELECT gen_random_uuid(), u."Id", NOW() AT TIME ZONE 'UTC'
-FROM "users" u
-WHERE u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL'
-  AND NOT EXISTS (SELECT 1 FROM recruiter_profiles p WHERE p."UserId" = u."Id");
+DO $$
+DECLARE
+    has_pascal_company_name boolean;
+    has_pascal_company_email boolean;
+    has_snake_company_name boolean;
+    has_snake_company_email boolean;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'recruiter_profiles'
+          AND column_name = 'CompanyName'
+    ) INTO has_pascal_company_name;
+
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'recruiter_profiles'
+          AND column_name = 'CompanyEmail'
+    ) INTO has_pascal_company_email;
+
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'recruiter_profiles'
+          AND column_name = 'company_name'
+    ) INTO has_snake_company_name;
+
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'recruiter_profiles'
+          AND column_name = 'company_email'
+    ) INTO has_snake_company_email;
+
+    IF has_pascal_company_name AND has_pascal_company_email THEN
+        EXECUTE $sql$
+            INSERT INTO recruiter_profiles ("Id", "UserId", "CreatedAtUtc", "CompanyName", "CompanyEmail")
+            SELECT gen_random_uuid(), u."Id", NOW() AT TIME ZONE 'UTC', 'NexSkill Recruiting', 'recruiter@nexskill.local'
+            FROM "users" u
+            WHERE u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL'
+              AND NOT EXISTS (SELECT 1 FROM recruiter_profiles p WHERE p."UserId" = u."Id");
+
+            UPDATE recruiter_profiles p
+            SET "CompanyName" = COALESCE(NULLIF(p."CompanyName", ''), 'NexSkill Recruiting'),
+                "CompanyEmail" = COALESCE(NULLIF(p."CompanyEmail", ''), 'recruiter@nexskill.local')
+            FROM "users" u
+            WHERE p."UserId" = u."Id"
+              AND u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL';
+        $sql$;
+    ELSIF has_snake_company_name AND has_snake_company_email THEN
+        EXECUTE $sql$
+            INSERT INTO recruiter_profiles ("Id", "UserId", "CreatedAtUtc", company_name, company_email)
+            SELECT gen_random_uuid(), u."Id", NOW() AT TIME ZONE 'UTC', 'NexSkill Recruiting', 'recruiter@nexskill.local'
+            FROM "users" u
+            WHERE u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL'
+              AND NOT EXISTS (SELECT 1 FROM recruiter_profiles p WHERE p."UserId" = u."Id");
+
+            UPDATE recruiter_profiles p
+            SET company_name = COALESCE(NULLIF(p.company_name, ''), 'NexSkill Recruiting'),
+                company_email = COALESCE(NULLIF(p.company_email, ''), 'recruiter@nexskill.local')
+            FROM "users" u
+            WHERE p."UserId" = u."Id"
+              AND u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL';
+        $sql$;
+    ELSE
+        INSERT INTO recruiter_profiles ("Id", "UserId", "CreatedAtUtc")
+        SELECT gen_random_uuid(), u."Id", NOW() AT TIME ZONE 'UTC'
+        FROM "users" u
+        WHERE u."NormalizedEmail" = 'RECRUITER@NEXSKILL.LOCAL'
+          AND NOT EXISTS (SELECT 1 FROM recruiter_profiles p WHERE p."UserId" = u."Id");
+    END IF;
+END $$;
+
 
 COMMIT;
 

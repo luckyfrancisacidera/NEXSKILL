@@ -1,169 +1,67 @@
-import { Form, useActionData, useLoaderData } from "react-router-dom";
-import { Card } from "@shared/components/Card";
+import { Form, useActionData, useLoaderData, useNavigation } from 'react-router-dom';
+import { Card } from '@shared/components/Card'
 
-const sections = [
-  "overview",
-  "responsibilities",
-  "requirements",
-  "benefits",
-] as const;
+const departments = ['Engineering', 'Product', 'Design', 'Marketing', 'Operations', 'Sales'];
+const titles = ['Software Engineer', 'Frontend Engineer', 'Backend Engineer', 'Full Stack Engineer', 'Product Manager'];
+const currencies = ['PHP', 'USD', 'SGD', 'EUR'];
 
-export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
+export const JobFormPage = ({ mode }: { mode: 'create' | 'edit' }) => {
   const actionData = useActionData() as { error?: string } | undefined;
-  const loaderData = useLoaderData() as {
-    job?: {
-      title: string;
-      department: string;
-      location: string;
-      type: string;
-      status: string;
-      salaryMin?: number;
-      salaryMax?: number;
-      tags: string[];
-      description: Record<string, string[]>;
-    };
-  };
+  const loaderData = useLoaderData() as { job?: Record<string, unknown> };
   const job = loaderData?.job;
+  const navigation = useNavigation();
+  const isSaving = navigation.state === 'submitting';
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="space-y-4">
       <Card>
-        <h2 className="mb-4 text-xl font-semibold">
-          {mode === "create" ? "Create Job" : "Edit Job"}
-        </h2>
+       <h2 className="mb-4 text-xl font-semibold">{mode === 'create' ? 'Create Job' : 'Edit Job'}</h2>
         <Form method="post" className="space-y-3">
-          {actionData?.error ? (
-            <p className="rounded bg-zinc-100 p-2 text-sm text-zinc-700">
-              {actionData.error}
-            </p>
-          ) : null}
-          <input
-            aria-label="job title"
-            name="title"
-            required
-            minLength={3}
-            defaultValue={job?.title}
-            placeholder="Title"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          />
-          <input
-            aria-label="department"
-            name="department"
-            required
-            minLength={2}
-            defaultValue={job?.department}
-            placeholder="Department"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          />
-          <input
-            aria-label="location"
-            name="location"
-            required
-            minLength={2}
-            defaultValue={job?.location}
-            placeholder="Location"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          />
-          <select
-            aria-label="type"
-            name="type"
-            defaultValue={job?.type ?? "Full-Time"}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          >
-            {["Full-Time", "Part-Time", "Contract", "Internship"].map(
-              (item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ),
-            )}
-          </select>
-          <select
-            aria-label="status"
-            name="status"
-            defaultValue={job?.status ?? "Open"}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          >
-            {["Open", "Paused", "Closed"].map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              aria-label="salary min"
-              type="number"
-              name="salaryMin"
-              defaultValue={job?.salaryMin}
-              placeholder="Salary min"
-              className="rounded-lg border border-zinc-300 px-3 py-2"
-            />
-            <input
-              aria-label="salary max"
-              type="number"
-              name="salaryMax"
-              defaultValue={job?.salaryMax}
-              placeholder="Salary max"
-              className="rounded-lg border border-zinc-300 px-3 py-2"
-            />
-          </div>
-          <input
-            aria-label="skills tags"
-            name="tags"
-            defaultValue={job?.tags.join(", ")}
-            placeholder="Tags comma-separated"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-          />
-          {sections.map((section) => (
-            <label key={section} className="block">
-              <span className="mb-1 block text-sm font-medium capitalize">
-                {section}
-              </span>
-              <textarea
-                aria-label={section}
-                name={section}
-                defaultValue={job?.description[section]?.join("\n")}
-                rows={4}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2"
-                placeholder={`One bullet per line for ${section}`}
-              />
-            </label>
-          ))}
-          <div className="flex gap-2">
-            <button
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-white"
-              type="submit"
-            >
-              Save
-            </button>
-            <button
-              className="rounded-lg border border-zinc-300 px-4 py-2"
-              name="status"
-              value="Open"
-              type="submit"
-            >
-              Publish
-            </button>
-          </div>
-        </Form>
-      </Card>
+          {actionData?.error ? <p className="rounded bg-zinc-100 p-2 text-sm text-zinc-700">{actionData.error}</p> : null}
+          <input list="title-options" name="title" required defaultValue={String(job?.title ?? '')} placeholder="Job title" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <datalist id="title-options">{titles.map((v) => <option key={v} value={v} />)}</datalist>
 
-      <Card>
-        <h3 className="mb-2 text-lg font-semibold">Live Preview</h3>
-        <p className="text-sm text-zinc-500">
-          Preview updates on submit in this client-side demo.
-        </p>
-        {sections.map((section) => (
-          <div key={section} className="mt-4">
-            <h4 className="font-medium capitalize">{section}</h4>
-            <ul className="list-inside list-disc text-sm text-zinc-700">
-              {(job?.description[section] ?? ["No content yet"]).map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
+          <input list="department-options" name="department" defaultValue={String(job?.department ?? '')} placeholder="Department" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <datalist id="department-options">{departments.map((v) => <option key={v} value={v} />)}</datalist>
+
+          <input name="location" required defaultValue={String(job?.location ?? '')} placeholder="Location" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <input name="schedule" defaultValue={String(job?.schedule ?? '')} placeholder="Schedule (e.g. Mon-Fri)" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+
+          <select name="work_setup" defaultValue={String(job?.work_setup ?? 0)} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
+            <option value="0">Onsite</option><option value="1">Hybrid</option><option value="2">Remote</option>
+          </select>
+
+          <select name="employment_type" defaultValue={String(job?.employment_type ?? 0)} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
+            <option value="0">FullTime</option><option value="1">PartTime</option><option value="2">Contract</option><option value="3">Internship</option><option value="4">Temporary</option>
+          </select>
+
+          
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <input type="number" name="salary_min_per_annum" defaultValue={String(job?.salary_min_per_annum ?? '')} placeholder="Salary min" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+            <input type="number" name="salary_max_per_annum" defaultValue={String(job?.salary_max_per_annum ?? '')} placeholder="Salary max" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+            <input list="currency-options" name="currency" defaultValue={String(job?.currency ?? 'PHP')} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+            <datalist id="currency-options">{currencies.map((v) => <option key={v} value={v} />)}</datalist>
           </div>
-        ))}
+
+          <textarea name="description" rows={4} defaultValue={String(job?.description ?? '')} placeholder="Description" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <textarea name="responsibilities" rows={4} defaultValue={String(job?.responsibilities ?? '')} placeholder="Responsibilities" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <textarea name="benefits" rows={3} defaultValue={String(job?.benefits ?? '')} placeholder="Benefits" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+
+          <input name="required_skills" defaultValue={String((job?.required_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="Required skills (comma-separated)" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <input name="preferred_skills" defaultValue={String((job?.preferred_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="Preferred skills (comma-separated)" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+
+          <input name="experience_level" defaultValue={String(job?.experience_level ?? '')} placeholder="experience_level" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <input type="number" name="min_years" defaultValue={String(job?.min_years ?? '')} placeholder="min_years" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <input name="education" defaultValue={String(job?.education ?? '')} placeholder="education" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+          <input name="min_education" defaultValue={String(job?.min_education ?? '')} placeholder="min_education" className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
+
+          <select name="status" defaultValue={String(job?.status ?? 'Draft')} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
+            <option value="Draft">Draft</option><option value="Published">Published</option><option value="Closed">Closed</option>
+          </select>
+
+          <button className="rounded-lg bg-zinc-900 px-4 py-2 text-white disabled:opacity-70" type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+
+        </Form>
       </Card>
     </div>
   );

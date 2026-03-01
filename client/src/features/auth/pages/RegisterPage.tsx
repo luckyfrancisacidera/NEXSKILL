@@ -7,7 +7,7 @@ import GoogleLogo from "@shared/assets/GoogleLogo.svg";
 import AppleLogo from "@shared/assets/AppleLogo.svg";
 
 import { useAuth } from "@app/providers/AuthProvider";
-import { HttpError } from "@shared/vendor/axios";
+import { ApiError } from "@shared/api/http";
 
 const RegisterPage = () => {
 const navigate = useNavigate();
@@ -30,7 +30,7 @@ const navigate = useNavigate();
       const roles = await register(email, password);
       navigate(roles.includes('jobseeker') ? '/dashboard' : '/login', { replace: true });
     } catch (error) {
-      if (error instanceof HttpError) {
+      if (error instanceof ApiError) {
         const payload = error.data as { message?: string; errors?: string[] } | null;
         setError(payload?.errors?.[0] ?? payload?.message ?? 'Unable to create account.');
         return;

@@ -1,6 +1,8 @@
 import { redirect, type ActionFunctionArgs } from 'react-router-dom';
 import { createId, getRecruiterState, runAutomations, saveRecruiterState } from '@features/recruiter/data/storage';
 import type { CandidateStage } from '@features/recruiter/types/recruiter.type';
+import { recruiterService } from '@features/recruiter/service/recruiter.service';
+import { ApiError } from '@shared/api/http';
 
 const getString = (formData: FormData, key: string) => String(formData.get(key) ?? '').trim();
 const getNum = (formData: FormData, key: string) => {
@@ -10,63 +12,69 @@ const getNum = (formData: FormData, key: string) => {
 
 export const upsertJobAction = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const state = getRecruiterState();
-  const title = getString(formData, 'title');
-  const department = getString(formData, 'department');
-  const location = getString(formData, 'location');
-  const type = getString(formData, 'type') as 'Full-Time' | 'Part-Time' | 'Contract' | 'Internship';
-  const status = getString(formData, 'status') as 'Open' | 'Paused' | 'Closed';
+  const payload = {
+    title: getString(formData, 'title'),
+    description: getString(formData, 'description'),
+    responsibilities: getString(formData, 'responsibilities'),
+    required_skills: getString(formData, 'required_skills').split(',').map((v) => v.trim()).filter(Boolean),
+    preferred_skills: getString(formData, 'preferred_skills').split(',').map((v) => v.trim()).filter(Boolean),
+    experience_level: getString(formData, 'experience_level') || undefined,
+    min_years: getNum(formData, 'min_years'),
+    education: getString(formData, 'education') || undefined,
+    min_education: getString(formData, 'min_education') || undefined,
+    department: getString(formData, 'department') || undefined,
+    benefits: getString(formData, 'benefits') || undefined,
+    salary_min_per_annum: getNum(formData, 'salary_min_per_annum'),
+    salary_max_per_annum: getNum(formData, 'salary_max_per_annum'),
+    currency: getString(formData, 'currency') || 'PHP',
+    location: getString(formData, 'location'),
+    schedule: getString(formData, 'schedule') || undefined,
+    work_setup: getNum(formData, 'work_setup') ?? 0,
+    employment_type: getNum(formData, 'employment_type') ?? 0,
+    status: getString(formData, 'status') || 'Draft',
+  };
 
-  if (title.length < 3 || department.length < 2 || location.length < 2) {
-    return { error: 'Please provide valid values for required fields.' };
+ try {
+    console.info('[Recruiter] Save clicked', { mode: params.jobId ? 'edit' : 'create', payload });
+    const job = params.jobId
+      ? await recruiterService.updateJob(params.jobId, payload)
+      : await recruiterService.createJob(payload);
+
+    return redirect(`/recruiter/job-posts/${job.id}`);
+  } catch (error) {
+    console.error('[Recruiter] Save failed', error);
+    if (error instanceof ApiError) {
+      if (error.status === 401) {
+        return redirect('/login');
+      }
+
+      const responseData = error.data as { message?: string; errors?: string[] } | null;
+      if (responseData?.errors?.length) {
+        return { error: responseData.errors.join(' ') };
+      }
+
+      if (responseData?.message) {
+        return { error: responseData.message };
+      }
+
+      return { error: 'Unable to save job right now. Please try again.' };
+    }
+      return { error: 'Unable to save job right now. Please try again.' };
   }
-
-  const description = {
-    overview: getString(formData, 'overview').split('\n').filter(Boolean),
-    responsibilities: getString(formData, 'responsibilities').split('\n').filter(Boolean),
-    requirements: getString(formData, 'requirements').split('\n').filter(Boolean),
-    benefits: getString(formData, 'benefits').split('\n').filter(Boolean),
-  };
-
-  const jobId = params.jobId ?? createId('job');
-  const existing = state.jobs.find((item) => item.id === jobId);
-  const next = {
-    id: jobId,
-    title,
-    department,
-    location,
-    type,
-    status,
-    salaryMin: getNum(formData, 'salaryMin'),
-    salaryMax: getNum(formData, 'salaryMax'),
-    tags: getString(formData, 'tags').split(',').map((item) => item.trim()).filter(Boolean),
-    description,
-    createdAt: existing?.createdAt ?? new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  state.jobs = existing ? state.jobs.map((item) => (item.id === jobId ? next : item)) : [next, ...state.jobs];
-  saveRecruiterState(state);
-
-  return redirect(`/recruiter/job-posts/${jobId}`);
 };
 
-export const deleteJobAction = async ({ request, params }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const confirm = getString(formData, 'confirm');
-  if (confirm !== 'DELETE') return { error: 'Type DELETE to confirm.' };
-  const state = getRecruiterState();
-  state.jobs = state.jobs.filter((item) => item.id !== params.jobId);
-  saveRecruiterState(state);
+export const deleteJobAction = async ({ params }: ActionFunctionArgs) => {
+  if (!params.jobId) return null;
+  await recruiterService.deleteJob(params.jobId);
   return redirect('/recruiter/job-posts');
 };
 
 export const updateJobStatusAction = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const status = getString(formData, 'status') as 'Open' | 'Paused' | 'Closed';
-  const state = getRecruiterState();
-  state.jobs = state.jobs.map((item) => (item.id === params.jobId ? { ...item, status, updatedAt: new Date().toISOString() } : item));
-  saveRecruiterState(state);
+  const status = getString(formData, 'status');
+  if (!params.jobId) return null;
+  if (status === 'Published') await recruiterService.publishJob(params.jobId);
+  if (status === 'Closed') await recruiterService.closeJob(params.jobId);
   return null;
 };
 
