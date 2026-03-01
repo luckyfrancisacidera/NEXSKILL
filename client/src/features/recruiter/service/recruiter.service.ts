@@ -1,0 +1,86 @@
+import { http } from "@shared/api/http";
+
+export interface RecruiterProfileDto {
+  company_name?: string;
+  company_email?: string;
+  is_complete: boolean;
+}
+export interface JobDto {
+  id: string;
+  title: string;
+  department?: string;
+  benefits?: string;
+  salary_min_per_annum?: number;
+  salary_max_per_annum?: number;
+  currency: string;
+  location: string;
+  schedule?: string;
+  work_setup: string;
+  employment_type: string;
+  status: string;
+  company_name?: string;
+  company_email?: string;
+  description: string;
+  responsibilities: string;
+  required_skills: string[];
+  preferred_skills: string[];
+  experience_level?: string;
+  min_years?: number;
+  education?: string;
+  min_education?: string;
+}
+export interface Paged<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+export interface DashboardDto {
+  jobs_posted_over_time: Array<{ date: string; count: number }>;
+  applications_over_time: Array<{ date: string; count: number }>;
+  top_jobs_by_applications: Array<{
+    job_id: string;
+    title: string;
+    applications: number;
+  }>;
+  recommended_count: number;
+  shortlisted_count: number;
+}
+
+export const recruiterService = {
+  getProfile: async () =>
+    (await http.get<RecruiterProfileDto>("/api/recruiter/profile")).data,
+  updateProfile: async (payload: {
+    company_name: string;
+    company_email: string;
+  }) =>
+    (await http.put<RecruiterProfileDto>("/api/recruiter/profile", payload))
+      .data,
+  createJob: async (payload: Record<string, unknown>) =>
+    (await http.post<JobDto>("/api/recruiter/jobs", payload)).data,
+  updateJob: async (id: string, payload: Record<string, unknown>) =>
+    (await http.put<JobDto>(`/api/recruiter/jobs/${id}`, payload)).data,
+  getRecruiterJobs: async (params: {
+    pageNumber: number;
+    pageSize: number;
+    search?: string;
+  }) => (await http.get<Paged<JobDto>>("/api/recruiter/jobs", { params })).data,
+  getRecruiterJob: async (id: string) =>
+    (await http.get<JobDto>(`/api/recruiter/jobs/${id}`)).data,
+  deleteJob: async (id: string) => {
+    await http.delete(`/api/recruiter/jobs/${id}`);
+  },
+  publishJob: async (id: string) => {
+    await http.post(`/api/recruiter/jobs/${id}/publish`);
+  },
+  closeJob: async (id: string) => {
+    await http.post(`/api/recruiter/jobs/${id}/close`);
+  },
+  getDashboardStats: async (range: "last30" | "last90" | "ytd" = "last30") =>
+    (
+      await http.get<DashboardDto>("/api/recruiter/dashboard", {
+        params: { range },
+      })
+    ).data,
+};

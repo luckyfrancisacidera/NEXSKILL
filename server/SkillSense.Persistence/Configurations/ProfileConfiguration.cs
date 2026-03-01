@@ -21,6 +21,8 @@ internal sealed class RecruiterProfileConfiguration : IEntityTypeConfiguration<R
     {
         builder.ToTable("recruiter_profiles");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.CompanyName).HasMaxLength(200);
+        builder.Property(x => x.CompanyEmail).HasMaxLength(320);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
     }

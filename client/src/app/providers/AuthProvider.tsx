@@ -1,8 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { PropsWithChildren } from 'react';
-import { fetchCsrfToken, http } from '@shared/api/http';
-import { HttpError } from '@shared/vendor/axios';
-import type { Role } from '@shared/types';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import type { PropsWithChildren } from "react";
+import type { Role } from "@shared/types";
+import { ApiError, http } from "@shared/api/http";
 
 interface AuthUser {
   userId: string;
@@ -33,7 +39,10 @@ interface AuthResponsePayload {
 const normalizeRoles = (roles: string[]): Role[] =>
   roles
     .map((role) => role.toLowerCase())
-    .filter((role): role is Role => role === 'admin' || role === 'recruiter' || role === 'jobseeker');
+    .filter(
+      (role): role is Role =>
+        role === "admin" || role === "recruiter" || role === "jobseeker",
+    );
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -42,8 +51,17 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const refreshMe = useCallback(async (): Promise<Role[]> => {
     try {
-      const response = await http.get<{ isAuthenticated?: boolean; userId?: string; email?: string; roles?: string[] }>('/api/auth/me');
-      if (!response.data.isAuthenticated || !response.data.userId || !response.data.email) {
+      const response = await http.get<{
+        isAuthenticated?: boolean;
+        userId?: string;
+        email?: string;
+        roles?: string[];
+      }>("/api/auth/me");
+      if (
+        !response.data.isAuthenticated ||
+        !response.data.userId ||
+        !response.data.email
+      ) {
         setUser(null);
         setRoles([]);
         return [];
@@ -60,47 +78,55 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    await fetchCsrfToken();
-    const response = await http.post<AuthResponsePayload>('/api/auth/login', { email, password });
-    await fetchCsrfToken();
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const response = await http.post<AuthResponsePayload>("/api/auth/login", {
+        email,
+        password,
+      });
 
-    const userId = response.data.user?.userId;
-    const userEmail = response.data.user?.email;
-    const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
+      const userId = response.data.user?.userId;
+      const userEmail = response.data.user?.email;
+      const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
 
-    if (userId && userEmail) {
-      setUser({ userId, email: userEmail });
-      setRoles(parsedRoles);
-      return parsedRoles;
-    }
+      if (userId && userEmail) {
+        setUser({ userId, email: userEmail });
+        setRoles(parsedRoles);
+        return parsedRoles;
+      }
 
-    return refreshMe();
-  }, [refreshMe]);
+      return refreshMe();
+    },
+    [refreshMe],
+  );
 
-  const register = useCallback(async (email: string, password: string) => {
-    await fetchCsrfToken();
-    const response = await http.post<AuthResponsePayload>('/api/auth/register', { email, password });
-    await fetchCsrfToken();
+  const register = useCallback(
+    async (email: string, password: string) => {
+      const response = await http.post<AuthResponsePayload>(
+        "/api/auth/register",
+        { email, password },
+      );
 
-    const userId = response.data.user?.userId;
-    const userEmail = response.data.user?.email;
-    const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
+      const userId = response.data.user?.userId;
+      const userEmail = response.data.user?.email;
+      const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
 
-    if (userId && userEmail) {
-      setUser({ userId, email: userEmail });
-      setRoles(parsedRoles);
-      return parsedRoles;
-    }
+      if (userId && userEmail) {
+        setUser({ userId, email: userEmail });
+        setRoles(parsedRoles);
+        return parsedRoles;
+      }
 
-    return refreshMe();
-  }, [refreshMe]);
+      return refreshMe();
+    },
+    [refreshMe],
+  );
 
   const logout = useCallback(async () => {
     try {
-      await http.post('/api/auth/logout');
+      await http.post("/api/auth/logout");
     } catch (error) {
-      if (!(error instanceof HttpError) || error.status !== 401) {
+      if (!(error instanceof ApiError) || error.status !== 401) {
         throw error;
       }
     }
@@ -111,12 +137,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     const hydrate = async () => {
-      try {
-        await fetchCsrfToken();
-      } catch {
-        // non-fatal: login/register refresh CSRF token 
-      }
-
       await refreshMe();
       setIsHydrating(false);
     };
@@ -124,16 +144,19 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     void hydrate();
   }, [refreshMe]);
 
-  const value = useMemo<AuthContextValue>(() => ({
-    isAuthenticated: !!user,
-    user,
-    roles,
-    login,
-    register,
-    logout,
-    refreshMe,
-    isHydrating,
-  }), [user, roles, login, logout, refreshMe, isHydrating, register]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      isAuthenticated: !!user,
+      user,
+      roles,
+      login,
+      register,
+      logout,
+      refreshMe,
+      isHydrating,
+    }),
+    [user, roles, login, logout, refreshMe, isHydrating, register],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -142,7 +165,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;

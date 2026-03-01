@@ -1,23 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using SkillSense.Application.Contracts.Request;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
-using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Jobseeker;
 
 namespace SkillSense.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/jobs")]
     [ApiController]
-    public class JobController: ControllerBase
+    public sealed class JobController(IJobSeekerService jobSeekerService) : ControllerBase
     {
-        private readonly IJobService _jobService;
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<ActionResult<PagedResult<JobListItemResponse>>> GetJobs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortDir = null, CancellationToken ct = default)
+            => Ok(await jobSeekerService.GetPublicJobsAsync(pageNumber, pageSize, search, sortBy, sortDir, ct));
 
-        public JobController(IJobService jobService) => _jobService = jobService;
-
-        [HttpPost]
-        public async Task<ActionResult<JobResponse>> Create([FromBody] CreateJobRequest request, CancellationToken ct)
+        [HttpGet("{id:guid}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<JobListItemResponse>> GetById(Guid id, CancellationToken ct)
         {
-            var result = await _jobService.CreateAsync(request, ct);
-            return CreatedAtAction(nameof(Create), new { jobId = result.JobId }, result);
+            var job = await jobSeekerService.GetPublicJobAsync(id, ct);
+            return job is null ? NotFound() : Ok(job);
         }
     }
 }

@@ -2,6 +2,7 @@
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Jobseeker;
 using SkillSense.Application.Validators;
 
 namespace SkillSense.Api.Controllers
@@ -31,7 +32,7 @@ namespace SkillSense.Api.Controllers
             if (!isValid) return BadRequest(error);
 
             await using var stream = file!.OpenReadStream();
-            var result = await _uploadService.EnqueueUploadAsync(stream, file.FileName, file.ContentType, jobId, appliedJobPosition, ct);
+            var result = await _uploadService.EnqueueUploadAsync(stream, file.FileName, file.ContentType, jobId, appliedJobPosition, ct: ct);
             return Accepted(result);
         }
 

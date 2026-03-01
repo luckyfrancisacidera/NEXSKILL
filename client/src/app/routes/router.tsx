@@ -13,9 +13,11 @@ import {
   SavedJobsPage,
   SettingsPage,
   applicationsLoader,
-  applyToJobAction,
   dashboardLoader,
   jobsLoader,
+  JobDetailPage as JobSeekerJobDetailPage,
+  jobDetailLoader,
+  applyJobAction,
 } from "@features/jobseeker";
 import {
   AutomationsPage,
@@ -98,7 +100,12 @@ export const router = createBrowserRouter([
         loader: jobsLoader,
         element: withRoleGate(routeAccess.jobs, <JobsPage />),
       },
-      { path: "jobs/apply", action: applyToJobAction },
+      {
+        path: "jobs/:jobId",
+        loader: jobDetailLoader,
+        action: applyJobAction,
+        element: withRoleGate(routeAccess.jobs, <JobSeekerJobDetailPage />),
+      },
       {
         path: "applications",
         loader: applicationsLoader,
