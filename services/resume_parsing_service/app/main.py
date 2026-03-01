@@ -1,9 +1,18 @@
+import sys
+import pathlib
 import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
 import spacy
+
+# Ensure the project package root (parent of this `app` package) is on sys.path
+# so absolute imports like `app.parser.orchestrator` work even when uvicorn is
+# started from a different working directory.
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.resources import (
     load_experience_gazetteer,
