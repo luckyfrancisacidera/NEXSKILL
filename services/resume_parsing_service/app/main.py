@@ -78,4 +78,7 @@ async def parse(file: UploadFile = File(...)):
         )
         return result
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"ERROR in /parse: {error_details}")
         raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
