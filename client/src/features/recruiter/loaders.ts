@@ -33,20 +33,27 @@ export const recruiterJobDetailLoader = async ({ params }: LoaderFunctionArgs) =
 };
 
 export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs) => {
-  const state = getRecruiterState();
   const url = new URL(request.url);
-  const search = url.searchParams.get('search')?.toLowerCase() ?? '';
+  const search = url.searchParams.get('search') ?? undefined;
   const stage = url.searchParams.get('stage') ?? 'all';
   const jobId = url.searchParams.get('jobId') ?? 'all';
 
-  const candidates = state.candidates.filter((candidate) => {
-    const textMatch = [candidate.name, candidate.email].join(' ').toLowerCase().includes(search);
-    const stageMatch = stage === 'all' || candidate.stage === stage;
-    const jobMatch = jobId === 'all' || candidate.jobId === jobId;
-    return textMatch && stageMatch && jobMatch;
+  const data = await recruiterService.getApplicantScores({
+    search,
+    stage,
+    jobId: jobId === 'all' ? undefined : jobId,
   });
 
-  return { candidates, jobs: state.jobs };
+ return {
+    candidates: data.items,
+    jobs: data.jobs,
+    counts: data.counts,
+    filters: {
+      search: search ?? '',
+      stage,
+      jobId,
+    },
+  };
 };
 
 export const recruiterCandidateDetailLoader = async ({ params }: LoaderFunctionArgs) => {
