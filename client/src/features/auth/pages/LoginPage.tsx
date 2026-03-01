@@ -8,7 +8,7 @@ import AppleLogo from "@shared/assets/AppleLogo.svg";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
-import { HttpError } from "@shared/vendor/axios";
+import { ApiError } from "@shared/api/http";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ const LoginPage = () => {
       const userRoles = await login(email, password);
       navigate(getDefaultRouteByRole(userRoles), { replace: true });
     } catch (error) {
-      if (error instanceof HttpError) {
+      if (error instanceof ApiError) {
         const payload = error.data as { message?: string; errors?: string[] } | null;
         setError(payload?.errors?.[0] ?? payload?.message ?? 'Invalid email or password.');
         return;

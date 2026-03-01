@@ -1,4 +1,4 @@
-﻿using SkillSense.Application.Contracts.Request;
+﻿using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Response;
 
 namespace SkillSense.Application.Interfaces

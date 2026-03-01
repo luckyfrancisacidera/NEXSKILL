@@ -42,10 +42,37 @@ namespace SkillSense.Persistence.Configurations
             builder.Property(x => x.Education)
                 .HasColumnType("text");
 
+            builder.Property(x => x.Department).HasMaxLength(120);
+
+            builder.Property(x => x.Benefits).HasColumnType("text");
+
+            builder.Property(x => x.SalaryMinPerAnnum).HasPrecision(18, 2);
+
+            builder.Property(x => x.SalaryMaxPerAnnum).HasPrecision(18, 2);
+
+            builder.Property(x => x.Currency).HasMaxLength(8).HasDefaultValue("PHP");
+
+            builder.Property(x => x.Location).HasMaxLength(200).IsRequired();
+
+            builder.Property(x => x.Schedule).HasMaxLength(80);
+
+            builder.Property(x => x.WorkSetup).HasConversion<int>();
+
+            builder.Property(x => x.EmploymentType).HasConversion<int>();
+
+            builder.Property(x => x.Status).HasConversion<int>();
+
+            builder.Property(x => x.CompanyNameSnapshot).HasMaxLength(200);
+
+            builder.Property(x => x.CompanyEmailSnapshot).HasMaxLength(320);
+
             builder.Property(x => x.JobDescriptionStructuredJson)
                 .HasColumnType("jsonb")
                 .IsRequired()
                 .HasDefaultValueSql("'{}'::jsonb");
+
+            builder.HasIndex(x => x.Status);
+            builder.HasIndex(x => x.CreatedAtUtc);
         }
     }
 }

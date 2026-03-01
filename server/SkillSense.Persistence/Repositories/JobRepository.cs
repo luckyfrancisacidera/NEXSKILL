@@ -13,6 +13,20 @@ public sealed class JobRepository(SkillSenseDbContext dbContext) : IJobRepositor
         await dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task UpdateAsync(JobEntity job, CancellationToken ct = default)
+    {
+        dbContext.Jobs.Update(job);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAsync(JobEntity job, CancellationToken ct = default)
+    {
+        dbContext.Jobs.Remove(job);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
     public Task<JobEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public IQueryable<JobEntity> Query() => dbContext.Jobs.AsQueryable();
 }
