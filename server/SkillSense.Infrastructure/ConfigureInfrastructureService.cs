@@ -38,6 +38,10 @@ public static class ConfigureInfrastructureService
 
         services.AddScoped<ITokenService, JwtTokenService>();
 
+        services
+            .AddOptions<ResumeProcessingWorkerOptions>()
+            .Bind(configuration.GetSection(ResumeProcessingWorkerOptions.SectionName))
+            .ValidateOnStart();
         services.AddHostedService<ResumeProcessingWorker>();
 
         return services;
