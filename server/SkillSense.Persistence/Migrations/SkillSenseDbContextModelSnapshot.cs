@@ -256,6 +256,39 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'{}'::jsonb");
 
+                    b.Property<string>("Education")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExperienceLevel")
+                        .HasColumnType("text");
+
+                    b.Property<string>("JobDescriptionStructuredJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'{}'::jsonb");
+
+                    b.Property<int?>("MinYears")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PreferredSkillsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'::jsonb");
+
+                    b.Property<string>("RequiredSkillsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValueSql("'[]'::jsonb");
+
+                    b.Property<string>("ResponsibilitiesText")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -309,35 +342,87 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("recruiter_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.ResumeEmbeddingEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EmbeddingJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ResumeSubmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SectionType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SourceText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SubSectionKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResumeSubmissionId");
+
+                    b.HasIndex("ResumeSubmissionId", "SectionType");
+
+                    b.ToTable("resume_embeddings", (string)null);
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.ResumeScoreEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<float?>("AppliedJobPositionSimilarity")
-                        .HasColumnType("real");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<float>("EducationScore")
+                        .HasColumnType("real");
+
+                    b.Property<float>("ExperienceScore")
+                        .HasColumnType("real");
+
+                    b.Property<float>("FinalWeightedScore")
+                        .HasColumnType("real");
+
+                    b.Property<string>("JobDescriptionText")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
 
-                    b.Property<float?>("JobTargetSimilarity")
-                        .HasColumnType("real");
-
-                    b.Property<float>("OverallSimilarity")
-                        .HasColumnType("real");
-
                     b.Property<Guid>("ResumeSubmissionId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("SectionSimilaritiesJson")
+                    b.Property<string>("ScoreBreakdownJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<float>("SkillsScore")
+                        .HasColumnType("real");
+
+                    b.Property<float>("SummaryScore")
+                        .HasColumnType("real");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("ResumeSubmissionId");
 
                     b.ToTable("resume_scores", (string)null);
                 });
@@ -379,12 +464,6 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'{}'::jsonb");
-
-                    b.Property<string>("ResumeEmbeddingJson")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
-                        .HasDefaultValueSql("'[]'::jsonb");
 
                     b.Property<string>("Status")
                         .IsRequired()

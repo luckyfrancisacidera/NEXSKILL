@@ -3,6 +3,7 @@ from typing import List
 from spacy.matcher import PhraseMatcher
 from .config import KEEP_SHORT, NOISE_SKILLS
 
+
 def is_good_skill(s: str) -> bool:
     s = s.strip().lower()
     if not s:
@@ -19,6 +20,7 @@ def is_good_skill(s: str) -> bool:
     if not re.search(r"[a-z0-9]", s):
         return False
     return True
+
 
 def extract_skills_from_text(text: str, skill_matcher: PhraseMatcher, nlp) -> List[str]:
     if not text:
@@ -41,12 +43,18 @@ def extract_skills_from_text(text: str, skill_matcher: PhraseMatcher, nlp) -> Li
 
     return sorted(cleaned)
 
-def extract_skills_robust(skills_section_text: str, full_text: str, skill_matcher: PhraseMatcher, nlp) -> List[str]:
+
+def extract_skills_robust(
+    skills_section_text: str, full_text: str, skill_matcher: PhraseMatcher, nlp
+) -> List[str]:
     skills_section_text = (skills_section_text or "").strip()
-    base = extract_skills_from_text(skills_section_text, skill_matcher, nlp) if len(skills_section_text) >= 20 else []
+    base = (
+        extract_skills_from_text(skills_section_text, skill_matcher, nlp)
+        if len(skills_section_text) >= 20
+        else []
+    )
     if len(base) >= 6:
         return base
 
-    # fallback to full text
     all_sk = extract_skills_from_text(full_text, skill_matcher, nlp)
     return sorted(set(base) | set(all_sk))

@@ -14,8 +14,8 @@ public sealed class ResumeProcessingWorker(IServiceScopeFactory scopeFactory, IL
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var queueService = scope.ServiceProvider.GetRequiredService<IResumeQueueService>();
-                await queueService.ProcessPendingAsync(stoppingToken);
+                var processingService = scope.ServiceProvider.GetRequiredService<IResumeProcessingService>();
+                await processingService.ProcessPendingAsync(stoppingToken);
             }
             catch (Exception ex)
             {
