@@ -36,6 +36,30 @@ export interface Paged<T> {
   totalCount: number;
   totalPages: number;
 }
+
+export interface ApplicantScoreItemDto {
+  resume_submission_id: string;
+  applicant_name: string;
+  applicant_email: string;
+  job_id: string;
+  job_title: string;
+  score: number;
+  stage: "Recommended" | "Shortlisted" | "Interview" | "Hire";
+  created_at_utc: string;
+}
+
+export interface ApplicantScoresDto {
+  items: ApplicantScoreItemDto[];
+  jobs: Array<{ id: string; title: string }>;
+  counts: {
+    all_applicants: number;
+    recommended: number;
+    shortlisted: number;
+    interview: number;
+    hire: number;
+  };
+}
+
 export interface DashboardDto {
   jobs_posted_over_time: Array<{ date: string; count: number }>;
   applications_over_time: Array<{ date: string; count: number }>;
@@ -51,32 +75,52 @@ export interface DashboardDto {
 export const recruiterService = {
   getProfile: async () =>
     (await http.get<RecruiterProfileDto>("/api/recruiter/profile")).data,
+  
   updateProfile: async (payload: {
     company_name: string;
     company_email: string;
   }) =>
     (await http.put<RecruiterProfileDto>("/api/recruiter/profile", payload))
       .data,
+
   createJob: async (payload: Record<string, unknown>) =>
     (await http.post<JobDto>("/api/recruiter/jobs", payload)).data,
+
   updateJob: async (id: string, payload: Record<string, unknown>) =>
     (await http.put<JobDto>(`/api/recruiter/jobs/${id}`, payload)).data,
+
   getRecruiterJobs: async (params: {
     pageNumber: number;
     pageSize: number;
     search?: string;
   }) => (await http.get<Paged<JobDto>>("/api/recruiter/jobs", { params })).data,
+
   getRecruiterJob: async (id: string) =>
     (await http.get<JobDto>(`/api/recruiter/jobs/${id}`)).data,
+
   deleteJob: async (id: string) => {
     await http.delete(`/api/recruiter/jobs/${id}`);
   },
+
   publishJob: async (id: string) => {
     await http.post(`/api/recruiter/jobs/${id}/publish`);
   },
+
   closeJob: async (id: string) => {
     await http.post(`/api/recruiter/jobs/${id}/close`);
   },
+
+  getApplicantScores: async (params: {
+    search?: string;
+    stage?: string;
+    jobId?: string;
+  }) =>
+    (
+      await http.get<ApplicantScoresDto>("/api/recruiter/applicants/scores", {
+        params,
+      })
+    ).data,
+
   getDashboardStats: async (range: "last30" | "last90" | "ytd" = "last30") =>
     (
       await http.get<DashboardDto>("/api/recruiter/dashboard", {

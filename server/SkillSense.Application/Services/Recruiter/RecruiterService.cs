@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-using System.Text.Json;
-using Microsoft.AspNetCore.Identity;
+﻿using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
@@ -14,9 +12,6 @@ using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Application.Services
 {
-
-
-
     public sealed class RecruiterService(
         SkillSenseDbContext dbContext,
         IJobRepository jobRepository,
@@ -215,6 +210,92 @@ namespace SkillSense.Application.Services
                 };
             });
         }
+
+        public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? stage, string? search, CancellationToken ct = default)
+        {
+            var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
+            var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
+
+            var submissionsQuery = dbContext.ResumeSubmissions
+                .AsNoTracking()
+                .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
+                .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new
+                {
+                    x.submission.Id,
+                    x.submission.FullName,
+                    x.submission.Email,
+                    x.submission.CreatedAtUtc,
+                    x.submission.JobId,
+                    JobTitle = x.job.Title,
+                    Score = score.FinalWeightedScore
+                })
+                .Where(x => !jobId.HasValue || x.JobId == jobId.Value);
+
+            if (normalizedSearch is not null)
+            {
+                submissionsQuery = submissionsQuery.Where(x =>
+                    (x.FullName ?? string.Empty).ToLower().Contains(normalizedSearch) ||
+                    (x.Email ?? string.Empty).ToLower().Contains(normalizedSearch) ||
+                    x.JobTitle.ToLower().Contains(normalizedSearch));
+            }
+
+            var allItems = await submissionsQuery
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToListAsync(ct);
+
+            static string ResolveStage(int score)
+            {
+                if (score >= 90) return "Hire";
+                if (score >= 80) return "Interview";
+                if (score >= 70) return "Shortlisted";
+                return "Recommended";
+            }
+
+            var projected = allItems.Select(x =>
+            {
+                var score = (int)Math.Round(x.Score);
+                return new ApplicantScoreItemResponse
+                {
+                    ResumeSubmissionId = x.Id,
+                    ApplicantName = string.IsNullOrWhiteSpace(x.FullName) ? "Unknown Applicant" : x.FullName!,
+                    ApplicantEmail = string.IsNullOrWhiteSpace(x.Email) ? "-" : x.Email!,
+                    JobId = x.JobId,
+                    JobTitle = x.JobTitle,
+                    Score = score,
+                    Stage = ResolveStage(score),
+                    CreatedAtUtc = x.CreatedAtUtc,
+                };
+            }).ToList();
+
+            var filtered = normalizedStage == "all"
+                ? projected
+                : projected.Where(x => x.Stage.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            var jobs = await dbContext.Jobs
+                .AsNoTracking()
+                .OrderBy(x => x.Title)
+                .Select(x => new ApplicantScoreJobFilterResponse
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                })
+                .ToListAsync(ct);
+
+            return new ApplicantScoresResponse
+            {
+                Items = filtered,
+                Jobs = jobs,
+                Counts = new ApplicantScoreCountsResponse
+                {
+                    AllApplicants = projected.Count,
+                    Recommended = projected.Count(x => x.Stage == "Recommended"),
+                    Shortlisted = projected.Count(x => x.Stage == "Shortlisted"),
+                    Interview = projected.Count(x => x.Stage == "Interview"),
+                    Hire = projected.Count(x => x.Stage == "Hire"),
+                }
+            };
+        }
+
 
         private async Task<RecruiterProfileEntity> EnsureProfileCompleteAsync(Guid recruiterId, CancellationToken ct)
         {
