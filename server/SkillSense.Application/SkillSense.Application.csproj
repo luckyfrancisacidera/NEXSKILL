@@ -16,4 +16,8 @@
     <ProjectReference Include="..\SkillSense.Persistence\SkillSense.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Contracts\Scoring\Request\" />
+  </ItemGroup>
+
 </Project>

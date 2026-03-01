@@ -37,7 +37,7 @@ class AxiosLike {
     },
   };
 
-  constructor(config: { baseURL?: string; withCredentials?: boolean }) {
+  constructor(config: { baseURL?: string; withCredentials?: boolean }) { 
     this.baseURL = config.baseURL ?? '';
     this.withCredentials = config.withCredentials ?? false;
   }

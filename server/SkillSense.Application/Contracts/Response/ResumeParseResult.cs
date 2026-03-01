@@ -11,10 +11,10 @@ namespace SkillSense.Application.Contracts.Response
         public PersonalInfo PersonalInfo { get; set; } = new();
 
         [JsonPropertyName("summary")]
-        public Summary Summary { get; set; } = new();
+        public List<string> Summary { get; set; } = new();
 
         [JsonPropertyName("skills")]
-        public Skills Skills { get; set; } = new();
+        public List<string> Skills { get; set; } = new();
 
         [JsonPropertyName("work_experience")]
         public List<WorkExperienceItem> WorkExperience { get; set; } = new();
@@ -30,6 +30,9 @@ namespace SkillSense.Application.Contracts.Response
 
         [JsonPropertyName("certifications")]
         public List<CertificationItem> Certifications { get; set; } = new();
+
+        [JsonPropertyName("achievements")]
+        public List<string> Achievements { get; set; } = new();
     }
 
     public sealed class PersonalInfo
@@ -48,27 +51,6 @@ namespace SkillSense.Application.Contracts.Response
 
         [JsonPropertyName("job_target")]
         public string JobTarget { get; set; } = "";
-    }
-
-    public sealed class Summary
-    {
-        [JsonPropertyName("sentences")]
-        public List<SummarySentence> Sentences { get; set; } = new();
-    }
-
-    public sealed class SummarySentence
-    {
-        [JsonPropertyName("text")]
-        public string Text { get; set; } = "";
-    }
-
-    public sealed class Skills
-    {
-        [JsonPropertyName("items")]
-        public List<string> Items { get; set; } = new();
-
-        [JsonPropertyName("text")]
-        public string Text { get; set; } = "";
     }
 
     public sealed class WorkExperienceItem
@@ -149,7 +131,7 @@ namespace SkillSense.Application.Contracts.Response
         public List<string> DescriptionItems { get; set; } = new();
 
         [JsonPropertyName("embedding_text")]
-        public  string EmbeddingText { get; set; } = "";
+        public string EmbeddingText { get; set; } = "";
     }
 
     public sealed class CertificationItem

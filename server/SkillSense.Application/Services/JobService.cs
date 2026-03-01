@@ -18,6 +18,7 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
 
         var status = ParseStatusOrDefault(request.Status);
         var embedding = await embeddingService.EmbedAsync(request.Description, ct);
+        var structured = BuildJobDescriptionInput(request);
 
         var job = new JobEntity
         {
@@ -25,6 +26,13 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
             Title = request.Title,
             Description = request.Description,
             DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding),
+            ResponsibilitiesText = request.Responsibilities,
+            RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills),
+            PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills),
+            ExperienceLevel = request.ExperienceLevel,
+            MinYears = request.MinYears,
+            Education = request.Education ?? request.MinEducation,
+            JobDescriptionStructuredJson = JsonSerializer.Serialize(structured),
             Status = status,
             CreatedAtUtc = DateTime.UtcNow
         };
@@ -39,6 +47,21 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
             Status = job.Status.ToString()
         };
     }
+
+    private static JobDescriptionInput BuildJobDescriptionInput(CreateJobRequest request)
+        => new()
+        {
+            Text = request.Description,
+            Title = request.Title,
+            Responsibilities = request.Responsibilities,
+            RequiredSkills = request.RequiredSkills,
+            PreferredSkills = request.PreferredSkills,
+            ExperienceLevel = request.ExperienceLevel,
+            MinYears = request.MinYears,
+            Education = request.Education,
+            MinEducation = request.MinEducation
+        };
+
 
     private static JobStatus ParseStatusOrDefault(string? status)
     {

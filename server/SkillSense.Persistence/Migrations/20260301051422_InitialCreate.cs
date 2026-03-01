@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SkillSense.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIdentityAndRoleProfiles : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,6 +24,87 @@ namespace SkillSense.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "jobs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    DescriptionEmbeddingJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    ResponsibilitiesText = table.Column<string>(type: "text", nullable: false, defaultValue: ""),
+                    RequiredSkillsJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
+                    PreferredSkillsJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
+                    ExperienceLevel = table.Column<string>(type: "text", nullable: true),
+                    MinYears = table.Column<int>(type: "integer", nullable: true),
+                    Education = table.Column<string>(type: "text", nullable: true),
+                    JobDescriptionStructuredJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_jobs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "resume_embeddings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResumeSubmissionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SectionType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    SubSectionKey = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
+                    EmbeddingJson = table.Column<string>(type: "jsonb", nullable: false),
+                    SourceText = table.Column<string>(type: "text", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_resume_embeddings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "resume_scores",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResumeSubmissionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobDescriptionText = table.Column<string>(type: "text", nullable: false),
+                    SkillsScore = table.Column<float>(type: "real", nullable: false),
+                    ExperienceScore = table.Column<float>(type: "real", nullable: false),
+                    EducationScore = table.Column<float>(type: "real", nullable: false),
+                    SummaryScore = table.Column<float>(type: "real", nullable: false),
+                    FinalWeightedScore = table.Column<float>(type: "real", nullable: false),
+                    ScoreBreakdownJson = table.Column<string>(type: "jsonb", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_resume_scores", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "resume_submissions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ContentType = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    BlobObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AppliedJobPosition = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    ParsedResumeJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_resume_submissions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -259,6 +340,36 @@ namespace SkillSense.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_resume_embeddings_ResumeSubmissionId",
+                table: "resume_embeddings",
+                column: "ResumeSubmissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_embeddings_ResumeSubmissionId_SectionType",
+                table: "resume_embeddings",
+                columns: new[] { "ResumeSubmissionId", "SectionType" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_scores_JobId",
+                table: "resume_scores",
+                column: "JobId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_scores_ResumeSubmissionId",
+                table: "resume_scores",
+                column: "ResumeSubmissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_submissions_JobId",
+                table: "resume_submissions",
+                column: "JobId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_submissions_Status",
+                table: "resume_submissions",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "users",
                 column: "NormalizedEmail");
@@ -295,7 +406,19 @@ namespace SkillSense.Persistence.Migrations
                 name: "job_seeker_profiles");
 
             migrationBuilder.DropTable(
+                name: "jobs");
+
+            migrationBuilder.DropTable(
                 name: "recruiter_profiles");
+
+            migrationBuilder.DropTable(
+                name: "resume_embeddings");
+
+            migrationBuilder.DropTable(
+                name: "resume_scores");
+
+            migrationBuilder.DropTable(
+                name: "resume_submissions");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
