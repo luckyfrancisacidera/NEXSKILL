@@ -35,6 +35,7 @@ public static class ConfigurePersistenceServices
         services.AddScoped<IJobRepository, JobRepository>();
         services.AddScoped<IResumeSubmissionRepository, ResumeSubmissionRepository>();
         services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
+        services.AddScoped<IResumeEmbeddingRepository, ResumeEmbeddingRepository>();
 
         return services;
     }
