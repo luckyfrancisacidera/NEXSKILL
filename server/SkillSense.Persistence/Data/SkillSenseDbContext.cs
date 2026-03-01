@@ -18,6 +18,7 @@ namespace SkillSense.Persistence.Data
         public DbSet<JobEntity> Jobs => Set<JobEntity>();
         public DbSet<ResumeSubmissionEntity> ResumeSubmissions => Set<ResumeSubmissionEntity>();
         public DbSet<ResumeScoreEntity> ResumeScores => Set<ResumeScoreEntity>();
+        public DbSet<ResumeEmbeddingEntity> ResumeEmbeddings => Set<ResumeEmbeddingEntity>();
         public DbSet<JobSeekerProfileEntity> JobSeekerProfiles => Set<JobSeekerProfileEntity>();
         public DbSet<RecruiterProfileEntity> RecruiterProfiles => Set<RecruiterProfileEntity>();
         public DbSet<AdminProfileEntity> AdminProfiles => Set<AdminProfileEntity>();

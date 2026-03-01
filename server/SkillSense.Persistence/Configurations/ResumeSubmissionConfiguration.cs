@@ -35,10 +35,6 @@ namespace SkillSense.Persistence.Configurations
                 .HasColumnType("jsonb")
                 .HasDefaultValueSql("'{}'::jsonb");
 
-            builder.Property(x => x.ResumeEmbeddingJson)
-                .HasColumnType("jsonb")
-                .HasDefaultValueSql("'[]'::jsonb");
-
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.JobId);
         }
