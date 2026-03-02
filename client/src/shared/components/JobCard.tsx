@@ -4,8 +4,7 @@ import type { Job } from "@shared/types";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
-import { formatSalary } from "@shared/utils/format";
-
+import { formatCurrencyAmount } from "@shared/data/currency";
 interface JobCardProps {
   job: Job;
 }
@@ -24,7 +23,7 @@ export const JobCard = ({ job }: JobCardProps) => {
         </span>
       </div>
       <p className="text-sm font-medium text-zinc-800">
-        {formatSalary(job.salaryMin, job.salaryMax)}
+         {formatCurrencyAmount(job.salaryMin, job.currency)} - {formatCurrencyAmount(job.salaryMax, job.currency)} / year
       </p>
       <p className="flex items-center gap-1 text-sm text-zinc-500">
         <MapPin className="h-4 w-4" /> {job.location}

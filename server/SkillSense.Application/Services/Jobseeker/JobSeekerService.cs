@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using SkillSense.Application.Contracts.Jobseeker.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
@@ -104,6 +105,8 @@ namespace SkillSense.Application.Services.Jobseeker
                 WorkSetup = x.WorkSetup.ToString(),
                 EmploymentType = x.EmploymentType.ToString(),
                 Status = x.Status.ToString(),
+                RequiredSkills = JsonSerializer.Deserialize<List<string>>(x.RequiredSkillsJson) ?? [],
+                PreferredSkills = JsonSerializer.Deserialize<List<string>>(x.PreferredSkillsJson) ?? [],
                 CompanyName = x.CompanyNameSnapshot,
                 CompanyEmail = x.CompanyEmailSnapshot,
                 Description = x.Description,
