@@ -41,6 +41,7 @@ export const JobsPage = () => {
             company: job.company_name ?? 'Company',
             salaryMin: job.salary_min_per_annum ?? 0,
             salaryMax: job.salary_max_per_annum ?? 0,
+            currency : job.currency,
             location: job.location,
             type: toJobType(job.employment_type),
             snippet: job.description,
