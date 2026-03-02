@@ -47,6 +47,7 @@ export const JobDetailPage = () => {
 
       <Card>
         <h3 className="text-lg font-semibold">Full details</h3>
+        
         <p className="mt-2 whitespace-pre-wrap text-sm">{detail.description}</p>
         <p className="mt-2 whitespace-pre-wrap text-sm">{detail.responsibilities}</p>
         <p className="mt-2 whitespace-pre-wrap text-sm">{detail.benefits}</p>
