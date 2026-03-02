@@ -18,9 +18,8 @@ export const JobPostsPage = () => {
     <div className="space-y-6">
       <RecruiterHeader />
       <Card>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center">
           <h2 className="text-xl font-semibold">Job Posts</h2>
-          <Link className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white" to="/recruiter/job-posts/new">Create Job</Link>
         </div>
 
         <Form className="mb-4 flex gap-2">

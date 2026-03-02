@@ -8,6 +8,7 @@ export interface Job {
   company: string;
   salaryMin: number;
   salaryMax: number;
+  currency : string ;
   location: string;
   type: JobType;
   snippet: string;
