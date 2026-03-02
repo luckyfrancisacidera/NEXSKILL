@@ -10,6 +10,8 @@ import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { ApiError } from "@shared/api/http";
 
+
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -123,6 +125,7 @@ const LoginPage = () => {
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
+                  
                 >
                   <span>
                     <img src={GoogleLogo} className="w-4" alt="" />
