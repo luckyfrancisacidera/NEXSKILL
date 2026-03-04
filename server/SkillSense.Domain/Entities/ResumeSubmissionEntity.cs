@@ -25,4 +25,9 @@ public enum ResumeSubmissionStatus
     Processing = 1,
     Completed = 2,
     Failed = 3,
+    Shortlisted = 4,
+    Interview = 5,
+    Offer = 6,
+    Hire = 7,
+    Rejected = 8,
 }

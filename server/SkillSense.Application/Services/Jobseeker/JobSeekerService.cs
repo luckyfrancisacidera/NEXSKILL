@@ -65,7 +65,7 @@ namespace SkillSense.Application.Services.Jobseeker
                     job_id = x.JobId,
                     full_name = x.FullName,
                     email = x.Email,
-                    status = x.Status,
+                    status = ResolveJobseekerApplicationStatus(x.Status),
                     created_at_utc = x.CreatedAtUtc
                 }).ToList(),
                 PageNumber = pagedApplications.PageNumber,
@@ -74,6 +74,17 @@ namespace SkillSense.Application.Services.Jobseeker
                 TotalPages = pagedApplications.TotalPages
             };
         }
+
+        private static string ResolveJobseekerApplicationStatus(string? status)
+            => status?.Trim().ToLowerInvariant() switch
+            {
+                    "shortlisted" => "Applied",
+                    "interview" => "Interview",
+                    "offer" => "Offer",
+                    "hire" => "Offer",
+                    "rejected" => "Rejected",
+                    _ => "Applied",
+            };
 
         private static JobListItemResponse Map(JobEntity x)
             => new()
