@@ -11,6 +11,8 @@ namespace SkillSense.Persistence.Configurations
             builder.ToTable("jobs");
             builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.RecruiterId).IsRequired();
+
             builder.Property(x => x.Title)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -73,6 +75,7 @@ namespace SkillSense.Persistence.Configurations
 
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.CreatedAtUtc);
+            builder.HasIndex(x => x.RecruiterId);
         }
     }
 }

@@ -52,10 +52,11 @@ namespace SkillSense.Application.Services
             var job = new JobEntity
             {
                 Id = Guid.NewGuid(),
+                RecruiterId = recruiterId,
                 Title = request.Title,
                 Description = request.Description,
                 DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding),
-                ResponsibilitiesText = request.Responsibilities,
+                ResponsibilitiesText = NormalizeMultilineText(request.Responsibilities),
                 RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills),
                 PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills),
                 ExperienceLevel = request.ExperienceLevel,
@@ -86,13 +87,13 @@ namespace SkillSense.Application.Services
 
         public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
         {
-            var job = await jobRepository.GetByIdAsync(jobId, ct) ?? throw new KeyNotFoundException("Job not found.");
+            var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
             var embedding = await embeddingService.EmbedAsync(request.Description, ct);
 
             job.Title = request.Title;
             job.Description = request.Description;
             job.DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding);
-            job.ResponsibilitiesText = request.Responsibilities;
+            job.ResponsibilitiesText = NormalizeMultilineText(request.Responsibilities);
             job.RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills);
             job.PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills);
             job.ExperienceLevel = request.ExperienceLevel;
@@ -124,7 +125,7 @@ namespace SkillSense.Application.Services
             var cacheKey = $"jobs:recruiter:list:{recruiterId}:{pageNumber}:{pageSize}:{search}:{sortBy}:{sortDir}";
             return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(30), async () =>
             {
-                var query = dbContext.Jobs.AsNoTracking();
+                var query = dbContext.Jobs.AsNoTracking().Where(x => x.RecruiterId == recruiterId);
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     query = query.Where(x => x.Title.ToLower().Contains(search.ToLower()) || x.Location.ToLower().Contains(search.ToLower()));
@@ -154,13 +155,13 @@ namespace SkillSense.Application.Services
 
         public async Task<JobListItemResponse?> GetJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
         {
-            var job = await jobRepository.GetByIdAsync(jobId, ct);
+            var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct);
             return job is null ? null : Map(job);
         }
 
         public async Task DeleteDraftJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
         {
-            var job = await jobRepository.GetByIdAsync(jobId, ct) ?? throw new KeyNotFoundException("Job not found.");
+            var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
             if (job.Status != JobStatus.Draft) throw new InvalidOperationException("Only draft jobs can be deleted.");
             await jobRepository.DeleteAsync(job, ct);
             InvalidateAfterJobMutation(recruiterId, jobId);
@@ -192,7 +193,7 @@ namespace SkillSense.Application.Services
                 var days = normalizedRange switch { "last90" => 90, "ytd" => (DateTime.UtcNow - new DateTime(DateTime.UtcNow.Year, 1, 1)).Days + 1, _ => 30 };
                 var start = DateTime.UtcNow.Date.AddDays(-days + 1);
 
-                var jobs = await dbContext.Jobs.AsNoTracking().Where(x => x.CreatedAtUtc >= start).ToListAsync(ct);
+                var jobs = await dbContext.Jobs.AsNoTracking().Where(x => x.RecruiterId == recruiterId && x.CreatedAtUtc >= start).ToListAsync(ct);
                 var jobIds = jobs.Select(x => x.Id).ToHashSet();
                 var applications = await dbContext.ResumeSubmissions.AsNoTracking().Where(x => x.CreatedAtUtc >= start && jobIds.Contains(x.JobId)).ToListAsync(ct);
 
@@ -227,9 +228,10 @@ namespace SkillSense.Application.Services
                     x.submission.CreatedAtUtc,
                     x.submission.JobId,
                     JobTitle = x.job.Title,
+                    x.job.RecruiterId,
                     Score = score.FinalWeightedScore
                 })
-                .Where(x => !jobId.HasValue || x.JobId == jobId.Value);
+                .Where(x => x.RecruiterId == recruiterId && (!jobId.HasValue || x.JobId == jobId.Value));
 
             if (normalizedSearch is not null)
             {
@@ -273,6 +275,7 @@ namespace SkillSense.Application.Services
 
             var jobs = await dbContext.Jobs
                 .AsNoTracking()
+                .Where(x => x.RecruiterId == recruiterId)
                 .OrderBy(x => x.Title)
                 .Select(x => new ApplicantScoreJobFilterResponse
                 {
@@ -361,7 +364,7 @@ namespace SkillSense.Application.Services
                 CompanyName = x.CompanyNameSnapshot,
                 CompanyEmail = x.CompanyEmailSnapshot,
                 Description = x.Description,
-                Responsibilities = x.ResponsibilitiesText,
+                Responsibilities = NormalizeMultilineText(x.ResponsibilitiesText),
                 RequiredSkills = JsonSerializer.Deserialize<List<string>>(x.RequiredSkillsJson) ?? [],
                 PreferredSkills = JsonSerializer.Deserialize<List<string>>(x.PreferredSkillsJson) ?? [],
                 ExperienceLevel = x.ExperienceLevel,
@@ -370,6 +373,16 @@ namespace SkillSense.Application.Services
                 MinEducation = x.Education,
                 PostedDateUtc = x.PostedDateUtc
             };
+        private static string NormalizeMultilineText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            var lines = text
+                .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Replace("\r", string.Empty).Trim());
+
+            return string.Join(Environment.NewLine, lines);
+        }
 
         private void InvalidateRecruiterCaches(Guid recruiterId)
         {
