@@ -82,8 +82,22 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
         => Ok(await recruiterService.GetDashboardAsync(GetUserId(), range, ct));
 
     [HttpGet("applicants/scores")]
-    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, CancellationToken ct = default)
-        => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, stage, search, ct));
+    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int? recommendedTopPercent = null, CancellationToken ct = default)
+        => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, stage, search, recommendedTopPercent, ct));
+
+    [HttpGet("applicants/scores/{submissionId:guid}")]
+    public async Task<ActionResult<ApplicantScoreItemResponse>> GetApplicantBySubmission(Guid submissionId, CancellationToken ct = default)
+    {
+        var item = await recruiterService.GetApplicantBySubmissionIdAsync(GetUserId(), submissionId, ct);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpPut("applicants/scores/{submissionId:guid}/status")]
+    public async Task<IActionResult> UpdateApplicantStatus(Guid submissionId, [FromBody] UpdateApplicantStageRequest request, CancellationToken ct = default)
+    {
+        await recruiterService.UpdateApplicantStatusAsync(GetUserId(), submissionId, request, ct);
+        return NoContent();
+    }
 
     private Guid GetUserId()
         => Guid.Parse(User.FindFirstValue("userId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException());
