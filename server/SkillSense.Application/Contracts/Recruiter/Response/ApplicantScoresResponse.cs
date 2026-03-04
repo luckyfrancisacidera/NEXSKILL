@@ -12,6 +12,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("counts")]
         public ApplicantScoreCountsResponse Counts { get; set; } = new();
+
+        [JsonPropertyName("recommendation")]
+        public RecommendationSettingsResponse Recommendation { get; set; } = new();
     }
 
     public sealed class ApplicantScoreItemResponse
@@ -34,8 +37,11 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("score")]
         public int Score { get; set; }
 
-        [JsonPropertyName("stage")]
-        public string Stage { get; set; } = "Interview";
+        [JsonPropertyName("submission_status")]
+        public string SubmissionStatus { get; set; } = "Pending";
+
+        [JsonPropertyName("jobseeker_stage")]
+        public string JobseekerStage { get; set; } = "Applied";
 
         [JsonPropertyName("created_at_utc")]
         public DateTime CreatedAtUtc { get; set; }
@@ -64,7 +70,22 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("interview")]
         public int Interview { get; set; }
 
+        [JsonPropertyName("offer")]
+        public int Offer { get; set; }
+
         [JsonPropertyName("hire")]
         public int Hire { get; set; }
+    }
+
+    public sealed class RecommendationSettingsResponse
+    {
+        [JsonPropertyName("top_percent")]
+        public int TopPercent { get; set; }
+    }
+
+    public sealed class UpdateApplicantStageRequest
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = "Pending";
     }
 }

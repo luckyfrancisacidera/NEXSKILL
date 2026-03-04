@@ -212,10 +212,11 @@ namespace SkillSense.Application.Services
             });
         }
 
-        public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? stage, string? search, CancellationToken ct = default)
+        public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? stage, string? search, int? recommendedTopPercent, CancellationToken ct = default)
         {
             var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
             var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
+            var topPercent = Math.Clamp(recommendedTopPercent ?? 10, 1, 100);
 
             var submissionsQuery = dbContext.ResumeSubmissions
                 .AsNoTracking()
@@ -227,6 +228,7 @@ namespace SkillSense.Application.Services
                     x.submission.Email,
                     x.submission.CreatedAtUtc,
                     x.submission.JobId,
+                    x.submission.Status,
                     JobTitle = x.job.Title,
                     x.job.RecruiterId,
                     Score = score.FinalWeightedScore
@@ -245,13 +247,12 @@ namespace SkillSense.Application.Services
                 .OrderByDescending(x => x.CreatedAtUtc)
                 .ToListAsync(ct);
 
-            static string ResolveStage(int score)
-            {
-                if (score >= 90) return "Hire";
-                if (score >= 80) return "Interview";
-                if (score >= 70) return "Shortlisted";
-                return "Recommended";
-            }
+            var recommendedCount = allItems.Count == 0 ? 0 : (int)Math.Ceiling(allItems.Count * (topPercent / 100d));
+            var recommendedIds = allItems
+                .OrderByDescending(x => x.Score)
+                .Take(recommendedCount)
+                .Select(x => x.Id)
+                .ToHashSet();
 
             var projected = allItems.Select(x =>
             {
@@ -264,14 +265,15 @@ namespace SkillSense.Application.Services
                     JobId = x.JobId,
                     JobTitle = x.JobTitle,
                     Score = score,
-                    Stage = ResolveStage(score),
+                    SubmissionStatus = ResolveSubmissionStatus(x.Status, recommendedIds.Contains(x.Id)),
+                    JobseekerStage = ResolveJobseekerStage(x.Status),
                     CreatedAtUtc = x.CreatedAtUtc,
                 };
             }).ToList();
 
             var filtered = normalizedStage == "all"
                 ? projected
-                : projected.Where(x => x.Stage.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
+                : projected.Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
 
             var jobs = await dbContext.Jobs
                 .AsNoTracking()
@@ -291,13 +293,65 @@ namespace SkillSense.Application.Services
                 Counts = new ApplicantScoreCountsResponse
                 {
                     AllApplicants = projected.Count,
-                    Recommended = projected.Count(x => x.Stage == "Recommended"),
-                    Shortlisted = projected.Count(x => x.Stage == "Shortlisted"),
-                    Interview = projected.Count(x => x.Stage == "Interview"),
-                    Hire = projected.Count(x => x.Stage == "Hire"),
+                    Recommended = projected.Count(x => x.SubmissionStatus == "Recommended"),
+                    Shortlisted = projected.Count(x => x.SubmissionStatus == "Shortlisted"),
+                    Interview = projected.Count(x => x.SubmissionStatus == "Interview"),
+                    Offer = projected.Count(x => x.SubmissionStatus == "Offer"),
+                    Hire = projected.Count(x => x.SubmissionStatus == "Hire"),
+                },
+                Recommendation = new RecommendationSettingsResponse
+                {
+                    TopPercent = topPercent,
                 }
             };
         }
+
+        public async Task<ApplicantScoreItemResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        {
+            var data = await GetApplicantScoresAsync(recruiterId, null, "all", null, 10, ct);
+            return data.Items.FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
+        }
+
+        public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
+        {
+            var submission = await dbContext.ResumeSubmissions
+                .Join(dbContext.Jobs.AsNoTracking(), s => s.JobId, j => j.Id, (s, j) => new { Submission = s, j.RecruiterId })
+                .Where(x => x.RecruiterId == recruiterId && x.Submission.Id == submissionId)
+                .Select(x => x.Submission)
+                .FirstOrDefaultAsync(ct) ?? throw new KeyNotFoundException("Submission not found.");
+
+            if (!Enum.TryParse<ResumeSubmissionStatus>(request.Status, true, out var parsed))
+            {
+                throw new ArgumentException("Invalid applicant status.");
+            }
+
+            submission.Status = parsed;
+            submission.UpdatedAtUtc = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(ct);
+            cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        }
+
+        private static string ResolveJobseekerStage(ResumeSubmissionStatus status)
+            => status switch
+            {
+                ResumeSubmissionStatus.Shortlisted => "Applied",
+                ResumeSubmissionStatus.Interview => "Interview",
+                ResumeSubmissionStatus.Offer => "Offer",
+                ResumeSubmissionStatus.Hire => "Offer",
+                ResumeSubmissionStatus.Rejected => "Rejected",
+                _ => "Applied",
+            };
+
+        private static string ResolveSubmissionStatus(ResumeSubmissionStatus status, bool isRecommended)
+            => status switch
+            {
+                ResumeSubmissionStatus.Shortlisted => "Shortlisted",
+                ResumeSubmissionStatus.Interview => "Interview",
+                ResumeSubmissionStatus.Offer => "Offer",
+                ResumeSubmissionStatus.Hire => "Hire",
+                ResumeSubmissionStatus.Rejected => "Rejected",
+                _ => isRecommended ? "Recommended" : "Applied",
+            };
 
 
         private async Task<RecruiterProfileEntity> EnsureProfileCompleteAsync(Guid recruiterId, CancellationToken ct)

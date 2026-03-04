@@ -80,25 +80,13 @@ export const updateJobStatusAction = async ({ request, params }: ActionFunctionA
 
 export const updateCandidateAction = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const state = getRecruiterState();
   const intent = getString(formData, 'intent');
 
-  if (intent === 'notes') {
-    const notes = getString(formData, 'notes');
-    state.candidates = state.candidates.map((item) => (item.id === params.candidateId ? { ...item, notes, lastActivityAt: new Date().toISOString() } : item));
+  if (intent === 'stage' && params.candidateId) {
+    const status = getString(formData, 'status');
+    await recruiterService.updateApplicantStatus(params.candidateId, status);
   }
-
-  if (intent === 'stage') {
-    const toStage = getString(formData, 'toStage') as CandidateStage;
-    const candidate = state.candidates.find((item) => item.id === params.candidateId);
-    if (candidate) {
-      const fromStage = candidate.stage;
-      state.candidates = state.candidates.map((item) => (item.id === candidate.id ? { ...item, stage: toStage, lastActivityAt: new Date().toISOString() } : item));
-      runAutomations(state, { trigger: 'candidate.stage_changed', candidateId: candidate.id, jobId: candidate.jobId, fromStage, toStage });
-    }
-  }
-
-  saveRecruiterState(state);
+  
   return null;
 };
 

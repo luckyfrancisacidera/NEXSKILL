@@ -1,5 +1,5 @@
 import { Card } from "@shared/components/Card";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Form, Link, useLoaderData } from "react-router-dom";
 
 const stageTabs = [
@@ -7,37 +7,48 @@ const stageTabs = [
   { key: "Recommended", label: "Recommended" },
   { key: "Shortlisted", label: "Shortlisted" },
   { key: "Interview", label: "Interview" },
+  { key: "Offer", label: "Offer" },
   { key: "Hire", label: "Hire" },
 ] as const;
 
 export const CandidatesPage = () => {
-  const { candidates, jobs, counts, filters } = useLoaderData() as {
-    candidates: Array<{
-      resume_submission_id: string;
-      applicant_name: string;
-      applicant_email: string;
-      job_id: string;
-      job_title: string;
-      stage: string;
-      score: number;
-      created_at_utc: string;
-    }>;
-    jobs: Array<{ id: string; title: string }>;
-    counts: {
-      all_applicants: number;
-      recommended: number;
-      shortlisted: number;
-      interview: number;
-      hire: number;
+  const { candidates, jobs, counts, filters, recommendation } =
+    useLoaderData() as {
+      candidates: Array<{
+        resume_submission_id: string;
+        applicant_name: string;
+        applicant_email: string;
+        job_id: string;
+        job_title: string;
+        submission_status: string;
+        jobseeker_stage: string;
+        score: number;
+        created_at_utc: string;
+      }>;
+      jobs: Array<{ id: string; title: string }>;
+      counts: {
+        all_applicants: number;
+        recommended: number;
+        shortlisted: number;
+        interview: number;
+        offer: number;
+        hire: number;
+      };
+      recommendation: { top_percent: number };
+      filters: {
+        search: string;
+        stage: string;
+        jobId: string;
+        recommendedTopPercent: string;
+      };
     };
-    filters: { search: string; stage: string; jobId: string };
-  };
 
   const countByStage: Record<string, number> = {
     all: counts.all_applicants,
     Recommended: counts.recommended,
     Shortlisted: counts.shortlisted,
     Interview: counts.interview,
+    Offer: counts.offer,
     Hire: counts.hire,
   };
 
@@ -55,6 +66,7 @@ export const CandidatesPage = () => {
 
         <select
           aria-label="filter by job"
+          name="jobId"
           defaultValue={filters.jobId}
           className="min-w-50 rounded-lg border border-zinc-300 px-3 py-2"
         >
@@ -65,6 +77,20 @@ export const CandidatesPage = () => {
             </option>
           ))}
         </select>
+
+        <select
+          aria-label="recommended top percent"
+          name="recommendedTopPercent"
+          defaultValue={filters.recommendedTopPercent}
+          className="rounded-lg border border-zinc-300 px-3 py-2"
+        >
+          {[5, 10, 15, 20, 25, 30].map((value) => (
+            <option key={value} value={value}>
+              Top {value}% ATS Recommended
+            </option>
+          ))}
+        </select>
+
         <input type="hidden" name="stage" value={filters.stage} />
         <button
           className="rounded-lg bg-zinc-900 px-4 py-2 text-white"
@@ -73,11 +99,18 @@ export const CandidatesPage = () => {
           Filter
         </button>
       </Form>
+
+      <p className="mb-3 text-xs text-zinc-500">
+        ATS auto-recommends top {recommendation.top_percent}% by score.
+        Shortlisted, Interview, Offer, and Hire are updated manually by
+        recruiters.
+      </p>
+
       <div className="mb-4 flex flex-wrap gap-2">
         {stageTabs.map((tab) => (
           <Link
             key={tab.key}
-            to={`?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&stage=${encodeURIComponent(tab.key)}`}
+            to={`?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&recommendedTopPercent=${encodeURIComponent(filters.recommendedTopPercent)}&stage=${encodeURIComponent(tab.key)}`}
             className={`rounded-full border px-3 py-1 text-sm ${
               filters.stage === tab.key
                 ? "bg-zinc-900 text-white"
@@ -92,7 +125,7 @@ export const CandidatesPage = () => {
       <table className="min-w-full text-sm">
         <thead>
           <tr>
-             {["Name", "Email", "Job", "Stage", "Score", "Applied", "Actions"].map((col) => (
+            {["Name", "Email", "Job", "Submission Status", "Score", "Applied", "Actions"].map((col) => (
               <th key={col} className="px-3 py-2 text-left">
                 {col}
               </th>
@@ -101,27 +134,17 @@ export const CandidatesPage = () => {
         </thead>
         <tbody>
           {candidates.map((candidate, idx) => (
-           <tr key={candidate.resume_submission_id} className={idx % 2 ? "bg-zinc-50" : ""}>
+              <tr key={candidate.resume_submission_id} className={idx % 2 ? "bg-zinc-50" : ""}>
               <td className="px-3 py-2">{candidate.applicant_name}</td>
               <td className="px-3 py-2">{candidate.applicant_email}</td>
               <td className="px-3 py-2">{candidate.job_title}</td>
-              <td className="px-3 py-2">
-                <span className="rounded bg-zinc-200 px-2 py-1 text-xs">{candidate.stage}</span>              
-              </td>
+              <td className="px-3 py-2"><span className="rounded bg-zinc-200 px-2 py-1 text-xs">{candidate.submission_status}</span></td>
               <td className="px-3 py-2 font-semibold">{candidate.score}</td>
-              <td className="px-3 py-2">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>
+              <td className="px-3 py-2"> {new Date(candidate.created_at_utc).toLocaleDateString()}</td>
               <td className="px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <button type="button" className="text-zinc-700" title="View" disabled>
-                    <Eye size={16} />
-                  </button>
-                  <button type="button" className="text-zinc-400" title="Edit" disabled>
-                    <Pencil size={16} />
-                  </button>
-                  <button type="button" className="text-zinc-400" title="Delete" disabled>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+               <Link to={`/recruiter/candidates/${candidate.resume_submission_id}`} className="inline-flex items-center gap-1 text-zinc-700 underline" title="View profile">
+                  <Eye size={16} />
+                </Link>
               </td>
             </tr>
           ))}
