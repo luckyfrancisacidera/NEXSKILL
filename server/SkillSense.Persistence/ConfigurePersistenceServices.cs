@@ -33,6 +33,7 @@ public static class ConfigurePersistenceServices
             .AddDefaultTokenProviders();
 
         services.AddScoped<IJobRepository, JobRepository>();
+        services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
         services.AddScoped<IResumeSubmissionRepository, ResumeSubmissionRepository>();
         services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
         services.AddScoped<IResumeEmbeddingRepository, ResumeEmbeddingRepository>();

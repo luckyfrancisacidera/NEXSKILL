@@ -6,12 +6,12 @@ using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Jobseeker;
 using SkillSense.Domain.Entities;
-using SkillSense.Persistence.Data;
+using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Application.Services.Jobseeker
 {
     public sealed class JobSeekerService(
-        SkillSenseDbContext dbContext,
+        IJobSeekerRepository jobSeekerRepository,
         IResumeUploadService resumeUploadService,
         IAppCacheService cacheService) : IJobSeekerService
     {
@@ -20,29 +20,16 @@ namespace SkillSense.Application.Services.Jobseeker
             var cacheKey = $"jobs:public:list:{pageNumber}:{pageSize}:{search}:{sortBy}:{sortDir}";
             return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(60), async () =>
             {
-                var query = dbContext.Jobs.AsNoTracking().Where(x => x.Status == JobStatus.Published);
-                if (!string.IsNullOrWhiteSpace(search))
-                {
-                    query = query.Where(x => x.Title.ToLower().Contains(search.ToLower()) || x.Description.ToLower().Contains(search.ToLower()));
-                }
+                var pagedJobs = await jobSeekerRepository.GetPublishedJobsAsync(pageNumber, pageSize, search, sortBy, sortDir, ct);
 
-                query = (sortBy?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
-                {
-                    ("title", "asc") => query.OrderBy(x => x.Title),
-                    ("title", _) => query.OrderByDescending(x => x.Title),
-                    ("posteddateutc", "asc") => query.OrderBy(x => x.PostedDateUtc),
-                    _ => query.OrderByDescending(x => x.PostedDateUtc ?? x.CreatedAtUtc)
-                };
-
-                var totalCount = await query.CountAsync(ct);
-                var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+               
                 return new PagedResult<JobListItemResponse>
                 {
-                    Items = items.Select(Map).ToList(),
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    TotalCount = totalCount,
-                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                    Items = pagedJobs.Items.Select(Map).ToList(),
+                    PageNumber = pagedJobs.PageNumber,
+                    PageSize = pagedJobs.PageSize,
+                    TotalCount = pagedJobs.TotalCount,
+                    TotalPages = pagedJobs.TotalPages
                 };
             });
         }
@@ -51,14 +38,14 @@ namespace SkillSense.Application.Services.Jobseeker
         {
             return await cacheService.GetOrCreateAsync($"jobs:public:detail:{id}", TimeSpan.FromSeconds(120), async () =>
             {
-                var job = await dbContext.Jobs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.Status == JobStatus.Published, ct);
+                var job = await jobSeekerRepository.GetPublishedJobByIdAsync(id, ct);
                 return job is null ? null : Map(job);
             });
         }
 
         public async Task<ResumeUploadResponse> ApplyAsync(Guid jobId, ApplyToJobRequest request, Stream fileStream, string fileName, string contentType, CancellationToken ct = default)
         {
-            var job = await dbContext.Jobs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == jobId && x.Status == JobStatus.Published, ct)
+            var job = await jobSeekerRepository.GetPublishedJobByIdAsync(jobId, ct)
                 ?? throw new InvalidOperationException("Published job not found.");
 
             var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, request.FullName, request.Email, request.PostalCode, request.Location, null, ct);
@@ -68,25 +55,23 @@ namespace SkillSense.Application.Services.Jobseeker
 
         public async Task<PagedResult<object>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, CancellationToken ct = default)
         {
-            var query = dbContext.ResumeSubmissions.AsNoTracking().Where(x => x.ApplicantUserId == userId).OrderByDescending(x => x.CreatedAtUtc);
-            var totalCount = await query.CountAsync(ct);
-            var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).Select(x => new
-            {
-                id = x.Id,
-                job_id = x.JobId,
-                full_name = x.FullName,
-                email = x.Email,
-                status = x.Status.ToString(),
-                created_at_utc = x.CreatedAtUtc
-            }).ToListAsync(ct);
+            var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, ct);
 
             return new PagedResult<object>
             {
-                Items = items,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                Items = pagedApplications.Items.Select(x => (object)new
+                {
+                    id = x.Id,
+                    job_id = x.JobId,
+                    full_name = x.FullName,
+                    email = x.Email,
+                    status = x.Status,
+                    created_at_utc = x.CreatedAtUtc
+                }).ToList(),
+                PageNumber = pagedApplications.PageNumber,
+                PageSize = pagedApplications.PageSize,
+                TotalCount = pagedApplications.TotalCount,
+                TotalPages = pagedApplications.TotalPages
             };
         }
 
@@ -109,13 +94,23 @@ namespace SkillSense.Application.Services.Jobseeker
                 PreferredSkills = JsonSerializer.Deserialize<List<string>>(x.PreferredSkillsJson) ?? [],
                 CompanyName = x.CompanyNameSnapshot,
                 CompanyEmail = x.CompanyEmailSnapshot,
-                Description = x.Description,
-                Responsibilities = x.ResponsibilitiesText,
+                Description = NormalizeMultilineText(x.Description),
+                Responsibilities = NormalizeMultilineText(x.ResponsibilitiesText),
                 ExperienceLevel = x.ExperienceLevel,
                 MinYears = x.MinYears,
                 Education = x.Education,
                 MinEducation = x.Education,
                 PostedDateUtc = x.PostedDateUtc
             };
+        private static string NormalizeMultilineText(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            var lines = text
+                .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Replace("\r", string.Empty).Trim());
+
+            return string.Join(Environment.NewLine, lines);
+        }
     }
 }
