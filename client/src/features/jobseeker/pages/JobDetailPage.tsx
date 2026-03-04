@@ -1,11 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { redirect, useActionData, useLoaderData, useNavigation, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router-dom';
 import { Card } from '@shared/components/Card';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { jobseekerService } from '@features/jobseeker/service/jobseeker.service';
 import { ApiError } from '@shared/api/http';
 import { ApplyModalWizard } from '@features/jobseeker/components/ApplyModalWizard';
+import { DetailBlock } from '@shared/components/DetailBlock';
+import { splitToBullets, toList } from '@shared/utils/formatText';
 
 export const jobDetailLoader = async ({ params }: LoaderFunctionArgs) => {
   if (!params.jobId) throw new Response('Not found', { status: 404 });
@@ -38,64 +40,33 @@ export const applyJobAction = async ({ request, params }: ActionFunctionArgs) =>
   }
 };
 
-const splitToBullets = (text?: string) =>
-  (text ?? '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-const toList = (value: unknown) => {
-  if (Array.isArray(value)) {
-    return value
-      .flatMap((item) => String(item).split(/\r?\n|,|•|·|;/))
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  if (typeof value === 'string') {
-    return value
-      .split(/\r?\n|,|•|·|;/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-};
-
-
-const DetailBlock = ({ title, children }: { title: string; children: ReactNode }) => (
-  <div className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
-    <h3 className="text-lg font-semibold text-zinc-900">{title}</h3>
-    <div className="mt-3 border-t border-zinc-200 pt-3">{children}</div>
-  </div>
-);
 
 export const JobDetailPage = () => {
-  const detail = useLoaderData() as Awaited<ReturnType<typeof jobDetailLoader>>;
+  const job = useLoaderData() as Awaited<ReturnType<typeof jobDetailLoader>>;
   const actionData = useActionData() as { error?: string } | undefined;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === 'submitting';
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const responsibilities = useMemo(() => splitToBullets(detail.responsibilities), [detail.responsibilities]);
-  const benefits = useMemo(() => splitToBullets(detail.benefits), [detail.benefits]);
-  const requiredSkills = useMemo(() => toList(detail.required_skills), [detail.required_skills]);
-  const preferredSkills = useMemo(() => toList(detail.preferred_skills), [detail.preferred_skills]);
-  const postedDate = (detail as { posted_at?: string; created_at?: string }).posted_at ?? (detail as { posted_at?: string; created_at?: string }).created_at;
+  const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
+  const benefits = useMemo(() => splitToBullets(job.benefits), [job.benefits]);
+  const requiredSkills = useMemo(() => toList(job.required_skills), [job.required_skills]);
+  const preferredSkills = useMemo(() => toList(job.preferred_skills), [job.preferred_skills]);
+  const postedDate = (job as { posted_at?: string; created_at?: string }).posted_at ?? (job as { posted_at?: string; created_at?: string }).created_at;
 
   return (
     <div className="space-y-4">
       <Card className="bg-zinc-50/60 p-3 sm:p-5">
           <div className="space-y-5">
             <header className="space-y-4 border-b border-zinc-200 pb-4">
-              <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">{detail.title}</h1>
+              <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">{job.title}</h1>
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{detail.department ?? 'General'}</span>
-                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{detail.location || 'Location not specified'}</span>
-                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{detail.employment_type || 'Employment type not specified'}</span>
-                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{detail.experience_level || 'Experience level not specified'}</span>
+                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{job.department ?? 'General'}</span>
+                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{job.location || 'Location not specified'}</span>
+                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{job.employment_type || 'Employment type not specified'}</span>
+                <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">{job.experience_level || 'Experience level not specified'}</span>
                 <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-800">
-                  {formatCurrencyAmount(detail.salary_min_per_annum, detail.currency)} - {formatCurrencyAmount(detail.salary_max_per_annum, detail.currency)} / year
+                  {formatCurrencyAmount(job.salary_min_per_annum, job.currency)} - {formatCurrencyAmount(job.salary_max_per_annum, job.currency)} / year
                 </span>
               </div>
             </header>
@@ -103,7 +74,7 @@ export const JobDetailPage = () => {
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="space-y-4">
                 <DetailBlock title="About the Role">
-                  <p className="whitespace-pre-wrap leading-7 text-zinc-700">{detail.description}</p>
+                  <p className="whitespace-pre-wrap leading-7 text-zinc-700">{job.description}</p>
                 </DetailBlock>
 
                 <DetailBlock title="Responsibilities">
@@ -145,22 +116,22 @@ export const JobDetailPage = () => {
                 <div className="grid gap-4 xl:grid-cols-2">
                   <DetailBlock title="Qualifications">
                     <ul className="list-disc space-y-2 pl-5 text-zinc-700">
-                      <li>{detail.min_years ? `${detail.min_years}+ years of experience` : 'Experience not specified'}</li>
-                      <li>{detail.education || detail.min_education || 'Education not specified'}</li>
-                      <li>{detail.experience_level || 'Role level not specified'}</li>
+                      <li>{job.min_years ? `${job.min_years}+ years of experience` : 'Experience not specified'}</li>
+                      <li>{job.education || job.min_education || 'Education not specified'}</li>
+                      <li>{job.experience_level || 'Role level not specified'}</li>
                     </ul>
                   </DetailBlock>
 
                   <DetailBlock title="Work Details">
                     <ul className="space-y-2 text-zinc-700">
                       <li>
-                        <span className="font-medium text-zinc-900">Schedule:</span> {detail.schedule || 'Not specified'}
+                        <span className="font-medium text-zinc-900">Schedule:</span> {job.schedule || 'Not specified'}
                       </li>
                       <li>
-                        <span className="font-medium text-zinc-900">Work Setup:</span> {detail.work_setup || 'Not specified'}
+                        <span className="font-medium text-zinc-900">Work Setup:</span> {job.work_setup || 'Not specified'}
                       </li>
                       <li>
-                        <span className="font-medium text-zinc-900">Location:</span> {detail.location || 'Not specified'}
+                        <span className="font-medium text-zinc-900">Location:</span> {job.location || 'Not specified'}
                       </li>
                       <li>
                         <span className="font-medium text-zinc-900">Posted:</span> {postedDate ? new Date(postedDate).toLocaleDateString() : 'Not available'}
@@ -172,7 +143,7 @@ export const JobDetailPage = () => {
                 <DetailBlock title="Compensation & Benefits">
                   <div className="flex flex-wrap items-center gap-2 text-zinc-700">
                     <span className="text-xl font-bold text-zinc-900">
-                      {formatCurrencyAmount(detail.salary_min_per_annum, detail.currency)} - {formatCurrencyAmount(detail.salary_max_per_annum, detail.currency)}
+                      {formatCurrencyAmount(job.salary_min_per_annum, job.currency)} - {formatCurrencyAmount(job.salary_max_per_annum, job.currency)}
                       <span className="text-base font-medium text-zinc-600"> / year</span>
                     </span>
                     {benefits.length > 0
