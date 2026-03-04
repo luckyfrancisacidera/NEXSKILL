@@ -28,5 +28,9 @@ public sealed class JobRepository(SkillSenseDbContext dbContext) : IJobRepositor
     public Task<JobEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public Task<JobEntity?> GetByIdForRecruiterAsync(Guid id, Guid recruiterId, CancellationToken ct = default)
+      => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id && x.RecruiterId == recruiterId, ct);
+
+
     public IQueryable<JobEntity> Query() => dbContext.Jobs.AsQueryable();
 }
