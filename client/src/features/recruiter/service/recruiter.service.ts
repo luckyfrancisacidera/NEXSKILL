@@ -44,7 +44,8 @@ export interface ApplicantScoreItemDto {
   job_id: string;
   job_title: string;
   score: number;
-  stage: "Recommended" | "Shortlisted" | "Interview" | "Hire";
+  submission_status: "Applied" | "Recommended" | "Shortlisted" | "Interview" | "Offer" | "Hire" | "Rejected";
+  jobseeker_stage: "Applied" | "Interview" | "Offer" | "Rejected";
   created_at_utc: string;
 }
 
@@ -56,7 +57,11 @@ export interface ApplicantScoresDto {
     recommended: number;
     shortlisted: number;
     interview: number;
+    offer: number;
     hire: number;
+  };
+  recommendation: {
+    top_percent: number;
   };
 }
 
@@ -114,13 +119,22 @@ export const recruiterService = {
     search?: string;
     stage?: string;
     jobId?: string;
+    recommendedTopPercent?: number;
   }) =>
     (
       await http.get<ApplicantScoresDto>("/api/recruiter/applicants/scores", {
         params,
       })
     ).data,
+  
+  getApplicantBySubmissionId: async (submissionId: string) =>
+    (await http.get<ApplicantScoreItemDto>(`/api/recruiter/applicants/scores/${submissionId}`)).data,
 
+  updateApplicantStatus: async (submissionId: string, status: string) => {
+    await http.put(`/api/recruiter/applicants/scores/${submissionId}/status`, { status });
+  },
+
+  
   getDashboardStats: async (range: "last30" | "last90" | "ytd" = "last30") =>
     (
       await http.get<DashboardDto>("/api/recruiter/dashboard", {

@@ -37,32 +37,38 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
   const search = url.searchParams.get('search') ?? undefined;
   const stage = url.searchParams.get('stage') ?? 'all';
   const jobId = url.searchParams.get('jobId') ?? 'all';
+  const recommendedTopPercent = Number(url.searchParams.get('recommendedTopPercent') ?? '10');
 
   const data = await recruiterService.getApplicantScores({
     search,
     stage,
     jobId: jobId === 'all' ? undefined : jobId,
+    recommendedTopPercent: Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10,
   });
 
  return {
     candidates: data.items,
     jobs: data.jobs,
     counts: data.counts,
+    recommendation: data.recommendation,
     filters: {
       search: search ?? '',
       stage,
       jobId,
+      recommendedTopPercent: String(Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10),
     },
   };
 };
 
 export const recruiterCandidateDetailLoader = async ({ params }: LoaderFunctionArgs) => {
-  const state = getRecruiterState();
-  const candidate = state.candidates.find((item) => item.id === params.candidateId);
+ 
+  if (!params.candidateId) throw new Response('Candidate not found', { status: 404 });
+
+  const candidate = await recruiterService.getApplicantBySubmissionId(params.candidateId);
+
   if (!candidate) throw new Response('Candidate not found', { status: 404 });
-  const job = state.jobs.find((item) => item.id === candidate.jobId);
-  const activity = state.auditLog.filter((item) => item.candidateId === candidate.id).slice(0, 20);
-  return { candidate, job, activity };
+
+  return { candidate };
 };
 
 export const recruiterInterviewsLoader = async () => {
