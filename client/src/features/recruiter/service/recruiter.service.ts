@@ -51,7 +51,16 @@ export interface ApplicantScoreItemDto {
 
 export interface ApplicantScoresDto {
   items: ApplicantScoreItemDto[];
-  jobs: Array<{ id: string; title: string }>;
+  jobs: Array<{
+    id: string;
+    title: string;
+    all_applicants: number;
+    recommended: number;
+    shortlisted: number;
+    interview: number;
+    offer: number;
+    hire: number;
+  }>;
   counts: {
     all_applicants: number;
     recommended: number;
@@ -130,11 +139,10 @@ export const recruiterService = {
   getApplicantBySubmissionId: async (submissionId: string) =>
     (await http.get<ApplicantScoreItemDto>(`/api/recruiter/applicants/scores/${submissionId}`)).data,
 
-  updateApplicantStatus: async (submissionId: string, status: string) => {
-    await http.put(`/api/recruiter/applicants/scores/${submissionId}/status`, { status });
+  updateApplicantStatuses: async (submissionIds: string[], status: string) => {
+    await http.put(`/api/recruiter/applicants/scores/status`, { submission_ids: submissionIds, status });
   },
 
-  
   getDashboardStats: async (range: "last30" | "last90" | "ytd" = "last30") =>
     (
       await http.get<DashboardDto>("/api/recruiter/dashboard", {

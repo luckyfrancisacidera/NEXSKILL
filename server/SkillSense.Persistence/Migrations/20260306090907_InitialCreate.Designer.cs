@@ -12,7 +12,7 @@ using SkillSense.Persistence.Data;
 namespace SkillSense.Persistence.Migrations
 {
     [DbContext(typeof(SkillSenseDbContext))]
-    [Migration("20260301051422_InitialCreate")]
+    [Migration("20260306090907_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -246,8 +246,30 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Benefits")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyEmailSnapshot")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("CompanyNameSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasDefaultValue("PHP");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -262,6 +284,9 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<string>("Education")
                         .HasColumnType("text");
 
+                    b.Property<int>("EmploymentType")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ExperienceLevel")
                         .HasColumnType("text");
 
@@ -271,14 +296,25 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'{}'::jsonb");
 
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<int?>("MinYears")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("PostedDateUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PreferredSkillsJson")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'[]'::jsonb");
+
+                    b.Property<Guid>("RecruiterId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("RequiredSkillsJson")
                         .IsRequired()
@@ -292,6 +328,18 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("text")
                         .HasDefaultValue("");
 
+                    b.Property<decimal?>("SalaryMaxPerAnnum")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("SalaryMinPerAnnum")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Schedule")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -300,7 +348,16 @@ namespace SkillSense.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("WorkSetup")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("RecruiterId");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("jobs", (string)null);
                 });
@@ -330,6 +387,14 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("CompanyEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("CompanyName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -436,6 +501,9 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ApplicantUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("AppliedJobPosition")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -454,19 +522,35 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("FullName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("ParsedResumeJson")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
                         .HasDefaultValueSql("'{}'::jsonb");
+
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -477,6 +561,8 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicantUserId");
 
                     b.HasIndex("JobId");
 

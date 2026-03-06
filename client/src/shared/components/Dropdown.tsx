@@ -28,10 +28,15 @@ export default function Dropdown({
   buttonClassName = "",
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
+  const [currentValue, setCurrentValue] = useState(value);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selectedOption =
-    options.find((option) => option.value === value) ?? options[0];
+    options.find((option) => option.value === currentValue) ?? options[0];
+
+  useEffect(() => {
+    setCurrentValue(value);
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,6 +65,7 @@ export default function Dropdown({
 
   const handleSelect = (nextValue: string) => {
     setOpen(false);
+    setCurrentValue(nextValue);
     onChange?.({
       target: {
         name,
@@ -75,6 +81,8 @@ export default function Dropdown({
       </label>
 
       <div className="relative">
+        <input type="hidden" name={name} value={currentValue} />
+
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
@@ -105,7 +113,7 @@ export default function Dropdown({
         {open && (
           <div className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl">
             {options.map((option) => {
-              const isSelected = option.value === value;
+              const isSelected = option.value === currentValue;
 
               return (
                 <button
