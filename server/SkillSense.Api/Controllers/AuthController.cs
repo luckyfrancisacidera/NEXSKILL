@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SkillSense.Application.Contracts.Auth;
@@ -8,9 +9,15 @@ namespace SkillSense.Api.Controllers;
 
 [Route("api/auth")]
 [ApiController]
-public sealed class AuthController(IAuthService authService, IConfiguration configuration) : ControllerBase
+public sealed class AuthController(
+    IAuthService authService,
+    ITokenService tokenService,
+    UserManager<SkillSense.Domain.Entities.AppUser> userManager,
+    IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly ITokenService _tokenService = tokenService;
+    private readonly UserManager<SkillSense.Domain.Entities.AppUser> _userManager = userManager;
     private readonly IConfiguration _configuration = configuration;
 
 
@@ -25,6 +32,7 @@ public sealed class AuthController(IAuthService authService, IConfiguration conf
         }
 
         WriteAccessCookie(result.Token!);
+        WriteRefreshCookie(result.RefreshToken!);
         return Ok(new { message = result.Message, user = new { result.Email, result.UserId, roles = result.Roles } });
     }
 
@@ -40,14 +48,47 @@ public sealed class AuthController(IAuthService authService, IConfiguration conf
         }
 
         WriteAccessCookie(result.Token!);
+        WriteRefreshCookie(result.RefreshToken!);
         return Ok(new { message = result.Message, user = new { result.Email, result.UserId, roles = result.Roles } });
     }
+
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
+    {
+        if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken) || string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Unauthorized(new { message = "Refresh token is missing." });
+        }
+
+        var userId = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
+        if (!userId.HasValue)
+        {
+            return Unauthorized(new { message = "Invalid refresh token." });
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+        if (user is null)
+        {
+            return Unauthorized(new { message = "Invalid refresh token." });
+        }
+
+        var accessToken = await _tokenService.CreateTokenAsync(user, cancellationToken);
+        var newRefreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+
+        WriteAccessCookie(accessToken);
+        WriteRefreshCookie(newRefreshToken);
+
+        return Ok(new { message = "Token refreshed." });
+    }
+
 
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout()
     {
         Response.Cookies.Delete("access_token", new CookieOptions { Path = "/" });
+        Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/" });
         return Ok(new { message = "Logout successful." });
     }
 
@@ -84,9 +125,24 @@ public sealed class AuthController(IAuthService authService, IConfiguration conf
         {
             HttpOnly = true,
             Secure = isProduction,
-            SameSite = SameSiteMode.Lax, 
+            SameSite = SameSiteMode.Lax,
             Path = "/",
             Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
+        });
+    }
+
+    private void WriteRefreshCookie(string token)
+    {
+        var isProduction = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsProduction();
+        var expiryDays = int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var days) ? days : 7;
+
+        Response.Cookies.Append("refresh_token", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = isProduction,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = DateTimeOffset.UtcNow.AddDays(expiryDays)
         });
     }
 }

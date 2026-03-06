@@ -55,7 +55,8 @@ public sealed class AuthService(
         await _userManager.UpdateAsync(user);
 
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        return AuthResult.Success("Registration successful.", token, user.Email, user.Id.ToString(), ["JobSeeker"]);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+        return AuthResult.Success("Registration successful.", token, refreshToken, user.Email, user.Id.ToString(), ["JobSeeker"]);
     }
 
     public async Task<AuthResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
@@ -77,7 +78,8 @@ public sealed class AuthService(
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        return AuthResult.Success("Login successful.", token, user.Email, user.Id.ToString(), roles.ToArray());
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+        return AuthResult.Success("Login successful.", token, refreshToken, user.Email, user.Id.ToString(), roles.ToArray());
     }
 
     public async Task<AuthResult> CreatePrivilegedUserAsync(CreatePrivilegedUserRequest request, CancellationToken cancellationToken)
@@ -128,7 +130,7 @@ public sealed class AuthService(
         await _userManager.UpdateAsync(user);
 
         var roles = await _userManager.GetRolesAsync(user);
-        return AuthResult.Success("User created successfully.", null, user.Email, user.Id.ToString(), roles.ToArray());
+        return AuthResult.Success("User created successfully.", token: null, refreshToken: null, email: user.Email, userId: user.Id.ToString(), roles: roles.ToArray());
     }
 
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)
