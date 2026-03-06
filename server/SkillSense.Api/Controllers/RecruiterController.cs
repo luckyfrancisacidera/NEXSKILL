@@ -99,6 +99,13 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
         return NoContent();
     }
 
+    [HttpPut("applicants/scores/status")]
+    public async Task<IActionResult> UpdateApplicantStatuses([FromBody] BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
+    {
+        await recruiterService.UpdateApplicantStatusesAsync(GetUserId(), request, ct);
+        return NoContent();
+    }
+
     private Guid GetUserId()
         => Guid.Parse(User.FindFirstValue("userId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new UnauthorizedAccessException());
 }

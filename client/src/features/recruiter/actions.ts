@@ -84,8 +84,34 @@ export const updateCandidateAction = async ({ request, params }: ActionFunctionA
 
   if (intent === 'stage' && params.candidateId) {
     const status = getString(formData, 'status');
-    await recruiterService.updateApplicantStatus(params.candidateId, status);
+    await recruiterService.updateApplicantStatuses([params.candidateId], status);
   }
+
+  if (intent === 'bulk-stage') {
+    const status = getString(formData, 'status');
+    const selectedIdsRaw = getString(formData, 'selectedIds');
+    const selectedIds = selectedIdsRaw
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (selectedIds.length > 0) {
+      await recruiterService.updateApplicantStatuses(selectedIds, status);
+    }
+  }
+
+  if (intent === 'bulk-stage') {
+      const status = getString(formData, 'status');
+      const selectedIdsRaw = getString(formData, 'selectedIds');
+      const selectedIds = selectedIdsRaw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (selectedIds.length > 0) {
+        await recruiterService.updateApplicantStatuses(selectedIds, status);
+      }
+    }
   
   return null;
 };
