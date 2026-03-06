@@ -61,7 +61,7 @@ def health():
 
 
 @app.post("/parse")
-async def parse(file: UploadFile = File(...), parser_version: str = Query(default="v1")):
+async def parse(file: UploadFile = File(...), parser_version: str = Query(default="v2")):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 

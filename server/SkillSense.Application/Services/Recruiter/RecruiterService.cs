@@ -313,10 +313,38 @@ namespace SkillSense.Application.Services
             };
         }
 
-        public async Task<ApplicantScoreItemResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
         {
-            var data = await GetApplicantScoresAsync(recruiterId, null, "all", null, 10, ct);
-            return data.Items.FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
+            var baseItem = (await GetApplicantScoresAsync(recruiterId, null, "all", null, 10, ct))
+                 .Items
+                 .FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
+
+            if (baseItem is null)
+            {
+                return null;
+            }
+
+            var parsedResumeJson = await dbContext.ResumeSubmissions
+                .AsNoTracking()
+                .Where(s => s.Id == submissionId)
+                .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
+                .Select(s => s.ParsedResumeJson)
+                .FirstOrDefaultAsync(ct);
+
+            return new ApplicantDetailResponse
+            {
+                ResumeSubmissionId = baseItem.ResumeSubmissionId,
+                ApplicantName = baseItem.ApplicantName,
+                ApplicantEmail = baseItem.ApplicantEmail,
+                JobId = baseItem.JobId,
+                JobTitle = baseItem.JobTitle,
+                Score = baseItem.Score,
+                SubmissionStatus = baseItem.SubmissionStatus,
+                JobseekerStage = baseItem.JobseekerStage,
+                CreatedAtUtc = baseItem.CreatedAtUtc,
+                ParsedResumeJson = ParseResumeJsonElement(parsedResumeJson),
+            };
+   
         }
 
         public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
@@ -364,6 +392,24 @@ namespace SkillSense.Application.Services
                     .SetProperty(s => s.UpdatedAtUtc, now), ct);
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        }
+
+        private static JsonElement? ParseResumeJsonElement(string? parsedResumeJson)
+        {
+            if (string.IsNullOrWhiteSpace(parsedResumeJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(parsedResumeJson);
+                return document.RootElement.Clone();
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
 
 

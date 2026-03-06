@@ -41,7 +41,7 @@ namespace SkillSense.Api.Controllers
         }
 
         [HttpPost("parse")]
-        public async Task<ActionResult<ResumeParseEnvelope>> ParseResume([FromForm, Required] IFormFile file, [FromQuery(Name = "parser_version")] string parserVersion = "v1", CancellationToken ct = default)
+        public async Task<ActionResult<ResumeParseEnvelope>> ParseResume([FromForm, Required] IFormFile file, [FromQuery(Name = "parser_version")] string parserVersion = "v2", CancellationToken ct = default)
         {
             var (isValid, error) = ResumeFileValidator.Validate(file?.FileName ?? "", file?.ContentType ?? "", file?.Length ?? 0);
             if (!isValid) return BadRequest(error);

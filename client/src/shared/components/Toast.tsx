@@ -1,110 +1,70 @@
-import React from 'react';
+import type { ReactNode } from "react";
+import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "lucide-react";
 
-type ToastType = 'success' | 'failed' | 'information';
+export type ToastTone = "success" | "error" | "warning" | "info";
 
-interface ToastProps {
-    title: string;
-    detail: string;
-    type: ToastType;
-    visible: boolean;
+interface AppToastProps {
+  id: number;
+  title: string;
+  description?: string;
+  tone: ToastTone;
+  durationMs: number;
+  onClose: (id: number) => void;
 }
 
-export const Toast: React.FC<ToastProps> = ({ title, detail, type, visible }) => {
+const toastStyleByTone: Record<ToastTone, { icon: ReactNode; chip: string; ring: string; progress: string }> = {
+  success: {
+    icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+    chip: "bg-emerald-50 text-emerald-700",
+    ring: "ring-emerald-200/60",
+    progress: "bg-emerald-500",
+  },
+  error: {
+    icon: <XCircle className="h-5 w-5 text-rose-500" />,
+    chip: "bg-rose-50 text-rose-700",
+    ring: "ring-rose-200/70",
+    progress: "bg-rose-500",
+  },
+  warning: {
+    icon: <AlertTriangle className="h-5 w-5 text-amber-500" />,
+    chip: "bg-amber-50 text-amber-700",
+    ring: "ring-amber-200/70",
+    progress: "bg-amber-500",
+  },
+  info: {
+    icon: <Info className="h-5 w-5 text-indigo-500" />,
+    chip: "bg-indigo-50 text-indigo-700",
+    ring: "ring-indigo-200/70",
+    progress: "bg-indigo-500",
+  },
+};
 
-    const styles = {
-        success: {
-            accent:    'bg-green-500',
-            badge:     'bg-green-50 text-green-700',
-            badgeText: 'Success',
-            icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#22c55e"/>
-                    <path d="M6 10.5l3 3 5-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-            ),
-        },
-        failed: {
-            accent:    'bg-red-500',
-            badge:     'bg-red-50 text-red-700',
-            badgeText: 'Failed',
-            icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#ef4444"/>
-                    <path d="M7 7l6 6M13 7l-6 6" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-            ),
-        },
-        information: {
-            accent:    'bg-blue-500',
-            badge:     'bg-blue-50 text-blue-700',
-            badgeText: 'Info',
-            icon: (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#3b82f6"/>
-                    <path d="M10 9v5M10 7v.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-            ),
-        },
-    };
+export const AppToast = ({ id, title, description, tone, durationMs, onClose }: AppToastProps) => {
+  const style = toastStyleByTone[tone];
 
-    const current = styles[type];
-
-    return (
-       
-        <div className={`font-inter
-            fixed top-6 right-6 z-50
-            transition-all duration-500 ease-out
-            ${visible
-                ? 'opacity-100 translate-y-0 scale-100'
-                : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
-            }
-        `}>
-            <div className="
-                bg-white rounded-2xl overflow-hidden py-0
-                shadow-[0_8px_30px_rgba(0,0,0,0.12)]
-                border border-black/5
-                w-[320px]
-            ">
-               
-                <div />
-
-               
-                <div className="flex items-start gap-3 px-4 py-3">
-
-                  
-                    <div className="mt-0.5 shrink-0">
-                        {current.icon}
-                    </div>
-
-                   
-                    <div className="flex flex-col gap-0.5 flex-1">
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900">
-                                {title}
-                            </p>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${current.badge}`}>
-                                {current.badgeText}
-                            </span>
-                        </div>
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                            {detail}
-                        </p>
-                    </div>
-
-                </div>
-
-               
-                <div className="h-0.5 bg-gray-100">
-                    <div className={`
-                        h-full ${current.accent} opacity-40
-                        ${visible
-                            ? 'w-0 transition-all duration-[3000ms] ease-linear'
-                            : 'w-full'
-                        }
-                    `}/>
-                </div>
-
-            </div>
+  return (
+    <article className={`pointer-events-auto overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ${style.ring}`} role="status" aria-live="polite">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <div className="mt-0.5">{style.icon}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold text-zinc-900">{title}</p>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.chip}`}>{tone}</span>
+          </div>
+          {description ? <p className="mt-0.5 text-xs text-zinc-500">{description}</p> : null}
         </div>
-    );
+        <button
+          type="button"
+          onClick={() => onClose(id)}
+          aria-label="Dismiss notification"
+          className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="h-1 w-full bg-zinc-100">
+        <div className={`${style.progress} h-full animate-[toast-progress_linear_forwards]`} style={{ animationDuration: `${durationMs}ms` }} />
+      </div>
+    </article>
+  );
 };

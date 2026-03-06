@@ -1,4 +1,5 @@
-﻿﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SkillSense.Application.Contracts.Recruiter.Response
 {
@@ -17,7 +18,7 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         public RecommendationSettingsResponse Recommendation { get; set; } = new();
     }
 
-    public sealed class ApplicantScoreItemResponse
+    public class ApplicantScoreItemResponse
     {
         [JsonPropertyName("resume_submission_id")]
         public Guid ResumeSubmissionId { get; set; }
@@ -45,6 +46,12 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("created_at_utc")]
         public DateTime CreatedAtUtc { get; set; }
+    }
+
+    public sealed class ApplicantDetailResponse : ApplicantScoreItemResponse
+    {
+        [JsonPropertyName("parsed_resume_json")]
+        public JsonElement? ParsedResumeJson { get; set; }
     }
 
     public sealed class ApplicantScoreJobFilterResponse
