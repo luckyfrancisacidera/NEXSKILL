@@ -12,20 +12,20 @@ public sealed class ResumeScoringService(
     IResumeScoreRepository resumeScoreRepository,
     IResumeScoringOrchestrator scoringOrchestrator) : IResumeScoringService
 {
-    public async Task<AtsScoreResponse> ScoreResumeAsync(ResumeScoreRequest request, CancellationToken ct = default)
+    public async Task<FinalMatchScore> ScoreResumeAsync(ResumeScoreRequest request, CancellationToken ct = default)
     {
         var submission = await resumeSubmissionRepository.GetByIdAsync(request.SubmissionId, ct)
             ?? throw new InvalidOperationException("Submission not found.");
 
-        var parsed = JsonSerializer.Deserialize<ResumeParseResult>(submission.ParsedResumeJson)
+        var parsed = JsonSerializer.Deserialize<ParsedResume>(submission.ParsedResumeJson)
             ?? throw new InvalidOperationException("Parsed resume payload is not available.");
 
         var result = await scoringOrchestrator.BuildAsync(submission.Id, parsed, request.JobDescription, ct);
-        await SaveScoreAsync(submission, request.JobDescription.Text, result.Score, ct);
+        await SaveScoreAsync(submission, request.JobDescription.Description, result.Score, ct);
         return result.Score;
     }
 
-    private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, AtsScoreResponse score, CancellationToken ct)
+    private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
     {
         var entity = new ResumeScoreEntity
         {
@@ -33,12 +33,12 @@ public sealed class ResumeScoringService(
             ResumeSubmissionId = submission.Id,
             JobId = submission.JobId,
             JobDescriptionText = jobDescriptionText,
-            SkillsScore = score.SkillsScore,
-            ExperienceScore = score.ExperienceScore,
-            EducationScore = score.EducationScore,
-            SummaryScore = score.SummaryScore,
+            SkillsScore = score.SectionScores.GetValueOrDefault("skills", 0f),
+            ExperienceScore = score.SectionScores.GetValueOrDefault("work_experience", 0f),
+            EducationScore = score.SectionScores.GetValueOrDefault("education", 0f),
+            SummaryScore = score.SectionScores.GetValueOrDefault("description", 0f),
             FinalWeightedScore = score.FinalScore,
-            ScoreBreakdownJson = JsonSerializer.Serialize(score.Breakdown),
+            ScoreBreakdownJson = JsonSerializer.Serialize(score),
             CreatedAtUtc = DateTime.UtcNow
         };
 

@@ -8,5 +8,5 @@ public sealed class ResumeScoreRequest
     public Guid SubmissionId { get; set; }
 
     [JsonPropertyName("job_description")]
-    public JobDescriptionInput JobDescription { get; set; } = new();
+    public NormalizedJobDescription JobDescription { get; set; } = new();
 }

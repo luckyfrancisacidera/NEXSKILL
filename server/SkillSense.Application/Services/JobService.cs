@@ -19,7 +19,7 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
 
         var status = ParseStatusOrDefault(request.Status);
         var embedding = await embeddingService.EmbedAsync(request.Description, ct);
-        var structured = BuildJobDescriptionInput(request);
+        var structured = BuildNormalizedJobDescription(request);
 
         var job = new JobEntity
         {
@@ -49,18 +49,20 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
         };
     }
 
-    private static JobDescriptionInput BuildJobDescriptionInput(CreateJobRequest request)
+    private static NormalizedJobDescription BuildNormalizedJobDescription(CreateJobRequest request)
         => new()
         {
-            Text = request.Description,
-            Title = request.Title,
-            Responsibilities = request.Responsibilities,
+            Title = request.Title ?? string.Empty,
+            Description = request.Description ?? string.Empty,
+            Responsibilities = (request.Responsibilities ?? string.Empty)
+                .Split(new[] { "\n", ";", "." }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList(),
             RequiredSkills = request.RequiredSkills,
             PreferredSkills = request.PreferredSkills,
-            ExperienceLevel = request.ExperienceLevel,
-            MinYears = request.MinYears,
-            Education = request.Education,
-            MinEducation = request.MinEducation
+            MinimumYearsExperience = request.MinYears ?? 0,
+            MinimumEducationLevel = request.MinEducation ?? request.Education ?? string.Empty,
+            EducationRequirements = string.IsNullOrWhiteSpace(request.Education) ? [] : [request.Education],
+            Metadata = new Dictionary<string, string> { ["experience_level"] = request.ExperienceLevel ?? string.Empty }
         };
 
 
