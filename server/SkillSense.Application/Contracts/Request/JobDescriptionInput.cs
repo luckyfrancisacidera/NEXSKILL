@@ -2,32 +2,35 @@
 
 namespace SkillSense.Application.Contracts.Request;
 
-public sealed class JobDescriptionInput
+public sealed class NormalizedJobDescription
 {
-    [JsonPropertyName("text")]
-    public string Text { get; set; } = string.Empty;
+    [JsonPropertyName("job_id")]
+    public string JobId { get; set; } = string.Empty;
 
     [JsonPropertyName("title")]
-    public string? Title { get; set; }
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
 
     [JsonPropertyName("responsibilities")]
-    public string Responsibilities { get; set; } = string.Empty;
+    public List<string> Responsibilities { get; set; } = [];
 
     [JsonPropertyName("required_skills")]
-    public List<string> RequiredSkills { get; set; } = new();
+    public List<string> RequiredSkills { get; set; } = [];
 
     [JsonPropertyName("preferred_skills")]
-    public List<string> PreferredSkills { get; set; } = new();
+    public List<string> PreferredSkills { get; set; } = [];
 
-    [JsonPropertyName("experience_level")]
-    public string? ExperienceLevel { get; set; }
+    [JsonPropertyName("minimum_years_experience")]
+    public int MinimumYearsExperience { get; set; }
 
-    [JsonPropertyName("min_years")]
-    public int? MinYears { get; set; }
+    [JsonPropertyName("minimum_education_level")]
+    public string MinimumEducationLevel { get; set; } = string.Empty;
 
-    [JsonPropertyName("education")]
-    public string? Education { get; set; }
+    [JsonPropertyName("education_requirements")]
+    public List<string> EducationRequirements { get; set; } = [];
 
-    [JsonPropertyName("min_education")]
-    public string? MinEducation { get; set; }
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, string> Metadata { get; set; } = [];
 }

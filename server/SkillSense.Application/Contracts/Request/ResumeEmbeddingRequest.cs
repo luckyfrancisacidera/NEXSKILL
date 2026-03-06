@@ -12,5 +12,5 @@ public sealed class ResumeEmbeddingRequest
     public string AppliedJobPosition { get; set; } = string.Empty;
 
     [JsonPropertyName("resume")]
-    public ResumeParseResult Resume { get; set; } = new();
+    public ParsedResume Resume { get; set; } = new();
 }

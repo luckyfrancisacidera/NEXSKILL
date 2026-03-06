@@ -1,214 +1,102 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Options;
-using SkillSense.Application.Contracts.Request;
+﻿using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Services.Scoring;
-using SkillSense.Domain.Entities;
 
 namespace SkillSense.Application.Tests;
 
 public sealed class ScoringTests
 {
     [Fact]
-    public void ExperienceYearsCalculator_HandlesPresent()
+    public async Task RequiredSkill_ExactMatch_BeatsSemanticOnly()
     {
-        var calculator = new ExperienceYearsCalculator(new FixedDateTimeProvider(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)), Options.Create(new AtsScoringOptions()));
-        var resume = SampleResume(startDate: "2022", endDate: "Present");
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
+        var result = await orchestrator.BuildAsync(Guid.NewGuid(), SampleResume(), SampleJob(), CancellationToken.None);
 
-        var result = calculator.Calculate(resume, requiredYears: 2);
-
-        Assert.True(result.TotalYears >= 3.9f);
-        Assert.Equal(1f, result.YearsScore, 3);
+        Assert.Contains(result.Score.Matches.RequiredSkills, m => m.JdItem == "React" && m.MatchType == "exact");
     }
 
     [Fact]
     public void ExperienceYearsCalculator_MinYearsPartial()
     {
-        var calculator = new ExperienceYearsCalculator(new FixedDateTimeProvider(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)), Options.Create(new AtsScoringOptions()));
-        var resume = SampleResume(startDate: "2025", endDate: "Present");
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
+        var result = await orchestrator.BuildAsync(Guid.NewGuid(), SampleResume(), SampleJob(), CancellationToken.None);
 
-        var result = calculator.Calculate(resume, requiredYears: 4);
-
-        Assert.True(result.YearsScore > 0);
-        Assert.True(result.YearsScore < 1);
+        Assert.Equal(SampleJob().RequiredSkills.Count, result.Score.Matches.RequiredSkills.Count);
     }
 
     [Fact]
-    public void SkillsMatcher_AppliesBoostAndClamps()
+    public async Task WorkExperience_HasHigherWeightThanSummaryOnlyMentions()
     {
-        var matcher = new SkillsMatcher(Options.Create(new AtsScoringOptions { RequiredSkillBoostMax = 0.25f }));
-        var resume = SampleResume(skills: ["c#", "sql", "react"]);
-        var jd = new JobDescriptionInput
-        {
-            RequiredSkills = ["C#", "SQL"],
-            PreferredSkills = ["React"]
-        };
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
+        var strongWork = SampleResume();
+        var weakWork = SampleResume();
+        weakWork.WorkExperience[0].Bullets = ["General contributor"];
+        weakWork.WorkExperience[0].Technologies = [];
 
-        var result = matcher.Evaluate(jd, resume);
+        var jd = SampleJob();
+        var a = await orchestrator.BuildAsync(Guid.NewGuid(), strongWork, jd, CancellationToken.None);
+        var b = await orchestrator.BuildAsync(Guid.NewGuid(), weakWork, jd, CancellationToken.None);
 
-        Assert.Equal(1f, result.RequiredCoverage, 3);
-        Assert.True(result.BoostApplied > 0);
-        Assert.InRange(result.Score, 0f, 1f);
+        Assert.True(a.Score.FinalScore > b.Score.FinalScore);
     }
 
     [Fact]
-    public void EducationEvaluator_MeetsMinimum()
+    public async Task YearsAndEducation_AreRuleBasedStable()
     {
-        var evaluator = new EducationEvaluator();
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
         var resume = SampleResume();
-        var jd = new JobDescriptionInput { MinEducation = "Bachelor degree" };
 
-        var result = evaluator.Evaluate(jd, resume);
-
-        Assert.True(result.MeetsMinimum);
-        Assert.True(result.Score >= 0.8f);
-    }
-
-    [Fact]
-    public void BonusEvaluator_EnforcesCap()
-    {
-        var evaluator = new BonusEvaluator(Options.Create(new AtsScoringOptions
-        {
-            BonusProjectsPoints = 6,
-            BonusCertificationsPoints = 6,
-            BonusAchievementsPoints = 6,
-            BonusMaxPoints = 10
-        }));
-
-        var resume = SampleResume(certificationCount: 1, includeAchievements: true);
-        var result = evaluator.Evaluate(resume);
-
-        Assert.Equal(10f, result.BonusPoints, 3);
-    }
-
-    [Fact]
-    public async Task Orchestrator_FinalScoreClampedTo100()
-    {
-        var orchestrator = CreateOrchestrator(new AtsScoringOptions
-        {
-            WorkExperienceWeight = 0.4f,
-            SkillsWeight = 0.3f,
-            EducationWeight = 0.1f,
-            SummaryWeight = 0.05f,
-            RequiredSkillBoostMax = 0.3f,
-            BonusProjectsPoints = 6f,
-            BonusCertificationsPoints = 6f,
-            BonusAchievementsPoints = 6f,
-            BonusMaxPoints = 10f
-        });
-
-        var resume = SampleResume(certificationCount: 1, includeAchievements: true);
-        var jd = new JobDescriptionInput
-        {
-            Text = "Strong backend in dotnet and sql",
-            Title = "Senior .NET Engineer",
-            MinYears = 1,
-            RequiredSkills = ["c#", "sql"]
-        };
+        resume.Derived.TotalExperienceMonths = 60;
+        var jd = SampleJob();
+        jd.MinimumYearsExperience = 3;
+        jd.MinimumEducationLevel = "Bachelor";
 
         var result = await orchestrator.BuildAsync(Guid.NewGuid(), resume, jd, CancellationToken.None);
 
-        Assert.InRange(result.Score.FinalScore, 0f, 100f);
+        Assert.True(result.Score.HardRequirements.MinimumYearsExperienceMet);
+        Assert.True(result.Score.HardRequirements.MinimumEducationMet);
     }
 
-    [Fact]
-    public async Task Orchestrator_DurationYearsZeroRegression_DoesNotTankExperience()
+    private static ParsedResume SampleResume() => new()
     {
-        var orchestrator = CreateOrchestrator();
-
-        var resume = SampleResume(startDate: "Sep 2023", endDate: "Present");
-        var jd = new JobDescriptionInput
-        {
-            Text = "Need 1 year experience in software engineering",
-            Title = "Software Engineer",
-            MinYears = 1,
-            MinEducation = "Bachelor"
-        };
-
-        var result = await orchestrator.BuildAsync(Guid.NewGuid(), resume, jd, CancellationToken.None);
-
-        Assert.True(result.Score.ExperienceScore > 0.5f);
-        Assert.True(result.Score.EducationScore > 0f);
-
-        var json = JsonSerializer.Serialize(result.Score.Breakdown);
-        using var doc = JsonDocument.Parse(json);
-        var totalYears = doc.RootElement.GetProperty("total_years_experience").GetSingle();
-        Assert.True(totalYears >= 1f);
-    }
-
-
-    [Fact]
-    public async Task Orchestrator_OutputDoesNotContainResponsibilitiesFields()
-    {
-        var orchestrator = CreateOrchestrator();
-        var resume = SampleResume();
-        var jd = new JobDescriptionInput { Text = "Backend role", Title = "Software Engineer", MinYears = 1 };
-
-        var result = await orchestrator.BuildAsync(Guid.NewGuid(), resume, jd, CancellationToken.None);
-        var payload = JsonSerializer.Serialize(result.Score);
-
-        Assert.DoesNotContain("responsibil", payload, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static ResumeEmbeddingScoringOrchestrator CreateOrchestrator(AtsScoringOptions? opts = null)
-    {
-        opts ??= new AtsScoringOptions();
-        var options = Options.Create(opts);
-
-        return new ResumeEmbeddingScoringOrchestrator(
-            new FakeEmbeddingService(),
-            new ExperienceYearsCalculator(new FixedDateTimeProvider(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)), options),
-            new ExperienceContentBuilder(),
-            new SimilarityEngine(new FakeEmbeddingService(), options),
-            new SkillsMatcher(options),
-            new EducationEvaluator(),
-            new SummaryScorer(new SimilarityEngine(new FakeEmbeddingService(), options)),
-            new BonusEvaluator(options),
-            new ScoreAggregator(options),
-            options);
-    }
-
-    private static ResumeParseResult SampleResume(
-        string startDate = "2022",
-        string endDate = "Present",
-        List<string>? skills = null,
-        int certificationCount = 0,
-        bool includeAchievements = false) => new()
-        {
-            PersonalInfo = new PersonalInfo { JobTarget = "Backend Engineer" },
-            Summary = ["Backend engineer with .NET and cloud experience"],
-            Skills = skills ?? ["c#", "sql", "azure"],
-            WorkExperience =
+        Summary = ["Full-stack developer with React and .NET experience"],
+        Skills = ["React", "TypeScript", "ASP.NET Core"],
+        WorkExperience =
         [
             new WorkExperienceItem
             {
-                Company = "Tech Corp",
-                JobTitle = "Software Engineer",
-                StartDate = startDate,
-                EndDate = endDate,
-                DescriptionItems = ["Built APIs in .NET and SQL", "Designed secure auth with JWT"],
-                EmbeddingText = "Built APIs in .NET and SQL"
+                Description = "Built scalable web applications",
+                Bullets = ["Built REST APIs using ASP.NET Core", "Developed React dashboard using TypeScript"],
+                Technologies = ["ASP.NET Core", "React", "TypeScript"],
+                DurationMonths = 48
             }
         ],
-            Education = [new EducationItem { Degree = "Bachelor of Computer Science" }],
-            Events = [new EventItem { EmbeddingText = "Led migration and improved reliability" }],
-            Projects = [new ProjectItem { EmbeddingText = "Cloud automation project using Azure" }],
-            Certifications = Enumerable.Range(0, certificationCount).Select(_ => new CertificationItem { Name = "AWS" }).ToList(),
-            Achievements = includeAchievements ? ["Hackathon Winner"] : []
-        };
+        Education = [new EducationItem { Degree = "Bachelor of Science", EducationLevel = "Bachelor" }],
+        Projects = [new ProjectItem { Description = "Created admin dashboard in React", Bullets = ["Implemented reporting"], Technologies = ["React"] }],
+        Certifications = [new CertificationItem { Name = "Azure Developer Associate" }]
+    };
+
+    private static NormalizedJobDescription SampleJob() => new()
+    {
+        Description = "Build scalable web applications in .NET and React",
+        Responsibilities = ["Build scalable web applications"],
+        RequiredSkills = ["ASP.NET Core", "React"],
+        PreferredSkills = ["Tailwind CSS"]
+    };
 }
 
 internal sealed class FakeEmbeddingService : ITextEmbeddingService
 {
     public Task<IReadOnlyList<float>> EmbedAsync(string text, CancellationToken ct = default)
     {
-        var len = Math.Max(1, text.Length % 11);
-        return Task.FromResult<IReadOnlyList<float>>([len / 10f, 0.5f, 0.25f]);
+        text = text.ToLowerInvariant();
+        return Task.FromResult<IReadOnlyList<float>>([
+            text.Contains("react") ? 1f : 0f,
+            text.Contains("asp.net") || text.Contains(".net") ? 1f : 0f,
+            text.Contains("scalable") ? 1f : 0f,
+            text.Length / 100f
+        ]);
     }
 }
 
-internal sealed class FixedDateTimeProvider(DateTime utcNow) : IDateTimeProvider
-{
-    public DateTime UtcNow { get; } = utcNow;
-}

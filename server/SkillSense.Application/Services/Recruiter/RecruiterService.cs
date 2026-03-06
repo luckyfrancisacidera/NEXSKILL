@@ -76,7 +76,7 @@ namespace SkillSense.Application.Services
                 PostedDateUtc = ParseStatusOrDefault(request.Status) == JobStatus.Published ? DateTime.UtcNow : null,
                 CompanyNameSnapshot = profile.CompanyName,
                 CompanyEmailSnapshot = profile.CompanyEmail,
-                JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildJobDescriptionInput(request))
+                JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildNormalizedJobDescription(request))
             };
 
             await jobRepository.AddAsync(job, ct);
@@ -109,11 +109,13 @@ namespace SkillSense.Application.Services
             job.WorkSetup = (WorkSetup)(request.WorkSetup ?? (int)job.WorkSetup);
             job.EmploymentType = (EmploymentType)(request.EmploymentType ?? (int)job.EmploymentType);
             job.Status = ParseStatusOrDefault(request.Status);
+
             if (job.Status == JobStatus.Published && job.PostedDateUtc is null)
             {
                 job.PostedDateUtc = DateTime.UtcNow;
             }
-            job.JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildJobDescriptionInput(request));
+
+            job.JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildNormalizedJobDescription(request));
 
             await jobRepository.UpdateAsync(job, ct);
             InvalidateAfterJobMutation(recruiterId, job.Id);
@@ -400,32 +402,32 @@ namespace SkillSense.Application.Services
             return profile;
         }
 
-        private static JobDescriptionInput BuildJobDescriptionInput(CreateJobRequest request)
+        private static NormalizedJobDescription BuildNormalizedJobDescription(CreateJobRequest request)
             => new()
             {
-                Text = request.Description,
-                Title = request.Title,
-                Responsibilities = request.Responsibilities,
+                Title = request.Title ?? string.Empty,
+                Description = request.Description ?? string.Empty,
+                Responsibilities = (request.Responsibilities ?? string.Empty).Split(new[] { "\n", ";", "." }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
                 RequiredSkills = request.RequiredSkills,
                 PreferredSkills = request.PreferredSkills,
-                ExperienceLevel = request.ExperienceLevel,
-                MinYears = request.MinYears,
-                Education = request.Education,
-                MinEducation = request.MinEducation
+                MinimumYearsExperience = request.MinYears ?? 0,
+                MinimumEducationLevel = request.MinEducation ?? request.Education ?? string.Empty,
+                EducationRequirements = string.IsNullOrWhiteSpace(request.Education) ? [] : [request.Education],
+                Metadata = new Dictionary<string, string> { ["experience_level"] = request.ExperienceLevel ?? string.Empty }
             };
 
-        private static JobDescriptionInput BuildJobDescriptionInput(UpdateJobRequest request)
+        private static NormalizedJobDescription BuildNormalizedJobDescription(UpdateJobRequest request)
             => new()
             {
-                Text = request.Description,
-                Title = request.Title,
-                Responsibilities = request.Responsibilities,
+                Title = request.Title ?? string.Empty,
+                Description = request.Description ?? string.Empty,
+                Responsibilities = (request.Responsibilities ?? string.Empty).Split(new[] { "\n", ";", "." }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
                 RequiredSkills = request.RequiredSkills,
                 PreferredSkills = request.PreferredSkills,
-                ExperienceLevel = request.ExperienceLevel,
-                MinYears = request.MinYears,
-                Education = request.Education,
-                MinEducation = request.MinEducation
+                MinimumYearsExperience = request.MinYears ?? 0,
+                MinimumEducationLevel = request.MinEducation ?? request.Education ?? string.Empty,
+                EducationRequirements = string.IsNullOrWhiteSpace(request.Education) ? [] : [request.Education],
+                Metadata = new Dictionary<string, string> { ["experience_level"] = request.ExperienceLevel ?? string.Empty }
             };
 
         private static JobStatus ParseStatusOrDefault(string? status)
