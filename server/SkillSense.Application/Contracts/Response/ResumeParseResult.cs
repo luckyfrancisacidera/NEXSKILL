@@ -1,154 +1,115 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SkillSense.Application.Contracts.Response
+namespace SkillSense.Application.Contracts.Response;
+
+public sealed class ResumeParseEnvelope
 {
-    public sealed class ResumeParseResult
-    {
-        [JsonPropertyName("resume_id")]
-        public string ResumeId { get; set; } = "";
+    [JsonPropertyName("parser_version")]
+    public string ParserVersion { get; set; } = "v1";
 
-        [JsonPropertyName("personal_info")]
-        public PersonalInfo PersonalInfo { get; set; } = new();
+    [JsonPropertyName("parsed_resume")]
+    public ParsedResume ParsedResume { get; set; } = new();
+}
 
-        [JsonPropertyName("summary")]
-        public List<string> Summary { get; set; } = new();
+public sealed class ParsedResume
+{
+    [JsonPropertyName("resume_id")]
+    public string ResumeId { get; set; } = string.Empty;
 
-        [JsonPropertyName("skills")]
-        public List<string> Skills { get; set; } = new();
+    [JsonPropertyName("personal_info")]
+    public PersonalInfo PersonalInfo { get; set; } = new();
 
-        [JsonPropertyName("work_experience")]
-        public List<WorkExperienceItem> WorkExperience { get; set; } = new();
+    [JsonPropertyName("summary")]
+    public List<string> Summary { get; set; } = [];
 
-        [JsonPropertyName("education")]
-        public List<EducationItem> Education { get; set; } = new();
+    [JsonPropertyName("skills")]
+    public List<string> Skills { get; set; } = [];
 
-        [JsonPropertyName("projects")]
-        public List<ProjectItem> Projects { get; set; } = new();
+    [JsonPropertyName("work_experience")]
+    public List<WorkExperienceItem> WorkExperience { get; set; } = [];
 
-        [JsonPropertyName("events")]
-        public List<EventItem> Events { get; set; } = new();
+    [JsonPropertyName("education")]
+    public List<EducationItem> Education { get; set; } = [];
 
-        [JsonPropertyName("certifications")]
-        public List<CertificationItem> Certifications { get; set; } = new();
+    [JsonPropertyName("projects")]
+    public List<ProjectItem> Projects { get; set; } = [];
 
-        [JsonPropertyName("achievements")]
-        public List<string> Achievements { get; set; } = new();
-    }
+    [JsonPropertyName("events")]
+    public List<EventItem> Events { get; set; } = [];
 
-    public sealed class PersonalInfo
-    {
-        [JsonPropertyName("full_name")]
-        public string FullName { get; set; } = "";
+    [JsonPropertyName("certifications")]
+    public List<CertificationItem> Certifications { get; set; } = [];
 
-        [JsonPropertyName("email")]
-        public string Email { get; set; } = "";
+    [JsonPropertyName("derived")]
+    public ParsedResumeDerived Derived { get; set; } = new();
+}
 
-        [JsonPropertyName("phone")]
-        public string Phone { get; set; } = "";
+public sealed class ParsedResumeDerived
+{
+    [JsonPropertyName("total_experience_months")]
+    public int TotalExperienceMonths { get; set; }
 
-        [JsonPropertyName("location")]
-        public string Location { get; set; } = "";
+    [JsonPropertyName("latest_job_title")]
+    public string LatestJobTitle { get; set; } = string.Empty;
 
-        [JsonPropertyName("job_target")]
-        public string JobTarget { get; set; } = "";
-    }
+    [JsonPropertyName("normalized_skills")]
+    public List<string> NormalizedSkills { get; set; } = [];
 
-    public sealed class WorkExperienceItem
-    {
-        [JsonPropertyName("job_title")]
-        public string JobTitle { get; set; } = "";
+    [JsonPropertyName("education_max_level")]
+    public string EducationMaxLevel { get; set; } = string.Empty;
 
-        [JsonPropertyName("company")]
-        public string Company { get; set; } = "";
+}
 
-        [JsonPropertyName("start_date")]
-        public string StartDate { get; set; } = "";
+public sealed class PersonalInfo
+{
+    [JsonPropertyName("full_name")] public string FullName { get; set; } = string.Empty;
+    [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+    [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+    [JsonPropertyName("location")] public string Location { get; set; } = string.Empty;
+    [JsonPropertyName("job_target")] public string JobTarget { get; set; } = string.Empty;
+}
 
-        [JsonPropertyName("end_date")]
-        public string EndDate { get; set; } = "";
+public sealed class WorkExperienceItem
+{
+    [JsonPropertyName("job_title")] public string JobTitle { get; set; } = string.Empty;
+    [JsonPropertyName("company")] public string Company { get; set; } = string.Empty;
+    [JsonPropertyName("location")] public string Location { get; set; } = string.Empty;
+    [JsonPropertyName("start_date")] public string StartDate { get; set; } = string.Empty;
+    [JsonPropertyName("end_date")] public string EndDate { get; set; } = string.Empty;
+    [JsonPropertyName("is_current")] public bool IsCurrent { get; set; }
+    [JsonPropertyName("duration_months")] public int DurationMonths { get; set; }
+    [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+    [JsonPropertyName("bullets")] public List<string> Bullets { get; set; } = [];
+    [JsonPropertyName("technologies")] public List<string> Technologies { get; set; } = [];
+}
 
-        [JsonPropertyName("description_items")]
-        public List<string> DescriptionItems { get; set; } = new();
+public sealed class EducationItem
+{
+    [JsonPropertyName("degree")] public string Degree { get; set; } = string.Empty;
+    [JsonPropertyName("field_of_study")] public string FieldOfStudy { get; set; } = string.Empty;
+    [JsonPropertyName("institution")] public string Institution { get; set; } = string.Empty;
+    [JsonPropertyName("start_date")] public string StartDate { get; set; } = string.Empty;
+    [JsonPropertyName("end_date")] public string EndDate { get; set; } = string.Empty;
+    [JsonPropertyName("education_level")] public string EducationLevel { get; set; } = string.Empty;
+}
 
-        [JsonPropertyName("embedding_text")]
-        public string EmbeddingText { get; set; } = "";
-    }
+public sealed class ProjectItem
+{
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+    [JsonPropertyName("bullets")] public List<string> Bullets { get; set; } = [];
+    [JsonPropertyName("technologies")] public List<string> Technologies { get; set; } = [];
+}
 
-    public sealed class EducationItem
-    {
-        [JsonPropertyName("degree")]
-        public string Degree { get; set; } = "";
+public sealed class EventItem
+{
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+}
 
-        [JsonPropertyName("institution")]
-        public string Institution { get; set; } = "";
-
-        [JsonPropertyName("start_date")]
-        public string StartDate { get; set; } = "";
-
-        [JsonPropertyName("end_date")]
-        public string EndDate { get; set; } = "";
-
-        [JsonPropertyName("description_items")]
-        public List<string> DescriptionItems { get; set; } = new();
-
-        [JsonPropertyName("embedding_text")]
-        public string EmbeddingText { get; set; } = "";
-    }
-
-    public sealed class ProjectItem
-    {
-        [JsonPropertyName("project_name")]
-        public string ProjectName { get; set; } = "";
-
-        [JsonPropertyName("technologies")]
-        public List<string> Technologies { get; set; } = new();
-
-        [JsonPropertyName("description_items")]
-        public List<string> DescriptionItems { get; set; } = new();
-
-        [JsonPropertyName("embedding_text")]
-        public string EmbeddingText { get; set; } = "";
-    }
-
-    public sealed class EventItem
-    {
-        [JsonPropertyName("event_name")]
-        public string EventName { get; set; } = "";
-
-        [JsonPropertyName("organization")]
-        public string Organization { get; set; } = "";
-
-        [JsonPropertyName("date")]
-        public string Date { get; set; } = "";
-
-        [JsonPropertyName("location")]
-        public string Location { get; set; } = "";
-
-        [JsonPropertyName("technologies")]
-        public List<string> Technologies { get; set; } = new();
-
-        [JsonPropertyName("description_items")]
-        public List<string> DescriptionItems { get; set; } = new();
-
-        [JsonPropertyName("embedding_text")]
-        public string EmbeddingText { get; set; } = "";
-    }
-
-    public sealed class CertificationItem
-    {
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = "";
-
-        [JsonPropertyName("issuer")]
-        public string Issuer { get; set; } = "";
-
-        [JsonPropertyName("date")]
-        public string Date { get; set; } = "";
-
-        [JsonPropertyName("description_items")]
-        public List<string> DescriptionItems { get; set; } = new();
-
-        [JsonPropertyName("embedding_text")]
-        public string EmbeddingText { get; set; } = "";
-    }
+public sealed class CertificationItem
+{
+    [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("issuer")] public string Issuer { get; set; } = string.Empty;
+    [JsonPropertyName("issue_date")] public string IssueDate { get; set; } = string.Empty;
 }

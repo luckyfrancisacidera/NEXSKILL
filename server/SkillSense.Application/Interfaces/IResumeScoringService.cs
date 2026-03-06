@@ -5,5 +5,5 @@ namespace SkillSense.Application.Interfaces;
 
 public interface IResumeScoringService
 {
-    Task<AtsScoreResponse> ScoreResumeAsync(ResumeScoreRequest request, CancellationToken ct = default);
+    Task<FinalMatchScore> ScoreResumeAsync(ResumeScoreRequest request, CancellationToken ct = default);
 }
