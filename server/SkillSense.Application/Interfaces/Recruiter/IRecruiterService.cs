@@ -17,7 +17,7 @@ namespace SkillSense.Application.Interfaces.Recruiter
         Task CloseJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default);
         Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, string? range, CancellationToken ct = default);
         Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? stage, string? search, int? recommendedTopPercent, CancellationToken ct = default);
-        Task<ApplicantScoreItemResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
+        Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
         Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default);
         Task UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default);
     }

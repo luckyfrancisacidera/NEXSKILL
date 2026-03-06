@@ -1,12 +1,17 @@
-import { Form, Link, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@shared/components/Card";
 import { formatCurrencyAmount } from "@shared/data/currency";
 import { BarChart, Bar, ResponsiveContainer } from "recharts";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import type { JobDto } from "../service/recruiter.service";
 import { getJobStatusAccent } from "@shared/utils/jobStatusAccent";
 import { splitToBullets, toList } from "@shared/utils/formatText";
 import { DetailBlock } from "@shared/components/DetailBlock";
+
+import { ConfirmationModal } from "@shared/components/ConfirmationModal";
+import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { useToast } from "@app/providers/ToastProvider";
 
 export const JobDetailPage = () => {
   const { job, applicants, trend } = useLoaderData() as {
@@ -16,11 +21,39 @@ export const JobDetailPage = () => {
   };
 
   const statusAccent = getJobStatusAccent(job.status);
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
   const benefits = useMemo(() => splitToBullets(job.benefits), [job.benefits]);
   const requiredSkills = useMemo(() => toList(job.required_skills), [job.required_skills]);
   const preferredSkills = useMemo(() => toList(job.preferred_skills), [job.preferred_skills]);
+
+  useEffect(() => {
+    const toast = searchParams.get("toast");
+    if (!toast) return;
+
+    if (toast === "created") {
+      showToast({
+        title: "Job created successfully",
+        description: `${job.title} is ready for recruiter workflows.`,
+        tone: "success",
+      });
+    }
+
+    if (toast === "updated") {
+      showToast({
+        title: "Job updated successfully",
+        description: `${job.title} was updated.`,
+        tone: "success",
+      });
+    }
+
+    setSearchParams({}, { replace: true });
+  }, [job.title, searchParams, setSearchParams, showToast]);
 
   return (
     <div className="space-y-4">
@@ -195,17 +228,13 @@ export const JobDetailPage = () => {
                 >
                   Edit Job
                 </Link>
-                <Form
-                  method="post"
-                  action={`/recruiter/job-posts/${job.id}/delete`}
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteOpen(true)}
+                  className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
                 >
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
-                  >
-                    Delete Job
-                  </button>
-                </Form>
+                 Delete Job
+                </button>
               </aside>
             </div>
           </div>
@@ -248,6 +277,37 @@ export const JobDetailPage = () => {
           </div>
         </Card>
       </div>
+       <ConfirmationModal
+        open={isDeleteOpen}
+        title="Delete this job?"
+        message="This action permanently removes the job post and cannot be undone."
+        confirmLabel="Delete Job"
+        accent="red"
+        loading={isDeleting}
+        onClose={() => setIsDeleteOpen(false)}
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={async () => {
+          try {
+            setIsDeleting(true);
+            await recruiterService.deleteJob(job.id);
+            showToast({
+              title: "Job deleted successfully",
+              description: `${job.title} was removed from your job posts.`,
+              tone: "success",
+            });
+            navigate("/recruiter/job-posts");
+          } catch {
+            showToast({
+              title: "Unable to delete job",
+              description: "Please try again.",
+              tone: "error",
+            });
+          } finally {
+            setIsDeleting(false);
+            setIsDeleteOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

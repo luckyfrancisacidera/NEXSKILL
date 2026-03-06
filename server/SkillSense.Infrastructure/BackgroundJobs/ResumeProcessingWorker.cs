@@ -13,62 +13,64 @@ public sealed class ResumeProcessingWorker(
     ILogger<ResumeProcessingWorker> logger) : BackgroundService
 {
     private readonly ResumeProcessingWorkerOptions _options = workerOptions.Value;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _options.Validate();
+        logger.LogInformation(
+            "ResumeProcessingWorker started. BatchSize={BatchSize}, InitialBackoff={InitialBackoff}, MaxBackoff={MaxBackoff}",
+            _options.BatchSize,
+            _options.InitialBackoff,
+            _options.MaxBackoff);
 
-        var idleDeadlineUtc = DateTime.UtcNow.Add(_options.IdleTimeout);
         var currentBackoff = _options.InitialBackoff;
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var nowUtc = DateTime.UtcNow;
-            if (nowUtc >= idleDeadlineUtc)
-            {
-                logger.LogInformation(
-                    "Stopping resume worker after {IdleTimeout} of inactivity.",
-                    _options.IdleTimeout);
-                break;
-            }
-
             try
             {
+                logger.LogDebug("Polling for pending resume submissions.");
+
                 using var scope = scopeFactory.CreateScope();
                 var processingService = scope.ServiceProvider.GetRequiredService<IResumeProcessingService>();
                 var processedCount = await processingService.ProcessPendingBatchAsync(_options.BatchSize, stoppingToken);
 
                 if (processedCount > 0)
                 {
-                    idleDeadlineUtc = DateTime.UtcNow.Add(_options.IdleTimeout);
+                    logger.LogInformation("Processed {ProcessedCount} resume submission(s).", processedCount);
                     currentBackoff = _options.InitialBackoff;
-                    logger.LogDebug("Processed {ProcessedCount} resume submission(s).", processedCount);
                     continue;
                 }
 
-                var remainingIdle = idleDeadlineUtc - DateTime.UtcNow;
-                if (remainingIdle <= TimeSpan.Zero)
-                {
-                    continue;
-                }
-
-                var delay = remainingIdle < currentBackoff ? remainingIdle : currentBackoff;
-                await Task.Delay(delay, stoppingToken);
+                logger.LogDebug("No pending resume submissions found. Sleeping for {Delay}.", currentBackoff);
+                await Task.Delay(currentBackoff, stoppingToken);
                 currentBackoff = DoubleBackoff(currentBackoff, _options.MaxBackoff);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
+                logger.LogInformation("ResumeProcessingWorker stop requested.");
                 break;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error processing resume queue");
-                await Task.Delay(currentBackoff, stoppingToken);
+                logger.LogError(ex, "Error while processing resume queue. Retrying after {Delay}.", currentBackoff);
+
+                try
+                {
+                    await Task.Delay(currentBackoff, stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
                 currentBackoff = DoubleBackoff(currentBackoff, _options.MaxBackoff);
             }
-
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
+
+        logger.LogInformation("ResumeProcessingWorker stopped.");
     }
+
     private static TimeSpan DoubleBackoff(TimeSpan value, TimeSpan max)
     {
         var doubledTicks = value.Ticks > long.MaxValue / 2 ? long.MaxValue : value.Ticks * 2;
