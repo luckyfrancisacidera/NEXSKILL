@@ -86,7 +86,7 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
         => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, stage, search, recommendedTopPercent, ct));
 
     [HttpGet("applicants/scores/{submissionId:guid}")]
-    public async Task<ActionResult<ApplicantScoreItemResponse>> GetApplicantBySubmission(Guid submissionId, CancellationToken ct = default)
+    public async Task<ActionResult<ApplicantDetailResponse>> GetApplicantBySubmission(Guid submissionId, CancellationToken ct = default)
     {
         var item = await recruiterService.GetApplicantBySubmissionIdAsync(GetUserId(), submissionId, ct);
         return item is null ? NotFound() : Ok(item);

@@ -40,7 +40,8 @@ export const upsertJobAction = async ({ request, params }: ActionFunctionArgs) =
       ? await recruiterService.updateJob(params.jobId, payload)
       : await recruiterService.createJob(payload);
 
-    return redirect(`/recruiter/job-posts/${job.id}`);
+    const result = params.jobId ? "updated" : "created";
+    return redirect(`/recruiter/job-posts/${job.id}?toast=${result}`);
   } catch (error) {
     console.error('[Recruiter] Save failed', error);
     if (error instanceof ApiError) {

@@ -1,5 +1,4 @@
 import { Card } from "@shared/components/Card";
-import { useState } from "react";
 import {
   Form,
   Link,
@@ -35,7 +34,6 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
   const job = loaderData?.job;
   const navigation = useNavigation();
   const isSaving = navigation.state === "submitting";
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -297,13 +295,6 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
           </section>
 
           <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setIsPreviewOpen(true)}
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-zinc-700 hover:bg-zinc-100"
-            >
-              Preview
-            </button>
             <Link
               to="/recruiter/job-posts"
               className="rounded-lg border border-zinc-300 px-4 py-2 text-zinc-700 hover:bg-zinc-100"
@@ -320,51 +311,6 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
           </div>
         </Form>
       </Card>
-      {isPreviewOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <Card>
-            <div className="max-h-[80vh] w-full max-w-3xl overflow-auto">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold">Job Preview</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsPreviewOpen(false)}
-                  className="rounded-lg border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100"
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="space-y-3 text-sm">
-                <p>
-                  <span className="font-medium">Title:</span>{" "}
-                  {String(job?.title ?? "—")}
-                </p>
-                <p>
-                  <span className="font-medium">Department:</span>{" "}
-                  {String(job?.department ?? "—")}
-                </p>
-                <p>
-                  <span className="font-medium">Location:</span>{" "}
-                  {String(job?.location ?? "—")}
-                </p>
-                <p>
-                  <span className="font-medium">Description:</span>{" "}
-                  {String(job?.description ?? "—")}
-                </p>
-                <p>
-                  <span className="font-medium">Responsibilities:</span>{" "}
-                  {String(job?.responsibilities ?? "—")}
-                </p>
-                <p>
-                  <span className="font-medium">Benefits:</span>{" "}
-                  {String(job?.benefits ?? "—")}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      ) : null}
     </div>
   );
 };

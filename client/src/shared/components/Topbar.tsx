@@ -29,7 +29,7 @@ export const Topbar = () => {
   };
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-6 py-4">
+    <header className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-6 py-4 ">
       <label className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500">
         <Search className="h-4 w-4" />
         <input

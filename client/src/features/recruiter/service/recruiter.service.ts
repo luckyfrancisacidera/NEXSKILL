@@ -44,9 +44,75 @@ export interface ApplicantScoreItemDto {
   job_id: string;
   job_title: string;
   score: number;
-  submission_status: "Applied" | "Recommended" | "Shortlisted" | "Interview" | "Offer" | "Hire" | "Rejected";
+  submission_status:
+    | "Applied"
+    | "Recommended"
+    | "Shortlisted"
+    | "Interview"
+    | "Offer"
+    | "Hire"
+    | "Rejected";  
   jobseeker_stage: "Applied" | "Interview" | "Offer" | "Rejected";
   created_at_utc: string;
+}
+
+export interface ParsedResumeProjectDto {
+  name?: string;
+  bullets?: string[];
+  description?: string;
+  technologies?: string[];
+}
+
+export interface ParsedResumeWorkExperienceDto {
+  job_title?: string;
+  company?: string;
+  start_date?: string;
+  end_date?: string;
+  location?: string;
+  bullets?: string[];
+  technologies?: string[];
+  duration_months?: number;
+}
+
+export interface ParsedResumeEducationDto {
+  degree?: string;
+  institution?: string;
+  start_date?: string;
+  end_date?: string;
+  education_level?: string;
+  field_of_study?: string;
+}
+
+export interface ParsedResumeCertificationDto {
+  name?: string;
+  issuer?: string;
+  issue_date?: string;
+}
+
+export interface ParsedResumeJsonDto {
+  personal_info?: {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    job_target?: string;
+  };
+  summary?: string[];
+  skills?: string[];
+  projects?: ParsedResumeProjectDto[];
+  work_experience?: ParsedResumeWorkExperienceDto[];
+  education?: ParsedResumeEducationDto[];
+  certifications?: ParsedResumeCertificationDto[];
+  derived?: {
+    latest_job_title?: string;
+    total_experience_months?: number;
+    education_max_level?: string;
+    normalized_skills?: string[];
+  };
+}
+
+export interface ApplicantDetailDto extends ApplicantScoreItemDto {
+  parsed_resume_json?: ParsedResumeJsonDto;
 }
 
 export interface ApplicantScoresDto {
