@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
@@ -10,8 +10,8 @@ from app.resources import (
     load_education_programs,
     load_jz_skill_phrases,
 )
-from app.parser.orchestrator import parse_resume
 from app.parser.matchers import build_phrase_matcher
+from app.parser.factory import build_parser
 class AppState:
     nlp = None
     skill_matcher = None
@@ -19,6 +19,10 @@ class AppState:
     exp_titles = set()
     exp_firms = set()
     edu_programs = set()
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 state = AppState()
 
@@ -57,7 +61,7 @@ def health():
 
 
 @app.post("/parse")
-async def parse(file: UploadFile = File(...)):
+async def parse(file: UploadFile = File(...), parser_version: str = Query(default="v1")):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 
@@ -66,17 +70,18 @@ async def parse(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty file")
 
     try:
-        result = await asyncio.to_thread(
-            parse_resume,
-            filename=file.filename,
-            content=content,
+        parser = build_parser(
+            parser_version,
             nlp=state.nlp,
             skill_matcher=state.skill_matcher,
-            title_matcher=state.title_matcher, 
-            exp_titles=state.exp_titles,       
+            title_matcher=state.title_matcher,
+            exp_titles=state.exp_titles,
             edu_programs=state.edu_programs,
         )
-        return result
+        result = await asyncio.to_thread(parser.parse, filename=file.filename, content=content)
+        return {"parser_version": parser.version, "parsed_resume": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()

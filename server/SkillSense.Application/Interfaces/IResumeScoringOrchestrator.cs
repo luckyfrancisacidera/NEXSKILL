@@ -6,9 +6,9 @@ namespace SkillSense.Application.Interfaces;
 
 public interface IResumeScoringOrchestrator
 {
-    Task<(List<ResumeEmbeddingEntity> Embeddings, AtsScoreResponse Score)> BuildAsync(
+    Task<(List<ResumeEmbeddingEntity> Embeddings, FinalMatchScore Score)> BuildAsync(
         Guid submissionId,
-        ResumeParseResult resume,
-        JobDescriptionInput jobDescription,
+        ParsedResume resume,
+        NormalizedJobDescription jobDescription,
         CancellationToken ct);
 }
