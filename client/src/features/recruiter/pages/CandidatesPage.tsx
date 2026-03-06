@@ -145,7 +145,7 @@ export const CandidatesPage = () => {
       </div>
 
       <div className="mb-0 border-b border-zinc-200">
-        <div className="flex min-w-max gap-2 overflow-x-auto">
+        <div className="flex min-w-max gap-2 overflow-x-auto overflow-y-hidden pt-2">
           {stageTabs.map((tab) => {
             const isActive = normalizedFilters.stage === tab.key;
 

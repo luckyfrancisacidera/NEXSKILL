@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@app/layouts/AppShell";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
+import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
 import { PublicOnly, RequireAuth, RequireRole } from "@app/routes/routes.guard";
 import { routeAccess } from "@app/routes/route.config";
 import {
@@ -63,10 +64,10 @@ const withRoleGate = (
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
-  { path: "/not-authorized", element: <NotAuthorized /> },
-
+  { path: "/not-authorized", element: <NotAuthorized />, errorElement: <RouteErrorPage /> },
   {
     path: "/register",
+    errorElement: <RouteErrorPage />,
     element: (
       <PublicOnly>
         <RegisterAccount />
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/login",
+    errorElement: <RouteErrorPage />,
     element: (
       <PublicOnly>
         <LoginAccount />
@@ -83,6 +85,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
+    errorElement: <RouteErrorPage />,
     element: (
       <RequireAuth>
         <AppShell />
