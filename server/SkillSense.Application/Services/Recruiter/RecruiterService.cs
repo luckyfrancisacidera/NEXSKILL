@@ -275,16 +275,21 @@ namespace SkillSense.Application.Services
                 ? projected
                 : projected.Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
 
-            var jobs = await dbContext.Jobs
-                .AsNoTracking()
-                .Where(x => x.RecruiterId == recruiterId)
-                .OrderBy(x => x.Title)
-                .Select(x => new ApplicantScoreJobFilterResponse
+            var jobs = projected
+                .GroupBy(x => new { x.JobId, x.JobTitle })
+                .Select(group => new ApplicantScoreJobFilterResponse
                 {
-                    Id = x.Id,
-                    Title = x.Title,
+                    Id = group.Key.JobId,
+                    Title = group.Key.JobTitle,
+                    AllApplicants = group.Count(),
+                    Recommended = group.Count(x => x.SubmissionStatus == "Recommended"),
+                    Shortlisted = group.Count(x => x.SubmissionStatus == "Shortlisted"),
+                    Interview = group.Count(x => x.SubmissionStatus == "Interview"),
+                    Offer = group.Count(x => x.SubmissionStatus == "Offer"),
+                    Hire = group.Count(x => x.SubmissionStatus == "Hire"),
                 })
-                .ToListAsync(ct);
+                .OrderBy(x => x.Title)
+                .ToList();
 
             return new ApplicantScoresResponse
             {
@@ -314,22 +319,51 @@ namespace SkillSense.Application.Services
 
         public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
         {
-            var submission = await dbContext.ResumeSubmissions
-                .Join(dbContext.Jobs.AsNoTracking(), s => s.JobId, j => j.Id, (s, j) => new { Submission = s, j.RecruiterId })
-                .Where(x => x.RecruiterId == recruiterId && x.Submission.Id == submissionId)
-                .Select(x => x.Submission)
-                .FirstOrDefaultAsync(ct) ?? throw new KeyNotFoundException("Submission not found.");
-
             if (!Enum.TryParse<ResumeSubmissionStatus>(request.Status, true, out var parsed))
             {
                 throw new ArgumentException("Invalid applicant status.");
             }
 
-            submission.Status = parsed;
-            submission.UpdatedAtUtc = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync(ct);
+            var now = DateTime.UtcNow;
+            var updatedRows = await dbContext.ResumeSubmissions
+                .Where(s => s.Id == submissionId)
+                .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(s => s.Status, parsed)
+                    .SetProperty(s => s.UpdatedAtUtc, now), ct);
+
+            if (updatedRows == 0)
+            {
+                throw new KeyNotFoundException("Submission not found.");
+            }
+
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
+
+        public async Task UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
+        {
+            if (!Enum.TryParse<ResumeSubmissionStatus>(request.Status, true, out var parsed))
+            {
+                throw new ArgumentException("Invalid applicant status.");
+            }
+
+            var submissionIds = request.SubmissionIds.Distinct().ToList();
+            if (submissionIds.Count == 0)
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            await dbContext.ResumeSubmissions
+                .Where(s => submissionIds.Contains(s.Id))
+                .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(s => s.Status, parsed)
+                    .SetProperty(s => s.UpdatedAtUtc, now), ct);
+
+            cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        }
+
 
         private static string ResolveJobseekerStage(ResumeSubmissionStatus status)
             => status switch

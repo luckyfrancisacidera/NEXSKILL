@@ -31,6 +31,7 @@ namespace SkillSense.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    RecruiterId = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     DescriptionEmbeddingJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
@@ -40,6 +41,18 @@ namespace SkillSense.Persistence.Migrations
                     ExperienceLevel = table.Column<string>(type: "text", nullable: true),
                     MinYears = table.Column<int>(type: "integer", nullable: true),
                     Education = table.Column<string>(type: "text", nullable: true),
+                    Department = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
+                    Benefits = table.Column<string>(type: "text", nullable: true),
+                    SalaryMinPerAnnum = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    SalaryMaxPerAnnum = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    Currency = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false, defaultValue: "PHP"),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Schedule = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
+                    WorkSetup = table.Column<int>(type: "integer", nullable: false),
+                    EmploymentType = table.Column<int>(type: "integer", nullable: false),
+                    PostedDateUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CompanyNameSnapshot = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    CompanyEmailSnapshot = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     JobDescriptionStructuredJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -97,6 +110,11 @@ namespace SkillSense.Persistence.Migrations
                     BlobObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
                     JobId = table.Column<Guid>(type: "uuid", nullable: false),
                     AppliedJobPosition = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    PostalCode = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    ApplicantUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ParsedResumeJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -282,6 +300,8 @@ namespace SkillSense.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    CompanyEmail = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -334,6 +354,21 @@ namespace SkillSense.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_jobs_CreatedAtUtc",
+                table: "jobs",
+                column: "CreatedAtUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_jobs_RecruiterId",
+                table: "jobs",
+                column: "RecruiterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_jobs_Status",
+                table: "jobs",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_recruiter_profiles_UserId",
                 table: "recruiter_profiles",
                 column: "UserId",
@@ -358,6 +393,11 @@ namespace SkillSense.Persistence.Migrations
                 name: "IX_resume_scores_ResumeSubmissionId",
                 table: "resume_scores",
                 column: "ResumeSubmissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_submissions_ApplicantUserId",
+                table: "resume_submissions",
+                column: "ApplicantUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_resume_submissions_JobId",

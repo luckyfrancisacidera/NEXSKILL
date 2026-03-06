@@ -171,6 +171,7 @@ export const router = createBrowserRouter([
       {
         path: "recruiter/candidates",
         loader: recruiterCandidatesLoader,
+        action: updateCandidateAction,
         element: withRoleGate(
           routeAccess.recruiterCandidates,
           <CandidatesPage />,

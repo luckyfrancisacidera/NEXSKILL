@@ -1,10 +1,14 @@
-import Dropdown, {
-  type DropdownOption,
-} from "@shared/components/Dropdown";
+import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
 
 type Job = {
   id: string;
   title: string;
+  all_applicants: number;
+  recommended: number;
+  shortlisted: number;
+  interview: number;
+  offer: number;
+  hire: number;
 };
 
 type Counts = {
@@ -27,28 +31,35 @@ type Props = {
   jobs: Job[];
   filters: Filters;
   counts: Counts;
-  jobOptionCounts: Map<string, number>;
   onChange?: (e: { target: { name: string; value: string } }) => void;
 };
 
-export default function JobFilterDropdown({
-  jobs,
-  filters,
-  counts,
-  jobOptionCounts,
-  onChange,
-}: Props) {
+const getStageCount = (
+  stage: string,
+  source: { all_applicants: number; recommended: number; shortlisted: number; interview: number; offer: number; hire: number },
+) => {
+  const normalized = stage.toLowerCase();
+  if (normalized === "recommended") return source.recommended;
+  if (normalized === "shortlisted") return source.shortlisted;
+  if (normalized === "interview") return source.interview;
+  if (normalized === "offer") return source.offer;
+  if (normalized === "hire") return source.hire;
+
+  return source.all_applicants;
+};
+
+export default function JobFilterDropdown({ jobs, filters, counts, onChange }: Props) {
   const options: DropdownOption[] = [
     {
       value: "all",
       label: "All jobs",
-      count: counts.all_applicants,
+      count: getStageCount(filters.stage, counts),
       accentClassName: "bg-violet-100 text-violet-700",
     },
     ...jobs.map((job) => ({
       value: job.id,
       label: job.title,
-      count: jobOptionCounts.get(job.id) ?? 0,
+      count: getStageCount(filters.stage, job),
       accentClassName: "bg-zinc-100 text-zinc-700",
     })),
   ];
