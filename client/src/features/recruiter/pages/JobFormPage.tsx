@@ -1,5 +1,4 @@
 import { Card } from "@shared/components/Card";
-import { useState } from "react";
 import {
   Form,
   Link,
@@ -48,7 +47,6 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
   const job = loaderData?.job;
   const navigation = useNavigation();
   const isSaving = navigation.state === "submitting";
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
     <div className="space-y-4">
