@@ -27,8 +27,13 @@ const rethrowAsRouteError = (error: unknown, fallbackMessage: string) => {
 export const recruiterDashboardLoader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
-    const range = (url.searchParams.get('range') as 'last30' | 'last90' | 'ytd' | null) ?? 'last30';
-    return await recruiterService.getDashboardStats(range);
+      return await recruiterService.getDashboardStats({
+      startDate: url.searchParams.get('startDate') ?? undefined,
+      endDate: url.searchParams.get('endDate') ?? undefined,
+      department: url.searchParams.get('department') ?? undefined,
+      jobRole: url.searchParams.get('jobRole') ?? undefined,
+      groupBy: (url.searchParams.get('groupBy') as 'week' | 'month' | 'year' | 'department' | 'job' | null) ?? 'month',
+    });
   } catch (error) {
     rethrowAsRouteError(error, 'Unable to load recruiter dashboard.');
   }

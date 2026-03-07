@@ -60,5 +60,8 @@ namespace SkillSense.Application.Contracts.Recruiter.Request
 
         [JsonPropertyName("employment_type")]
         public int? EmploymentType { get; set; }
+
+        [JsonPropertyName("number_of_vacancies")]
+        public int NumberOfVacancies { get; set; } = 1;
     }
 }

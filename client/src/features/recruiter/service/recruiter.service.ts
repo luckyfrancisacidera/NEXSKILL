@@ -28,6 +28,8 @@ export interface JobDto {
   min_years?: number;
   education?: string;
   min_education?: string;
+  number_of_vacancies?: number;
+  remaining_vacancies?: number;
 }
 export interface Paged<T> {
   items: T[];
@@ -141,15 +143,18 @@ export interface ApplicantScoresDto {
 }
 
 export interface DashboardDto {
-  jobs_posted_over_time: Array<{ date: string; count: number }>;
-  applications_over_time: Array<{ date: string; count: number }>;
-  top_jobs_by_applications: Array<{
-    job_id: string;
-    title: string;
-    applications: number;
-  }>;
-  recommended_count: number;
-  shortlisted_count: number;
+  filters: { departments: string[]; job_roles: string[] };
+  summary: {
+    total_applicants: { value: number; previous_value: number; comparison_percent: number };
+    total_shortlisted: { value: number; previous_value: number; comparison_percent: number };
+    total_interview: { value: number; previous_value: number; comparison_percent: number };
+    total_offer: { value: number; previous_value: number; comparison_percent: number };
+    total_hired: { value: number; previous_value: number; comparison_percent: number };
+  };
+  trends: {
+    labels: string[];
+    datasets: Array<{ key: string; label: string; data: number[]; border_color: string; background_color: string }>;
+  };
 }
 
 export const recruiterService = {
@@ -209,10 +214,12 @@ export const recruiterService = {
     await http.put(`/api/recruiter/applicants/scores/status`, { submission_ids: submissionIds, status });
   },
 
-  getDashboardStats: async (range: "last30" | "last90" | "ytd" = "last30") =>
-    (
-      await http.get<DashboardDto>("/api/recruiter/dashboard", {
-        params: { range },
-      })
-    ).data,
+ getDashboardStats: async (params: {
+    startDate?: string;
+    endDate?: string;
+    department?: string;
+    jobRole?: string;
+    groupBy?: 'week' | 'month' | 'year' | 'department' | 'job';
+  }) =>
+    (await http.get<DashboardDto>("/api/recruiter/dashboard", { params })).data,
 };

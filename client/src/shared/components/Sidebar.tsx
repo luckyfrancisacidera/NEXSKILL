@@ -47,7 +47,7 @@ export const Sidebar = () => {
   const navItems = role === 'admin' ? adminItems : role === 'recruiter' ? recruiterItems : jobseekerItems;
 
   return (
-    <aside className="fixed w-64 border-r border-zinc-200 bg-zinc-50/50 p-4 min-h-screen z-9999">
+    <aside className="fixed w-64 border-r border-zinc-200 bg-zinc-50/50 p-4 min-h-screen z-40">
       <div className="mb-6 rounded-xl bg-white p-4 text-lg font-semibold text-zinc-900 shadow-sm">
         {role === 'admin' ? 'Admin' : role === 'recruiter' ? 'Recruiter' : 'Dashboard'}
       </div>
