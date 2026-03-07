@@ -77,25 +77,40 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
     const search = url.searchParams.get('search') ?? undefined;
     const stage = url.searchParams.get('stage') ?? 'all';
     const jobId = url.searchParams.get('jobId') ?? 'all';
+    const department = url.searchParams.get('department') ?? 'all';
     const recommendedTopPercent = Number(url.searchParams.get('recommendedTopPercent') ?? '10');
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
 
     const data = await recruiterService.getApplicantScores({
       search,
       stage,
       jobId: jobId === 'all' ? undefined : jobId,
+      department: department === 'all' ? undefined : department,
       recommendedTopPercent: Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10,
+      pageNumber: Number.isFinite(page) ? page : 1,
+      pageSize: Number.isFinite(pageSize) ? pageSize : 10,
     });
 
     return {
       candidates: data.items,
       jobs: data.jobs,
+      departments: data.departments,
       counts: data.counts,
       recommendation: data.recommendation,
+        pagination: {
+        page: data.page_number,
+        pageSize: data.page_size,
+        total: data.total_count,
+        totalPages: data.total_pages,
+      },
       filters: {
         search: search ?? '',
         stage,
         jobId,
+        department,
         recommendedTopPercent: String(Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10),
+        pageSize: String(Number.isFinite(pageSize) ? pageSize : 10),
       },
     };
   } catch (error) {

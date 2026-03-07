@@ -42,6 +42,67 @@ public sealed class ScoringTests
     }
 
     [Fact]
+    public async Task SemanticEvidence_UsesManyToManyTopK_NotSingleBestOnly()
+    {
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
+
+        var strong = SampleResume();
+        strong.WorkExperience[0].Bullets =
+        [
+            "Built scalable React web applications with ASP.NET Core",
+            "Developed scalable APIs and React components",
+            "Improved scalable .NET performance for web systems"
+        ];
+
+        var weak = SampleResume();
+        weak.WorkExperience[0].Bullets =
+        [
+            "Built scalable React web applications with ASP.NET Core",
+            "Coordinated meetings",
+            "Handled documentation"
+        ];
+
+        var job = SampleJob();
+        job.Responsibilities = ["Build scalable web applications"];
+
+        var strongResult = await orchestrator.BuildAsync(Guid.NewGuid(), strong, job, CancellationToken.None);
+        var weakResult = await orchestrator.BuildAsync(Guid.NewGuid(), weak, job, CancellationToken.None);
+
+        Assert.True(strongResult.Score.SectionScores["responsibilities"] > weakResult.Score.SectionScores["responsibilities"]);
+    }
+
+
+    [Fact]
+    public async Task SemanticEvidence_DuplicateBullets_DoNotArtificiallyInflateResponsibilities()
+    {
+        var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
+
+        var duplicateHeavy = SampleResume();
+        duplicateHeavy.WorkExperience[0].Bullets =
+        [
+            "Built scalable React web applications",
+            "Built scalable React web applications",
+            "Built scalable React web applications"
+        ];
+
+        var diversified = SampleResume();
+        diversified.WorkExperience[0].Bullets =
+        [
+            "Built scalable React web applications",
+            "Designed scalable API architecture in ASP.NET Core",
+            "Improved performance and reliability for scalable systems"
+        ];
+
+        var job = SampleJob();
+        job.Responsibilities = ["Build scalable web applications"];
+
+        var duplicateResult = await orchestrator.BuildAsync(Guid.NewGuid(), duplicateHeavy, job, CancellationToken.None);
+        var diversifiedResult = await orchestrator.BuildAsync(Guid.NewGuid(), diversified, job, CancellationToken.None);
+
+        Assert.True(duplicateResult.Score.SectionScores["responsibilities"] <= diversifiedResult.Score.SectionScores["responsibilities"]);
+    }
+
+    [Fact]
     public async Task YearsAndEducation_AreRuleBasedStable()
     {
         var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
