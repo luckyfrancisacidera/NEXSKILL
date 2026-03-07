@@ -310,67 +310,111 @@ namespace SkillSense.Application.Services
             var normalizedPageNumber = Math.Max(1, pageNumber);
             var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
 
-            var submissionsQuery = dbContext.ResumeSubmissions
+            var recruiterJobs = await dbContext.Jobs
+                .AsNoTracking()
+                .Where(job => job.RecruiterId == recruiterId && job.Status == JobStatus.Published)
+                .Select(job => new { job.Id, job.Title, Department = job.Department ?? "Unassigned" })
+                .ToListAsync(ct);
+
+            var submissionsBaseQuery = dbContext.ResumeSubmissions
                 .AsNoTracking()
                 .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
-                .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new
-                {
-                    x.submission.Id,
-                    x.submission.FullName,
-                    x.submission.Email,
-                    x.submission.CreatedAtUtc,
-                    x.submission.JobId,
-                    x.submission.Status,
-                    JobTitle = x.job.Title,
-                    JobDepartment = x.job.Department,
-                    JobStatus = x.job.Status,
-                    x.job.RecruiterId,
-                    Score = score.FinalWeightedScore
-                })
-                .Where(x => x.RecruiterId == recruiterId &&
-                            x.JobStatus == JobStatus.Published &&
-                            (!jobId.HasValue || x.JobId == jobId.Value) &&
-                            (normalizedDepartment == null || (x.JobDepartment ?? "Unassigned") == normalizedDepartment));
+                .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new { x.submission, x.job, score })
+                .Where(x => x.job.RecruiterId == recruiterId &&
+                            x.job.Status == JobStatus.Published &&
+                            (normalizedDepartment == null || (x.job.Department ?? "Unassigned") == normalizedDepartment));
 
             if (normalizedSearch is not null)
             {
-                submissionsQuery = submissionsQuery.Where(x =>
-                    (x.FullName ?? string.Empty).ToLower().Contains(normalizedSearch) ||
-                    (x.Email ?? string.Empty).ToLower().Contains(normalizedSearch) ||
-                    x.JobTitle.ToLower().Contains(normalizedSearch));
+                submissionsBaseQuery = submissionsBaseQuery.Where(x =>
+                    (x.submission.FullName ?? string.Empty).ToLower().Contains(normalizedSearch) ||
+                    (x.submission.Email ?? string.Empty).ToLower().Contains(normalizedSearch) ||
+                    x.job.Title.ToLower().Contains(normalizedSearch));
             }
 
-            var allItems = await submissionsQuery
-                .OrderByDescending(x => x.CreatedAtUtc)
+            var rawItems = await submissionsBaseQuery
+                .OrderByDescending(x => x.submission.CreatedAtUtc)
+                .Select(x => new
+                {
+                    Id = x.submission.Id,
+                    FullName = x.submission.FullName,
+                    Email = x.submission.Email,
+                    CreatedAtUtc = x.submission.CreatedAtUtc,
+                    JobId = x.submission.JobId,
+                    Status = x.submission.Status,
+                    JobTitle = x.job.Title,
+                    JobDepartment = x.job.Department,
+                    JobStatus = x.job.Status,
+                    RecruiterId = x.job.RecruiterId,
+                    Score = x.score.FinalWeightedScore
+                })
                 .ToListAsync(ct);
 
-            var recommendedCount = allItems.Count == 0 ? 0 : (int)Math.Ceiling(allItems.Count * (topPercent / 100d));
-            var recommendedIds = allItems
-                .OrderByDescending(x => x.Score)
-                .Take(recommendedCount)
-                .Select(x => x.Id)
-                .ToHashSet();
+            var allItemsForCounts = rawItems
+                .Select(x => new ApplicantScoreSourceRow(
+                    x.Id,
+                    x.FullName,
+                    x.Email,
+                    x.CreatedAtUtc,
+                    x.JobId,
+                    x.Status,
+                    x.JobTitle,
+                    x.JobDepartment,
+                    x.JobStatus,
+                    x.RecruiterId,
+                    x.Score
+                ))
+                .ToList();
 
-            var projected = allItems.Select(x =>
+            var allItems = jobId.HasValue
+                ? allItemsForCounts.Where(x => x.JobId == jobId.Value).ToList()
+                : allItemsForCounts;
+
+            List<ApplicantScoreItemResponse> BuildProjected(List<ApplicantScoreSourceRow> sourceItems)
             {
-                var score = (int)Math.Round(x.Score);
-                return new ApplicantScoreItemResponse
-                {
-                    ResumeSubmissionId = x.Id,
-                    ApplicantName = string.IsNullOrWhiteSpace(x.FullName) ? "Unknown Applicant" : x.FullName!,
-                    ApplicantEmail = string.IsNullOrWhiteSpace(x.Email) ? "-" : x.Email!,
-                    JobId = x.JobId,
-                    JobTitle = x.JobTitle,
-                    Score = score,
-                    SubmissionStatus = ResolveSubmissionStatus(x.Status, recommendedIds.Contains(x.Id)),
-                    JobseekerStage = ResolveJobseekerStage(x.Status),
-                    CreatedAtUtc = x.CreatedAtUtc,
-                };
-            }).ToList();
+                var recommendedCount = sourceItems.Count == 0
+                    ? 0
+                    : (int)Math.Ceiling(sourceItems.Count * (topPercent / 100d));
+
+                var recommendedIds = sourceItems
+                    .OrderByDescending(x => x.Score)
+                    .Take(recommendedCount)
+                    .Select(x => x.Id)
+                    .ToHashSet();
+
+                return sourceItems
+                    .Select(x =>
+                    {
+                        var score = (int)Math.Round(x.Score);
+                        return new ApplicantScoreItemResponse
+                        {
+                            ResumeSubmissionId = x.Id,
+                            ApplicantName = string.IsNullOrWhiteSpace(x.FullName) ? "Unknown Applicant" : x.FullName!,
+                            ApplicantEmail = string.IsNullOrWhiteSpace(x.Email) ? "-" : x.Email!,
+                            JobId = x.JobId,
+                            JobTitle = x.JobTitle,
+                            Score = score,
+                            SubmissionStatus = ResolveSubmissionStatus(x.Status, recommendedIds.Contains(x.Id)),
+                            JobseekerStage = ResolveJobseekerStage(x.Status),
+                            CreatedAtUtc = x.CreatedAtUtc,
+                        };
+                    })
+                    .ToList();
+            }
+
+            var projected = BuildProjected(allItems);
+            var projectedForCounters = BuildProjected(allItemsForCounts);
 
             var filtered = normalizedStage == "all"
                 ? projected
-                : projected.Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
+                : projected
+                    .Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            filtered = filtered
+                .OrderByDescending(x => x.Score)
+                .ThenByDescending(x => x.CreatedAtUtc)
+                .ToList();
 
             var totalCount = filtered.Count;
             var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
@@ -379,27 +423,38 @@ namespace SkillSense.Application.Services
                 .Take(normalizedPageSize)
                 .ToList();
 
-            var jobs = projected
-                .GroupBy(x => new { x.JobId, x.JobTitle })
-                .Select(group => new ApplicantScoreJobFilterResponse
+            var projectedByJobId = projectedForCounters
+                .GroupBy(x => x.JobId)
+                .ToDictionary(group => group.Key, group => group.ToList());
+
+            var jobs = recruiterJobs
+                .Select(job =>
                 {
-                    Id = group.Key.JobId,
-                    Title = group.Key.JobTitle,
-                    AllApplicants = group.Count(),
-                    Recommended = group.Count(x => x.SubmissionStatus == "Recommended"),
-                    Shortlisted = group.Count(x => x.SubmissionStatus == "Shortlisted"),
-                    Interview = group.Count(x => x.SubmissionStatus == "Interview"),
-                    Offer = group.Count(x => x.SubmissionStatus == "Offer"),
-                    Hire = group.Count(x => x.SubmissionStatus == "Hire"),
+                    var hasValues = projectedByJobId.TryGetValue(job.Id, out var itemsForJob);
+                    var safeItems = hasValues && itemsForJob is not null
+                        ? itemsForJob
+                        : new List<ApplicantScoreItemResponse>();
+
+                    return new ApplicantScoreJobFilterResponse
+                    {
+                        Id = job.Id,
+                        Title = job.Title,
+                        AllApplicants = safeItems.Count,
+                        Recommended = safeItems.Count(x => x.SubmissionStatus == "Recommended"),
+                        Shortlisted = safeItems.Count(x => x.SubmissionStatus == "Shortlisted"),
+                        Interview = safeItems.Count(x => x.SubmissionStatus == "Interview"),
+                        Offer = safeItems.Count(x => x.SubmissionStatus == "Offer"),
+                        Hire = safeItems.Count(x => x.SubmissionStatus == "Hire"),
+                    };
                 })
                 .OrderBy(x => x.Title)
                 .ToList();
 
-            var departments = allItems
-            .Select(x => string.IsNullOrWhiteSpace(x.JobDepartment) ? "Unassigned" : x.JobDepartment!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x)
-            .ToList();
+            var departments = recruiterJobs
+                .Select(x => x.Department)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
 
             return new ApplicantScoresResponse
             {
@@ -412,12 +467,12 @@ namespace SkillSense.Application.Services
                 Departments = departments,
                 Counts = new ApplicantScoreCountsResponse
                 {
-                    AllApplicants = projected.Count,
-                    Recommended = projected.Count(x => x.SubmissionStatus == "Recommended"),
-                    Shortlisted = projected.Count(x => x.SubmissionStatus == "Shortlisted"),
-                    Interview = projected.Count(x => x.SubmissionStatus == "Interview"),
-                    Offer = projected.Count(x => x.SubmissionStatus == "Offer"),
-                    Hire = projected.Count(x => x.SubmissionStatus == "Hire"),
+                    AllApplicants = projectedForCounters.Count,
+                    Recommended = projectedForCounters.Count(x => x.SubmissionStatus == "Recommended"),
+                    Shortlisted = projectedForCounters.Count(x => x.SubmissionStatus == "Shortlisted"),
+                    Interview = projectedForCounters.Count(x => x.SubmissionStatus == "Interview"),
+                    Offer = projectedForCounters.Count(x => x.SubmissionStatus == "Offer"),
+                    Hire = projectedForCounters.Count(x => x.SubmissionStatus == "Hire"),
                 },
                 Recommendation = new RecommendationSettingsResponse
                 {
@@ -521,6 +576,19 @@ namespace SkillSense.Application.Services
         }
 
 
+        private sealed record ApplicantScoreSourceRow(
+            Guid Id,
+            string? FullName,
+            string? Email,
+            DateTime CreatedAtUtc,
+            Guid JobId,
+            ResumeSubmissionStatus Status,
+            string JobTitle,
+            string? JobDepartment,
+            JobStatus JobStatus,
+            Guid RecruiterId,
+            float Score);
+
         private static string ResolveJobseekerStage(ResumeSubmissionStatus status)
             => status switch
             {
@@ -547,7 +615,7 @@ namespace SkillSense.Application.Services
         private static RecruiterDashboardSummaryResponse BuildSummary(IReadOnlyCollection<ResumeSubmissionEntity> current, IReadOnlyCollection<ResumeSubmissionEntity> previous)
             => new()
             {
-                TotalApplicants = BuildMetric(current.Count, previous.Count),
+                TotalApplicants = BuildMetric(current.Count(), previous.Count()),
                 TotalShortlisted = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted), previous.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted)),
                 TotalInterview = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Interview), previous.Count(x => x.Status == ResumeSubmissionStatus.Interview)),
                 TotalOffer = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Offer), previous.Count(x => x.Status == ResumeSubmissionStatus.Offer)),

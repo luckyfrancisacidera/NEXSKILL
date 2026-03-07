@@ -172,7 +172,7 @@ export const RecruiterDashboardPage = () => {
             updateFilters(filters);
           }}
         >
-          <div className="flex min-w-0 flex-nowrap items-end gap-3 overflow-x-auto pb-1">
+          <div className="flex min-w-0 flex-nowrap items-end gap-3 pb-1">
             <DatePicker label="Start Date" value={filters.startDate} onChange={(value) => setFilters((prev) => ({ ...prev, startDate: value }))} className="min-w-42.5 flex-1" />
             <DatePicker label="End Date" value={filters.endDate} onChange={(value) => setFilters((prev) => ({ ...prev, endDate: value }))} className="min-w-42.5 flex-1" />
 
