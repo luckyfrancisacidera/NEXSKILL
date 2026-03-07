@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowDownRight, ArrowUpRight, Expand, FileCheck2, UserCheck2, UserRoundCheck, Users, UsersRound } from 'lucide-react';
 
@@ -13,7 +13,7 @@ type GroupByType = 'week' | 'month' | 'year' | 'department' | 'job';
 type QuickRangeType = '' | 'last7' | 'last28' | 'lastMonth';
 
 type DashboardData = {
-  filters: { departments: string[]; job_roles: string[] };
+  filters: { departments: string[]; job_roles: string[]; job_roles_by_department: Record<string, string[]> };
   summary: {
     total_applicants: Metric;
     total_shortlisted: Metric;
@@ -91,11 +91,15 @@ export const RecruiterDashboardPage = () => {
     [searchParams],
   );
 
-  const [filters, setFilters] = useState(selected);
+  const previousRequestRef = useRef(searchParams.toString());
+
+  useEffect(() => {
+    previousRequestRef.current = searchParams.toString();
+  }, [searchParams]);
 
   const title = useMemo(() => `${selected.groupBy[0].toUpperCase()}${selected.groupBy.slice(1)} Applicant Trends`, [selected.groupBy]);
 
-  const updateFilters = (nextFilters: typeof filters) => {
+  const updateFilters = useCallback((nextFilters: typeof selected) => {
     const next = new URLSearchParams(searchParams);
 
     (['startDate', 'endDate', 'department', 'jobRole', 'groupBy'] as const).forEach((key) => {
@@ -104,24 +108,49 @@ export const RecruiterDashboardPage = () => {
       else next.set(key, value);
     });
 
-    navigate(`/recruiter/dashboard?${next.toString()}`);
-  };
+    const nextQuery = next.toString();
+    if (nextQuery === previousRequestRef.current) return;
 
-  const updateGroupBy = (groupBy: GroupByType) => {
-    const nextFilters = { ...filters, groupBy };
-    setFilters(nextFilters);
+    previousRequestRef.current = nextQuery;
+    navigate(nextQuery ? `/recruiter/dashboard?${nextQuery}` : '/recruiter/dashboard');
+  }, [navigate, searchParams]);
+
+  const updateFilterField = <K extends keyof typeof selected>(key: K, value: (typeof selected)[K]) => {
+    const nextFilters = { ...selected, [key]: value };
     updateFilters(nextFilters);
   };
 
-  const clearFilters = () => {
-    const resetFilters = { ...filters, startDate: '', endDate: '', department: '', jobRole: '' };
-    setFilters(resetFilters);
-    setQuickRange('');
-    navigate('/recruiter/dashboard');
+  const updateGroupBy = (groupBy: GroupByType) => {
+    updateFilterField('groupBy', groupBy);
   };
 
-  const departmentOptions: DropdownOption[] = [{ value: '', label: 'None' }, ...data.filters.departments.map((department) => ({ value: department, label: department }))];
-  const jobRoleOptions: DropdownOption[] = [{ value: '', label: 'None' }, ...data.filters.job_roles.map((role) => ({ value: role, label: role }))];
+  const roleOptionsByDepartment = data.filters.job_roles_by_department;
+  const availableJobRoles = useMemo(() => {
+    if (!selected.department) return data.filters.job_roles;
+    return roleOptionsByDepartment[selected.department] ?? [];
+  }, [data.filters.job_roles, roleOptionsByDepartment, selected.department]);
+
+  const availableJobRoleSet = useMemo(() => new Set(availableJobRoles), [availableJobRoles]);
+
+  useEffect(() => {
+    if (!selected.jobRole || availableJobRoleSet.has(selected.jobRole)) return;
+    updateFilters({ ...selected, jobRole: '' });
+  }, [availableJobRoleSet, selected, updateFilters]);
+
+  const handleDepartmentChange = (department: string) => {
+    const departmentRoles = department ? roleOptionsByDepartment[department] ?? [] : data.filters.job_roles;
+    const nextJobRole = selected.jobRole && !departmentRoles.includes(selected.jobRole) ? '' : selected.jobRole;
+    updateFilters({ ...selected, department, jobRole: nextJobRole });
+  };
+
+  const clearFilters = () => {
+    const resetFilters = { ...selected, startDate: '', endDate: '', department: '', jobRole: '' };
+    setQuickRange('');
+    updateFilters(resetFilters);
+  };
+
+  const departmentOptions: DropdownOption[] = [{ value: '', label: 'All Departments' }, ...data.filters.departments.map((department) => ({ value: department, label: department }))];
+  const jobRoleOptions: DropdownOption[] = [{ value: '', label: 'All Job Roles' }, ...availableJobRoles.map((role) => ({ value: role, label: role }))];
   const quickRangeOptions: DropdownOption[] = [
     { value: '', label: 'Quick Range' },
     { value: 'last7', label: 'Last 7 Days' },
@@ -134,8 +163,7 @@ export const RecruiterDashboardPage = () => {
     if (!value) return;
 
     const range = getQuickRange(value);
-    const nextFilters = { ...filters, ...range };
-    setFilters(nextFilters);
+    const nextFilters = { ...selected, ...range };
     updateFilters(nextFilters);
   };
 
@@ -143,7 +171,7 @@ export const RecruiterDashboardPage = () => {
     if (selected.groupBy === 'month') return data.trends.labels.map(formatMonthLabel);
 
     if (selected.groupBy === 'week') {
-      const referenceDate = filters.startDate || filters.endDate;
+      const referenceDate = selected.startDate || selected.endDate;
       const reference = referenceDate ? new Date(referenceDate) : new Date();
       const monthYear = monthFormatter.format(reference);
 
@@ -159,30 +187,25 @@ export const RecruiterDashboardPage = () => {
     }
 
     return data.trends.labels;
-  }, [data.trends.labels, selected.groupBy, filters.startDate, filters.endDate]);
+  }, [data.trends.labels, selected.groupBy, selected.startDate, selected.endDate]);
 
   return (
     <div className="space-y-6">
       <RecruiterHeader />
 
       <Card className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-5">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            updateFilters(filters);
-          }}
-        >
+        <form>
           <div className="flex min-w-0 flex-nowrap items-end gap-3 pb-1">
-            <DatePicker label="Start Date" value={filters.startDate} onChange={(value) => setFilters((prev) => ({ ...prev, startDate: value }))} className="min-w-42.5 flex-1" />
-            <DatePicker label="End Date" value={filters.endDate} onChange={(value) => setFilters((prev) => ({ ...prev, endDate: value }))} className="min-w-42.5 flex-1" />
+            <DatePicker label="Start Date" value={selected.startDate} onChange={(value) => updateFilterField('startDate', value)} className="min-w-42.5 flex-1" />
+            <DatePicker label="End Date" value={selected.endDate} onChange={(value) => updateFilterField('endDate', value)} className="min-w-42.5 flex-1" />
 
             <div className="min-w-42.5 flex-1">
               <Dropdown
                 label="Department"
                 name="department"
-                value={filters.department}
+                value={selected.department}
                 options={departmentOptions}
-                onChange={(event) => setFilters((prev) => ({ ...prev, department: event.target.value }))}
+                onChange={(event) => handleDepartmentChange(event.target.value)}
               />
             </div>
 
@@ -190,15 +213,12 @@ export const RecruiterDashboardPage = () => {
               <Dropdown
                 label="Job Role"
                 name="jobRole"
-                value={filters.jobRole}
+                value={availableJobRoleSet.has(selected.jobRole) ? selected.jobRole : ''}
                 options={jobRoleOptions}
-                onChange={(event) => setFilters((prev) => ({ ...prev, jobRole: event.target.value }))}
+                onChange={(event) => updateFilterField('jobRole', event.target.value)}
               />
             </div>
 
-            <button type="submit" className="h-11 whitespace-nowrap rounded-md border border-zinc-900 bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800">
-              Apply Filters
-            </button>
             <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50" onClick={clearFilters}>
               Clear Filters
             </button>
