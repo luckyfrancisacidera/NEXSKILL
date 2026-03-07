@@ -9,9 +9,21 @@ import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
 
 const stageTabs = [
   { key: "all", label: "All Applicants", badge: "bg-slate-100 text-slate-700" },
-  { key: "Recommended", label: "Recommended", badge: "bg-violet-100 text-violet-700" },
-  { key: "Shortlisted", label: "Shortlisted", badge: "bg-sky-100 text-sky-700" },
-  { key: "Interview", label: "Interview", badge: "bg-amber-100 text-amber-700" },
+  {
+    key: "Recommended",
+    label: "Recommended",
+    badge: "bg-violet-100 text-violet-700",
+  },
+  {
+    key: "Shortlisted",
+    label: "Shortlisted",
+    badge: "bg-sky-100 text-sky-700",
+  },
+  {
+    key: "Interview",
+    label: "Interview",
+    badge: "bg-amber-100 text-amber-700",
+  },
   { key: "Offer", label: "Offer", badge: "bg-emerald-100 text-emerald-700" },
   { key: "Hire", label: "Hire", badge: "bg-fuchsia-100 text-fuchsia-700" },
 ] as const;
@@ -54,19 +66,36 @@ type Filters = {
   search: string;
   stage: string;
   jobId: string;
+  department: string;
   recommendedTopPercent: string;
+  pageSize: string;
 };
 
 type LoaderData = {
   candidates: Candidate[];
   jobs: Job[];
+  departments: string[];
   counts: Counts;
   recommendation: { top_percent: number };
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
   filters: Filters;
 };
 
 export const CandidatesPage = () => {
-  const { candidates, jobs, counts, filters, recommendation } = useLoaderData() as LoaderData;
+  const {
+    candidates,
+    jobs,
+    departments,
+    counts,
+    filters,
+    recommendation,
+    pagination,
+  } = useLoaderData() as LoaderData;
   const fetcher = useFetcher();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -74,7 +103,9 @@ export const CandidatesPage = () => {
     search: filters.search ?? "",
     stage: filters.stage ?? "all",
     jobId: filters.jobId ?? "all",
+    department: filters.department ?? "all",
     recommendedTopPercent: filters.recommendedTopPercent ?? "10",
+    pageSize: filters.pageSize ?? "10",
   };
 
   const countByStage: Record<string, number> = {
@@ -87,7 +118,8 @@ export const CandidatesPage = () => {
   };
 
   const candidateIdsOnPage = useMemo(
-    () => new Set(candidates.map((candidate) => candidate.resume_submission_id)),
+    () =>
+      new Set(candidates.map((candidate) => candidate.resume_submission_id)),
     [candidates],
   );
 
@@ -101,11 +133,20 @@ export const CandidatesPage = () => {
     [selectedIds, candidateIdsOnPage],
   );
 
-  const selectedSet = useMemo(() => new Set(selectedIdsOnPage), [selectedIdsOnPage]);
-  const isAllChecked = candidates.length > 0 && candidates.every((c) => selectedSet.has(c.resume_submission_id));
-  const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(normalizedFilters.stage);
+  const selectedSet = useMemo(
+    () => new Set(selectedIdsOnPage),
+    [selectedIdsOnPage],
+  );
+  const isAllChecked =
+    candidates.length > 0 &&
+    candidates.every((c) => selectedSet.has(c.resume_submission_id));
+  const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(
+    normalizedFilters.stage,
+  );
 
-  const recommendedCutoffOptions: DropdownOption[] = [5, 10, 15, 20, 25, 30].map((value) => ({
+  const recommendedCutoffOptions: DropdownOption[] = [
+    5, 10, 15, 20, 25, 30,
+  ].map((value) => ({
     value: String(value),
     label: `Top ${value}%`,
     accentClassName: "bg-violet-100 text-violet-700",
@@ -116,11 +157,15 @@ export const CandidatesPage = () => {
       setSelectedIds([]);
       return;
     }
-    setSelectedIds(candidates.map((candidate) => candidate.resume_submission_id));
+    setSelectedIds(
+      candidates.map((candidate) => candidate.resume_submission_id),
+    );
   };
 
   const toggleSingleRow = (id: string) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id],
+    );
   };
 
   const stage = normalizedFilters.stage;
@@ -133,7 +178,10 @@ export const CandidatesPage = () => {
     formData.set("intent", "bulk-stage");
     formData.set("status", nextStatus);
     formData.set("selectedIds", selectedIdsValue);
-    fetcher.submit(formData, { method: "post", action: "/recruiter/candidates" });
+    fetcher.submit(formData, {
+      method: "post",
+      action: "/recruiter/candidates",
+    });
     setSelectedIds([]);
   };
 
@@ -141,7 +189,10 @@ export const CandidatesPage = () => {
     <Card>
       <div className="mb-3">
         <h2 className="text-xl font-semibold text-zinc-900">Candidates</h2>
-        <p className="mt-1 text-sm text-zinc-500">Review applications, filter by hiring stage, and move candidates forward.</p>
+        <p className="mt-1 text-sm text-zinc-500">
+          Review applications, filter by hiring stage, and move candidates
+          forward.
+        </p>
       </div>
 
       <div className="mb-0 border-b border-zinc-200">
@@ -152,7 +203,7 @@ export const CandidatesPage = () => {
             return (
               <Link
                 key={tab.key}
-                to={`?search=${encodeURIComponent(normalizedFilters.search)}&jobId=${encodeURIComponent(normalizedFilters.jobId)}&recommendedTopPercent=${encodeURIComponent(normalizedFilters.recommendedTopPercent)}&stage=${encodeURIComponent(tab.key)}`}
+                to={`?search=${encodeURIComponent(normalizedFilters.search)}&jobId=${encodeURIComponent(normalizedFilters.jobId)}&department=${encodeURIComponent(normalizedFilters.department)}&recommendedTopPercent=${encodeURIComponent(normalizedFilters.recommendedTopPercent)}&pageSize=${encodeURIComponent(normalizedFilters.pageSize)}&page=1&stage=${encodeURIComponent(tab.key)}`}
                 className={`relative -mb-px inline-flex items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition ${
                   isActive
                     ? "border-zinc-200 border-b-white bg-white text-zinc-900 shadow-sm"
@@ -160,7 +211,9 @@ export const CandidatesPage = () => {
                 }`}
               >
                 <span>{tab.label}</span>
-                <span className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${isActive ? tab.badge : "bg-zinc-200 text-zinc-600"}`}>
+                <span
+                  className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${isActive ? tab.badge : "bg-zinc-200 text-zinc-600"}`}
+                >
                   {countByStage[tab.key] ?? 0}
                 </span>
               </Link>
@@ -178,7 +231,19 @@ export const CandidatesPage = () => {
           className="min-w-65 flex-1"
         />
 
-        <JobFilterDropdown jobs={jobs} filters={normalizedFilters} counts={counts} />
+        <JobFilterDropdown
+          jobs={jobs}
+          filters={normalizedFilters}
+          counts={counts}
+        />
+
+         <Dropdown
+          label="Department"
+          name="department"
+          value={normalizedFilters.department}
+          options={[{ value: "all", label: "All departments", accentClassName: "bg-violet-100 text-violet-700" }, ...departments.map((department) => ({ value: department, label: department, accentClassName: "bg-zinc-100 text-zinc-700" }))]}
+          className="min-w-60"
+        />
 
         {isRecommendationFilterVisible ? (
           <Dropdown
@@ -190,18 +255,37 @@ export const CandidatesPage = () => {
             buttonClassName="min-w-[240px]"
           />
         ) : (
-          <input type="hidden" name="recommendedTopPercent" value={normalizedFilters.recommendedTopPercent} />
+          <input
+            type="hidden"
+            name="recommendedTopPercent"
+            value={normalizedFilters.recommendedTopPercent}
+          />
         )}
 
         <input type="hidden" name="stage" value={normalizedFilters.stage} />
+        <input type="hidden" name="page" value="1" />
 
-        <button className="h-11 rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800" type="submit">
+        <Dropdown
+          label="Page Size"
+          name="pageSize"
+          value={normalizedFilters.pageSize}
+          options={["10", "20", "50"].map((value) => ({ value, label: `${value} per page`, accentClassName: "bg-zinc-100 text-zinc-700" }))}
+          className="min-w-44"
+        />
+
+        <button
+          className="h-11 rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
+          type="submit"
+        >
           Apply
         </button>
       </Form>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-zinc-500">ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}</p>
+        <p className="text-xs text-zinc-500">
+          ATS auto-recommends top {recommendation.top_percent}% by score.
+          Selected: {selectedIdsOnPage.length}
+        </p>
 
         <div className="flex flex-wrap items-center gap-2">
           {(stage === "all" || stage === "Recommended") && (
@@ -304,7 +388,15 @@ export const CandidatesPage = () => {
                   className="h-4 w-4 rounded border-zinc-400"
                 />
               </th>
-              {["Name", "Email", "Job", "Status", "Score", "Applied", "Actions"].map((col) => (
+              {[
+                "Name",
+                "Email",
+                "Job",
+                "Status",
+                "Score",
+                "Applied",
+                "Actions",
+              ].map((col) => (
                 <th key={col} className="px-3 py-3 text-left font-semibold">
                   {col}
                 </th>
@@ -313,24 +405,41 @@ export const CandidatesPage = () => {
           </thead>
           <tbody>
             {candidates.map((candidate, idx) => (
-              <tr key={candidate.resume_submission_id} className={`border-t border-zinc-100 ${idx % 2 ? "bg-zinc-50/60" : "bg-white"}`}>
+              <tr
+                key={candidate.resume_submission_id}
+                className={`border-t border-zinc-100 ${idx % 2 ? "bg-zinc-50/60" : "bg-white"}`}
+              >
                 <td className="px-3 py-3">
                   <input
                     type="checkbox"
                     aria-label={`select ${candidate.applicant_name}`}
                     checked={selectedSet.has(candidate.resume_submission_id)}
-                    onChange={() => toggleSingleRow(candidate.resume_submission_id)}
+                    onChange={() =>
+                      toggleSingleRow(candidate.resume_submission_id)
+                    }
                     className="h-4 w-4 rounded border-zinc-400"
                   />
                 </td>
-                <td className="px-3 py-3 font-medium text-zinc-900">{candidate.applicant_name}</td>
-                <td className="px-3 py-3 text-zinc-700">{candidate.applicant_email}</td>
-                <td className="px-3 py-3 text-zinc-700">{candidate.job_title}</td>
-                <td className="px-3 py-3">
-                  <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700">{candidate.submission_status}</span>
+                <td className="px-3 py-3 font-medium text-zinc-900">
+                  {candidate.applicant_name}
                 </td>
-                <td className="px-3 py-3 font-semibold text-zinc-900">{candidate.score}</td>
-                <td className="px-3 py-3 text-zinc-700">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>
+                <td className="px-3 py-3 text-zinc-700">
+                  {candidate.applicant_email}
+                </td>
+                <td className="px-3 py-3 text-zinc-700">
+                  {candidate.job_title}
+                </td>
+                <td className="px-3 py-3">
+                  <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700">
+                    {candidate.submission_status}
+                  </span>
+                </td>
+                <td className="px-3 py-3 font-semibold text-zinc-900">
+                  {candidate.score}
+                </td>
+                <td className="px-3 py-3 text-zinc-700">
+                  {new Date(candidate.created_at_utc).toLocaleDateString()}
+                </td>
                 <td className="px-3 py-3">
                   <Link
                     to={`/recruiter/candidates/${candidate.resume_submission_id}`}
@@ -345,6 +454,27 @@ export const CandidatesPage = () => {
           </tbody>
         </table>
       </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 text-sm">
+        <span>
+          Page {pagination.page} of {pagination.totalPages} · {pagination.total} candidates
+        </span>
+        <div className="flex gap-2">
+          <Link
+            to={`?search=${encodeURIComponent(normalizedFilters.search)}&jobId=${encodeURIComponent(normalizedFilters.jobId)}&department=${encodeURIComponent(normalizedFilters.department)}&recommendedTopPercent=${encodeURIComponent(normalizedFilters.recommendedTopPercent)}&stage=${encodeURIComponent(normalizedFilters.stage)}&pageSize=${encodeURIComponent(normalizedFilters.pageSize)}&page=${Math.max(1, pagination.page - 1)}`}
+            className="rounded border border-zinc-300 px-3 py-1"
+          >
+            Prev
+          </Link>
+          <Link
+            to={`?search=${encodeURIComponent(normalizedFilters.search)}&jobId=${encodeURIComponent(normalizedFilters.jobId)}&department=${encodeURIComponent(normalizedFilters.department)}&recommendedTopPercent=${encodeURIComponent(normalizedFilters.recommendedTopPercent)}&stage=${encodeURIComponent(normalizedFilters.stage)}&pageSize=${encodeURIComponent(normalizedFilters.pageSize)}&page=${Math.min(pagination.totalPages, pagination.page + 1)}`}
+            className="rounded border border-zinc-300 px-3 py-1"
+          >
+            Next
+          </Link>
+        </div>
+      </div>
+
     </Card>
   );
 };

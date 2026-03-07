@@ -82,8 +82,8 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
         => Ok(await recruiterService.GetDashboardAsync(GetUserId(), startDate, endDate, department, jobRole, groupBy, ct));
 
     [HttpGet("applicants/scores")]
-    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int? recommendedTopPercent = null, CancellationToken ct = default)
-        => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, stage, search, recommendedTopPercent, ct));
+    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? department = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int? recommendedTopPercent = null, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken ct = default)
+        => Ok(await recruiterService.GetApplicantScoresAsync(GetUserId(), jobId, department, stage, search, recommendedTopPercent, pageNumber, pageSize, ct));
 
     [HttpGet("applicants/scores/{submissionId:guid}")]
     public async Task<ActionResult<ApplicantDetailResponse>> GetApplicantBySubmission(Guid submissionId, CancellationToken ct = default)

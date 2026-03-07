@@ -1,0 +1,3447 @@
+{
+  "_meta": {
+    "description": "Starter skill alias dictionary for ATS matching. Use as a seed dataset and review/edit for your domain.",
+    "canonical_skill_count": 168,
+    "alias_count": 1575,
+    "notes": [
+      "This is a starter dataset, not a perfect taxonomy.",
+      "Use normalized lowercase comparison during matching.",
+      "Prefer exact/canonical/alias matching before semantic fallback."
+    ],
+    "additional_canonical_added": 73,
+    "total_canonical_skills": 241
+  },
+  "skills": {
+    "c#": {
+      "aliases": [
+        "c sharp",
+        "c# api",
+        "c# backend",
+        "c# development",
+        "c# services",
+        "c#s",
+        "experience with c#",
+        "knowledge of c#"
+      ],
+      "category": "backend"
+    },
+    "dotnet": {
+      "aliases": [
+        ".net",
+        ".net 10",
+        ".net 11",
+        ".net 17",
+        ".net 18",
+        ".net 2",
+        ".net 3",
+        ".net 4",
+        ".net 5",
+        ".net 6",
+        ".net 7",
+        ".net 8",
+        ".net 9",
+        ".net core",
+        ".net framework",
+        "asp net",
+        "asp net core",
+        "asp.net",
+        "asp.net core",
+        "asp.net mvc",
+        "aspnet",
+        "aspnet core",
+        "dot net",
+        "dotnet 10",
+        "dotnet 11",
+        "dotnet 17",
+        "dotnet 18",
+        "dotnet 2",
+        "dotnet 3",
+        "dotnet 4",
+        "dotnet 5",
+        "dotnet 6",
+        "dotnet 7",
+        "dotnet 8",
+        "dotnet 9",
+        "dotnet api",
+        "dotnet backend",
+        "dotnet core",
+        "dotnet development",
+        "dotnet services",
+        "dotnets",
+        "experience with dotnet",
+        "knowledge of dotnet",
+        "net",
+        "net 10",
+        "net 11",
+        "net 17",
+        "net 18",
+        "net 2",
+        "net 3",
+        "net 4",
+        "net 5",
+        "net 6",
+        "net 7",
+        "net 8",
+        "net 9",
+        "net core",
+        "net framework"
+      ],
+      "category": "backend"
+    },
+    "java": {
+      "aliases": [
+        "experience with java",
+        "java 11",
+        "java 17",
+        "java 8",
+        "java api",
+        "java backend",
+        "java development",
+        "java services",
+        "java11",
+        "java17",
+        "java8",
+        "javas",
+        "knowledge of java"
+      ],
+      "category": "backend"
+    },
+    "spring boot": {
+      "aliases": [
+        "experience with spring boot",
+        "knowledge of spring boot",
+        "spring boot 2",
+        "spring boot 3",
+        "spring boot api",
+        "spring boot backend",
+        "spring boot developer",
+        "spring boot development",
+        "spring boot experience",
+        "spring boot services",
+        "spring boot skills",
+        "spring boots",
+        "spring-boot",
+        "spring_boot",
+        "springboot"
+      ],
+      "category": "backend"
+    },
+    "python": {
+      "aliases": [
+        "experience with python",
+        "knowledge of python",
+        "python 2",
+        "python 3",
+        "python api",
+        "python backend",
+        "python development",
+        "python services",
+        "python2",
+        "python3",
+        "pythons"
+      ],
+      "category": "backend"
+    },
+    "django": {
+      "aliases": [
+        "django api",
+        "django backend",
+        "django developer",
+        "django development",
+        "django experience",
+        "django services",
+        "django skills",
+        "djangos",
+        "experience with django",
+        "knowledge of django"
+      ],
+      "category": "backend"
+    },
+    "flask": {
+      "aliases": [
+        "experience with flask",
+        "flask api",
+        "flask backend",
+        "flask developer",
+        "flask development",
+        "flask experience",
+        "flask services",
+        "flask skills",
+        "flasks",
+        "knowledge of flask"
+      ],
+      "category": "backend"
+    },
+    "fastapi": {
+      "aliases": [
+        "experience with fastapi",
+        "fast api",
+        "fast apis",
+        "fastapi api",
+        "fastapi backend",
+        "fastapi development",
+        "fastapi services",
+        "fastapis",
+        "knowledge of fastapi"
+      ],
+      "category": "backend"
+    },
+    "node.js": {
+      "aliases": [
+        "Node Js",
+        "experience with node.js",
+        "knowledge of node.js",
+        "node",
+        "node 18",
+        "node js",
+        "node-js",
+        "node.j",
+        "node.js api",
+        "node.js backend",
+        "node.js development",
+        "node.js services",
+        "node_js",
+        "nodejs",
+        "nodejs 18",
+        "nodejs api",
+        "nodejs backend",
+        "nodejs development",
+        "nodejs services"
+      ],
+      "category": "backend"
+    },
+    "express.js": {
+      "aliases": [
+        "Express Js",
+        "experience with express.js",
+        "express",
+        "express js",
+        "express-js",
+        "express.j",
+        "express.js api",
+        "express.js backend",
+        "express.js development",
+        "express.js services",
+        "express_js",
+        "expressjs",
+        "expressjs api",
+        "expressjs backend",
+        "expressjs development",
+        "expressjs services",
+        "knowledge of express.js"
+      ],
+      "category": "backend"
+    },
+    "nestjs": {
+      "aliases": [
+        "experience with nestjs",
+        "knowledge of nestjs",
+        "nest",
+        "nest js",
+        "nest.js",
+        "nestj",
+        "nestjs api",
+        "nestjs backend",
+        "nestjs development",
+        "nestjs services"
+      ],
+      "category": "backend"
+    },
+    "php": {
+      "aliases": [
+        "experience with php",
+        "knowledge of php",
+        "php api",
+        "php backend",
+        "php development",
+        "php services",
+        "phps"
+      ],
+      "category": "backend"
+    },
+    "laravel": {
+      "aliases": [
+        "experience with laravel",
+        "knowledge of laravel",
+        "laravel api",
+        "laravel backend",
+        "laravel developer",
+        "laravel development",
+        "laravel experience",
+        "laravel services",
+        "laravel skills",
+        "laravels"
+      ],
+      "category": "backend"
+    },
+    "symfony": {
+      "aliases": [
+        "experience with symfony",
+        "knowledge of symfony",
+        "symfony api",
+        "symfony backend",
+        "symfony development",
+        "symfony services",
+        "symfonys"
+      ],
+      "category": "backend"
+    },
+    "ruby": {
+      "aliases": [
+        "experience with ruby",
+        "knowledge of ruby",
+        "ruby api",
+        "ruby backend",
+        "ruby development",
+        "ruby services",
+        "rubys"
+      ],
+      "category": "backend"
+    },
+    "ruby on rails": {
+      "aliases": [
+        "experience with ruby on rails",
+        "knowledge of ruby on rails",
+        "rails",
+        "ror",
+        "ruby on rail",
+        "ruby on rails api",
+        "ruby on rails backend",
+        "ruby on rails development",
+        "ruby on rails services",
+        "ruby-on-rails",
+        "ruby_on_rails",
+        "rubyonrails"
+      ],
+      "category": "backend"
+    },
+    "go": {
+      "aliases": [
+        "experience with go",
+        "go api",
+        "go backend",
+        "go development",
+        "go services",
+        "golang",
+        "gos",
+        "knowledge of go"
+      ],
+      "category": "backend"
+    },
+    "rust": {
+      "aliases": [
+        "experience with rust",
+        "knowledge of rust",
+        "rust api",
+        "rust backend",
+        "rust development",
+        "rust services",
+        "rusts"
+      ],
+      "category": "backend"
+    },
+    "scala": {
+      "aliases": [
+        "experience with scala",
+        "knowledge of scala",
+        "scala api",
+        "scala backend",
+        "scala development",
+        "scala services",
+        "scalas"
+      ],
+      "category": "backend"
+    },
+    "kotlin": {
+      "aliases": [
+        "experience with kotlin",
+        "knowledge of kotlin",
+        "kotlin api",
+        "kotlin backend",
+        "kotlin development",
+        "kotlin services",
+        "kotlins"
+      ],
+      "category": "backend"
+    },
+    "graphql": {
+      "aliases": [
+        "experience with graphql",
+        "graphql api",
+        "graphql backend",
+        "graphql development",
+        "graphql services",
+        "graphqls",
+        "knowledge of graphql"
+      ],
+      "category": "backend"
+    },
+    "grpc": {
+      "aliases": [
+        "experience with grpc",
+        "grpc api",
+        "grpc backend",
+        "grpc development",
+        "grpc services",
+        "grpcs",
+        "knowledge of grpc"
+      ],
+      "category": "backend"
+    },
+    "rest api": {
+      "aliases": [
+        "api development",
+        "experience with rest api",
+        "knowledge of rest api",
+        "rest",
+        "rest api api",
+        "rest api backend",
+        "rest api development",
+        "rest api services",
+        "rest apis",
+        "rest apis development",
+        "rest service",
+        "rest services",
+        "rest servicess",
+        "rest-api",
+        "rest_api",
+        "restapi",
+        "restful api",
+        "restful apis",
+        "restful apiss",
+        "web api",
+        "web apis",
+        "web services api"
+      ],
+      "category": "backend"
+    },
+    "soap": {
+      "aliases": [
+        "experience with soap",
+        "knowledge of soap",
+        "soap api",
+        "soap apis",
+        "soap backend",
+        "soap development",
+        "soap service",
+        "soap services",
+        "soap servicess",
+        "soaps"
+      ],
+      "category": "backend"
+    },
+    "microservices": {
+      "aliases": [
+        "experience with microservices",
+        "knowledge of microservices",
+        "microservice",
+        "microservice architecture",
+        "microservices api",
+        "microservices architecture",
+        "microservices backend",
+        "microservices development",
+        "microservices services",
+        "microservicess"
+      ],
+      "category": "backend"
+    },
+    "oauth": {
+      "aliases": [
+        "experience with oauth",
+        "knowledge of oauth",
+        "oauth 2 0",
+        "oauth 2.0",
+        "oauth 20",
+        "oauth api",
+        "oauth backend",
+        "oauth development",
+        "oauth services",
+        "oauth2",
+        "oauths"
+      ],
+      "category": "backend"
+    },
+    "jwt": {
+      "aliases": [
+        "experience with jwt",
+        "json web token",
+        "jwt api",
+        "jwt auth",
+        "jwt authentication",
+        "jwt backend",
+        "jwt development",
+        "jwt services",
+        "jwts",
+        "knowledge of jwt"
+      ],
+      "category": "backend"
+    },
+    "redis": {
+      "aliases": [
+        "experience with redis",
+        "knowledge of redis",
+        "redi",
+        "redis api",
+        "redis backend",
+        "redis developer",
+        "redis development",
+        "redis experience",
+        "redis services",
+        "redis skills"
+      ],
+      "category": "backend"
+    },
+    "rabbitmq": {
+      "aliases": [
+        "experience with rabbitmq",
+        "knowledge of rabbitmq",
+        "rabbit mq",
+        "rabbitmq api",
+        "rabbitmq backend",
+        "rabbitmq development",
+        "rabbitmq services",
+        "rabbitmqs"
+      ],
+      "category": "backend"
+    },
+    "apache kafka": {
+      "aliases": [
+        "apache kafka api",
+        "apache kafka backend",
+        "apache kafka development",
+        "apache kafka services",
+        "apache kafkas",
+        "apache-kafka",
+        "apache_kafka",
+        "apachekafka",
+        "experience with apache kafka",
+        "kafka",
+        "knowledge of apache kafka"
+      ],
+      "category": "backend"
+    },
+    "elasticsearch": {
+      "aliases": [
+        "elastic",
+        "elastic search",
+        "elasticsearch api",
+        "elasticsearch backend",
+        "elasticsearch development",
+        "elasticsearch services",
+        "elasticsearchs",
+        "experience with elasticsearch",
+        "knowledge of elasticsearch"
+      ],
+      "category": "backend"
+    },
+    "javascript": {
+      "aliases": [
+        "ecmascript",
+        "es6",
+        "es6+",
+        "experience with javascript",
+        "java script",
+        "javascript es6",
+        "javascript es6+",
+        "javascript framework",
+        "javascript frontend",
+        "javascript ui",
+        "javascript web development",
+        "javascripts",
+        "js",
+        "knowledge of javascript"
+      ],
+      "category": "frontend"
+    },
+    "typescript": {
+      "aliases": [
+        "experience with typescript",
+        "knowledge of typescript",
+        "ts",
+        "type script",
+        "typescript framework",
+        "typescript frontend",
+        "typescript ui",
+        "typescript web development",
+        "typescripts"
+      ],
+      "category": "frontend"
+    },
+    "html": {
+      "aliases": [
+        "experience with html",
+        "html framework",
+        "html frontend",
+        "html ui",
+        "html web development",
+        "html5",
+        "htmls",
+        "knowledge of html"
+      ],
+      "category": "frontend"
+    },
+    "css": {
+      "aliases": [
+        "cs",
+        "css framework",
+        "css frontend",
+        "css ui",
+        "css web development",
+        "css3",
+        "experience with css",
+        "knowledge of css"
+      ],
+      "category": "frontend"
+    },
+    "sass": {
+      "aliases": [
+        "experience with sass",
+        "knowledge of sass",
+        "sas",
+        "sass framework",
+        "sass frontend",
+        "sass ui",
+        "sass web development",
+        "scss"
+      ],
+      "category": "frontend"
+    },
+    "tailwind css": {
+      "aliases": [
+        "experience with tailwind css",
+        "knowledge of tailwind css",
+        "tailwind",
+        "tailwind cs",
+        "tailwind css framework",
+        "tailwind css frontend",
+        "tailwind css ui",
+        "tailwind css web development",
+        "tailwind-css",
+        "tailwind_css",
+        "tailwindcss"
+      ],
+      "category": "frontend"
+    },
+    "bootstrap": {
+      "aliases": [
+        "bootstrap framework",
+        "bootstrap frontend",
+        "bootstrap ui",
+        "bootstrap web development",
+        "bootstraps",
+        "experience with bootstrap",
+        "knowledge of bootstrap"
+      ],
+      "category": "frontend"
+    },
+    "material ui": {
+      "aliases": [
+        "experience with material ui",
+        "knowledge of material ui",
+        "material ui framework",
+        "material ui frontend",
+        "material ui ui",
+        "material ui web development",
+        "material uis",
+        "material-ui",
+        "material_ui",
+        "materialui",
+        "mui"
+      ],
+      "category": "frontend"
+    },
+    "react": {
+      "aliases": [
+        "experience with react",
+        "knowledge of react",
+        "react 17",
+        "react 18",
+        "react developer",
+        "react experience",
+        "react framework",
+        "react frontend",
+        "react js",
+        "react skills",
+        "react ts",
+        "react typescript",
+        "react ui",
+        "react web development",
+        "react.js",
+        "reactjs",
+        "reactjs 17",
+        "reactjs 18",
+        "reacts"
+      ],
+      "category": "frontend"
+    },
+    "next.js": {
+      "aliases": [
+        "Next Js",
+        "experience with next.js",
+        "knowledge of next.js",
+        "next",
+        "next app",
+        "next js",
+        "next-js",
+        "next.j",
+        "next.js framework",
+        "next.js frontend",
+        "next.js ui",
+        "next.js web development",
+        "next_js",
+        "nextjs",
+        "nextjs app",
+        "nextjs framework",
+        "nextjs frontend",
+        "nextjs ui",
+        "nextjs web development"
+      ],
+      "category": "frontend"
+    },
+    "redux": {
+      "aliases": [
+        "experience with redux",
+        "knowledge of redux",
+        "redux framework",
+        "redux frontend",
+        "redux toolkit",
+        "redux ui",
+        "redux web development",
+        "reduxs",
+        "rtk"
+      ],
+      "category": "frontend"
+    },
+    "zustand": {
+      "aliases": [
+        "experience with zustand",
+        "knowledge of zustand",
+        "zustand framework",
+        "zustand frontend",
+        "zustand ui",
+        "zustand web development",
+        "zustands"
+      ],
+      "category": "frontend"
+    },
+    "angular": {
+      "aliases": [
+        "angular 10",
+        "angular 17",
+        "angular 18",
+        "angular 2",
+        "angular 2+",
+        "angular developer",
+        "angular experience",
+        "angular framework",
+        "angular frontend",
+        "angular js",
+        "angular skills",
+        "angular ui",
+        "angular web development",
+        "angular2+",
+        "angularjs",
+        "angulars",
+        "experience with angular",
+        "knowledge of angular"
+      ],
+      "category": "frontend"
+    },
+    "vue.js": {
+      "aliases": [
+        "Vue Js",
+        "experience with vue.js",
+        "knowledge of vue.js",
+        "vue",
+        "vue 2",
+        "vue 3",
+        "vue js",
+        "vue js developer",
+        "vue js experience",
+        "vue js skills",
+        "vue-js",
+        "vue.j",
+        "vue.js framework",
+        "vue.js frontend",
+        "vue.js ui",
+        "vue.js web development",
+        "vue3",
+        "vue_js",
+        "vuejs",
+        "vuejs 2",
+        "vuejs 3",
+        "vuejs framework",
+        "vuejs frontend",
+        "vuejs ui",
+        "vuejs web development"
+      ],
+      "category": "frontend"
+    },
+    "nuxt.js": {
+      "aliases": [
+        "Nuxt Js",
+        "experience with nuxt.js",
+        "knowledge of nuxt.js",
+        "nuxt",
+        "nuxt js",
+        "nuxt-js",
+        "nuxt.j",
+        "nuxt.js framework",
+        "nuxt.js frontend",
+        "nuxt.js ui",
+        "nuxt.js web development",
+        "nuxt_js",
+        "nuxtjs",
+        "nuxtjs framework",
+        "nuxtjs frontend",
+        "nuxtjs ui",
+        "nuxtjs web development"
+      ],
+      "category": "frontend"
+    },
+    "svelte": {
+      "aliases": [
+        "experience with svelte",
+        "knowledge of svelte",
+        "svelte framework",
+        "svelte frontend",
+        "svelte ui",
+        "svelte web development",
+        "sveltejs",
+        "sveltes"
+      ],
+      "category": "frontend"
+    },
+    "webpack": {
+      "aliases": [
+        "experience with webpack",
+        "knowledge of webpack",
+        "webpack framework",
+        "webpack frontend",
+        "webpack ui",
+        "webpack web development",
+        "webpacks"
+      ],
+      "category": "frontend"
+    },
+    "vite": {
+      "aliases": [
+        "experience with vite",
+        "knowledge of vite",
+        "vite framework",
+        "vite frontend",
+        "vite ui",
+        "vite web development",
+        "vites"
+      ],
+      "category": "frontend"
+    },
+    "babel": {
+      "aliases": [
+        "babel framework",
+        "babel frontend",
+        "babel ui",
+        "babel web development",
+        "babels",
+        "experience with babel",
+        "knowledge of babel"
+      ],
+      "category": "frontend"
+    },
+    "jquery": {
+      "aliases": [
+        "experience with jquery",
+        "j query",
+        "jquery framework",
+        "jquery frontend",
+        "jquery ui",
+        "jquery web development",
+        "jquerys",
+        "knowledge of jquery"
+      ],
+      "category": "frontend"
+    },
+    "storybook": {
+      "aliases": [
+        "experience with storybook",
+        "knowledge of storybook",
+        "storybook framework",
+        "storybook frontend",
+        "storybook ui",
+        "storybook web development",
+        "storybooks"
+      ],
+      "category": "frontend"
+    },
+    "sql": {
+      "aliases": [
+        "experience with sql",
+        "knowledge of sql",
+        "sql data store",
+        "sql database",
+        "sql db",
+        "sqls",
+        "structured query language"
+      ],
+      "category": "databases"
+    },
+    "sql server": {
+      "aliases": [
+        "experience with sql server",
+        "knowledge of sql server",
+        "microsoft sql",
+        "microsoft sql server",
+        "ms sql",
+        "mssql",
+        "sql server data store",
+        "sql server database",
+        "sql server db",
+        "sql server developer",
+        "sql server experience",
+        "sql server skills",
+        "sql servers",
+        "sql-server",
+        "sql_server",
+        "sqlserver"
+      ],
+      "category": "databases"
+    },
+    "postgresql": {
+      "aliases": [
+        "experience with postgresql",
+        "knowledge of postgresql",
+        "postgre sql",
+        "postgres",
+        "postgres database",
+        "postgres db",
+        "postgresql data store",
+        "postgresql database",
+        "postgresql db",
+        "postgresql developer",
+        "postgresql experience",
+        "postgresql skills",
+        "postgresqls"
+      ],
+      "category": "databases"
+    },
+    "mysql": {
+      "aliases": [
+        "experience with mysql",
+        "knowledge of mysql",
+        "my sql",
+        "mysql 5",
+        "mysql 5.0",
+        "mysql 8",
+        "mysql 8.0",
+        "mysql data store",
+        "mysql database",
+        "mysql db",
+        "mysql developer",
+        "mysql experience",
+        "mysql skills",
+        "mysqls"
+      ],
+      "category": "databases"
+    },
+    "mariadb": {
+      "aliases": [
+        "experience with mariadb",
+        "knowledge of mariadb",
+        "maria db",
+        "mariadb data store",
+        "mariadb database",
+        "mariadb db",
+        "mariadbs"
+      ],
+      "category": "databases"
+    },
+    "oracle database": {
+      "aliases": [
+        "experience with oracle database",
+        "knowledge of oracle database",
+        "oracle database data store",
+        "oracle database database",
+        "oracle database db",
+        "oracle databases",
+        "oracle db",
+        "oracle sql",
+        "oracle-database",
+        "oracle_database",
+        "oracledatabase"
+      ],
+      "category": "databases"
+    },
+    "sqlite": {
+      "aliases": [
+        "experience with sqlite",
+        "knowledge of sqlite",
+        "sqlite data store",
+        "sqlite database",
+        "sqlite db",
+        "sqlite3",
+        "sqlites"
+      ],
+      "category": "databases"
+    },
+    "mongodb": {
+      "aliases": [
+        "experience with mongodb",
+        "knowledge of mongodb",
+        "mongo",
+        "mongo db",
+        "mongodb data store",
+        "mongodb database",
+        "mongodb db",
+        "mongodb developer",
+        "mongodb experience",
+        "mongodb skills",
+        "mongodbs"
+      ],
+      "category": "databases"
+    },
+    "cassandra": {
+      "aliases": [
+        "apache cassandra",
+        "cassandra data store",
+        "cassandra database",
+        "cassandra db",
+        "cassandras",
+        "experience with cassandra",
+        "knowledge of cassandra"
+      ],
+      "category": "databases"
+    },
+    "dynamodb": {
+      "aliases": [
+        "dynamo db",
+        "dynamodb data store",
+        "dynamodb database",
+        "dynamodb db",
+        "dynamodbs",
+        "experience with dynamodb",
+        "knowledge of dynamodb"
+      ],
+      "category": "databases"
+    },
+    "firebase firestore": {
+      "aliases": [
+        "cloud firestore",
+        "experience with firebase firestore",
+        "firebase firestore data store",
+        "firebase firestore database",
+        "firebase firestore db",
+        "firebase firestores",
+        "firebase-firestore",
+        "firebase_firestore",
+        "firebasefirestore",
+        "firestore",
+        "knowledge of firebase firestore"
+      ],
+      "category": "databases"
+    },
+    "neo4j": {
+      "aliases": [
+        "experience with neo4j",
+        "knowledge of neo4j",
+        "neo4j data store",
+        "neo4j database",
+        "neo4j db",
+        "neo4js"
+      ],
+      "category": "databases"
+    },
+    "snowflake": {
+      "aliases": [
+        "experience with snowflake",
+        "knowledge of snowflake",
+        "snowflake data store",
+        "snowflake database",
+        "snowflake db",
+        "snowflakes"
+      ],
+      "category": "databases"
+    },
+    "bigquery": {
+      "aliases": [
+        "big query",
+        "bigquery data store",
+        "bigquery database",
+        "bigquery db",
+        "bigquerys",
+        "experience with bigquery",
+        "knowledge of bigquery"
+      ],
+      "category": "databases"
+    },
+    "redshift": {
+      "aliases": [
+        "amazon redshift",
+        "experience with redshift",
+        "knowledge of redshift",
+        "redshift data store",
+        "redshift database",
+        "redshift db",
+        "redshifts"
+      ],
+      "category": "databases"
+    },
+    "db2": {
+      "aliases": [
+        "db2 data store",
+        "db2 database",
+        "db2 db",
+        "db2s",
+        "experience with db2",
+        "ibm db2",
+        "knowledge of db2"
+      ],
+      "category": "databases"
+    },
+    "docker": {
+      "aliases": [
+        "containerization",
+        "docker cloud",
+        "docker container",
+        "docker containers",
+        "docker deployment",
+        "docker developer",
+        "docker devops",
+        "docker experience",
+        "docker infrastructure",
+        "docker skills",
+        "dockers",
+        "experience with docker",
+        "knowledge of docker"
+      ],
+      "category": "cloud_devops"
+    },
+    "docker compose": {
+      "aliases": [
+        "docker compose cloud",
+        "docker compose deployment",
+        "docker compose devops",
+        "docker compose infrastructure",
+        "docker composes",
+        "docker-compose",
+        "docker_compose",
+        "dockercompose",
+        "experience with docker compose",
+        "knowledge of docker compose"
+      ],
+      "category": "cloud_devops"
+    },
+    "kubernetes": {
+      "aliases": [
+        "experience with kubernetes",
+        "k8",
+        "k8s",
+        "knowledge of kubernetes",
+        "kube",
+        "kubernete",
+        "kubernetes cloud",
+        "kubernetes deployment",
+        "kubernetes developer",
+        "kubernetes devops",
+        "kubernetes experience",
+        "kubernetes infrastructure",
+        "kubernetes skills"
+      ],
+      "category": "cloud_devops"
+    },
+    "helm": {
+      "aliases": [
+        "experience with helm",
+        "helm cloud",
+        "helm deployment",
+        "helm devops",
+        "helm infrastructure",
+        "helms",
+        "knowledge of helm"
+      ],
+      "category": "cloud_devops"
+    },
+    "terraform": {
+      "aliases": [
+        "experience with terraform",
+        "knowledge of terraform",
+        "terraform cloud",
+        "terraform deployment",
+        "terraform devops",
+        "terraform infrastructure",
+        "terraforms"
+      ],
+      "category": "cloud_devops"
+    },
+    "ansible": {
+      "aliases": [
+        "ansible cloud",
+        "ansible deployment",
+        "ansible devops",
+        "ansible infrastructure",
+        "ansibles",
+        "experience with ansible",
+        "knowledge of ansible"
+      ],
+      "category": "cloud_devops"
+    },
+    "jenkins": {
+      "aliases": [
+        "experience with jenkins",
+        "jenkin",
+        "jenkins cloud",
+        "jenkins deployment",
+        "jenkins devops",
+        "jenkins infrastructure",
+        "knowledge of jenkins"
+      ],
+      "category": "cloud_devops"
+    },
+    "github actions": {
+      "aliases": [
+        "experience with github actions",
+        "github action",
+        "github actions cloud",
+        "github actions deployment",
+        "github actions devops",
+        "github actions infrastructure",
+        "github workflows",
+        "github-actions",
+        "github_actions",
+        "githubactions",
+        "knowledge of github actions"
+      ],
+      "category": "cloud_devops"
+    },
+    "gitlab ci/cd": {
+      "aliases": [
+        "Gitlab Ci Cd",
+        "experience with gitlab ci/cd",
+        "gitlab ci",
+        "gitlab ci cd",
+        "gitlab ci cd cloud",
+        "gitlab ci cd deployment",
+        "gitlab ci cd devops",
+        "gitlab ci cd infrastructure",
+        "gitlab ci/cd cloud",
+        "gitlab ci/cd deployment",
+        "gitlab ci/cd devops",
+        "gitlab ci/cd infrastructure",
+        "gitlab ci/cds",
+        "gitlab cicd",
+        "gitlab pipelines",
+        "gitlab-ci-cd",
+        "gitlab_ci_cd",
+        "gitlabcicd",
+        "knowledge of gitlab ci/cd"
+      ],
+      "category": "cloud_devops"
+    },
+    "azure devops": {
+      "aliases": [
+        "ado",
+        "azure devop",
+        "azure devops cloud",
+        "azure devops deployment",
+        "azure devops devops",
+        "azure devops infrastructure",
+        "azure pipelines",
+        "azure repos",
+        "azure-devops",
+        "azure_devops",
+        "azuredevops",
+        "experience with azure devops",
+        "knowledge of azure devops"
+      ],
+      "category": "cloud_devops"
+    },
+    "circleci": {
+      "aliases": [
+        "circle ci",
+        "circleci cloud",
+        "circleci deployment",
+        "circleci devops",
+        "circleci infrastructure",
+        "circlecis",
+        "experience with circleci",
+        "knowledge of circleci"
+      ],
+      "category": "cloud_devops"
+    },
+    "travis ci": {
+      "aliases": [
+        "experience with travis ci",
+        "knowledge of travis ci",
+        "travis ci cloud",
+        "travis ci deployment",
+        "travis ci devops",
+        "travis ci infrastructure",
+        "travis cis",
+        "travis-ci",
+        "travis_ci",
+        "travisci"
+      ],
+      "category": "cloud_devops"
+    },
+    "prometheus": {
+      "aliases": [
+        "experience with prometheus",
+        "knowledge of prometheus",
+        "prometheu",
+        "prometheus cloud",
+        "prometheus deployment",
+        "prometheus devops",
+        "prometheus infrastructure"
+      ],
+      "category": "cloud_devops"
+    },
+    "grafana": {
+      "aliases": [
+        "experience with grafana",
+        "grafana cloud",
+        "grafana deployment",
+        "grafana devops",
+        "grafana infrastructure",
+        "grafanas",
+        "knowledge of grafana"
+      ],
+      "category": "cloud_devops"
+    },
+    "nginx": {
+      "aliases": [
+        "experience with nginx",
+        "knowledge of nginx",
+        "nginx cloud",
+        "nginx deployment",
+        "nginx devops",
+        "nginx infrastructure",
+        "nginxs"
+      ],
+      "category": "cloud_devops"
+    },
+    "apache": {
+      "aliases": [
+        "apache cloud",
+        "apache deployment",
+        "apache devops",
+        "apache http server",
+        "apache infrastructure",
+        "apaches",
+        "experience with apache",
+        "knowledge of apache"
+      ],
+      "category": "cloud_devops"
+    },
+    "linux": {
+      "aliases": [
+        "experience with linux",
+        "knowledge of linux",
+        "linux cloud",
+        "linux deployment",
+        "linux devops",
+        "linux infrastructure",
+        "linuxs",
+        "unix"
+      ],
+      "category": "cloud_devops"
+    },
+    "bash": {
+      "aliases": [
+        "bash cloud",
+        "bash deployment",
+        "bash devops",
+        "bash infrastructure",
+        "bashs",
+        "experience with bash",
+        "knowledge of bash",
+        "sh",
+        "shell scripting"
+      ],
+      "category": "cloud_devops"
+    },
+    "powershell": {
+      "aliases": [
+        "experience with powershell",
+        "knowledge of powershell",
+        "power shell",
+        "powershell cloud",
+        "powershell deployment",
+        "powershell devops",
+        "powershell infrastructure",
+        "powershells"
+      ],
+      "category": "cloud_devops"
+    },
+    "aws": {
+      "aliases": [
+        "amazon aws",
+        "amazon web service",
+        "amazon web services",
+        "amazon web servicess",
+        "aw",
+        "aws cloud",
+        "aws deployment",
+        "aws developer",
+        "aws devops",
+        "aws experience",
+        "aws infrastructure",
+        "aws services",
+        "aws skills",
+        "experience with aws",
+        "knowledge of aws"
+      ],
+      "category": "cloud_devops"
+    },
+    "microsoft azure": {
+      "aliases": [
+        "azure",
+        "azure cloud",
+        "experience with microsoft azure",
+        "knowledge of microsoft azure",
+        "microsoft azure cloud",
+        "microsoft azure deployment",
+        "microsoft azure developer",
+        "microsoft azure devops",
+        "microsoft azure experience",
+        "microsoft azure infrastructure",
+        "microsoft azure skills",
+        "microsoft azures",
+        "microsoft-azure",
+        "microsoft_azure",
+        "microsoftazure",
+        "ms azure"
+      ],
+      "category": "cloud_devops"
+    },
+    "google cloud platform": {
+      "aliases": [
+        "experience with google cloud platform",
+        "gcp",
+        "gcp cloud",
+        "google cloud",
+        "google cloud platform cloud",
+        "google cloud platform deployment",
+        "google cloud platform developer",
+        "google cloud platform devops",
+        "google cloud platform experience",
+        "google cloud platform infrastructure",
+        "google cloud platform skills",
+        "google cloud platforms",
+        "google-cloud-platform",
+        "google_cloud_platform",
+        "googlecloudplatform",
+        "knowledge of google cloud platform"
+      ],
+      "category": "cloud_devops"
+    },
+    "cloudflare": {
+      "aliases": [
+        "cloudflare cloud",
+        "cloudflare deployment",
+        "cloudflare devops",
+        "cloudflare infrastructure",
+        "cloudflares",
+        "experience with cloudflare",
+        "knowledge of cloudflare"
+      ],
+      "category": "cloud_devops"
+    },
+    "vercel": {
+      "aliases": [
+        "experience with vercel",
+        "knowledge of vercel",
+        "vercel cloud",
+        "vercel deployment",
+        "vercel devops",
+        "vercel infrastructure",
+        "vercels"
+      ],
+      "category": "cloud_devops"
+    },
+    "netlify": {
+      "aliases": [
+        "experience with netlify",
+        "knowledge of netlify",
+        "netlify cloud",
+        "netlify deployment",
+        "netlify devops",
+        "netlify infrastructure",
+        "netlifys"
+      ],
+      "category": "cloud_devops"
+    },
+    "heroku": {
+      "aliases": [
+        "experience with heroku",
+        "heroku cloud",
+        "heroku deployment",
+        "heroku devops",
+        "heroku infrastructure",
+        "herokus",
+        "knowledge of heroku"
+      ],
+      "category": "cloud_devops"
+    },
+    "digitalocean": {
+      "aliases": [
+        "digital ocean",
+        "digitalocean cloud",
+        "digitalocean deployment",
+        "digitalocean devops",
+        "digitalocean infrastructure",
+        "digitaloceans",
+        "experience with digitalocean",
+        "knowledge of digitalocean"
+      ],
+      "category": "cloud_devops"
+    },
+    "serverless": {
+      "aliases": [
+        "experience with serverless",
+        "knowledge of serverless",
+        "serverles",
+        "serverless cloud",
+        "serverless deployment",
+        "serverless devops",
+        "serverless framework",
+        "serverless infrastructure"
+      ],
+      "category": "cloud_devops"
+    },
+    "android": {
+      "aliases": [
+        "android 11",
+        "android app development",
+        "android mobile",
+        "androids",
+        "experience with android",
+        "knowledge of android"
+      ],
+      "category": "mobile"
+    },
+    "ios": {
+      "aliases": [
+        "experience with ios",
+        "io",
+        "ios 17",
+        "ios 18",
+        "ios app development",
+        "ios mobile",
+        "knowledge of ios"
+      ],
+      "category": "mobile"
+    },
+    "swift": {
+      "aliases": [
+        "experience with swift",
+        "knowledge of swift",
+        "swift app development",
+        "swift mobile",
+        "swifts"
+      ],
+      "category": "mobile"
+    },
+    "swiftui": {
+      "aliases": [
+        "experience with swiftui",
+        "knowledge of swiftui",
+        "swift ui",
+        "swiftui app development",
+        "swiftui mobile",
+        "swiftuis"
+      ],
+      "category": "mobile"
+    },
+    "objective-c": {
+      "aliases": [
+        "Objective C",
+        "experience with objective-c",
+        "knowledge of objective-c",
+        "objective c",
+        "objective-c app development",
+        "objective-c mobile",
+        "objective-cs",
+        "objective_c",
+        "objectivec"
+      ],
+      "category": "mobile"
+    },
+    "react native": {
+      "aliases": [
+        "experience with react native",
+        "knowledge of react native",
+        "react native app development",
+        "react native mobile",
+        "react natives",
+        "react-native",
+        "react_native",
+        "reactnative"
+      ],
+      "category": "mobile"
+    },
+    "flutter": {
+      "aliases": [
+        "dart flutter",
+        "experience with flutter",
+        "flutter app development",
+        "flutter mobile",
+        "flutters",
+        "knowledge of flutter"
+      ],
+      "category": "mobile"
+    },
+    "xamarin": {
+      "aliases": [
+        "experience with xamarin",
+        "knowledge of xamarin",
+        "xamarin app development",
+        "xamarin mobile",
+        "xamarins"
+      ],
+      "category": "mobile"
+    },
+    "ionic": {
+      "aliases": [
+        "experience with ionic",
+        "ionic app development",
+        "ionic mobile",
+        "ionics",
+        "knowledge of ionic"
+      ],
+      "category": "mobile"
+    },
+    "kotlin android": {
+      "aliases": [
+        "android kotlin",
+        "experience with kotlin android",
+        "knowledge of kotlin android",
+        "kotlin android app development",
+        "kotlin android mobile",
+        "kotlin androids",
+        "kotlin-android",
+        "kotlin_android",
+        "kotlinandroid"
+      ],
+      "category": "mobile"
+    },
+    "pandas": {
+      "aliases": [
+        "experience with pandas",
+        "knowledge of pandas",
+        "panda",
+        "pandas analytics",
+        "pandas data",
+        "pandas modeling"
+      ],
+      "category": "data_ml"
+    },
+    "numpy": {
+      "aliases": [
+        "experience with numpy",
+        "knowledge of numpy",
+        "numpy analytics",
+        "numpy data",
+        "numpy modeling",
+        "numpys"
+      ],
+      "category": "data_ml"
+    },
+    "matplotlib": {
+      "aliases": [
+        "experience with matplotlib",
+        "knowledge of matplotlib",
+        "matplotlib analytics",
+        "matplotlib data",
+        "matplotlib modeling",
+        "matplotlibs"
+      ],
+      "category": "data_ml"
+    },
+    "scikit-learn": {
+      "aliases": [
+        "Scikit Learn",
+        "experience with scikit-learn",
+        "knowledge of scikit-learn",
+        "scikit learn",
+        "scikit-learn analytics",
+        "scikit-learn data",
+        "scikit-learn modeling",
+        "scikit-learns",
+        "scikit_learn",
+        "scikitlearn",
+        "sklearn"
+      ],
+      "category": "data_ml"
+    },
+    "tensorflow": {
+      "aliases": [
+        "experience with tensorflow",
+        "knowledge of tensorflow",
+        "tensorflow 2",
+        "tensorflow analytics",
+        "tensorflow data",
+        "tensorflow modeling",
+        "tensorflows",
+        "tf",
+        "tf 2"
+      ],
+      "category": "data_ml"
+    },
+    "pytorch": {
+      "aliases": [
+        "experience with pytorch",
+        "knowledge of pytorch",
+        "pytorch 2",
+        "pytorch analytics",
+        "pytorch data",
+        "pytorch modeling",
+        "pytorchs",
+        "torch",
+        "torch 2"
+      ],
+      "category": "data_ml"
+    },
+    "keras": {
+      "aliases": [
+        "experience with keras",
+        "kera",
+        "keras analytics",
+        "keras data",
+        "keras modeling",
+        "knowledge of keras"
+      ],
+      "category": "data_ml"
+    },
+    "xgboost": {
+      "aliases": [
+        "experience with xgboost",
+        "knowledge of xgboost",
+        "xg boost",
+        "xgboost analytics",
+        "xgboost data",
+        "xgboost modeling",
+        "xgboosts"
+      ],
+      "category": "data_ml"
+    },
+    "lightgbm": {
+      "aliases": [
+        "experience with lightgbm",
+        "knowledge of lightgbm",
+        "light gbm",
+        "lightgbm analytics",
+        "lightgbm data",
+        "lightgbm modeling",
+        "lightgbms"
+      ],
+      "category": "data_ml"
+    },
+    "opencv": {
+      "aliases": [
+        "experience with opencv",
+        "knowledge of opencv",
+        "open cv",
+        "opencv analytics",
+        "opencv data",
+        "opencv modeling",
+        "opencvs"
+      ],
+      "category": "data_ml"
+    },
+    "nlp": {
+      "aliases": [
+        "experience with nlp",
+        "knowledge of nlp",
+        "natural language processing",
+        "nlp analytics",
+        "nlp data",
+        "nlp modeling",
+        "nlps"
+      ],
+      "category": "data_ml"
+    },
+    "computer vision": {
+      "aliases": [
+        "computer vision analytics",
+        "computer vision data",
+        "computer vision modeling",
+        "computer visions",
+        "computer-vision",
+        "computer_vision",
+        "computervision",
+        "cv",
+        "experience with computer vision",
+        "knowledge of computer vision"
+      ],
+      "category": "data_ml"
+    },
+    "machine learning": {
+      "aliases": [
+        "experience with machine learning",
+        "knowledge of machine learning",
+        "machine learning analytics",
+        "machine learning data",
+        "machine learning modeling",
+        "machine learnings",
+        "machine-learning",
+        "machine_learning",
+        "machinelearning",
+        "ml"
+      ],
+      "category": "data_ml"
+    },
+    "deep learning": {
+      "aliases": [
+        "deep learning analytics",
+        "deep learning data",
+        "deep learning modeling",
+        "deep learnings",
+        "deep-learning",
+        "deep_learning",
+        "deeplearning",
+        "dl",
+        "experience with deep learning",
+        "knowledge of deep learning"
+      ],
+      "category": "data_ml"
+    },
+    "data analysis": {
+      "aliases": [
+        "data analysi",
+        "data analysis analytics",
+        "data analysis data",
+        "data analysis modeling",
+        "data analytics",
+        "data-analysis",
+        "data_analysis",
+        "dataanalysis",
+        "experience with data analysis",
+        "knowledge of data analysis"
+      ],
+      "category": "data_ml"
+    },
+    "data visualization": {
+      "aliases": [
+        "data visualization analytics",
+        "data visualization data",
+        "data visualization modeling",
+        "data visualizations",
+        "data viz",
+        "data-visualization",
+        "data_visualization",
+        "datavisualization",
+        "experience with data visualization",
+        "knowledge of data visualization"
+      ],
+      "category": "data_ml"
+    },
+    "power bi": {
+      "aliases": [
+        "experience with power bi",
+        "knowledge of power bi",
+        "power bi analytics",
+        "power bi data",
+        "power bi modeling",
+        "power bis",
+        "power-bi",
+        "power_bi",
+        "powerbi"
+      ],
+      "category": "data_ml"
+    },
+    "tableau": {
+      "aliases": [
+        "experience with tableau",
+        "knowledge of tableau",
+        "tableau analytics",
+        "tableau data",
+        "tableau modeling",
+        "tableaus"
+      ],
+      "category": "data_ml"
+    },
+    "apache spark": {
+      "aliases": [
+        "apache spark analytics",
+        "apache spark data",
+        "apache spark modeling",
+        "apache sparks",
+        "apache-spark",
+        "apache_spark",
+        "apachespark",
+        "experience with apache spark",
+        "knowledge of apache spark",
+        "spark"
+      ],
+      "category": "data_ml"
+    },
+    "hadoop": {
+      "aliases": [
+        "apache hadoop",
+        "experience with hadoop",
+        "hadoop analytics",
+        "hadoop data",
+        "hadoop modeling",
+        "hadoops",
+        "knowledge of hadoop"
+      ],
+      "category": "data_ml"
+    },
+    "airflow": {
+      "aliases": [
+        "airflow analytics",
+        "airflow data",
+        "airflow modeling",
+        "airflows",
+        "apache airflow",
+        "experience with airflow",
+        "knowledge of airflow"
+      ],
+      "category": "data_ml"
+    },
+    "databricks": {
+      "aliases": [
+        "databrick",
+        "databricks analytics",
+        "databricks data",
+        "databricks modeling",
+        "experience with databricks",
+        "knowledge of databricks"
+      ],
+      "category": "data_ml"
+    },
+    "etl": {
+      "aliases": [
+        "elt",
+        "etl analytics",
+        "etl data",
+        "etl modeling",
+        "etls",
+        "experience with etl",
+        "knowledge of etl"
+      ],
+      "category": "data_ml"
+    },
+    "unit testing": {
+      "aliases": [
+        "experience with unit testing",
+        "knowledge of unit testing",
+        "unit testing qa",
+        "unit testing security",
+        "unit testing testing",
+        "unit testings",
+        "unit tests",
+        "unit-testing",
+        "unit_testing",
+        "unittesting"
+      ],
+      "category": "testing_security"
+    },
+    "integration testing": {
+      "aliases": [
+        "experience with integration testing",
+        "integration testing qa",
+        "integration testing security",
+        "integration testing testing",
+        "integration testings",
+        "integration-testing",
+        "integration_testing",
+        "integrationtesting",
+        "knowledge of integration testing"
+      ],
+      "category": "testing_security"
+    },
+    "end-to-end testing": {
+      "aliases": [
+        "End To End Testing",
+        "e2e",
+        "e2e testing",
+        "end to end testing",
+        "end-to-end testing qa",
+        "end-to-end testing security",
+        "end-to-end testing testing",
+        "end-to-end testings",
+        "end-to-end-testing",
+        "end_to_end_testing",
+        "endtoend testing",
+        "endtoendtesting",
+        "experience with end-to-end testing",
+        "knowledge of end-to-end testing"
+      ],
+      "category": "testing_security"
+    },
+    "jest": {
+      "aliases": [
+        "experience with jest",
+        "jest qa",
+        "jest security",
+        "jest testing",
+        "jests",
+        "knowledge of jest"
+      ],
+      "category": "testing_security"
+    },
+    "vitest": {
+      "aliases": [
+        "experience with vitest",
+        "knowledge of vitest",
+        "vitest qa",
+        "vitest security",
+        "vitest testing",
+        "vitests"
+      ],
+      "category": "testing_security"
+    },
+    "cypress": {
+      "aliases": [
+        "cypres",
+        "cypress qa",
+        "cypress security",
+        "cypress testing",
+        "experience with cypress",
+        "knowledge of cypress"
+      ],
+      "category": "testing_security"
+    },
+    "playwright": {
+      "aliases": [
+        "experience with playwright",
+        "knowledge of playwright",
+        "playwright qa",
+        "playwright security",
+        "playwright testing",
+        "playwrights"
+      ],
+      "category": "testing_security"
+    },
+    "selenium": {
+      "aliases": [
+        "experience with selenium",
+        "knowledge of selenium",
+        "selenium qa",
+        "selenium security",
+        "selenium testing",
+        "seleniums"
+      ],
+      "category": "testing_security"
+    },
+    "postman": {
+      "aliases": [
+        "experience with postman",
+        "knowledge of postman",
+        "postman developer",
+        "postman experience",
+        "postman qa",
+        "postman security",
+        "postman skills",
+        "postman testing",
+        "postmans"
+      ],
+      "category": "testing_security"
+    },
+    "swagger": {
+      "aliases": [
+        "api documentation",
+        "experience with swagger",
+        "knowledge of swagger",
+        "open api",
+        "openapi",
+        "openapis",
+        "swagger developer",
+        "swagger docs",
+        "swagger experience",
+        "swagger qa",
+        "swagger security",
+        "swagger skills",
+        "swagger testing",
+        "swagger ui",
+        "swaggers"
+      ],
+      "category": "testing_security"
+    },
+    "sonarqube": {
+      "aliases": [
+        "experience with sonarqube",
+        "knowledge of sonarqube",
+        "sonar qube",
+        "sonarqube qa",
+        "sonarqube security",
+        "sonarqube testing",
+        "sonarqubes"
+      ],
+      "category": "testing_security"
+    },
+    "owasp": {
+      "aliases": [
+        "experience with owasp",
+        "knowledge of owasp",
+        "owasp qa",
+        "owasp security",
+        "owasp testing",
+        "owasps"
+      ],
+      "category": "testing_security"
+    },
+    "penetration testing": {
+      "aliases": [
+        "experience with penetration testing",
+        "knowledge of penetration testing",
+        "pen testing",
+        "penetration testing qa",
+        "penetration testing security",
+        "penetration testing testing",
+        "penetration testings",
+        "penetration-testing",
+        "penetration_testing",
+        "penetrationtesting",
+        "pentest"
+      ],
+      "category": "testing_security"
+    },
+    "vulnerability assessment": {
+      "aliases": [
+        "experience with vulnerability assessment",
+        "knowledge of vulnerability assessment",
+        "va",
+        "vulnerability assessment qa",
+        "vulnerability assessment security",
+        "vulnerability assessment testing",
+        "vulnerability assessments",
+        "vulnerability-assessment",
+        "vulnerability_assessment",
+        "vulnerabilityassessment"
+      ],
+      "category": "testing_security"
+    },
+    "identity and access management": {
+      "aliases": [
+        "experience with identity and access management",
+        "iam",
+        "identity and access management qa",
+        "identity and access management security",
+        "identity and access management testing",
+        "identity and access managements",
+        "identity-and-access-management",
+        "identity_and_access_management",
+        "identityandaccessmanagement",
+        "knowledge of identity and access management"
+      ],
+      "category": "testing_security"
+    },
+    "rbac": {
+      "aliases": [
+        "experience with rbac",
+        "knowledge of rbac",
+        "rbac qa",
+        "rbac security",
+        "rbac testing",
+        "rbacs",
+        "role based access control"
+      ],
+      "category": "testing_security"
+    },
+    "sso": {
+      "aliases": [
+        "experience with sso",
+        "knowledge of sso",
+        "single sign on",
+        "single sign-on",
+        "single signon",
+        "sso qa",
+        "sso security",
+        "sso testing",
+        "ssos"
+      ],
+      "category": "testing_security"
+    },
+    "git": {
+      "aliases": [
+        "experience with git",
+        "git collaboration",
+        "git developer",
+        "git experience",
+        "git platform",
+        "git scm",
+        "git skills",
+        "git tool",
+        "gits",
+        "knowledge of git"
+      ],
+      "category": "tools_pm"
+    },
+    "github": {
+      "aliases": [
+        "experience with github",
+        "github collaboration",
+        "github developer",
+        "github experience",
+        "github platform",
+        "github skills",
+        "github tool",
+        "githubs",
+        "knowledge of github"
+      ],
+      "category": "tools_pm"
+    },
+    "gitlab": {
+      "aliases": [
+        "experience with gitlab",
+        "gitlab collaboration",
+        "gitlab platform",
+        "gitlab tool",
+        "gitlabs",
+        "knowledge of gitlab"
+      ],
+      "category": "tools_pm"
+    },
+    "bitbucket": {
+      "aliases": [
+        "bitbucket collaboration",
+        "bitbucket platform",
+        "bitbucket tool",
+        "bitbuckets",
+        "experience with bitbucket",
+        "knowledge of bitbucket"
+      ],
+      "category": "tools_pm"
+    },
+    "jira": {
+      "aliases": [
+        "experience with jira",
+        "jira collaboration",
+        "jira developer",
+        "jira experience",
+        "jira platform",
+        "jira skills",
+        "jira tool",
+        "jiras",
+        "knowledge of jira"
+      ],
+      "category": "tools_pm"
+    },
+    "confluence": {
+      "aliases": [
+        "confluence collaboration",
+        "confluence platform",
+        "confluence tool",
+        "confluences",
+        "experience with confluence",
+        "knowledge of confluence"
+      ],
+      "category": "tools_pm"
+    },
+    "figma": {
+      "aliases": [
+        "experience with figma",
+        "figma collaboration",
+        "figma developer",
+        "figma experience",
+        "figma platform",
+        "figma skills",
+        "figma tool",
+        "figmas",
+        "knowledge of figma"
+      ],
+      "category": "tools_pm"
+    },
+    "adobe xd": {
+      "aliases": [
+        "adobe xd collaboration",
+        "adobe xd platform",
+        "adobe xd tool",
+        "adobe xds",
+        "adobe-xd",
+        "adobe_xd",
+        "adobexd",
+        "experience with adobe xd",
+        "knowledge of adobe xd"
+      ],
+      "category": "tools_pm"
+    },
+    "photoshop": {
+      "aliases": [
+        "adobe photoshop",
+        "experience with photoshop",
+        "knowledge of photoshop",
+        "photoshop collaboration",
+        "photoshop platform",
+        "photoshop tool",
+        "photoshops"
+      ],
+      "category": "tools_pm"
+    },
+    "illustrator": {
+      "aliases": [
+        "adobe illustrator",
+        "experience with illustrator",
+        "illustrator collaboration",
+        "illustrator platform",
+        "illustrator tool",
+        "illustrators",
+        "knowledge of illustrator"
+      ],
+      "category": "tools_pm"
+    },
+    "canva": {
+      "aliases": [
+        "canva collaboration",
+        "canva platform",
+        "canva tool",
+        "canvas",
+        "experience with canva",
+        "knowledge of canva"
+      ],
+      "category": "tools_pm"
+    },
+    "notion": {
+      "aliases": [
+        "experience with notion",
+        "knowledge of notion",
+        "notion collaboration",
+        "notion platform",
+        "notion tool",
+        "notions"
+      ],
+      "category": "tools_pm"
+    },
+    "slack": {
+      "aliases": [
+        "experience with slack",
+        "knowledge of slack",
+        "slack collaboration",
+        "slack platform",
+        "slack tool",
+        "slacks"
+      ],
+      "category": "tools_pm"
+    },
+    "trello": {
+      "aliases": [
+        "experience with trello",
+        "knowledge of trello",
+        "trello collaboration",
+        "trello platform",
+        "trello tool",
+        "trellos"
+      ],
+      "category": "tools_pm"
+    },
+    "clickup": {
+      "aliases": [
+        "click up",
+        "clickup collaboration",
+        "clickup platform",
+        "clickup tool",
+        "clickups",
+        "experience with clickup",
+        "knowledge of clickup"
+      ],
+      "category": "tools_pm"
+    },
+    "agile": {
+      "aliases": [
+        "agile collaboration",
+        "agile methodology",
+        "agile platform",
+        "agile tool",
+        "agiles",
+        "experience with agile",
+        "knowledge of agile",
+        "scrum"
+      ],
+      "category": "tools_pm"
+    },
+    "scrum": {
+      "aliases": [
+        "experience with scrum",
+        "knowledge of scrum",
+        "scrum collaboration",
+        "scrum framework",
+        "scrum platform",
+        "scrum tool",
+        "scrums"
+      ],
+      "category": "tools_pm"
+    },
+    "kanban": {
+      "aliases": [
+        "experience with kanban",
+        "kanban collaboration",
+        "kanban platform",
+        "kanban tool",
+        "kanbans",
+        "knowledge of kanban"
+      ],
+      "category": "tools_pm"
+    },
+    "project management": {
+      "aliases": [
+        "experience with project management",
+        "knowledge of project management",
+        "pm",
+        "project management collaboration",
+        "project management platform",
+        "project management tool",
+        "project managements",
+        "project-management",
+        "project_management",
+        "projectmanagement"
+      ],
+      "category": "tools_pm"
+    },
+    "business analysis": {
+      "aliases": [
+        "ba",
+        "business analysi",
+        "business analysis collaboration",
+        "business analysis platform",
+        "business analysis tool",
+        "business-analysis",
+        "business_analysis",
+        "businessanalysis",
+        "experience with business analysis",
+        "knowledge of business analysis"
+      ],
+      "category": "tools_pm"
+    },
+    "crm": {
+      "aliases": [
+        "crm collaboration",
+        "crm platform",
+        "crm tool",
+        "crms",
+        "customer relationship management",
+        "experience with crm",
+        "knowledge of crm"
+      ],
+      "category": "tools_pm"
+    },
+    "erp": {
+      "aliases": [
+        "enterprise resource planning",
+        "erp collaboration",
+        "erp platform",
+        "erp tool",
+        "erps",
+        "experience with erp",
+        "knowledge of erp"
+      ],
+      "category": "tools_pm"
+    },
+    "objective c": {
+      "aliases": [
+        "objective.c",
+        "objective c framework",
+        "objective-c",
+        "objective c library",
+        "objective c tool",
+        "objective_c",
+        "objective c development",
+        "objectivec",
+        "objective c platform",
+        "objective c dev",
+        "objective c"
+      ],
+      "category": "general"
+    },
+    "dart": {
+      "aliases": [
+        "dart tool",
+        "dart development",
+        "dart library",
+        "dart",
+        "dart dev",
+        "dart platform",
+        "dart framework"
+      ],
+      "category": "general"
+    },
+    "expo": {
+      "aliases": [
+        "expo framework",
+        "expo development",
+        "expo",
+        "expo dev",
+        "expo platform",
+        "expo library",
+        "expo tool"
+      ],
+      "category": "general"
+    },
+    "unity": {
+      "aliases": [
+        "unity library",
+        "unity",
+        "unity framework",
+        "unity development",
+        "unity platform",
+        "unity dev",
+        "unity tool"
+      ],
+      "category": "general"
+    },
+    "unreal engine": {
+      "aliases": [
+        "unreal engine development",
+        "unreal.engine",
+        "unreal_engine",
+        "unreal engine library",
+        "unreal-engine",
+        "unreal engine platform",
+        "unrealengine",
+        "unreal engine dev",
+        "unreal engine",
+        "unreal engine framework",
+        "unreal engine tool"
+      ],
+      "category": "general"
+    },
+    "three.js": {
+      "aliases": [
+        "three.js library",
+        "three.js dev",
+        "three.js",
+        "three.js framework",
+        "three.js platform",
+        "three.js development",
+        "three.js tool"
+      ],
+      "category": "general"
+    },
+    "webgl": {
+      "aliases": [
+        "webgl development",
+        "webgl dev",
+        "webgl platform",
+        "webgl",
+        "webgl framework",
+        "webgl library",
+        "webgl tool"
+      ],
+      "category": "general"
+    },
+    "apollo graphql": {
+      "aliases": [
+        "apollo graphql dev",
+        "apollo graphql",
+        "apollo_graphql",
+        "apollo graphql framework",
+        "apollo graphql library",
+        "apollo-graphql",
+        "apollo graphql platform",
+        "apollo graphql tool",
+        "apollo graphql development",
+        "apollo.graphql",
+        "apollographql"
+      ],
+      "category": "general"
+    },
+    "kafka": {
+      "aliases": [
+        "kafka platform",
+        "kafka development",
+        "kafka tool",
+        "kafka",
+        "kafka dev",
+        "kafka framework",
+        "kafka library"
+      ],
+      "category": "general"
+    },
+    "logstash": {
+      "aliases": [
+        "logstash library",
+        "logstash framework",
+        "logstash dev",
+        "logstash tool",
+        "logstash platform",
+        "logstash",
+        "logstash development"
+      ],
+      "category": "general"
+    },
+    "kibana": {
+      "aliases": [
+        "kibana",
+        "kibana framework",
+        "kibana library",
+        "kibana dev",
+        "kibana platform",
+        "kibana tool",
+        "kibana development"
+      ],
+      "category": "general"
+    },
+    "chef": {
+      "aliases": [
+        "chef library",
+        "chef dev",
+        "chef tool",
+        "chef development",
+        "chef framework",
+        "chef platform",
+        "chef"
+      ],
+      "category": "general"
+    },
+    "puppet": {
+      "aliases": [
+        "puppet framework",
+        "puppet tool",
+        "puppet platform",
+        "puppet library",
+        "puppet",
+        "puppet dev",
+        "puppet development"
+      ],
+      "category": "general"
+    },
+    "spark": {
+      "aliases": [
+        "spark",
+        "spark library",
+        "spark framework",
+        "spark development",
+        "spark platform",
+        "spark dev",
+        "spark tool"
+      ],
+      "category": "general"
+    },
+    "pyspark": {
+      "aliases": [
+        "pyspark framework",
+        "pyspark platform",
+        "pyspark library",
+        "pyspark",
+        "pyspark dev",
+        "pyspark development",
+        "pyspark tool"
+      ],
+      "category": "general"
+    },
+    "dbt": {
+      "aliases": [
+        "dbt platform",
+        "dbt dev",
+        "dbt",
+        "dbt tool",
+        "dbt development",
+        "dbt library",
+        "dbt framework"
+      ],
+      "category": "general"
+    },
+    "lookml": {
+      "aliases": [
+        "lookml framework",
+        "lookml platform",
+        "lookml",
+        "lookml dev",
+        "lookml development",
+        "lookml library",
+        "lookml tool"
+      ],
+      "category": "general"
+    },
+    "superset": {
+      "aliases": [
+        "superset framework",
+        "superset tool",
+        "superset",
+        "superset dev",
+        "superset development",
+        "superset library",
+        "superset platform"
+      ],
+      "category": "general"
+    },
+    "scipy": {
+      "aliases": [
+        "scipy tool",
+        "scipy platform",
+        "scipy framework",
+        "scipy",
+        "scipy dev",
+        "scipy development",
+        "scipy library"
+      ],
+      "category": "general"
+    },
+    "seaborn": {
+      "aliases": [
+        "seaborn tool",
+        "seaborn development",
+        "seaborn platform",
+        "seaborn",
+        "seaborn library",
+        "seaborn framework",
+        "seaborn dev"
+      ],
+      "category": "general"
+    },
+    "scikit learn": {
+      "aliases": [
+        "scikit learn development",
+        "scikitlearn",
+        "scikit learn platform",
+        "scikit learn tool",
+        "scikit.learn",
+        "scikit-learn",
+        "scikit learn dev",
+        "scikit learn framework",
+        "scikit learn library",
+        "scikit learn",
+        "scikit_learn"
+      ],
+      "category": "general"
+    },
+    "reinforcement learning": {
+      "aliases": [
+        "reinforcement_learning",
+        "reinforcement learning framework",
+        "reinforcement learning platform",
+        "reinforcement learning development",
+        "reinforcement learning library",
+        "reinforcement learning dev",
+        "reinforcement learning",
+        "reinforcementlearning",
+        "reinforcement-learning",
+        "reinforcement learning tool",
+        "reinforcement.learning"
+      ],
+      "category": "general"
+    },
+    "cybersecurity": {
+      "aliases": [
+        "cybersecurity dev",
+        "cybersecurity development",
+        "cybersecurity platform",
+        "cybersecurity",
+        "cybersecurity tool",
+        "cybersecurity library",
+        "cybersecurity framework"
+      ],
+      "category": "general"
+    },
+    "ethical hacking": {
+      "aliases": [
+        "ethical hacking development",
+        "ethical_hacking",
+        "ethical hacking tool",
+        "ethicalhacking",
+        "ethical hacking",
+        "ethical hacking library",
+        "ethical.hacking",
+        "ethical hacking dev",
+        "ethical-hacking",
+        "ethical hacking platform",
+        "ethical hacking framework"
+      ],
+      "category": "general"
+    },
+    "siem": {
+      "aliases": [
+        "siem tool",
+        "siem library",
+        "siem dev",
+        "siem development",
+        "siem platform",
+        "siem framework",
+        "siem"
+      ],
+      "category": "general"
+    },
+    "splunk": {
+      "aliases": [
+        "splunk library",
+        "splunk dev",
+        "splunk development",
+        "splunk tool",
+        "splunk framework",
+        "splunk platform",
+        "splunk"
+      ],
+      "category": "general"
+    },
+    "wireshark": {
+      "aliases": [
+        "wireshark tool",
+        "wireshark framework",
+        "wireshark development",
+        "wireshark platform",
+        "wireshark dev",
+        "wireshark",
+        "wireshark library"
+      ],
+      "category": "general"
+    },
+    "burp suite": {
+      "aliases": [
+        "burp_suite",
+        "burp suite framework",
+        "burp-suite",
+        "burp suite",
+        "burp suite development",
+        "burp.suite",
+        "burp suite library",
+        "burp suite tool",
+        "burpsuite",
+        "burp suite platform",
+        "burp suite dev"
+      ],
+      "category": "general"
+    },
+    "metasploit": {
+      "aliases": [
+        "metasploit development",
+        "metasploit library",
+        "metasploit dev",
+        "metasploit",
+        "metasploit tool",
+        "metasploit framework",
+        "metasploit platform"
+      ],
+      "category": "general"
+    },
+    "jwt auth": {
+      "aliases": [
+        "jwt-auth",
+        "jwt auth",
+        "jwt_auth",
+        "jwt auth framework",
+        "jwt auth platform",
+        "jwt auth tool",
+        "jwt auth library",
+        "jwt auth dev",
+        "jwtauth",
+        "jwt.auth",
+        "jwt auth development"
+      ],
+      "category": "general"
+    },
+    "oauth2": {
+      "aliases": [
+        "oauth2 development",
+        "oauth2 tool",
+        "oauth2 library",
+        "oauth2 platform",
+        "oauth2 framework",
+        "oauth2",
+        "oauth2 dev"
+      ],
+      "category": "general"
+    },
+    "openid connect": {
+      "aliases": [
+        "openid connect tool",
+        "openid connect platform",
+        "openid connect dev",
+        "openid.connect",
+        "openidconnect",
+        "openid connect library",
+        "openid connect",
+        "openid_connect",
+        "openid connect development",
+        "openid connect framework",
+        "openid-connect"
+      ],
+      "category": "general"
+    },
+    "saml": {
+      "aliases": [
+        "saml framework",
+        "saml",
+        "saml development",
+        "saml tool",
+        "saml dev",
+        "saml library",
+        "saml platform"
+      ],
+      "category": "general"
+    },
+    "ldap": {
+      "aliases": [
+        "ldap dev",
+        "ldap library",
+        "ldap tool",
+        "ldap framework",
+        "ldap development",
+        "ldap",
+        "ldap platform"
+      ],
+      "category": "general"
+    },
+    "active directory": {
+      "aliases": [
+        "active directory framework",
+        "active directory",
+        "active directory development",
+        "active_directory",
+        "active directory library",
+        "active directory platform",
+        "active-directory",
+        "activedirectory",
+        "active directory dev",
+        "active directory tool",
+        "active.directory"
+      ],
+      "category": "general"
+    },
+    "windows server": {
+      "aliases": [
+        "windows server development",
+        "windows server",
+        "windows server tool",
+        "windows server library",
+        "windows server dev",
+        "windows server platform",
+        "windows.server",
+        "windows_server",
+        "windows server framework",
+        "windowsserver",
+        "windows-server"
+      ],
+      "category": "general"
+    },
+    "linux administration": {
+      "aliases": [
+        "linux-administration",
+        "linux administration library",
+        "linux.administration",
+        "linux administration dev",
+        "linux administration",
+        "linux administration platform",
+        "linux administration development",
+        "linuxadministration",
+        "linux_administration",
+        "linux administration framework",
+        "linux administration tool"
+      ],
+      "category": "general"
+    },
+    "bash scripting": {
+      "aliases": [
+        "bash scripting framework",
+        "bash scripting platform",
+        "bash.scripting",
+        "bash scripting dev",
+        "bashscripting",
+        "bash scripting library",
+        "bash scripting tool",
+        "bash-scripting",
+        "bash scripting",
+        "bash scripting development",
+        "bash_scripting"
+      ],
+      "category": "general"
+    },
+    "network security": {
+      "aliases": [
+        "network security platform",
+        "network security",
+        "network-security",
+        "networksecurity",
+        "network security framework",
+        "network security library",
+        "network security dev",
+        "network security development",
+        "network security tool",
+        "network.security",
+        "network_security"
+      ],
+      "category": "general"
+    },
+    "load balancing": {
+      "aliases": [
+        "load-balancing",
+        "load balancing tool",
+        "load.balancing",
+        "load balancing development",
+        "load balancing library",
+        "load balancing dev",
+        "load_balancing",
+        "load balancing platform",
+        "load balancing framework",
+        "loadbalancing",
+        "load balancing"
+      ],
+      "category": "general"
+    },
+    "apache http server": {
+      "aliases": [
+        "apachehttpserver",
+        "apache http server",
+        "apache.http.server",
+        "apache http server tool",
+        "apache http server dev",
+        "apache http server development",
+        "apache http server library",
+        "apache http server framework",
+        "apache-http-server",
+        "apache http server platform",
+        "apache_http_server"
+      ],
+      "category": "general"
+    },
+    "service mesh": {
+      "aliases": [
+        "service mesh framework",
+        "service-mesh",
+        "service_mesh",
+        "service.mesh",
+        "service mesh",
+        "service mesh tool",
+        "service mesh dev",
+        "service mesh development",
+        "servicemesh",
+        "service mesh library",
+        "service mesh platform"
+      ],
+      "category": "general"
+    },
+    "istio": {
+      "aliases": [
+        "istio platform",
+        "istio development",
+        "istio tool",
+        "istio framework",
+        "istio library",
+        "istio",
+        "istio dev"
+      ],
+      "category": "general"
+    },
+    "linkerd": {
+      "aliases": [
+        "linkerd platform",
+        "linkerd development",
+        "linkerd library",
+        "linkerd framework",
+        "linkerd",
+        "linkerd tool",
+        "linkerd dev"
+      ],
+      "category": "general"
+    },
+    "event driven architecture": {
+      "aliases": [
+        "event driven architecture development",
+        "event driven architecture library",
+        "event driven architecture tool",
+        "event_driven_architecture",
+        "event driven architecture dev",
+        "event-driven-architecture",
+        "event.driven.architecture",
+        "event driven architecture platform",
+        "event driven architecture",
+        "eventdrivenarchitecture",
+        "event driven architecture framework"
+      ],
+      "category": "general"
+    },
+    "aws lambda": {
+      "aliases": [
+        "awslambda",
+        "aws lambda development",
+        "aws lambda library",
+        "aws_lambda",
+        "aws lambda framework",
+        "aws lambda tool",
+        "aws lambda dev",
+        "aws-lambda",
+        "aws lambda",
+        "aws.lambda",
+        "aws lambda platform"
+      ],
+      "category": "general"
+    },
+    "azure functions": {
+      "aliases": [
+        "azure-functions",
+        "azure functions",
+        "azure functions library",
+        "azure_functions",
+        "azurefunctions",
+        "azure functions platform",
+        "azure functions development",
+        "azure functions dev",
+        "azure.functions",
+        "azure functions framework",
+        "azure functions tool"
+      ],
+      "category": "general"
+    },
+    "google cloud functions": {
+      "aliases": [
+        "google.cloud.functions",
+        "google cloud functions framework",
+        "google cloud functions tool",
+        "googlecloudfunctions",
+        "google-cloud-functions",
+        "google cloud functions platform",
+        "google cloud functions dev",
+        "google cloud functions development",
+        "google cloud functions library",
+        "google_cloud_functions",
+        "google cloud functions"
+      ],
+      "category": "general"
+    },
+    "firebase": {
+      "aliases": [
+        "firebase library",
+        "firebase tool",
+        "firebase",
+        "firebase platform",
+        "firebase framework",
+        "firebase development",
+        "firebase dev"
+      ],
+      "category": "general"
+    },
+    "supabase": {
+      "aliases": [
+        "supabase dev",
+        "supabase platform",
+        "supabase tool",
+        "supabase framework",
+        "supabase library",
+        "supabase development",
+        "supabase"
+      ],
+      "category": "general"
+    },
+    "stripe api": {
+      "aliases": [
+        "stripe_api",
+        "stripe api tool",
+        "stripeapi",
+        "stripe api platform",
+        "stripe api development",
+        "stripe api",
+        "stripe api library",
+        "stripe api framework",
+        "stripe api dev",
+        "stripe.api",
+        "stripe-api"
+      ],
+      "category": "general"
+    },
+    "paypal api": {
+      "aliases": [
+        "paypal-api",
+        "paypal api",
+        "paypal_api",
+        "paypal api dev",
+        "paypalapi",
+        "paypal api library",
+        "paypal api platform",
+        "paypal api framework",
+        "paypal api tool",
+        "paypal api development",
+        "paypal.api"
+      ],
+      "category": "general"
+    },
+    "twilio api": {
+      "aliases": [
+        "twilio-api",
+        "twilio api framework",
+        "twilio api platform",
+        "twilio api library",
+        "twilioapi",
+        "twilio api tool",
+        "twilio api",
+        "twilio api dev",
+        "twilio api development",
+        "twilio.api",
+        "twilio_api"
+      ],
+      "category": "general"
+    },
+    "web scraping": {
+      "aliases": [
+        "web scraping framework",
+        "web-scraping",
+        "web scraping",
+        "web scraping development",
+        "web_scraping",
+        "web scraping library",
+        "web scraping dev",
+        "webscraping",
+        "web scraping platform",
+        "web.scraping",
+        "web scraping tool"
+      ],
+      "category": "general"
+    },
+    "puppeteer": {
+      "aliases": [
+        "puppeteer tool",
+        "puppeteer framework",
+        "puppeteer library",
+        "puppeteer",
+        "puppeteer platform",
+        "puppeteer development",
+        "puppeteer dev"
+      ],
+      "category": "general"
+    },
+    "end to end testing": {
+      "aliases": [
+        "end to end testing tool",
+        "end to end testing library",
+        "end_to_end_testing",
+        "endtoendtesting",
+        "end to end testing dev",
+        "end to end testing",
+        "end to end testing development",
+        "end to end testing framework",
+        "end to end testing platform",
+        "end.to.end.testing",
+        "end-to-end-testing"
+      ],
+      "category": "general"
+    },
+    "tdd": {
+      "aliases": [
+        "tdd development",
+        "tdd",
+        "tdd library",
+        "tdd framework",
+        "tdd dev",
+        "tdd tool",
+        "tdd platform"
+      ],
+      "category": "general"
+    },
+    "bdd": {
+      "aliases": [
+        "bdd dev",
+        "bdd library",
+        "bdd development",
+        "bdd platform",
+        "bdd framework",
+        "bdd tool",
+        "bdd"
+      ],
+      "category": "general"
+    },
+    "mocha": {
+      "aliases": [
+        "mocha tool",
+        "mocha development",
+        "mocha",
+        "mocha platform",
+        "mocha dev",
+        "mocha framework",
+        "mocha library"
+      ],
+      "category": "general"
+    },
+    "chai": {
+      "aliases": [
+        "chai platform",
+        "chai dev",
+        "chai tool",
+        "chai framework",
+        "chai development",
+        "chai",
+        "chai library"
+      ],
+      "category": "general"
+    },
+    "junit": {
+      "aliases": [
+        "junit library",
+        "junit development",
+        "junit framework",
+        "junit dev",
+        "junit",
+        "junit platform",
+        "junit tool"
+      ],
+      "category": "general"
+    },
+    "pytest": {
+      "aliases": [
+        "pytest development",
+        "pytest framework",
+        "pytest tool",
+        "pytest dev",
+        "pytest library",
+        "pytest platform",
+        "pytest"
+      ],
+      "category": "general"
+    },
+    "xunit": {
+      "aliases": [
+        "xunit development",
+        "xunit library",
+        "xunit tool",
+        "xunit dev",
+        "xunit framework",
+        "xunit",
+        "xunit platform"
+      ],
+      "category": "general"
+    },
+    "nunit": {
+      "aliases": [
+        "nunit development",
+        "nunit dev",
+        "nunit",
+        "nunit library",
+        "nunit platform",
+        "nunit framework",
+        "nunit tool"
+      ],
+      "category": "general"
+    },
+    "data warehouse": {
+      "aliases": [
+        "datawarehouse",
+        "data-warehouse",
+        "data warehouse dev",
+        "data warehouse development",
+        "data warehouse library",
+        "data warehouse framework",
+        "data.warehouse",
+        "data warehouse",
+        "data_warehouse",
+        "data warehouse platform",
+        "data warehouse tool"
+      ],
+      "category": "general"
+    },
+    "data lake": {
+      "aliases": [
+        "data lake library",
+        "data lake tool",
+        "data lake",
+        "data lake framework",
+        "data lake dev",
+        "data.lake",
+        "data_lake",
+        "datalake",
+        "data lake platform",
+        "data lake development",
+        "data-lake"
+      ],
+      "category": "general"
+    },
+    "etl pipelines": {
+      "aliases": [
+        "etl pipelines library",
+        "etl_pipelines",
+        "etl pipelines dev",
+        "etlpipelines",
+        "etl pipelines framework",
+        "etl-pipelines",
+        "etl pipelines tool",
+        "etl pipelines development",
+        "etl.pipelines",
+        "etl pipelines",
+        "etl pipelines platform"
+      ],
+      "category": "general"
+    },
+    "data modeling": {
+      "aliases": [
+        "data modeling framework",
+        "data.modeling",
+        "data modeling dev",
+        "data modeling development",
+        "datamodeling",
+        "data modeling platform",
+        "data modeling",
+        "data modeling tool",
+        "data modeling library",
+        "data-modeling",
+        "data_modeling"
+      ],
+      "category": "general"
+    },
+    "domain driven design": {
+      "aliases": [
+        "domain driven design platform",
+        "domain_driven_design",
+        "domain driven design framework",
+        "domain driven design library",
+        "domaindrivendesign",
+        "domain driven design dev",
+        "domain driven design",
+        "domain-driven-design",
+        "domain.driven.design",
+        "domain driven design tool",
+        "domain driven design development"
+      ],
+      "category": "general"
+    },
+    "clean architecture": {
+      "aliases": [
+        "clean architecture tool",
+        "clean architecture platform",
+        "clean architecture development",
+        "clean-architecture",
+        "cleanarchitecture",
+        "clean architecture",
+        "clean architecture dev",
+        "clean architecture framework",
+        "clean.architecture",
+        "clean_architecture",
+        "clean architecture library"
+      ],
+      "category": "general"
+    },
+    "hexagonal architecture": {
+      "aliases": [
+        "hexagonal.architecture",
+        "hexagonal-architecture",
+        "hexagonal architecture tool",
+        "hexagonal architecture",
+        "hexagonal architecture development",
+        "hexagonal architecture framework",
+        "hexagonal architecture platform",
+        "hexagonal_architecture",
+        "hexagonal architecture dev",
+        "hexagonal architecture library",
+        "hexagonalarchitecture"
+      ],
+      "category": "general"
+    },
+    "product management": {
+      "aliases": [
+        "product management dev",
+        "product management library",
+        "product management platform",
+        "productmanagement",
+        "product.management",
+        "product_management",
+        "product management",
+        "product management tool",
+        "product management development",
+        "product-management",
+        "product management framework"
+      ],
+      "category": "general"
+    },
+    "technical leadership": {
+      "aliases": [
+        "technical leadership tool",
+        "technical leadership framework",
+        "technicalleadership",
+        "technical leadership library",
+        "technical leadership dev",
+        "technical-leadership",
+        "technical leadership platform",
+        "technical leadership",
+        "technical leadership development",
+        "technical_leadership",
+        "technical.leadership"
+      ],
+      "category": "general"
+    }
+  }
+}
