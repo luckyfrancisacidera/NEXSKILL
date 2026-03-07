@@ -21,6 +21,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("job_roles")]
         public IReadOnlyList<string> JobRoles { get; set; } = [];
+
+        [JsonPropertyName("job_roles_by_department")]
+        public IReadOnlyDictionary<string, IReadOnlyList<string>> JobRolesByDepartment { get; set; } = new Dictionary<string, IReadOnlyList<string>>();
     }
 
     public sealed class RecruiterDashboardSummaryResponse
