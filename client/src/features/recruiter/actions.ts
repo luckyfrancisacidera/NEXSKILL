@@ -91,23 +91,34 @@ export const updateCandidateAction = async ({ request, params }: ActionFunctionA
     status: status || undefined,
   };
 
-  if (intent === 'stage' && params.candidateId) {
-       await recruiterService.updateApplicantStatuses([params.candidateId], payload);
-  }
-
-  if (intent === 'bulk-stage') {
-    const selectedIdsRaw = getString(formData, 'selectedIds');
-    const selectedIds = selectedIdsRaw
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    if (selectedIds.length > 0) {
-      await recruiterService.updateApplicantStatuses(selectedIds, payload);
+ try {
+    if (intent === 'stage' && params.candidateId) {
+      const result = await recruiterService.updateApplicantStatuses([params.candidateId], payload);
+      return { result };
     }
+
+    if (intent === 'bulk-stage') {
+      const selectedIdsRaw = getString(formData, 'selectedIds');
+      const selectedIds = selectedIdsRaw
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+        if (selectedIds.length > 0) {
+        const result = await recruiterService.updateApplicantStatuses(selectedIds, payload);
+        return { result };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const responseData = error.data as { message?: string } | null;
+      return { error: responseData?.message ?? error.message ?? 'Unable to update candidate stage right now.' };
+    }
+    
+    return { error: 'Unable to update candidate stage right now.' };
   }
-  
-  return null;
 };
 
 export const upsertInterviewAction = async ({ request, params }: ActionFunctionArgs) => {

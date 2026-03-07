@@ -19,6 +19,7 @@ import {
   type ParsedResumeProjectDto,
   type ParsedResumeWorkExperienceDto,
 } from "@features/recruiter/service/recruiter.service";
+import { ApiError } from "@shared/api/http";
 
 type CandidateStage = ApplicantScoreItemDto["submission_status"];
 type CandidateAction = {
@@ -214,7 +215,12 @@ export const CandidateDetailPage = () => {
   ) => {
     try {
       setIsSubmitting(true);
-      await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], { action, status });
+      const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], { action, status });
+      const itemResult = result.results[0];
+
+      if (itemResult && !itemResult.success) {
+        throw new Error(itemResult.message);
+      }
       
       setCandidate((current) => ({ ...current, submission_status: status }));
 
@@ -225,10 +231,16 @@ export const CandidateDetailPage = () => {
       });
 
       revalidator.revalidate();
-    } catch {
+    } catch (error) {
+      const description = error instanceof ApiError
+        ? ((error.data as { message?: string } | null)?.message ?? error.message)
+        : error instanceof Error
+          ? error.message
+          : "Unable to update candidate stage. Please try again.";
+
       showToast({
         title: "Action failed",
-        description: "Unable to update candidate stage. Please try again.",
+        description,
         tone: "error",
       });
     } finally {

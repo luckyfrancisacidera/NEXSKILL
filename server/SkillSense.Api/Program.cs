@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SkillSense.Api;
 using SkillSense.Application;
+using SkillSense.Application.Exceptions;
 using SkillSense.Infrastructure;
 using SkillSense.Persistence;
 
@@ -128,13 +129,26 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
-    ctx.Response.StatusCode = 500;
     ctx.Response.ContentType = "application/json";
     var error = ctx.Features.Get<IExceptionHandlerFeature>();
-    if (error is not null)
+    if (error is null)
     {
-        await ctx.Response.WriteAsJsonAsync(new { message = error.Error.Message });
+        ctx.Response.StatusCode = 500;
+        await ctx.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+        return;
     }
+
+    var (statusCode, message) = error.Error switch
+    {
+        ArgumentException ex => (StatusCodes.Status400BadRequest, ex.Message),
+        InvalidStageTransitionException ex => (StatusCodes.Status409Conflict, ex.Message),
+        KeyNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message),
+        _ => (StatusCodes.Status500InternalServerError, error.Error.Message),
+    };
+
+    ctx.Response.StatusCode = statusCode;
+    await ctx.Response.WriteAsJsonAsync(new { message });
+
 }));
 
 app.UseHttpsRedirection();
