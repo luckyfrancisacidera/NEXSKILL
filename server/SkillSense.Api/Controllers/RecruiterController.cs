@@ -100,10 +100,16 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     }
 
     [HttpPut("applicants/scores/status")]
-    public async Task<IActionResult> UpdateApplicantStatuses([FromBody] BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
+    public async Task<ActionResult<BulkUpdateApplicantStageResponse>> UpdateApplicantStatuses([FromBody] BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
-        await recruiterService.UpdateApplicantStatusesAsync(GetUserId(), request, ct);
-        return NoContent();
+        var result = await recruiterService.UpdateApplicantStatusesAsync(GetUserId(), request, ct);
+
+        if (result.SuccessCount == 0 && result.FailureCount > 0)
+        {
+            return Conflict(result);
+        }
+
+        return Ok(result);
     }
 
     private Guid GetUserId()
