@@ -83,14 +83,19 @@ export const updateJobStatusAction = async ({ request, params }: ActionFunctionA
 export const updateCandidateAction = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const intent = getString(formData, 'intent');
+  const status = getString(formData, 'status');
+  const action = getString(formData, 'action');
+
+  const payload = {
+    action: action || undefined,
+    status: status || undefined,
+  };
 
   if (intent === 'stage' && params.candidateId) {
-    const status = getString(formData, 'status');
-    await recruiterService.updateApplicantStatuses([params.candidateId], status);
+       await recruiterService.updateApplicantStatuses([params.candidateId], payload);
   }
 
   if (intent === 'bulk-stage') {
-    const status = getString(formData, 'status');
     const selectedIdsRaw = getString(formData, 'selectedIds');
     const selectedIds = selectedIdsRaw
       .split(',')
@@ -98,22 +103,9 @@ export const updateCandidateAction = async ({ request, params }: ActionFunctionA
       .filter(Boolean);
 
     if (selectedIds.length > 0) {
-      await recruiterService.updateApplicantStatuses(selectedIds, status);
+      await recruiterService.updateApplicantStatuses(selectedIds, payload);
     }
   }
-
-  if (intent === 'bulk-stage') {
-      const status = getString(formData, 'status');
-      const selectedIdsRaw = getString(formData, 'selectedIds');
-      const selectedIds = selectedIdsRaw
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-
-      if (selectedIds.length > 0) {
-        await recruiterService.updateApplicantStatuses(selectedIds, status);
-      }
-    }
   
   return null;
 };

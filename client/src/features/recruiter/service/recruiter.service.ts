@@ -219,9 +219,15 @@ export const recruiterService = {
   getApplicantBySubmissionId: async (submissionId: string) =>
     (await http.get<ApplicantScoreItemDto>(`/api/recruiter/applicants/scores/${submissionId}`)).data,
 
-  updateApplicantStatuses: async (submissionIds: string[], status: string) => {
-    await http.put(`/api/recruiter/applicants/scores/status`, { submission_ids: submissionIds, status });
-  },
+  updateApplicantStatuses: async (
+      submissionIds: string[],
+      payload: { action?: string; status?: string },
+    ) => {
+      await http.put(`/api/recruiter/applicants/scores/status`, {
+        submission_ids: submissionIds,
+        ...payload,
+      });
+    },
 
  getDashboardStats: async (params: {
     startDate?: string;
