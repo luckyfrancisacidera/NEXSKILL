@@ -8,8 +8,23 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("items")]
         public IReadOnlyList<ApplicantScoreItemResponse> Items { get; set; } = [];
 
+        [JsonPropertyName("page_number")]
+        public int PageNumber { get; set; } = 1;
+
+        [JsonPropertyName("page_size")]
+        public int PageSize { get; set; } = 10;
+
+        [JsonPropertyName("total_count")]
+        public int TotalCount { get; set; }
+
+        [JsonPropertyName("total_pages")]
+        public int TotalPages { get; set; } = 1;
+
         [JsonPropertyName("jobs")]
         public IReadOnlyList<ApplicantScoreJobFilterResponse> Jobs { get; set; } = [];
+
+        [JsonPropertyName("departments")]
+        public IReadOnlyList<string> Departments { get; set; } = [];
 
         [JsonPropertyName("counts")]
         public ApplicantScoreCountsResponse Counts { get; set; } = new();
