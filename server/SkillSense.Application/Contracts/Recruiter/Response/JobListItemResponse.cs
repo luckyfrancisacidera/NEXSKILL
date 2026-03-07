@@ -72,5 +72,13 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("posted_date_utc")]
         public DateTime? PostedDateUtc { get; set; }
+
+        [JsonPropertyName("number_of_vacancies")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int NumberOfVacancies { get; set; }
+
+        [JsonPropertyName("remaining_vacancies")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int RemainingVacancies { get; set; }
     }
 }

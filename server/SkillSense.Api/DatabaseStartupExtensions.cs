@@ -70,7 +70,7 @@ public static class DatabaseStartupExtensions
     private static async Task<bool> RelationExistsAsync(DbContext dbContext, string relationName)
     {
         var exists = await dbContext.Database
-            .SqlQueryRaw<string?>($"SELECT to_regclass('{relationName}')")
+            .SqlQuery<string?>($"SELECT to_regclass('{relationName}')")
             .SingleAsync();
 
         return !string.IsNullOrWhiteSpace(exists);

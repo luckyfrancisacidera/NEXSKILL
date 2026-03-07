@@ -29,7 +29,8 @@ export const Topbar = () => {
   };
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-6 py-4 ">
+    <header className="fixed left-64 right-0 top-0 z-30 flex items-center justify-between gap-4 border-b border-white/60 bg-white/40 px-6 py-4 shadow-[0_1px_0_rgba(255,255,255,0.7),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-md transition-all duration-300 supports-backdrop-filter:bg-white/70">
+            {" "}
       <label className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500">
         <Search className="h-4 w-4" />
         <input

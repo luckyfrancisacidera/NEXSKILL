@@ -4,40 +4,79 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 {
     public sealed class RecruiterDashboardResponse
     {
-        [JsonPropertyName("jobs_posted_over_time")]
-        public IReadOnlyList<TimePointResponse> JobsPostedOverTime { get; set; } = [];
+        [JsonPropertyName("filters")]
+        public RecruiterDashboardFilterOptionsResponse Filters { get; set; } = new();
 
-        [JsonPropertyName("applications_over_time")]
-        public IReadOnlyList<TimePointResponse> ApplicationsOverTime { get; set; } = [];
+        [JsonPropertyName("summary")]
+        public RecruiterDashboardSummaryResponse Summary { get; set; } = new();
 
-        [JsonPropertyName("top_jobs_by_applications")]
-        public IReadOnlyList<TopJobResponse> TopJobsByApplications { get; set; } = [];
-
-        [JsonPropertyName("recommended_count")]
-        public int RecommendedCount { get; set; }
-
-        [JsonPropertyName("shortlisted_count")]
-        public int ShortlistedCount { get; set; }
+        [JsonPropertyName("trends")]
+        public RecruiterDashboardTrendsResponse Trends { get; set; } = new();
     }
 
-    public sealed class TimePointResponse
+    public sealed class RecruiterDashboardFilterOptionsResponse
     {
-        [JsonPropertyName("date")]
-        public string Date { get; set; } = string.Empty;
+        [JsonPropertyName("departments")]
+        public IReadOnlyList<string> Departments { get; set; } = [];
 
-        [JsonPropertyName("count")]
-        public int Count { get; set; }
+        [JsonPropertyName("job_roles")]
+        public IReadOnlyList<string> JobRoles { get; set; } = [];
     }
 
-    public sealed class TopJobResponse
+    public sealed class RecruiterDashboardSummaryResponse
     {
-        [JsonPropertyName("job_id")]
-        public Guid JobId { get; set; }
+        [JsonPropertyName("total_applicants")]
+        public MetricWithComparisonResponse TotalApplicants { get; set; } = new();
 
-        [JsonPropertyName("title")]
-        public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("total_shortlisted")]
+        public MetricWithComparisonResponse TotalShortlisted { get; set; } = new();
 
-        [JsonPropertyName("applications")]
-        public int Applications { get; set; }
+        [JsonPropertyName("total_interview")]
+        public MetricWithComparisonResponse TotalInterview { get; set; } = new();
+
+        [JsonPropertyName("total_offer")]
+        public MetricWithComparisonResponse TotalOffer { get; set; } = new();
+
+        [JsonPropertyName("total_hired")]
+        public MetricWithComparisonResponse TotalHired { get; set; } = new();
+    }
+
+    public sealed class MetricWithComparisonResponse
+    {
+        [JsonPropertyName("value")]
+        public int Value { get; set; }
+
+        [JsonPropertyName("previous_value")]
+        public int PreviousValue { get; set; }
+
+        [JsonPropertyName("comparison_percent")]
+        public decimal ComparisonPercent { get; set; }
+    }
+
+    public sealed class RecruiterDashboardTrendsResponse
+    {
+        [JsonPropertyName("labels")]
+        public IReadOnlyList<string> Labels { get; set; } = [];
+
+        [JsonPropertyName("datasets")]
+        public IReadOnlyList<TrendDatasetResponse> Datasets { get; set; } = [];
+    }
+
+    public sealed class TrendDatasetResponse
+    {
+        [JsonPropertyName("key")]
+        public string Key { get; set; } = string.Empty;
+
+        [JsonPropertyName("label")]
+        public string Label { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public IReadOnlyList<int> Data { get; set; } = [];
+
+        [JsonPropertyName("border_color")]
+        public string BorderColor { get; set; } = string.Empty;
+
+        [JsonPropertyName("background_color")]
+        public string BackgroundColor { get; set; } = string.Empty;
     }
 }
