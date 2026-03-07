@@ -73,6 +73,10 @@ namespace SkillSense.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValueSql("'{}'::jsonb");
 
+            builder.Property(x => x.NumberOfVacancies)
+              .IsRequired()
+              .HasDefaultValue(1);
+
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.CreatedAtUtc);
             builder.HasIndex(x => x.RecruiterId);

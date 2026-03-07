@@ -78,8 +78,8 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     }
 
     [HttpGet("dashboard")]
-    public async Task<ActionResult<RecruiterDashboardResponse>> Dashboard([FromQuery] string? range = "last30", CancellationToken ct = default)
-        => Ok(await recruiterService.GetDashboardAsync(GetUserId(), range, ct));
+    public async Task<ActionResult<RecruiterDashboardResponse>> Dashboard([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, [FromQuery] string? department = null, [FromQuery] string? jobRole = null, [FromQuery] string? groupBy = "month", CancellationToken ct = default)
+        => Ok(await recruiterService.GetDashboardAsync(GetUserId(), startDate, endDate, department, jobRole, groupBy, ct));
 
     [HttpGet("applicants/scores")]
     public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int? recommendedTopPercent = null, CancellationToken ct = default)

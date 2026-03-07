@@ -1,7 +1,7 @@
 import { Link, useLoaderData, useNavigate, useSearchParams } from "react-router-dom";
 import { Card } from "@shared/components/Card";
 import { formatCurrencyAmount } from "@shared/data/currency";
-import { BarChart, Bar, ResponsiveContainer } from "recharts";
+import { DashboardAreaChart } from "@shared/components/DashboardAreaChart";
 import { useEffect, useMemo, useState } from "react";
 
 import type { JobDto } from "../service/recruiter.service";
@@ -85,6 +85,9 @@ export const JobDetailPage = () => {
                   -{" "}
                   {formatCurrencyAmount(job.salary_max_per_annum, job.currency)}{" "}
                   / year
+                </span>
+                 <span className="rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-sm text-zinc-700">
+                  Vacancies: {job.remaining_vacancies ?? 0} / {job.number_of_vacancies ?? 0}
                 </span>
               </div>
             </header>
@@ -265,15 +268,10 @@ export const JobDetailPage = () => {
         <Card>
           <h3 className="mb-2 font-semibold">Applicants trend</h3>
           <div className="h-50">
-            <ResponsiveContainer>
-              <BarChart data={trend}>
-                <Bar
-                  dataKey="applications"
-                  fill="#525252"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <DashboardAreaChart
+              labels={trend.map((item) => item.day)}
+              datasets={[{ label: 'Applications', data: trend.map((item) => item.applications), border_color: '#525252', background_color: 'rgba(82,82,82,0.2)' }]}
+            />
           </div>
         </Card>
       </div>

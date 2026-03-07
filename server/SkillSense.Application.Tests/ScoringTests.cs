@@ -17,7 +17,7 @@ public sealed class ScoringTests
     }
 
     [Fact]
-    public void ExperienceYearsCalculator_MinYearsPartial()
+    public async Task ExperienceYearsCalculator_MinYearsPartial()
     {
         var orchestrator = new ResumeEmbeddingScoringOrchestrator(new FakeEmbeddingService());
         var result = await orchestrator.BuildAsync(Guid.NewGuid(), SampleResume(), SampleJob(), CancellationToken.None);

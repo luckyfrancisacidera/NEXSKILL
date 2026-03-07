@@ -496,7 +496,7 @@ export const CandidateDetailPage = () => {
               setIsOfferOpen(false);
             }}
           >
-            <h3 className="text-lg font-semibold">Create Offer</h3>
+            <h3 className="text-lg font-semibold z-100">Create Offer</h3>
             <input
               required
               className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"

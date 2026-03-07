@@ -28,6 +28,7 @@ public sealed class JobEntity
     public string? CompanyEmailSnapshot { get; set; }
 
     public string JobDescriptionStructuredJson { get; set; } = "{}";
+    public int NumberOfVacancies { get; set; } = 1;
 
     public JobStatus Status { get; set; } = JobStatus.Draft;
     public DateTime CreatedAtUtc { get; set; }

@@ -1,14 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useLoaderData } from "react-router-dom";
-import {
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Bar } from "@shared/vendor/Bar";
+import { DashboardAreaChart } from "@shared/components/DashboardAreaChart";
 import { Card } from "@shared/components/Card";
 import { JobCard } from "@shared/components/JobCard";
 import { Progress } from "@shared/components/Progress";
@@ -79,25 +71,12 @@ export const DashboardPage = () => {
             <h3 className="mb-4 text-lg font-semibold">
               Applications this week
             </h3>
-            <ResponsiveContainer width="100%" height="85%">
-              <BarChart
-                data={
-                  data.analytics as unknown as Array<
-                    Record<string, string | number>
-                  >
-                }
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                <XAxis dataKey="day" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar
-                  dataKey="applications"
-                  fill="#18181b"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+              <div className="h-[85%]">
+              <DashboardAreaChart
+                labels={data.analytics.map((item) => item.day)}
+                datasets={[{ label: 'Applications', data: data.analytics.map((item) => item.applications), border_color: '#18181b', background_color: 'rgba(24,24,27,0.15)' }]}
+              />
+            </div>
           </Card>
         </div>
       </div>
