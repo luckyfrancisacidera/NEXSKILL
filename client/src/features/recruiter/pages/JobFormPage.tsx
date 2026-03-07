@@ -173,6 +173,17 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
               </div>
             </div>
 
+            <div className="mt-3 max-w-xs">
+              <label className={labelClass}>Number of Vacancies</label>
+              <input
+                type="number"
+                min={0}
+                name="number_of_vacancies"
+                defaultValue={String(job?.number_of_vacancies ?? 1)}
+                className={inputClass}
+              />
+            </div>
+
             <div className="mt-3 md:max-w-sm md:ml-auto">
               <label className={labelClass}>Job Status</label>
               <select
@@ -402,14 +413,6 @@ export const JobFormPage = ({ mode }: { mode: "create" | "edit" }) => {
           {/* ACTIONS */}
 
           <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setIsPreviewOpen(true)}
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-zinc-700 hover:bg-zinc-100"
-            >
-              Preview
-            </button>
-
             <Link
               to="/recruiter/job-posts"
               className="rounded-lg border border-zinc-300 px-4 py-2 text-zinc-700 hover:bg-zinc-100"

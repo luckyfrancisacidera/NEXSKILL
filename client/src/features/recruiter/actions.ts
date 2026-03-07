@@ -32,6 +32,7 @@ export const upsertJobAction = async ({ request, params }: ActionFunctionArgs) =
     work_setup: getNum(formData, 'work_setup') ?? 0,
     employment_type: getNum(formData, 'employment_type') ?? 0,
     status: getString(formData, 'status') || 'Draft',
+    number_of_vacancies: Math.max(0, getNum(formData, 'number_of_vacancies') ?? 1),
   };
 
  try {

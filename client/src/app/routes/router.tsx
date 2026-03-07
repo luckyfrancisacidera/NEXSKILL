@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@app/layouts/AppShell";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
 import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
+import { ScrollToTop } from "@shared/components/ScrollToTop";
 import { PublicOnly, RequireAuth, RequireRole } from "@app/routes/routes.guard";
 import { routeAccess } from "@app/routes/route.config";
 import {
@@ -53,6 +54,13 @@ import {
 import { AdminPlaceholderPage } from "@features/admin/AdminPlaceholderPage";
 import { RegisterAccount, LoginAccount } from "@features/auth";
 
+const withScrollReset = (element: ReactElement) => (
+  <>
+    <ScrollToTop />
+    {element}
+  </>
+);
+
 const withRoleGate = (
   allowedRoles: (typeof routeAccess)[keyof typeof routeAccess],
   element: ReactElement,
@@ -64,32 +72,32 @@ const withRoleGate = (
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
-  { path: "/not-authorized", element: <NotAuthorized />, errorElement: <RouteErrorPage /> },
+  { path: "/not-authorized", element: withScrollReset(<NotAuthorized />), errorElement: <RouteErrorPage /> },
   {
     path: "/register",
     errorElement: <RouteErrorPage />,
-    element: (
+    element: withScrollReset(
       <PublicOnly>
         <RegisterAccount />
-      </PublicOnly>
+      </PublicOnly>,
     ),
   },
   {
     path: "/login",
     errorElement: <RouteErrorPage />,
-    element: (
+    element: withScrollReset(
       <PublicOnly>
         <LoginAccount />
-      </PublicOnly>
+      </PublicOnly>,
     ),
   },
   {
     path: "/",
     errorElement: <RouteErrorPage />,
-    element: (
+    element: withScrollReset(
       <RequireAuth>
         <AppShell />
-      </RequireAuth>
+      </RequireAuth>,
     ),
 
     children: [

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
@@ -47,6 +48,7 @@ namespace SkillSense.Application.Services
         {
             var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
             if (string.IsNullOrWhiteSpace(request.Location)) throw new ArgumentException("location is required");
+            if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
             var embedding = await embeddingService.EmbedAsync(request.Description, ct);
 
             var job = new JobEntity
@@ -76,13 +78,14 @@ namespace SkillSense.Application.Services
                 PostedDateUtc = ParseStatusOrDefault(request.Status) == JobStatus.Published ? DateTime.UtcNow : null,
                 CompanyNameSnapshot = profile.CompanyName,
                 CompanyEmailSnapshot = profile.CompanyEmail,
-                JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildNormalizedJobDescription(request))
+                JobDescriptionStructuredJson = JsonSerializer.Serialize(BuildNormalizedJobDescription(request)),
+                NumberOfVacancies = request.NumberOfVacancies
             };
 
             await jobRepository.AddAsync(job, ct);
             InvalidateRecruiterCaches(recruiterId);
             cacheService.RemoveByPrefix("jobs:public:list:");
-            return Map(job);
+            return Map(job, job.NumberOfVacancies);
         }
 
         public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
@@ -108,6 +111,8 @@ namespace SkillSense.Application.Services
             job.Schedule = request.Schedule;
             job.WorkSetup = (WorkSetup)(request.WorkSetup ?? (int)job.WorkSetup);
             job.EmploymentType = (EmploymentType)(request.EmploymentType ?? (int)job.EmploymentType);
+            if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
+            job.NumberOfVacancies = request.NumberOfVacancies;
             job.Status = ParseStatusOrDefault(request.Status);
 
             if (job.Status == JobStatus.Published && job.PostedDateUtc is null)
@@ -119,7 +124,9 @@ namespace SkillSense.Application.Services
 
             await jobRepository.UpdateAsync(job, ct);
             InvalidateAfterJobMutation(recruiterId, job.Id);
-            return Map(job);
+
+            var remainingVacancies = await GetRemainingVacanciesByJobIdAsync(job.Id, job.NumberOfVacancies, ct);
+            return Map(job, remainingVacancies);
         }
 
         public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default)
@@ -143,10 +150,11 @@ namespace SkillSense.Application.Services
 
                 var totalCount = await query.CountAsync(ct);
                 var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+                var remainingVacanciesByJobId = await BuildRemainingVacanciesLookupAsync(items, ct);
 
                 return new PagedResult<JobListItemResponse>
                 {
-                    Items = items.Select(Map).ToList(),
+                    Items = items.Select(item => Map(item, remainingVacanciesByJobId.TryGetValue(item.Id, out var remaining) ? remaining : item.NumberOfVacancies)).ToList(),
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     TotalCount = totalCount,
@@ -158,7 +166,13 @@ namespace SkillSense.Application.Services
         public async Task<JobListItemResponse?> GetJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
         {
             var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct);
-            return job is null ? null : Map(job);
+            if (job is null)
+            {
+                return null;
+            }
+
+            var remainingVacancies = await GetRemainingVacanciesByJobIdAsync(job.Id, job.NumberOfVacancies, ct);
+            return Map(job, remainingVacancies);
         }
 
         public async Task DeleteDraftJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
@@ -186,30 +200,101 @@ namespace SkillSense.Application.Services
             InvalidateAfterJobMutation(recruiterId, jobId);
         }
 
-        public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, string? range, CancellationToken ct = default)
+        public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
         {
-            var normalizedRange = string.IsNullOrWhiteSpace(range) ? "last30" : range.ToLowerInvariant();
-            var cacheKey = $"dashboard:recruiter:{recruiterId}:{normalizedRange}";
+            var normalizedStartDate = startDate?.Date;
+            var normalizedEndDate = endDate?.Date;
+            if (normalizedStartDate.HasValue && normalizedEndDate.HasValue && normalizedStartDate.Value > normalizedEndDate.Value)
+            {
+                (normalizedStartDate, normalizedEndDate) = (normalizedEndDate, normalizedStartDate);
+            }
+
+            var normalizedDepartment = string.IsNullOrWhiteSpace(department) || department.Equals("all", StringComparison.OrdinalIgnoreCase) ? null : department.Trim();
+            var normalizedRole = string.IsNullOrWhiteSpace(jobRole) || jobRole.Equals("all", StringComparison.OrdinalIgnoreCase) ? null : jobRole.Trim();
+            var normalizedGroupBy = string.IsNullOrWhiteSpace(groupBy) ? "month" : groupBy.Trim().ToLowerInvariant();
+            if (normalizedGroupBy is not ("week" or "month" or "year" or "department" or "job"))
+            {
+                normalizedGroupBy = "month";
+            }
+
+            var startUtc = normalizedStartDate.HasValue ? ToUtcStartOfDay(normalizedStartDate.Value) : (DateTime?)null;
+            var endExclusiveUtc = normalizedEndDate.HasValue ? ToUtcStartOfDay(normalizedEndDate.Value).AddDays(1) : (DateTime?)null;
+
+            var cacheKey = $"dashboard:recruiter:{recruiterId}:{normalizedStartDate:yyyyMMdd}:{normalizedEndDate:yyyyMMdd}:{normalizedDepartment}:{normalizedRole}:{normalizedGroupBy}";
             return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(30), async () =>
             {
-                var days = normalizedRange switch { "last90" => 90, "ytd" => (DateTime.UtcNow - new DateTime(DateTime.UtcNow.Year, 1, 1)).Days + 1, _ => 30 };
-                var start = DateTime.UtcNow.Date.AddDays(-days + 1);
+                var recruiterJobsBaseQuery = dbContext.Jobs.AsNoTracking().Where(j => j.RecruiterId == recruiterId);
+                var departments = await recruiterJobsBaseQuery
+                    .Where(j => j.Department != null && j.Department != string.Empty)
+                    .Select(j => j.Department!)
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .ToListAsync(ct);
+                var jobRoles = await recruiterJobsBaseQuery
+                    .Select(j => j.Title)
+                    .Distinct()
+                    .OrderBy(v => v)
+                    .ToListAsync(ct);
+                var filterOptions = new RecruiterDashboardFilterOptionsResponse
+                {
+                    Departments = departments,
+                    JobRoles = jobRoles,
+                };
 
-                var jobs = await dbContext.Jobs.AsNoTracking().Where(x => x.RecruiterId == recruiterId && x.CreatedAtUtc >= start).ToListAsync(ct);
-                var jobIds = jobs.Select(x => x.Id).ToHashSet();
-                var applications = await dbContext.ResumeSubmissions.AsNoTracking().Where(x => x.CreatedAtUtc >= start && jobIds.Contains(x.JobId)).ToListAsync(ct);
+                var jobsQuery = recruiterJobsBaseQuery;
 
-                var jobsOverTime = jobs.GroupBy(x => x.CreatedAtUtc.Date).Select(g => new TimePointResponse { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() }).OrderBy(x => x.Date).ToList();
-                var appsOverTime = applications.GroupBy(x => x.CreatedAtUtc.Date).Select(g => new TimePointResponse { Date = g.Key.ToString("yyyy-MM-dd"), Count = g.Count() }).OrderBy(x => x.Date).ToList();
-                var topJobs = applications.GroupBy(x => x.JobId).Select(g => new TopJobResponse { JobId = g.Key, Title = jobs.FirstOrDefault(j => j.Id == g.Key)?.Title ?? "Unknown", Applications = g.Count() }).OrderByDescending(x => x.Applications).Take(5).ToList();
+                if (normalizedDepartment is not null)
+                {
+                    jobsQuery = jobsQuery.Where(j => j.Department == normalizedDepartment);
+                }
+
+                if (normalizedRole is not null)
+                {
+                    jobsQuery = jobsQuery.Where(j => j.Title == normalizedRole);
+                }
+
+                var jobIds = await jobsQuery.Select(j => j.Id).ToListAsync(ct);
+                var applicationsQuery = dbContext.ResumeSubmissions.AsNoTracking().Where(s => jobIds.Contains(s.JobId));
+                if (startUtc.HasValue)
+                {
+                    applicationsQuery = applicationsQuery.Where(s => s.CreatedAtUtc >= startUtc.Value);
+                }
+
+                if (endExclusiveUtc.HasValue)
+                {
+                    applicationsQuery = applicationsQuery.Where(s => s.CreatedAtUtc < endExclusiveUtc.Value);
+                }
+
+                var applications = await applicationsQuery.ToListAsync(ct);
+
+                var start = normalizedStartDate;
+                var end = normalizedEndDate;
+                var previousApplications = new List<ResumeSubmissionEntity>();
+                if (start.HasValue && end.HasValue)
+                {
+                    var length = (end.Value - start.Value).Days + 1;
+                    var prevStart = start.Value.AddDays(-length);
+                    var prevEnd = start.Value.AddDays(-1);
+                    var prevStartUtc = ToUtcStartOfDay(prevStart);
+                    var prevEndExclusiveUtc = ToUtcStartOfDay(prevEnd).AddDays(1);
+
+                    previousApplications = await dbContext.ResumeSubmissions.AsNoTracking()
+                        .Where(s => jobIds.Contains(s.JobId) && s.CreatedAtUtc >= prevStartUtc && s.CreatedAtUtc < prevEndExclusiveUtc)
+                        .ToListAsync(ct);
+                }
+
+                var summary = BuildSummary(applications, previousApplications);
+                var jobLookup = await recruiterJobsBaseQuery
+                    .Select(j => new { j.Id, j.Title, Department = j.Department ?? "Unassigned" })
+                    .ToDictionaryAsync(j => j.Id, j => (j.Title, j.Department), ct);
+
+                var trends = BuildTrends(applications, normalizedGroupBy, jobLookup);
 
                 return new RecruiterDashboardResponse
                 {
-                    JobsPostedOverTime = jobsOverTime,
-                    ApplicationsOverTime = appsOverTime,
-                    TopJobsByApplications = topJobs,
-                    RecommendedCount = applications.Count(x => x.Status == ResumeSubmissionStatus.Completed),
-                    ShortlistedCount = applications.Count(x => x.Status == ResumeSubmissionStatus.Processing)
+                    Filters = filterOptions,
+                    Summary = summary,
+                    Trends = trends,
                 };
             });
         }
@@ -344,7 +429,7 @@ namespace SkillSense.Application.Services
                 CreatedAtUtc = baseItem.CreatedAtUtc,
                 ParsedResumeJson = ParseResumeJsonElement(parsedResumeJson),
             };
-   
+
         }
 
         public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
@@ -354,42 +439,37 @@ namespace SkillSense.Application.Services
                 throw new ArgumentException("Invalid applicant status.");
             }
 
-            var now = DateTime.UtcNow;
-            var updatedRows = await dbContext.ResumeSubmissions
-                .Where(s => s.Id == submissionId)
-                .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(s => s.Status, parsed)
-                    .SetProperty(s => s.UpdatedAtUtc, now), ct);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var submission = await dbContext.ResumeSubmissions.FirstOrDefaultAsync(s => s.Id == submissionId, ct)
+                ?? throw new KeyNotFoundException("Submission not found.");
+            var job = await dbContext.Jobs.FirstOrDefaultAsync(j => j.Id == submission.JobId && j.RecruiterId == recruiterId, ct)
+                ?? throw new KeyNotFoundException("Submission not found.");
 
-            if (updatedRows == 0)
+            var now = DateTime.UtcNow;
+            if (parsed == ResumeSubmissionStatus.Hire && submission.Status != ResumeSubmissionStatus.Hire)
             {
-                throw new KeyNotFoundException("Submission not found.");
+                var hiredCount = await dbContext.ResumeSubmissions.CountAsync(s => s.JobId == job.Id && s.Status == ResumeSubmissionStatus.Hire, ct);
+                if (hiredCount >= job.NumberOfVacancies)
+                {
+                    throw new InvalidOperationException("Cannot hire applicant. The number of vacancies for this position has already been filled.");
+                }
             }
+
+            submission.Status = parsed;
+            submission.UpdatedAtUtc = now;
+            await dbContext.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
 
         public async Task UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
         {
-            if (!Enum.TryParse<ResumeSubmissionStatus>(request.Status, true, out var parsed))
-            {
-                throw new ArgumentException("Invalid applicant status.");
-            }
-
             var submissionIds = request.SubmissionIds.Distinct().ToList();
-            if (submissionIds.Count == 0)
+            foreach (var submissionId in submissionIds)
             {
-                return;
+                await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest { Status = request.Status }, ct);
             }
-
-            var now = DateTime.UtcNow;
-            await dbContext.ResumeSubmissions
-                .Where(s => submissionIds.Contains(s.Id))
-                .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(s => s.Status, parsed)
-                    .SetProperty(s => s.UpdatedAtUtc, now), ct);
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
@@ -433,6 +513,99 @@ namespace SkillSense.Application.Services
                 ResumeSubmissionStatus.Hire => "Hire",
                 ResumeSubmissionStatus.Rejected => "Rejected",
                 _ => isRecommended ? "Recommended" : "Applied",
+            };
+
+
+        private static RecruiterDashboardSummaryResponse BuildSummary(IReadOnlyCollection<ResumeSubmissionEntity> current, IReadOnlyCollection<ResumeSubmissionEntity> previous)
+            => new()
+            {
+                TotalApplicants = BuildMetric(current.Count, previous.Count),
+                TotalShortlisted = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted), previous.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted)),
+                TotalInterview = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Interview), previous.Count(x => x.Status == ResumeSubmissionStatus.Interview)),
+                TotalOffer = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Offer), previous.Count(x => x.Status == ResumeSubmissionStatus.Offer)),
+                TotalHired = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Hire), previous.Count(x => x.Status == ResumeSubmissionStatus.Hire)),
+            };
+
+        private static MetricWithComparisonResponse BuildMetric(int current, int previous)
+        {
+            var percent = previous <= 0 ? 0 : Math.Round(((decimal)(current - previous) / previous) * 100, 2);
+            return new MetricWithComparisonResponse
+            {
+                Value = current,
+                PreviousValue = previous,
+                ComparisonPercent = percent,
+            };
+        }
+
+        private static RecruiterDashboardTrendsResponse BuildTrends(IReadOnlyCollection<ResumeSubmissionEntity> applications, string groupBy, IReadOnlyDictionary<Guid, (string Title, string Department)> jobLookup)
+        {
+            string ResolveLabel(ResumeSubmissionEntity item)
+                => groupBy switch
+                {
+                    "week" => $"W{ISOWeek.GetWeekOfYear(item.CreatedAtUtc)} {item.CreatedAtUtc.Year}",
+                    "month" => item.CreatedAtUtc.ToString("yyyy-MM"),
+                    "year" => item.CreatedAtUtc.Year.ToString(),
+                    "department" => jobLookup.TryGetValue(item.JobId, out var job) ? job.Department : "Unassigned",
+                    "job" => jobLookup.TryGetValue(item.JobId, out var j) ? j.Title : "Unknown",
+                    _ => item.CreatedAtUtc.ToString("yyyy-MM")
+                };
+
+            var labels = applications.Select(ResolveLabel).Distinct().OrderBy(x => x).ToList();
+            var metricsByLabel = labels.ToDictionary(label => label, _ => new TrendAccumulator());
+
+            foreach (var application in applications)
+            {
+                var label = ResolveLabel(application);
+                if (!metricsByLabel.TryGetValue(label, out var metric))
+                {
+                    continue;
+                }
+
+                metric.Applicants++;
+                if (application.Status == ResumeSubmissionStatus.Shortlisted)
+                {
+                    metric.Shortlisted++;
+                }
+                else if (application.Status == ResumeSubmissionStatus.Interview)
+                {
+                    metric.Interview++;
+                }
+                else if (application.Status == ResumeSubmissionStatus.Hire)
+                {
+                    metric.Hired++;
+                }
+            }
+
+            var datasets = new List<TrendDatasetResponse>
+            {
+                CreateTrendDataset("applicants", "Applicants", "#4F46E5", "rgba(79,70,229,0.2)", labels, metricsByLabel, x => x.Applicants),
+                CreateTrendDataset("shortlisted", "Shortlisted", "#0EA5E9", "rgba(14,165,233,0.18)", labels, metricsByLabel, x => x.Shortlisted),
+                CreateTrendDataset("interview", "Interview", "#F59E0B", "rgba(245,158,11,0.18)", labels, metricsByLabel, x => x.Interview),
+                CreateTrendDataset("hired", "Hired", "#10B981", "rgba(16,185,129,0.18)", labels, metricsByLabel, x => x.Hired),
+            };
+
+            return new RecruiterDashboardTrendsResponse
+            {
+                Labels = labels,
+                Datasets = datasets,
+            };
+        }
+
+        private static TrendDatasetResponse CreateTrendDataset(
+            string key,
+            string label,
+            string borderColor,
+            string backgroundColor,
+            IReadOnlyList<string> labels,
+            IReadOnlyDictionary<string, TrendAccumulator> metricsByLabel,
+            Func<TrendAccumulator, int> selector)
+            => new()
+            {
+                Key = key,
+                Label = label,
+                BorderColor = borderColor,
+                BackgroundColor = backgroundColor,
+                Data = labels.Select(x => selector(metricsByLabel[x])).ToList(),
             };
 
 
@@ -482,7 +655,7 @@ namespace SkillSense.Application.Services
             return Enum.TryParse<JobStatus>(status, true, out var parsed) ? parsed : JobStatus.Draft;
         }
 
-        private static JobListItemResponse Map(JobEntity x)
+        private static JobListItemResponse Map(JobEntity x, int remainingVacancies)
             => new()
             {
                 Id = x.Id,
@@ -507,8 +680,51 @@ namespace SkillSense.Application.Services
                 MinYears = x.MinYears,
                 Education = x.Education,
                 MinEducation = x.Education,
-                PostedDateUtc = x.PostedDateUtc
+                PostedDateUtc = x.PostedDateUtc,
+                NumberOfVacancies = x.NumberOfVacancies,
+                RemainingVacancies = Math.Max(0, remainingVacancies)
             };
+
+        private async Task<Dictionary<Guid, int>> BuildRemainingVacanciesLookupAsync(IReadOnlyCollection<JobEntity> jobs, CancellationToken ct)
+        {
+            var jobIds = jobs.Select(x => x.Id).Distinct().ToList();
+            if (jobIds.Count == 0)
+            {
+                return [];
+            }
+
+            var hiredCounts = await dbContext.ResumeSubmissions
+                .AsNoTracking()
+                .Where(x => jobIds.Contains(x.JobId) && x.Status == ResumeSubmissionStatus.Hire)
+                .GroupBy(x => x.JobId)
+                .Select(x => new { JobId = x.Key, Count = x.Count() })
+                .ToDictionaryAsync(x => x.JobId, x => x.Count, ct);
+
+            return jobs.ToDictionary(
+                job => job.Id,
+                job => Math.Max(0, job.NumberOfVacancies - hiredCounts.GetValueOrDefault(job.Id)));
+        }
+
+        private async Task<int> GetRemainingVacanciesByJobIdAsync(Guid jobId, int numberOfVacancies, CancellationToken ct)
+        {
+            var hiredCount = await dbContext.ResumeSubmissions
+                .AsNoTracking()
+                .CountAsync(x => x.JobId == jobId && x.Status == ResumeSubmissionStatus.Hire, ct);
+
+            return Math.Max(0, numberOfVacancies - hiredCount);
+        }
+
+        private sealed class TrendAccumulator
+        {
+            public int Applicants { get; set; }
+            public int Shortlisted { get; set; }
+            public int Interview { get; set; }
+            public int Hired { get; set; }
+        }
+
+        private static DateTime ToUtcStartOfDay(DateTime date)
+            => DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
+
         private static string NormalizeMultilineText(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return string.Empty;
