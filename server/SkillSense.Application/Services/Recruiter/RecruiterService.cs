@@ -299,11 +299,16 @@ namespace SkillSense.Application.Services
             });
         }
 
-        public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? stage, string? search, int? recommendedTopPercent, CancellationToken ct = default)
+        public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
         {
             var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
             var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
+            var normalizedDepartment = string.IsNullOrWhiteSpace(department) || department.Equals("all", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : department.Trim();
             var topPercent = Math.Clamp(recommendedTopPercent ?? 10, 1, 100);
+            var normalizedPageNumber = Math.Max(1, pageNumber);
+            var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
 
             var submissionsQuery = dbContext.ResumeSubmissions
                 .AsNoTracking()
@@ -317,10 +322,15 @@ namespace SkillSense.Application.Services
                     x.submission.JobId,
                     x.submission.Status,
                     JobTitle = x.job.Title,
+                    JobDepartment = x.job.Department,
+                    JobStatus = x.job.Status,
                     x.job.RecruiterId,
                     Score = score.FinalWeightedScore
                 })
-                .Where(x => x.RecruiterId == recruiterId && (!jobId.HasValue || x.JobId == jobId.Value));
+                .Where(x => x.RecruiterId == recruiterId &&
+                            x.JobStatus == JobStatus.Published &&
+                            (!jobId.HasValue || x.JobId == jobId.Value) &&
+                            (normalizedDepartment == null || (x.JobDepartment ?? "Unassigned") == normalizedDepartment));
 
             if (normalizedSearch is not null)
             {
@@ -362,6 +372,13 @@ namespace SkillSense.Application.Services
                 ? projected
                 : projected.Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
 
+            var totalCount = filtered.Count;
+            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)normalizedPageSize);
+            var pagedItems = filtered
+                .Skip((normalizedPageNumber - 1) * normalizedPageSize)
+                .Take(normalizedPageSize)
+                .ToList();
+
             var jobs = projected
                 .GroupBy(x => new { x.JobId, x.JobTitle })
                 .Select(group => new ApplicantScoreJobFilterResponse
@@ -378,10 +395,21 @@ namespace SkillSense.Application.Services
                 .OrderBy(x => x.Title)
                 .ToList();
 
+            var departments = allItems
+            .Select(x => string.IsNullOrWhiteSpace(x.JobDepartment) ? "Unassigned" : x.JobDepartment!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+
             return new ApplicantScoresResponse
             {
-                Items = filtered,
+                Items = pagedItems,
+                PageNumber = normalizedPageNumber,
+                PageSize = normalizedPageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
                 Jobs = jobs,
+                Departments = departments,
                 Counts = new ApplicantScoreCountsResponse
                 {
                     AllApplicants = projected.Count,
@@ -400,7 +428,7 @@ namespace SkillSense.Application.Services
 
         public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
         {
-            var baseItem = (await GetApplicantScoresAsync(recruiterId, null, "all", null, 10, ct))
+            var baseItem = (await GetApplicantScoresAsync(recruiterId, null, null, "all", null, 10, 1, 500, ct))
                  .Items
                  .FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
 

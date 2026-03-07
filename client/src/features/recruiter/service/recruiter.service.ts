@@ -119,6 +119,10 @@ export interface ApplicantDetailDto extends ApplicantScoreItemDto {
 
 export interface ApplicantScoresDto {
   items: ApplicantScoreItemDto[];
+  page_number: number;
+  page_size: number;
+  total_count: number;
+  total_pages: number;
   jobs: Array<{
     id: string;
     title: string;
@@ -129,6 +133,7 @@ export interface ApplicantScoresDto {
     offer: number;
     hire: number;
   }>;
+  departments: string[];
   counts: {
     all_applicants: number;
     recommended: number;
@@ -199,7 +204,10 @@ export const recruiterService = {
     search?: string;
     stage?: string;
     jobId?: string;
+    department?: string;
     recommendedTopPercent?: number;
+    pageNumber?: number;
+    pageSize?: number;
   }) =>
     (
       await http.get<ApplicantScoresDto>("/api/recruiter/applicants/scores", {

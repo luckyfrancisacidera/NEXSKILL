@@ -3,7 +3,7 @@
   <Folder Name="/src/API/">
     <Project Path="SkillSense.Api/SkillSense.Api.csproj" />
   </Folder>
-  <Folder Name="/src/API/Core/">
+  <Folder Name="/src/Core/">
     <Project Path="SkillSense.Application/SkillSense.Application.csproj" />
     <Project Path="SkillSense.Domain/SkillSense.Domain.csproj" Id="b11ed3d3-84c7-49fc-8674-ada176ad4eec" />
   </Folder>
