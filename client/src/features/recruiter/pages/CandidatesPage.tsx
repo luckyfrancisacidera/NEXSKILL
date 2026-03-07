@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Form, Link, useFetcher, useLoaderData } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Form, Link, useFetcher, useLoaderData, useSubmit } from "react-router-dom";
 
 import { Card } from "@shared/components/Card";
+import { ConfirmationModal } from "@shared/components/ConfirmationModal";
 import { Eye } from "lucide-react";
 import JobFilterDropdown from "../components/JobFilterDropdown";
 import SearchField from "@shared/components/SearchField";
@@ -87,6 +88,15 @@ type LoaderData = {
   filters: Filters;
 };
 
+type CandidateBulkAction = {
+  action: string;
+  status?: string;
+  label: string;
+  title: string;
+  message: string;
+  accent: "red" | "green" | "violet";
+};
+
 export const CandidatesPage = () => {
   const {
     candidates,
@@ -98,7 +108,11 @@ export const CandidatesPage = () => {
     pagination,
   } = useLoaderData() as LoaderData;
   const fetcher = useFetcher();
+  const submit = useSubmit();
+  const filterFormRef = useRef<HTMLFormElement | null>(null);
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingAction, setPendingAction] = useState<CandidateBulkAction | null>(null);
 
   const normalizedFilters: Filters = {
     search: filters.search ?? "",
@@ -129,6 +143,13 @@ export const CandidatesPage = () => {
     setSelectedIds((prev) => prev.filter((id) => candidateIdsOnPage.has(id)));
   }, [candidateIdsOnPage]);
 
+  useEffect(() => {
+    if (fetcher.state === "idle") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingAction(null);
+    }
+  }, [fetcher.state]);
+
   const selectedIdsOnPage = useMemo(
     () => selectedIds.filter((id) => candidateIdsOnPage.has(id)),
     [selectedIds, candidateIdsOnPage],
@@ -144,6 +165,7 @@ export const CandidatesPage = () => {
   const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(
     normalizedFilters.stage,
   );
+  const isSubmittingAction = fetcher.state !== "idle";
 
   const recommendedCutoffOptions: DropdownOption[] = [
     5, 10, 15, 20, 25, 30,
@@ -172,18 +194,43 @@ export const CandidatesPage = () => {
   const stage = normalizedFilters.stage;
   const selectedIdsValue = selectedIdsOnPage.join(",");
 
-  const submitBulkAction = (nextStatus: string) => {
+  const queueBulkAction = (action: CandidateBulkAction) => {
+    if (selectedIdsOnPage.length === 0 || isSubmittingAction) return;
+    setPendingAction(action);
+  };
+
+  const submitBulkAction = (action: CandidateBulkAction) => {
     if (selectedIdsOnPage.length === 0) return;
 
     const formData = new FormData();
     formData.set("intent", "bulk-stage");
-    formData.set("status", nextStatus);
+    formData.set("action", action.action);
+    if (action.status) {
+      formData.set("status", action.status);
+    }
     formData.set("selectedIds", selectedIdsValue);
     fetcher.submit(formData, {
       method: "post",
       action: "/recruiter/candidates",
     });
     setSelectedIds([]);
+  };
+
+  const submitFilters = (event?: { target: { name: string; value: string } }) => {
+    if (!filterFormRef.current) return;
+
+    const formData = new FormData(filterFormRef.current);
+
+    if (event?.target.name) {
+      formData.set(event.target.name, event.target.value);
+    }
+
+    formData.set("page", "1");
+
+    submit(formData, {
+      method: "get",
+      action: "/recruiter/candidates",
+    });
   };
 
   return (
@@ -223,7 +270,12 @@ export const CandidatesPage = () => {
         </div>
       </div>
 
-      <Form method="get" className="mb-5 mt-4 flex flex-wrap items-end gap-3">
+      <Form
+        method="get"
+        ref={filterFormRef}
+        onChange={() => submitFilters()}
+        className="mb-5 mt-4 flex flex-wrap items-end gap-3"
+      >
         <SearchField
           label="Search"
           name="search"
@@ -231,20 +283,23 @@ export const CandidatesPage = () => {
           placeholder="Search name or email"
           className="min-w-65 flex-1"
         />
-
-        <JobFilterDropdown
-          jobs={jobs}
-          filters={normalizedFilters}
-          counts={counts}
-        />
-
-         <Dropdown
+        
+        <Dropdown
           label="Department"
           name="department"
           value={normalizedFilters.department}
           options={[{ value: "all", label: "All departments", accentClassName: "bg-violet-100 text-violet-700" }, ...departments.map((department) => ({ value: department, label: department, accentClassName: "bg-zinc-100 text-zinc-700" }))]}
           className="min-w-60"
+          onChange={submitFilters}
         />
+
+        <JobFilterDropdown
+          jobs={jobs}
+          filters={normalizedFilters}
+          counts={counts}
+          onChange={submitFilters}
+        />
+
 
         {isRecommendationFilterVisible ? (
           <Dropdown
@@ -254,6 +309,7 @@ export const CandidatesPage = () => {
             options={recommendedCutoffOptions}
             className="min-w-6"
             buttonClassName="min-w-[240px]"
+            onChange={submitFilters}
           />
         ) : (
           <input
@@ -272,14 +328,8 @@ export const CandidatesPage = () => {
           value={normalizedFilters.pageSize}
           options={["10", "20", "50"].map((value) => ({ value, label: `${value} per page`, accentClassName: "bg-zinc-100 text-zinc-700" }))}
           className="min-w-44"
+          onChange={submitFilters}
         />
-
-        <button
-          className="h-11 rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
-          type="submit"
-        >
-          Apply
-        </button>
       </Form>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -292,8 +342,15 @@ export const CandidatesPage = () => {
           {(stage === "all" || stage === "Recommended") && (
             <button
               type="button"
-              disabled={selectedIdsOnPage.length === 0}
-              onClick={() => submitBulkAction("Shortlisted")}
+              disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+              onClick={() => queueBulkAction({
+                action: "shortlist",
+                status: "Shortlisted",
+                label: "Shortlist",
+                title: "Shortlist candidates",
+                message: `Move ${selectedIdsOnPage.length} selected candidate(s) to Shortlisted stage?`,
+                accent: "green",
+              })}
               className="rounded-xl bg-zinc-900 px-3.5 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:bg-zinc-300"
             >
               Shortlist
@@ -304,19 +361,48 @@ export const CandidatesPage = () => {
             <>
               <button
                 type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Rejected")}
-                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "remove-shortlist",
+                  status: "Applied",
+                  label: "Remove from shortlist",
+                  title: "Remove from shortlist",
+                  message: `Remove shortlist status for ${selectedIdsOnPage.length} selected candidate(s)?`,
+                  accent: "violet",
+                })}
+                className="rounded-xl border border-violet-300 bg-white px-3.5 py-2 text-sm text-violet-700 shadow-sm transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:text-zinc-400"
               >
-                Remove
+                Remove from Shortlist
               </button>
               <button
                 type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Interview")}
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "set-interview",
+                  status: "Interview",
+                  label: "Set Interview",
+                  title: "Move to interview",
+                  message: `Move ${selectedIdsOnPage.length} selected candidate(s) to Interview stage?`,
+                  accent: "green",
+                })}
                 className="rounded-xl bg-zinc-900 px-3.5 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
                 Set Interview
+              </button>
+              <button
+                type="button"
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "reject",
+                  status: "Rejected",
+                  label: "Reject",
+                  title: "Reject candidates",
+                  message: `Reject ${selectedIdsOnPage.length} selected candidate(s)? This cannot be undone.`,
+                  accent: "red",
+                })}
+                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
+              >
+                Reject
               </button>
             </>
           )}
@@ -325,19 +411,48 @@ export const CandidatesPage = () => {
             <>
               <button
                 type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Rejected")}
-                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "shortlist",
+                  status: "Shortlisted",
+                  label: "Shortlist",
+                  title: "Shortlist interview candidates",
+                  message: `Move ${selectedIdsOnPage.length} selected interview candidate(s) back to Shortlisted stage?`,
+                  accent: "violet",
+                })}
+                className="rounded-xl border border-violet-300 bg-white px-3.5 py-2 text-sm text-violet-700 shadow-sm transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:text-zinc-400"
               >
-                Remove
+                Shortlist
               </button>
               <button
                 type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Offer")}
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "offer",
+                  status: "Offer",
+                  label: "Give Offer",
+                  title: "Move to offer",
+                  message: `Move ${selectedIdsOnPage.length} selected candidate(s) to Offer stage?`,
+                  accent: "green",
+                })}
                 className="rounded-xl bg-zinc-900 px-3.5 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
                 Give Offer
+              </button>
+              <button
+                type="button"
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "reject",
+                  status: "Rejected",
+                  label: "Reject",
+                  title: "Reject candidates",
+                  message: `Reject ${selectedIdsOnPage.length} selected candidate(s)? This cannot be undone.`,
+                  accent: "red",
+                })}
+                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
+              >
+                Reject
               </button>
             </>
           )}
@@ -346,19 +461,33 @@ export const CandidatesPage = () => {
             <>
               <button
                 type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Rejected")}
-                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
-              >
-                Remove
-              </button>
-              <button
-                type="button"
-                disabled={selectedIdsOnPage.length === 0}
-                onClick={() => submitBulkAction("Hire")}
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "hire",
+                  status: "Hire",
+                  label: "Hire",
+                  title: "Hire candidates",
+                  message: `Move ${selectedIdsOnPage.length} selected candidate(s) to Hire stage?`,
+                  accent: "green",
+                })}
                 className="rounded-xl bg-zinc-900 px-3.5 py-2 text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:bg-zinc-300"
               >
                 Hire
+              </button>
+              <button
+                type="button"
+                disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+                onClick={() => queueBulkAction({
+                  action: "reject",
+                  status: "Rejected",
+                  label: "Reject",
+                  title: "Reject candidates",
+                  message: `Reject ${selectedIdsOnPage.length} selected candidate(s)? This cannot be undone.`,
+                  accent: "red",
+                })}
+                className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
+              >
+                Reject
               </button>
             </>
           )}
@@ -366,11 +495,18 @@ export const CandidatesPage = () => {
           {stage === "Hire" && (
             <button
               type="button"
-              disabled={selectedIdsOnPage.length === 0}
-              onClick={() => submitBulkAction("Rejected")}
+              disabled={selectedIdsOnPage.length === 0 || isSubmittingAction}
+              onClick={() => queueBulkAction({
+                action: "reject",
+                status: "Rejected",
+                label: "Reject",
+                title: "Reject candidates",
+                message: `Reject ${selectedIdsOnPage.length} selected candidate(s)? This cannot be undone.`,
+                accent: "red",
+              })}
               className="rounded-xl bg-rose-600 px-3.5 py-2 text-sm text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200"
             >
-              Remove
+              Reject
             </button>
           )}
         </div>
@@ -456,7 +592,7 @@ export const CandidatesPage = () => {
         </table>
       </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 text-sm">
+      <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4 text-sm">
         <span>
           Page {pagination.page} of {pagination.totalPages} · {pagination.total} candidates
         </span>
@@ -476,6 +612,26 @@ export const CandidatesPage = () => {
         </div>
       </div>
 
+      <ConfirmationModal
+        open={Boolean(pendingAction)}
+        title={pendingAction?.title ?? "Confirm action"}
+        message={pendingAction?.message ?? "Are you sure?"}
+        confirmLabel={pendingAction?.label ?? "Confirm"}
+        accent={pendingAction?.accent ?? "violet"}
+        loading={isSubmittingAction}
+        onClose={() => {
+          if (isSubmittingAction) return;
+          setPendingAction(null);
+        }}
+        onCancel={() => {
+          if (isSubmittingAction) return;
+          setPendingAction(null);
+        }}
+        onConfirm={() => {
+          if (!pendingAction || isSubmittingAction) return;
+          submitBulkAction(pendingAction);
+        }}
+      />
     </Card>
   );
 };
