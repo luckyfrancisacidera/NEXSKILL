@@ -77,6 +77,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
 
+        [JsonPropertyName("department")]
+        public string Department { get; set; } = "Unassigned";
+
         [JsonPropertyName("all_applicants")]
         public int AllApplicants { get; set; }
 
