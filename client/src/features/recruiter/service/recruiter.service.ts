@@ -148,6 +148,22 @@ export interface ApplicantScoresDto {
   };
 }
 
+export interface BulkApplicantStageResultItemDto {
+  submission_id: string;
+  success: boolean;
+  message: string;
+  new_status?: string;
+}
+
+export interface BulkApplicantStageResponseDto {
+  action: string;
+  requested_count: number;
+  processed_count: number;
+  success_count: number;
+  failure_count: number;
+  results: BulkApplicantStageResultItemDto[];
+}
+
 export interface DashboardDto {
   filters: { departments: string[]; job_roles: string[] };
   summary: {
@@ -222,12 +238,11 @@ export const recruiterService = {
   updateApplicantStatuses: async (
       submissionIds: string[],
       payload: { action?: string; status?: string },
-    ) => {
-      await http.put(`/api/recruiter/applicants/scores/status`, {
+   ) =>
+      (await http.put<BulkApplicantStageResponseDto>(`/api/recruiter/applicants/scores/status`, {
         submission_ids: submissionIds,
         ...payload,
-      });
-    },
+      })).data,
 
  getDashboardStats: async (params: {
     startDate?: string;
