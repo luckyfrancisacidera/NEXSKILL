@@ -165,7 +165,7 @@ export interface BulkApplicantStageResponseDto {
 }
 
 export interface DashboardDto {
-  filters: { departments: string[]; job_roles: string[] };
+  filters: { departments: string[]; job_roles: string[]; job_roles_by_department: Record<string, string[]> };
   summary: {
     total_applicants: { value: number; previous_value: number; comparison_percent: number };
     total_shortlisted: { value: number; previous_value: number; comparison_percent: number };
