@@ -128,8 +128,11 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
     public sealed class UpdateApplicantStageRequest
     {
+        [JsonPropertyName("action")]
+        public string? Action { get; set; }
+
         [JsonPropertyName("status")]
-        public string Status { get; set; } = "Pending";
+        public string? Status { get; set; }
     }
 
     public sealed class BulkUpdateApplicantStageRequest
@@ -137,7 +140,10 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("submission_ids")]
         public IReadOnlyList<Guid> SubmissionIds { get; set; } = [];
 
+        [JsonPropertyName("action")]
+        public string? Action { get; set; }
+
         [JsonPropertyName("status")]
-        public string Status { get; set; } = "Pending";
+        public string? Status { get; set; }
     }
 }
