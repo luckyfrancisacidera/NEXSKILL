@@ -524,10 +524,7 @@ namespace SkillSense.Application.Services
 
         public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
         {
-            if (!Enum.TryParse<ResumeSubmissionStatus>(request.Status, true, out var parsed))
-            {
-                throw new ArgumentException("Invalid applicant status.");
-            }
+            var action = ResolveAction(request.Action, request.Status);
 
             await using var transaction = await dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
             var submission = await dbContext.ResumeSubmissions.FirstOrDefaultAsync(s => s.Id == submissionId, ct)
@@ -535,8 +532,10 @@ namespace SkillSense.Application.Services
             var job = await dbContext.Jobs.FirstOrDefaultAsync(j => j.Id == submission.JobId && j.RecruiterId == recruiterId, ct)
                 ?? throw new KeyNotFoundException("Submission not found.");
 
+            var nextStatus = ResolveNextStatus(submission.Status, action);
+
             var now = DateTime.UtcNow;
-            if (parsed == ResumeSubmissionStatus.Hire && submission.Status != ResumeSubmissionStatus.Hire)
+            if (nextStatus == ResumeSubmissionStatus.Hire && submission.Status != ResumeSubmissionStatus.Hire)
             {
                 var hiredCount = await dbContext.ResumeSubmissions.CountAsync(s => s.JobId == job.Id && s.Status == ResumeSubmissionStatus.Hire, ct);
                 if (hiredCount >= job.NumberOfVacancies)
@@ -545,7 +544,7 @@ namespace SkillSense.Application.Services
                 }
             }
 
-            submission.Status = parsed;
+            submission.Status = nextStatus;
             submission.UpdatedAtUtc = now;
             await dbContext.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
@@ -558,11 +557,63 @@ namespace SkillSense.Application.Services
             var submissionIds = request.SubmissionIds.Distinct().ToList();
             foreach (var submissionId in submissionIds)
             {
-                await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest { Status = request.Status }, ct);
+                await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
+                {
+                    Action = request.Action,
+                    Status = request.Status,
+                }, ct);
             }
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
+
+        private static string ResolveAction(string? requestedAction, string? requestedStatus)
+        {
+            if (!string.IsNullOrWhiteSpace(requestedAction))
+            {
+                return requestedAction.Trim().ToLowerInvariant();
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedStatus))
+            {
+                throw new ArgumentException("Action is required.");
+            }
+
+            if (!Enum.TryParse<ResumeSubmissionStatus>(requestedStatus, true, out var parsedStatus))
+            {
+                throw new ArgumentException("Invalid applicant status.");
+            }
+
+            return parsedStatus switch
+            {
+                ResumeSubmissionStatus.Shortlisted => "shortlist",
+                ResumeSubmissionStatus.Interview => "set-interview",
+                ResumeSubmissionStatus.Offer => "offer",
+                ResumeSubmissionStatus.Hire => "hire",
+                ResumeSubmissionStatus.Rejected => "reject",
+                _ => throw new ArgumentException("Invalid applicant status.")
+            };
+        }
+
+        private static ResumeSubmissionStatus ResolveNextStatus(ResumeSubmissionStatus currentStatus, string action)
+            => action switch
+            {
+                "shortlist" when currentStatus is ResumeSubmissionStatus.Completed or ResumeSubmissionStatus.Shortlisted or ResumeSubmissionStatus.Interview
+                    => ResumeSubmissionStatus.Shortlisted,
+                "set-interview" when currentStatus is ResumeSubmissionStatus.Shortlisted or ResumeSubmissionStatus.Interview
+                    => ResumeSubmissionStatus.Interview,
+                "offer" when currentStatus is ResumeSubmissionStatus.Interview or ResumeSubmissionStatus.Offer
+                    => ResumeSubmissionStatus.Offer,
+                "hire" when currentStatus is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire
+                    => ResumeSubmissionStatus.Hire,
+                "reject" when currentStatus != ResumeSubmissionStatus.Rejected
+                    => ResumeSubmissionStatus.Rejected,
+                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Shortlisted
+                    => ResumeSubmissionStatus.Completed,
+                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Interview
+                    => ResumeSubmissionStatus.Interview,
+                _ => throw new InvalidOperationException($"Invalid transition. Action '{action}' is not allowed from stage '{currentStatus}'.")
+            };
 
         private static JsonElement? ParseResumeJsonElement(string? parsedResumeJson)
         {

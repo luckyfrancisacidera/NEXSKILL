@@ -21,7 +21,14 @@ import {
 } from "@features/recruiter/service/recruiter.service";
 
 type CandidateStage = ApplicantScoreItemDto["submission_status"];
-type PendingAction = "primary" | "reject" | null;
+type CandidateAction = {
+  action: string;
+  status?: CandidateStage;
+  label: string;
+  title: string;
+  message: (name: string) => string;
+  accent: "red" | "green" | "violet";
+};
 
 const stageBadgeClass: Record<CandidateStage, string> = {
   Applied: "border-zinc-200 bg-zinc-100 text-zinc-700",
@@ -33,13 +40,39 @@ const stageBadgeClass: Record<CandidateStage, string> = {
   Rejected: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-const nextActionByStage: Partial<
-  Record<CandidateStage, { status: CandidateStage; label: string }>
-> = {
-  Recommended: { status: "Shortlisted", label: "Shortlist" },
-  Shortlisted: { status: "Interview", label: "Set Interview" },
-  Interview: { status: "Offer", label: "Offer" },
-  Offer: { status: "Hire", label: "Hire" },
+const nextActionByStage: Partial<Record<CandidateStage, CandidateAction>> = {
+  Recommended: {
+    action: "shortlist",
+    status: "Shortlisted",
+    label: "Shortlist",
+    title: "Shortlist candidate",
+    message: (name) => `Move ${name} to Shortlisted stage?`,
+    accent: "green",
+  },
+  Shortlisted: {
+    action: "set-interview",
+    status: "Interview",
+    label: "Set Interview",
+    title: "Set interview",
+    message: (name) => `Move ${name} to Interview stage?`,
+    accent: "green",
+  },
+  Interview: {
+    action: "offer",
+    status: "Offer",
+    label: "Offer",
+    title: "Send offer",
+    message: (name) => `Move ${name} to Offer stage?`,
+    accent: "green",
+  },
+  Offer: {
+    action: "hire",
+    status: "Hire",
+    label: "Hire",
+    title: "Hire candidate",
+    message: (name) => `Move ${name} to Hire stage?`,
+    accent: "green",
+  },
 };
 
 const getInitials = (name: string) =>
@@ -144,7 +177,7 @@ export const CandidateDetailPage = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [pendingAction, setPendingAction] = useState<CandidateAction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [interviewForm, setInterviewForm] = useState({
@@ -174,13 +207,15 @@ export const CandidateDetailPage = () => {
   );
 
   const runStageTransition = async (
+    action: string,
     status: CandidateStage,
     successTitle: string,
     successDescription: string,
   ) => {
     try {
       setIsSubmitting(true);
-      await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], status);
+      await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], { action, status });
+      
       setCandidate((current) => ({ ...current, submission_status: status }));
 
       showToast({
@@ -243,7 +278,7 @@ export const CandidateDetailPage = () => {
                 } else if (candidate.submission_status === "Interview") {
                   setIsOfferOpen(true);
                 } else {
-                  setPendingAction("primary");
+                  setPendingAction(primaryAction);
                   setIsConfirmOpen(true);
                 }
               }}
@@ -325,20 +360,69 @@ export const CandidateDetailPage = () => {
         <SectionCard title="Recruiter Actions">
           <div className="space-y-2">
             <p className="flex items-center gap-2 text-sm text-zinc-600"><BriefcaseBusiness className="h-4 w-4" /> {candidate.job_title}</p>
-            {candidate.submission_status !== "Rejected" && candidate.submission_status !== "Hire" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setPendingAction("reject");
-                  setIsConfirmOpen(true);
-                }}
-                className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-              >
-                Reject Candidate
-              </button>
+             {candidate.submission_status !== "Rejected" ? (
+              <>
+                {candidate.submission_status === "Interview" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingAction({
+                        action: "shortlist",
+                        status: "Shortlisted",
+                        label: "Shortlist",
+                        title: "Shortlist candidate",
+                        message: (name) => `Move ${name} back to Shortlisted stage?`,
+                        accent: "violet",
+                      });
+                      setIsConfirmOpen(true);
+                    }}
+                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                  >
+                    Shortlist
+                  </button>
+                ) : null}
+
+                {candidate.submission_status === "Shortlisted" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPendingAction({
+                        action: "remove-shortlist",
+                        status: "Applied",
+                        label: "Remove from Shortlist",
+                        title: "Remove from shortlist",
+                        message: (name) => `Remove shortlist status for ${name}? Candidate will remain active in the pipeline.`,
+                        accent: "violet",
+                      });
+                      setIsConfirmOpen(true);
+                    }}
+                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                  >
+                    Remove from Shortlist
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingAction({
+                      action: "reject",
+                      status: "Rejected",
+                      label: "Reject",
+                      title: "Reject candidate",
+                      message: (name) => `Are you sure you want to reject ${name}?`,
+                      accent: "red",
+                    });
+                    setIsConfirmOpen(true);
+                  }}
+                  className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                >
+                  Reject Candidate
+                </button>
+              </>
             ) : (
               <p className={`rounded-md border px-2 py-1 text-sm font-semibold ${stageBadgeClass[candidate.submission_status]}`}>
-                {candidate.submission_status === "Hire" ? "Candidate hired" : "Candidate rejected"}
+                Candidate rejected
               </p>
             )}
           </div>
@@ -362,14 +446,10 @@ export const CandidateDetailPage = () => {
 
       <ConfirmationModal
         open={isConfirmOpen}
-        title={pendingAction === "primary" ? `Confirm ${primaryAction?.label}` : "Reject candidate"}
-        message={
-          pendingAction === "primary"
-            ? `Move ${candidate.applicant_name} to ${primaryAction?.status} stage?`
-            : `Are you sure you want to reject ${candidate.applicant_name}?`
-        }
-        confirmLabel={pendingAction === "primary" ? primaryAction?.label : "Reject"}
-        accent={pendingAction === "primary" ? "green" : "red"}
+        title={pendingAction?.title ?? "Confirm action"}
+        message={pendingAction?.message(candidate.applicant_name) ?? "Are you sure?"}
+        confirmLabel={pendingAction?.label ?? "Confirm"}
+        accent={pendingAction?.accent ?? "violet"}
         loading={isSubmitting}
         onClose={() => {
           setIsConfirmOpen(false);
@@ -380,23 +460,29 @@ export const CandidateDetailPage = () => {
           setPendingAction(null);
         }}
         onConfirm={async () => {
+          if (!pendingAction || !pendingAction.status) {
+            setIsConfirmOpen(false);
+            setPendingAction(null);
+            return;
+          }
+
           setIsConfirmOpen(false);
-          const action = pendingAction;
+          const actionToRun = pendingAction;
           setPendingAction(null);
 
-          if (action === "primary" && primaryAction) {
-            await runStageTransition(
-              primaryAction.status,
-              `Candidate ${primaryAction.label.toLowerCase()} successfully`,
-              `${candidate.applicant_name} is now in ${primaryAction.status} stage.`,
-            );
+          const statusToRun = actionToRun.status;
+          if (!statusToRun) {
+        
             return;
           }
 
           await runStageTransition(
-            "Rejected",
-            "Candidate rejected",
-            `${candidate.applicant_name} has been marked as rejected.`,
+            actionToRun.action,
+            statusToRun,
+            `Candidate ${actionToRun.label.toLowerCase()} successfully`,
+            actionToRun.action === "reject"
+              ? `${candidate.applicant_name} has been marked as rejected.`
+              : `${candidate.applicant_name} is now in ${statusToRun} stage.`,
           );
         }}
       />
@@ -408,6 +494,7 @@ export const CandidateDetailPage = () => {
             onSubmit={async (event) => {
               event.preventDefault();
               await runStageTransition(
+                "set-interview",
                 "Interview",
                 "Interview scheduled successfully",
                 "Candidate moved to interview stage.",
@@ -489,6 +576,7 @@ export const CandidateDetailPage = () => {
             onSubmit={async (event) => {
               event.preventDefault();
               await runStageTransition(
+                "offer",
                 "Offer",
                 "Offer sent successfully",
                 "Candidate moved to offer stage.",
