@@ -82,15 +82,37 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
     const page = Number(url.searchParams.get('page') ?? '1');
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
 
-    const data = await recruiterService.getApplicantScores({
+    const safeRecommendedTopPercent = Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10;
+    const safePage = Number.isFinite(page) ? page : 1;
+    const safePageSize = Number.isFinite(pageSize) ? pageSize : 10;
+
+    let resolvedJobId = jobId;
+    let data = await recruiterService.getApplicantScores({
       search,
       stage,
       jobId: jobId === 'all' ? undefined : jobId,
       department: department === 'all' ? undefined : department,
-      recommendedTopPercent: Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10,
-      pageNumber: Number.isFinite(page) ? page : 1,
-      pageSize: Number.isFinite(pageSize) ? pageSize : 10,
+      recommendedTopPercent: safeRecommendedTopPercent,
+      pageNumber: safePage,
+      pageSize: safePageSize,
     });
+
+    const jobsForSelectedDepartment = department === 'all'
+      ? data.jobs
+      : data.jobs.filter((job) => job.department.toLowerCase() === department.toLowerCase());
+
+    if (jobId !== 'all' && !jobsForSelectedDepartment.some((job) => job.id === jobId)) {
+      resolvedJobId = 'all';
+      data = await recruiterService.getApplicantScores({
+        search,
+        stage,
+        jobId: undefined,
+        department: department === 'all' ? undefined : department,
+        recommendedTopPercent: safeRecommendedTopPercent,
+        pageNumber: safePage,
+        pageSize: safePageSize,
+      });
+    }
 
     return {
       candidates: data.items,
@@ -107,10 +129,10 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
       filters: {
         search: search ?? '',
         stage,
-        jobId,
+        jobId: resolvedJobId,
         department,
-        recommendedTopPercent: String(Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10),
-        pageSize: String(Number.isFinite(pageSize) ? pageSize : 10),
+        recommendedTopPercent: String(safeRecommendedTopPercent),
+        pageSize: String(safePageSize),
       },
     };
   } catch (error) {

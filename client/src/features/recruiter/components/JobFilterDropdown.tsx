@@ -3,6 +3,7 @@ import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
 type Job = {
   id: string;
   title: string;
+  department: string;
   all_applicants: number;
   recommended: number;
   shortlisted: number;
@@ -24,6 +25,7 @@ type Filters = {
   search: string;
   stage: string;
   jobId: string;
+  department: string;
   recommendedTopPercent: string;
 };
 
@@ -49,6 +51,10 @@ const getStageCount = (
 };
 
 export default function JobFilterDropdown({ jobs, filters, counts, onChange }: Props) {
+  const visibleJobs = filters.department === "all"
+    ? jobs
+    : jobs.filter((job) => job.department.toLowerCase() === filters.department.toLowerCase());
+
   const options: DropdownOption[] = [
     {
       value: "all",
@@ -56,7 +62,7 @@ export default function JobFilterDropdown({ jobs, filters, counts, onChange }: P
       count: getStageCount(filters.stage, counts),
       accentClassName: "bg-violet-100 text-violet-700",
     },
-    ...jobs.map((job) => ({
+    ...visibleJobs.map((job) => ({
       value: job.id,
       label: job.title,
       count: getStageCount(filters.stage, job),
