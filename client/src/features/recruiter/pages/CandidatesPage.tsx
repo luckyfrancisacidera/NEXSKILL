@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, useFetcher, useLoaderData, useSubmit } from "react-router-dom";
 
+import { useToast } from "@app/providers/ToastProvider";
+import type { BulkApplicantStageResponseDto } from "@features/recruiter/service/recruiter.service";
+
 import { Card } from "@shared/components/Card";
 import { ConfirmationModal } from "@shared/components/ConfirmationModal";
 import { Eye } from "lucide-react";
@@ -95,6 +98,8 @@ type CandidateBulkAction = {
   title: string;
   message: string;
   accent: "red" | "green" | "violet";
+  eligibleIds?: string[];
+  skippedCount?: number;
 };
 
 export const CandidatesPage = () => {
@@ -109,6 +114,7 @@ export const CandidatesPage = () => {
   } = useLoaderData() as LoaderData;
   const fetcher = useFetcher();
   const submit = useSubmit();
+  const { showToast } = useToast();
   const filterFormRef = useRef<HTMLFormElement | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -150,6 +156,45 @@ export const CandidatesPage = () => {
     }
   }, [fetcher.state]);
 
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+
+    const payload = fetcher.data as { error?: string; result?: BulkApplicantStageResponseDto };
+
+    if (payload.error) {
+      showToast({ title: "Action failed", description: payload.error, tone: "error" });
+      return;
+    }
+
+    if (!payload.result) return;
+
+    const { success_count, failure_count } = payload.result;
+    if (failure_count > 0 && success_count > 0) {
+      showToast({
+        title: "Bulk action partially completed",
+        description: `${success_count} candidate(s) updated, ${failure_count} skipped.`,
+        tone: "info",
+      });
+      return;
+    }
+
+    if (failure_count > 0) {
+      const firstError = payload.result.results.find((item) => !item.success)?.message;
+      showToast({
+        title: "Bulk action failed",
+        description: firstError ?? "No candidates were updated.",
+        tone: "error",
+      });
+      return;
+    }
+
+    showToast({
+      title: "Bulk action completed",
+      description: `${success_count} candidate(s) updated successfully.`,
+      tone: "success",
+    });
+  }, [fetcher.data, fetcher.state, showToast]);
+
   const selectedIdsOnPage = useMemo(
     () => selectedIds.filter((id) => candidateIdsOnPage.has(id)),
     [selectedIds, candidateIdsOnPage],
@@ -166,6 +211,25 @@ export const CandidatesPage = () => {
     normalizedFilters.stage,
   );
   const isSubmittingAction = fetcher.state !== "idle";
+
+  const candidateById = useMemo(
+    () => new Map(candidates.map((candidate) => [candidate.resume_submission_id, candidate])),
+    [candidates],
+  );
+
+  const isActionAllowed = (action: string, submissionStatus: string) => {
+    const allowedByAction: Record<string, string[]> = {
+      shortlist: ["Applied", "Recommended", "Shortlisted", "Interview"],
+      "set-interview": ["Shortlisted", "Interview"],
+      offer: ["Interview", "Offer"],
+      hire: ["Offer", "Hire"],
+      reject: ["Applied", "Recommended", "Shortlisted", "Interview", "Offer", "Hire"],
+      "remove-shortlist": ["Shortlisted", "Interview"],
+    };
+
+    const allowedStatuses = allowedByAction[action] ?? [];
+    return allowedStatuses.includes(submissionStatus);
+  };
 
   const recommendedCutoffOptions: DropdownOption[] = [
     5, 10, 15, 20, 25, 30,
@@ -192,15 +256,31 @@ export const CandidatesPage = () => {
   };
 
   const stage = normalizedFilters.stage;
-  const selectedIdsValue = selectedIdsOnPage.join(",");
 
   const queueBulkAction = (action: CandidateBulkAction) => {
     if (selectedIdsOnPage.length === 0 || isSubmittingAction) return;
-    setPendingAction(action);
+    const eligibleIds = selectedIdsOnPage.filter((id) => {
+      const candidate = candidateById.get(id);
+      return candidate ? isActionAllowed(action.action, candidate.submission_status) : false;
+    });
+    const skippedCount = selectedIdsOnPage.length - eligibleIds.length;
+
+    if (eligibleIds.length === 0) {
+      showToast({
+        title: `No eligible candidates for ${action.label.toLowerCase()}`,
+        description: "All selected candidates are in stages that do not allow this action.",
+        tone: "error",
+      });
+      return;
+    }
+
+    const summaryMessage = `${action.message} Eligible: ${eligibleIds.length}.${skippedCount > 0 ? ` Skipped: ${skippedCount} ineligible candidate(s).` : ""}`;
+    setPendingAction({ ...action, eligibleIds, skippedCount, message: summaryMessage });
   };
 
   const submitBulkAction = (action: CandidateBulkAction) => {
-    if (selectedIdsOnPage.length === 0) return;
+    const eligibleIds = action.eligibleIds ?? selectedIdsOnPage;
+    if (eligibleIds.length === 0) return;
 
     const formData = new FormData();
     formData.set("intent", "bulk-stage");
@@ -208,7 +288,8 @@ export const CandidatesPage = () => {
     if (action.status) {
       formData.set("status", action.status);
     }
-    formData.set("selectedIds", selectedIdsValue);
+    
+    formData.set("selectedIds", eligibleIds.join(","));
     fetcher.submit(formData, {
       method: "post",
       action: "/recruiter/candidates",
@@ -283,7 +364,7 @@ export const CandidatesPage = () => {
           placeholder="Search name or email"
           className="min-w-65 flex-1"
         />
-        
+
         <Dropdown
           label="Department"
           name="department"

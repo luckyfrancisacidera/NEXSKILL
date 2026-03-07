@@ -5,6 +5,7 @@ using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Domain.Entities;
@@ -552,19 +553,70 @@ namespace SkillSense.Application.Services
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
 
-        public async Task UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
+        public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
         {
+            var action = ResolveAction(request.Action, request.Status);
             var submissionIds = request.SubmissionIds.Distinct().ToList();
+            var results = new List<BulkUpdateApplicantStageResultItemResponse>(submissionIds.Count);
+
             foreach (var submissionId in submissionIds)
             {
-                await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
+                try
                 {
-                    Action = request.Action,
-                    Status = request.Status,
-                }, ct);
+                    await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
+                    {
+                        Action = request.Action,
+                        Status = request.Status,
+                    }, ct);
+
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = true,
+                        Message = "Applicant stage updated successfully.",
+                    });
+                }
+                catch (InvalidStageTransitionException ex)
+                {
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = false,
+                        Message = ex.Message,
+                    });
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = false,
+                        Message = ex.Message,
+                    });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = false,
+                        Message = ex.Message,
+                    });
+                }
+
             }
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+
+            return new BulkUpdateApplicantStageResponse
+            {
+                Action = action,
+                RequestedCount = request.SubmissionIds.Count,
+                ProcessedCount = results.Count,
+                SuccessCount = results.Count(x => x.Success),
+                FailureCount = results.Count(x => !x.Success),
+                Results = results,
+            };
         }
 
         private static string ResolveAction(string? requestedAction, string? requestedStatus)
@@ -595,25 +647,64 @@ namespace SkillSense.Application.Services
             };
         }
 
-        private static ResumeSubmissionStatus ResolveNextStatus(ResumeSubmissionStatus currentStatus, string action)
-            => action switch
+        private static readonly IReadOnlyDictionary<string, IReadOnlySet<ResumeSubmissionStatus>> AllowedTransitionsByAction =
+            new Dictionary<string, IReadOnlySet<ResumeSubmissionStatus>>(StringComparer.OrdinalIgnoreCase)
             {
-                "shortlist" when currentStatus is ResumeSubmissionStatus.Completed or ResumeSubmissionStatus.Shortlisted or ResumeSubmissionStatus.Interview
-                    => ResumeSubmissionStatus.Shortlisted,
-                "set-interview" when currentStatus is ResumeSubmissionStatus.Shortlisted or ResumeSubmissionStatus.Interview
-                    => ResumeSubmissionStatus.Interview,
-                "offer" when currentStatus is ResumeSubmissionStatus.Interview or ResumeSubmissionStatus.Offer
-                    => ResumeSubmissionStatus.Offer,
-                "hire" when currentStatus is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire
-                    => ResumeSubmissionStatus.Hire,
-                "reject" when currentStatus != ResumeSubmissionStatus.Rejected
-                    => ResumeSubmissionStatus.Rejected,
-                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Shortlisted
-                    => ResumeSubmissionStatus.Completed,
-                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Interview
-                    => ResumeSubmissionStatus.Interview,
-                _ => throw new InvalidOperationException($"Invalid transition. Action '{action}' is not allowed from stage '{currentStatus}'.")
+                ["shortlist"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Completed,
+                    ResumeSubmissionStatus.Shortlisted,
+                    ResumeSubmissionStatus.Interview,
+                },
+                ["set-interview"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Shortlisted,
+                    ResumeSubmissionStatus.Interview,
+                },
+                ["offer"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Interview,
+                    ResumeSubmissionStatus.Offer,
+                },
+                ["hire"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Offer,
+                    ResumeSubmissionStatus.Hire,
+                },
+                ["reject"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Completed,
+                    ResumeSubmissionStatus.Shortlisted,
+                    ResumeSubmissionStatus.Interview,
+                    ResumeSubmissionStatus.Offer,
+                    ResumeSubmissionStatus.Hire,
+                },
+                ["remove-shortlist"] = new HashSet<ResumeSubmissionStatus>
+                {
+                    ResumeSubmissionStatus.Shortlisted,
+                    ResumeSubmissionStatus.Interview,
+                },
             };
+
+        private static ResumeSubmissionStatus ResolveNextStatus(ResumeSubmissionStatus currentStatus, string action)
+        {
+            if (!AllowedTransitionsByAction.TryGetValue(action, out var allowedStatuses) || !allowedStatuses.Contains(currentStatus))
+            {
+                throw new InvalidStageTransitionException(action, currentStatus.ToString());
+            }
+
+            return action switch
+            {
+                "shortlist" => ResumeSubmissionStatus.Shortlisted,
+                "set-interview" => ResumeSubmissionStatus.Interview,
+                "offer" => ResumeSubmissionStatus.Offer,
+                "hire" => ResumeSubmissionStatus.Hire,
+                "reject" => ResumeSubmissionStatus.Rejected,
+                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Shortlisted => ResumeSubmissionStatus.Completed,
+                "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Interview => ResumeSubmissionStatus.Interview,
+                _ => throw new InvalidStageTransitionException(action, currentStatus.ToString()),
+            };
+        }
 
         private static JsonElement? ParseResumeJsonElement(string? parsedResumeJson)
         {

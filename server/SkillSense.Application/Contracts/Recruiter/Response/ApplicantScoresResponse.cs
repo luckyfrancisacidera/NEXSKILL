@@ -126,6 +126,42 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         public int TopPercent { get; set; }
     }
 
+    public sealed class BulkUpdateApplicantStageResultItemResponse
+    {
+        [JsonPropertyName("submission_id")]
+        public Guid SubmissionId { get; set; }
+
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = string.Empty;
+
+        [JsonPropertyName("new_status")]
+        public string? NewStatus { get; set; }
+    }
+
+    public sealed class BulkUpdateApplicantStageResponse
+    {
+        [JsonPropertyName("action")]
+        public string Action { get; set; } = string.Empty;
+
+        [JsonPropertyName("requested_count")]
+        public int RequestedCount { get; set; }
+
+        [JsonPropertyName("processed_count")]
+        public int ProcessedCount { get; set; }
+
+        [JsonPropertyName("success_count")]
+        public int SuccessCount { get; set; }
+
+        [JsonPropertyName("failure_count")]
+        public int FailureCount { get; set; }
+
+        [JsonPropertyName("results")]
+        public IReadOnlyList<BulkUpdateApplicantStageResultItemResponse> Results { get; set; } = [];
+    }
+
     public sealed class UpdateApplicantStageRequest
     {
         [JsonPropertyName("action")]
