@@ -236,11 +236,40 @@ namespace SkillSense.Application.Services
                     .Distinct()
                     .OrderBy(v => v)
                     .ToListAsync(ct);
+
+                var rolesByDepartment = await recruiterJobsBaseQuery
+                    .Where(j => j.Department != null && j.Department != string.Empty)
+                    .Select(j => new { Department = j.Department!, j.Title })
+                    .Distinct()
+                    .ToListAsync(ct);
+
+                var jobRolesByDepartment = rolesByDepartment
+                    .GroupBy(item => item.Department)
+                    .OrderBy(group => group.Key)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => (IReadOnlyList<string>)group
+                            .Select(item => item.Title)
+                            .Distinct()
+                            .OrderBy(title => title)
+                            .ToList());
+
                 var filterOptions = new RecruiterDashboardFilterOptionsResponse
                 {
                     Departments = departments,
                     JobRoles = jobRoles,
+                    JobRolesByDepartment = jobRolesByDepartment,
                 };
+
+                var effectiveRole = normalizedRole;
+                if (normalizedDepartment is not null && normalizedRole is not null)
+                {
+                    if (!jobRolesByDepartment.TryGetValue(normalizedDepartment, out var rolesForDepartment)
+                        || !rolesForDepartment.Contains(normalizedRole, StringComparer.OrdinalIgnoreCase))
+                    {
+                        effectiveRole = null;
+                    }
+                }
 
                 var jobsQuery = recruiterJobsBaseQuery;
 
@@ -249,9 +278,9 @@ namespace SkillSense.Application.Services
                     jobsQuery = jobsQuery.Where(j => j.Department == normalizedDepartment);
                 }
 
-                if (normalizedRole is not null)
+                if (effectiveRole is not null)
                 {
-                    jobsQuery = jobsQuery.Where(j => j.Title == normalizedRole);
+                    jobsQuery = jobsQuery.Where(j => j.Title == effectiveRole);
                 }
 
                 var jobIds = await jobsQuery.Select(j => j.Id).ToListAsync(ct);
