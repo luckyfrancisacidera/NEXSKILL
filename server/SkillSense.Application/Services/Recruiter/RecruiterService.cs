@@ -316,6 +316,12 @@ namespace SkillSense.Application.Services
                 .Select(job => new { job.Id, job.Title, Department = job.Department ?? "Unassigned" })
                 .ToListAsync(ct);
 
+            var recruiterJobsForFilter = normalizedDepartment is null
+                 ? recruiterJobs
+                 : recruiterJobs
+                     .Where(job => job.Department.Equals(normalizedDepartment, StringComparison.OrdinalIgnoreCase))
+                     .ToList();
+
             var submissionsBaseQuery = dbContext.ResumeSubmissions
                 .AsNoTracking()
                 .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
@@ -427,7 +433,7 @@ namespace SkillSense.Application.Services
                 .GroupBy(x => x.JobId)
                 .ToDictionary(group => group.Key, group => group.ToList());
 
-            var jobs = recruiterJobs
+            var jobs = recruiterJobsForFilter
                 .Select(job =>
                 {
                     var hasValues = projectedByJobId.TryGetValue(job.Id, out var itemsForJob);
@@ -439,6 +445,7 @@ namespace SkillSense.Application.Services
                     {
                         Id = job.Id,
                         Title = job.Title,
+                        Department = job.Department,
                         AllApplicants = safeItems.Count,
                         Recommended = safeItems.Count(x => x.SubmissionStatus == "Recommended"),
                         Shortlisted = safeItems.Count(x => x.SubmissionStatus == "Shortlisted"),

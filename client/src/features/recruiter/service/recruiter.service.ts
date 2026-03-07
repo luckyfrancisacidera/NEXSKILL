@@ -126,6 +126,7 @@ export interface ApplicantScoresDto {
   jobs: Array<{
     id: string;
     title: string;
+    department: string;
     all_applicants: number;
     recommended: number;
     shortlisted: number;
