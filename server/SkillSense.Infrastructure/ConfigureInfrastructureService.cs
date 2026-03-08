@@ -45,6 +45,7 @@ public static class ConfigureInfrastructureService
             services.AddSingleton<IObjectStorageService, CloudflareR2StorageService>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddHttpClient<IResetPinEmailSender, MyMailResetPinEmailSender>();
 
         services
             .AddOptions<ResumeProcessingWorkerOptions>()

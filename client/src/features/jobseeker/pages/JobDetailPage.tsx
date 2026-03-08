@@ -169,6 +169,7 @@ export const JobDetailPage = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => { void jobseekerService.saveJob(job.id); }}
                   className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-base font-semibold text-zinc-800 transition hover:bg-zinc-50"
                 >
                   Save Job
