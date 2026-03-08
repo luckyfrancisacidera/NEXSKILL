@@ -130,15 +130,26 @@ namespace SkillSense.Application.Services
             return Map(job, remainingVacancies);
         }
 
-        public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default)
+        public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
         {
-            var cacheKey = $"jobs:recruiter:list:{recruiterId}:{pageNumber}:{pageSize}:{search}:{sortBy}:{sortDir}";
+            var normalizedPageNumber = Math.Max(1, pageNumber);
+            var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
+            var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
+            var normalizedDepartment = string.IsNullOrWhiteSpace(department) || department.Equals("all", StringComparison.OrdinalIgnoreCase) ? null : department.Trim();
+
+            var cacheKey = $"jobs:recruiter:list:{recruiterId}:{normalizedPageNumber}:{normalizedPageSize}:{normalizedSearch}:{normalizedDepartment}:{sortBy}:{sortDir}";
+
             return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(30), async () =>
             {
                 var query = dbContext.Jobs.AsNoTracking().Where(x => x.RecruiterId == recruiterId);
-                if (!string.IsNullOrWhiteSpace(search))
+                if (!string.IsNullOrWhiteSpace(normalizedSearch))
                 {
-                    query = query.Where(x => x.Title.ToLower().Contains(search.ToLower()) || x.Location.ToLower().Contains(search.ToLower()));
+                    query = query.Where(x => x.Title.ToLower().Contains(normalizedSearch) || x.Location.ToLower().Contains(normalizedSearch));
+                }
+
+                if (!string.IsNullOrWhiteSpace(normalizedDepartment))
+                {
+                    query = query.Where(x => x.Department != null && x.Department.ToLower() == normalizedDepartment.ToLower());
                 }
 
                 query = (sortBy?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
@@ -150,16 +161,16 @@ namespace SkillSense.Application.Services
                 };
 
                 var totalCount = await query.CountAsync(ct);
-                var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+                var items = await query.Skip((normalizedPageNumber - 1) * normalizedPageSize).Take(normalizedPageSize).ToListAsync(ct);
                 var remainingVacanciesByJobId = await BuildRemainingVacanciesLookupAsync(items, ct);
 
                 return new PagedResult<JobListItemResponse>
                 {
                     Items = items.Select(item => Map(item, remainingVacanciesByJobId.TryGetValue(item.Id, out var remaining) ? remaining : item.NumberOfVacancies)).ToList(),
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
+                    PageNumber = normalizedPageNumber,
+                    PageSize = normalizedPageSize,
                     TotalCount = totalCount,
-                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)normalizedPageSize)
                 };
             });
         }
@@ -176,10 +187,9 @@ namespace SkillSense.Application.Services
             return Map(job, remainingVacancies);
         }
 
-        public async Task DeleteDraftJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
+        public async Task DeleteJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
         {
             var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
-            if (job.Status != JobStatus.Draft) throw new InvalidOperationException("Only draft jobs can be deleted.");
             await jobRepository.DeleteAsync(job, ct);
             InvalidateAfterJobMutation(recruiterId, jobId);
         }
