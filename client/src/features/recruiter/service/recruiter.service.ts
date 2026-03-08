@@ -91,6 +91,22 @@ export interface ParsedResumeCertificationDto {
   issue_date?: string;
 }
 
+export interface CandidateExplanationDto {
+  provider: string;
+  model: string;
+  summary?: string;
+  strengths: string[];
+  gaps: string[];
+  explanation_text: string;
+  generated_at_utc?: string;
+}
+
+export interface CandidateExplanationDto {
+  provider: string;
+  model: string;
+  explanation_text: string;
+  generated_at_utc?: string;
+}
 export interface ParsedResumeJsonDto {
   personal_info?: {
     full_name?: string;
@@ -115,6 +131,7 @@ export interface ParsedResumeJsonDto {
 
 export interface ApplicantDetailDto extends ApplicantScoreItemDto {
   parsed_resume_json?: ParsedResumeJsonDto;
+  candidate_explanation?: CandidateExplanationDto;
 }
 
 export interface ApplicantScoresDto {
@@ -234,8 +251,8 @@ export const recruiterService = {
     ).data,
   
   getApplicantBySubmissionId: async (submissionId: string) =>
-    (await http.get<ApplicantScoreItemDto>(`/api/recruiter/applicants/scores/${submissionId}`)).data,
-
+      (await http.get<ApplicantDetailDto>(`/api/recruiter/applicants/scores/${submissionId}`)).data,
+  
   updateApplicantStatuses: async (
       submissionIds: string[],
       payload: { action?: string; status?: string },

@@ -67,6 +67,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
     {
         [JsonPropertyName("parsed_resume_json")]
         public JsonElement? ParsedResumeJson { get; set; }
+
+        [JsonPropertyName("candidate_explanation")]
+        public CandidateExplanationResponse? CandidateExplanation { get; set; }
     }
 
     public sealed class ApplicantScoreJobFilterResponse

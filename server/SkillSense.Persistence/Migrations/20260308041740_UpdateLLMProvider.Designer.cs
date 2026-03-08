@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SkillSense.Persistence.Data;
@@ -11,9 +12,11 @@ using SkillSense.Persistence.Data;
 namespace SkillSense.Persistence.Migrations
 {
     [DbContext(typeof(SkillSenseDbContext))]
-    partial class SkillSenseDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260308041740_UpdateLLMProvider")]
+    partial class UpdateLLMProvider
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
