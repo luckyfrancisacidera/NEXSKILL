@@ -47,7 +47,7 @@ export const JobsPage = () => {
             snippet: job.description,
           };
 
-          return <JobCard key={job.id} job={cardJob} />;
+          return <JobCard key={job.id} job={cardJob} onToggleSave={(jobId) => { void jobseekerService.saveJob(jobId); }} />;
         })}
       </div>
       <div className="flex items-center justify-between">
