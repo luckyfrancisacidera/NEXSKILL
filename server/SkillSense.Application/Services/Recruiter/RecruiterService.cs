@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Request;
@@ -18,7 +19,9 @@ namespace SkillSense.Application.Services
         SkillSenseDbContext dbContext,
         IJobRepository jobRepository,
         ITextEmbeddingService embeddingService,
-        IAppCacheService cacheService) : IRecruiterService
+        IAppCacheService cacheService,
+        ICandidateExplanationService candidateExplanationService,
+        ILogger<RecruiterService> logger) : IRecruiterService
     {
         public async Task<RecruiterProfileResponse> GetProfileAsync(Guid recruiterId, CancellationToken ct = default)
         {
@@ -546,6 +549,30 @@ namespace SkillSense.Application.Services
                 .Select(s => s.ParsedResumeJson)
                 .FirstOrDefaultAsync(ct);
 
+            CandidateExplanationResponse? explanation = null;
+            if (baseItem.SubmissionStatus == "Shortlisted")
+            {
+                var explanationEntity = await dbContext.CandidateExplanations
+                    .AsNoTracking()
+                    .Where(x => x.ResumeSubmissionId == submissionId && x.Status == ExplanationStatus.Succeeded)
+                    .FirstOrDefaultAsync(ct);
+
+                if (explanationEntity is not null)
+                {
+                    explanation = new CandidateExplanationResponse
+                    {
+                        Provider = explanationEntity.Provider,
+                        Model = explanationEntity.Model,
+                        Summary = explanationEntity.Summary,
+                        Strengths = DeserializeListOrEmpty(explanationEntity.StrengthsJson),
+                        Gaps = DeserializeListOrEmpty(explanationEntity.GapsJson),
+                        ExplanationText = explanationEntity.ExplanationText,
+                        GeneratedAtUtc = explanationEntity.GeneratedAtUtc,
+                    };
+                }
+            }
+
+
             return new ApplicantDetailResponse
             {
                 ResumeSubmissionId = baseItem.ResumeSubmissionId,
@@ -558,6 +585,7 @@ namespace SkillSense.Application.Services
                 JobseekerStage = baseItem.JobseekerStage,
                 CreatedAtUtc = baseItem.CreatedAtUtc,
                 ParsedResumeJson = ParseResumeJsonElement(parsedResumeJson),
+                CandidateExplanation = explanation,
             };
 
         }
@@ -588,6 +616,18 @@ namespace SkillSense.Application.Services
             submission.UpdatedAtUtc = now;
             await dbContext.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+
+            if (nextStatus == ResumeSubmissionStatus.Shortlisted)
+            {
+                try
+                {
+                    await candidateExplanationService.GenerateForShortlistedAsync(recruiterId, submissionId, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Shortlist succeeded but explanation generation failed for submission {SubmissionId}", submissionId);
+                }
+            }
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         }
@@ -656,6 +696,19 @@ namespace SkillSense.Application.Services
                 FailureCount = results.Count(x => !x.Success),
                 Results = results,
             };
+        }
+
+        private static List<string> DeserializeListOrEmpty(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return [];
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+            }
+            catch (JsonException)
+            {
+                return [];
+            }
         }
 
         private static string ResolveAction(string? requestedAction, string? requestedStatus)

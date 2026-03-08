@@ -7,6 +7,7 @@ using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Application.Services;
 using SkillSense.Application.Services.Auth;
 using SkillSense.Application.Services.Jobseeker;
+using SkillSense.Application.Services.Recruiter;
 using SkillSense.Application.Services.Scoring;
 
 namespace SkillSense.Application
@@ -23,6 +24,7 @@ namespace SkillSense.Application
             services.AddScoped<IResumeReadService, ResumeReadService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<IRecruiterService, RecruiterService>();
+            services.AddScoped<ICandidateExplanationService, CandidateExplanationService>();
             services.AddScoped<IJobSeekerService, JobSeekerService>();
             services.AddSingleton<IAppCacheService, AppCacheService>();
             services.AddScoped<IAuthService, AuthService>();
