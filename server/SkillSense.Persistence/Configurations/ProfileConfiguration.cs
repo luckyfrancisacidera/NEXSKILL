@@ -10,7 +10,17 @@ internal sealed class JobSeekerProfileConfiguration : IEntityTypeConfiguration<J
     {
         builder.ToTable("job_seeker_profiles");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.FullName).HasMaxLength(200);
+        builder.Property(x => x.Phone).HasMaxLength(32);
+        builder.Property(x => x.Location).HasMaxLength(200);
+        builder.Property(x => x.ProfessionalTitle).HasMaxLength(120);
+        builder.Property(x => x.Skills).HasMaxLength(2000);
+        builder.Property(x => x.Bio).HasMaxLength(4000);
+        builder.Property(x => x.ExperienceSummary).HasMaxLength(4000);
+        builder.Property(x => x.ResumeUrl).HasMaxLength(500);
+        builder.Property(x => x.AvatarUrl).HasMaxLength(500);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
     }
 }
@@ -34,7 +44,17 @@ internal sealed class AdminProfileConfiguration : IEntityTypeConfiguration<Admin
     {
         builder.ToTable("admin_profiles");
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.FullName).HasMaxLength(200);
+        builder.Property(x => x.Phone).HasMaxLength(32);
+        builder.Property(x => x.Location).HasMaxLength(200);
+        builder.Property(x => x.ProfessionalTitle).HasMaxLength(120);
+        builder.Property(x => x.Skills).HasMaxLength(2000);
+        builder.Property(x => x.Bio).HasMaxLength(4000);
+        builder.Property(x => x.ExperienceSummary).HasMaxLength(4000);
+        builder.Property(x => x.ResumeUrl).HasMaxLength(500);
+        builder.Property(x => x.AvatarUrl).HasMaxLength(500);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
     }
 }

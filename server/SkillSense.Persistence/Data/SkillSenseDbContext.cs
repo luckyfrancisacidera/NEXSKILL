@@ -23,6 +23,8 @@ namespace SkillSense.Persistence.Data
         public DbSet<JobSeekerProfileEntity> JobSeekerProfiles => Set<JobSeekerProfileEntity>();
         public DbSet<RecruiterProfileEntity> RecruiterProfiles => Set<RecruiterProfileEntity>();
         public DbSet<AdminProfileEntity> AdminProfiles => Set<AdminProfileEntity>();
+        public DbSet<SavedJobEntity> SavedJobs => Set<SavedJobEntity>();
+        public DbSet<PasswordResetPinEntity> PasswordResetPins => Set<PasswordResetPinEntity>();
 
         #endregion
 
