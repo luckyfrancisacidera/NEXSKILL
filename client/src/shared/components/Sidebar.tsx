@@ -1,14 +1,14 @@
 import {
   BriefcaseBusiness,
   LayoutDashboard,
-  MessageCircle,
-  Settings,
-  UserRound,
+  // MessageCircle,
+  // Settings,
+  // UserRound,
   Bookmark,
   FileCheck2,
   Users,
-  CalendarClock,
-  Bot,
+  // CalendarClock,
+  // Bot,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@shared/utils/cn";
@@ -18,20 +18,20 @@ const jobseekerItems = [
   { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { label: 'Find Jobs', to: '/jobs', icon: BriefcaseBusiness },
   { label: 'Applications', to: '/applications', icon: FileCheck2 },
-  { label: 'Messages', to: '/messages', icon: MessageCircle },
+  // { label: 'Messages', to: '/messages', icon: MessageCircle },
   { label: 'Saved Jobs', to: '/saved', icon: Bookmark },
-  { label: 'Profile', to: '/profile', icon: UserRound },
-  { label: 'Settings', to: '/settings', icon: Settings },
+  // { label: 'Profile', to: '/profile', icon: UserRound },
+  // { label: 'Settings', to: '/settings', icon: Settings },
 ];
 
 const recruiterItems = [
   { label: 'Dashboard', to: '/recruiter/dashboard', icon: LayoutDashboard },
   { label: 'Job Posts', to: '/recruiter/job-posts', icon: BriefcaseBusiness },
   { label: 'Candidates', to: '/recruiter/candidates', icon: Users },
-  { label: 'Interviews', to: '/recruiter/interviews', icon: CalendarClock },
-  { label: 'Automations', to: '/recruiter/automations', icon: Bot },
-  { label: 'Settings', to: '/recruiter/settings', icon: Settings },
-  { label: 'Global Settings', to: '/settings', icon: UserRound },
+  // { label: 'Interviews', to: '/recruiter/interviews', icon: CalendarClock },
+  // { label: 'Automations', to: '/recruiter/automations', icon: Bot },
+  // { label: 'Settings', to: '/recruiter/settings', icon: Settings },
+  // { label: 'Global Settings', to: '/settings', icon: UserRound },
 ];
 
 const adminItems = [

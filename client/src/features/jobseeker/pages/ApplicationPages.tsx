@@ -36,7 +36,7 @@ export const ApplicationsPage = () => {
   const currentStatusOptions = useMemo(() => statusOptions, []);
 
   return (
-    <Card className="space-y-4 overflow-x-auto">
+    <Card className="space-y-4 min-h-screen">
       <h2 className="text-2xl font-semibold">Applications</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
