@@ -87,7 +87,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 {
                     applied = recentApps.TotalCount,
                     interview = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Interview"),
-                    offer = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) is "Hired" or "Shortlisted")
+                    offer = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Hire")
                 },
                 saved_jobs = savedJobs.Take(4).Select(x => new
                 {
@@ -233,12 +233,11 @@ namespace SkillSense.Application.Services.Jobseeker
         private static string ResolveJobseekerApplicationStatus(string? status)
             => status?.Trim().ToLowerInvariant() switch
             {
-                "shortlisted" => "Shortlisted",
+                "applied" or "submitted" or "recommended" or "shortlist" or "shortlisted" or "pending" or "processing" or "completed" => "Applied",
                 "interview" => "Interview",
-                "offer" => "Hired",
-                "hire" => "Hired",
+                "hire" or "hired" or "offer" => "Hire",
                 "rejected" => "Rejected",
-                "failed" => "Withdrawn",
+                "withdrawn" or "failed" => "Withdrawn",
                 _ => "Submitted",
             };
 
