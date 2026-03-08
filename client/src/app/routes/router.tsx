@@ -53,6 +53,7 @@ import {
 } from "@features/recruiter";
 import { AdminPlaceholderPage } from "@features/admin/AdminPlaceholderPage";
 import { RegisterAccount, LoginAccount } from "@features/auth";
+import { ForgotPasswordPage } from "@features/auth/pages/ForgotPasswordPage";
 
 const withScrollReset = (element: ReactElement) => (
   <>
@@ -90,6 +91,11 @@ export const router = createBrowserRouter([
         <LoginAccount />
       </PublicOnly>,
     ),
+  },
+  {
+    path: "/forgot-password",
+    errorElement: <RouteErrorPage />,
+    element: withScrollReset(<ForgotPasswordPage />),
   },
   {
     path: "/",

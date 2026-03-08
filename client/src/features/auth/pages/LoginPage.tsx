@@ -51,9 +51,9 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="grid grid-cols-[60%_40%] bg-zinc-800 w-full h-screen text-white font-inter">
+    <div className="grid md:grid-cols-[60%_40%] bg-zinc-800 w-full min-h-screen text-white font-inter">
       {/* Left panel */}
-      <div className="p-8">
+      <div className="p-4 sm:p-8 hidden md:block">
         <div
           className="bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]"
           style={{ backgroundImage: `url(${BuildingImage})` }}
@@ -136,6 +136,8 @@ const LoginPage = () => {
                   Create an account
                 </Link>
               </span>
+
+              <Link to="/forgot-password" className="text-xs text-zinc-400 hover:text-zinc-200">Forgot password?</Link>
 
               {/* Divider */}
               <div className="flex items-center gap-4 my-2 w-full">

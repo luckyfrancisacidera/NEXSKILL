@@ -83,6 +83,31 @@ public sealed class AuthController(
     }
 
 
+
+    [HttpPost("request-password-reset")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.RequestPasswordResetAsync(request, cancellationToken);
+        return Ok(new { message = "Reset PIN sent to your email" });
+    }
+
+    [HttpPost("verify-reset-pin")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyResetPin([FromBody] VerifyResetPinRequest request, CancellationToken cancellationToken)
+    {
+        var valid = await _authService.VerifyResetPinAsync(request, cancellationToken);
+        if (!valid) return BadRequest(new { message = "Invalid or expired PIN." });
+        return Ok(new { message = "PIN verified." });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ResetPasswordAsync(request, cancellationToken);
+        return Ok(new { message = "Password reset successful." });
+    }
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout()

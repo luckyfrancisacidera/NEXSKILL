@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Domain.Entities;
+using SkillSense.Persistence.Data;
 
 namespace SkillSense.Application.Services.Auth;
 
@@ -9,7 +12,10 @@ public sealed class AuthService(
     UserManager<AppUser> userManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     ITokenService tokenService,
-    IInputSanitizer sanitizer) : IAuthService
+    IInputSanitizer sanitizer,
+    SkillSenseDbContext dbContext,
+    IDateTimeProvider dateTimeProvider,
+    IResetPinEmailSender resetPinEmailSender) : IAuthService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
@@ -22,36 +28,19 @@ public sealed class AuthService(
         var password = _sanitizer.Sanitize(request.Password);
 
         var existing = await _userManager.FindByEmailAsync(email);
-        if (existing is not null)
-        {
-            return AuthResult.Failure("Registration failed.", "Unable to create user with provided credentials.");
-        }
+        if (existing is not null) return AuthResult.Failure("Registration failed.", "Unable to create user with provided credentials.");
 
-        var user = new AppUser
-        {
-            UserName = email,
-            Email = email,
-            NormalizedEmail = email.ToUpperInvariant(),
-            NormalizedUserName = email.ToUpperInvariant(),
-            EmailConfirmed = true,
-        };
-
+        var user = new AppUser { UserName = email, Email = email, NormalizedEmail = email.ToUpperInvariant(), NormalizedUserName = email.ToUpperInvariant(), EmailConfirmed = true };
         var passwordValidation = await ValidatePasswordAsync(user, password);
-        if (passwordValidation.Count > 0)
-        {
-            return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
-        }
+        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
 
         var result = await _userManager.CreateAsync(user, password);
-        if (!result.Succeeded)
-        {
-            return AuthResult.Failure("Registration failed.", result.Errors.Select(e => e.Description).ToArray());
-        }
+        if (!result.Succeeded) return AuthResult.Failure("Registration failed.", result.Errors.Select(e => e.Description).ToArray());
 
         await EnsureRoleExistsAsync("JobSeeker");
         await _userManager.AddToRoleAsync(user, "JobSeeker");
 
-        user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id };
+        user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id, FullName = email.Split('@')[0] };
         await _userManager.UpdateAsync(user);
 
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
@@ -65,16 +54,9 @@ public sealed class AuthService(
         var password = _sanitizer.Sanitize(request.Password);
 
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null)
-        {
-            return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
-        }
-
+        if (user is null) return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
         var valid = await _userManager.CheckPasswordAsync(user, password);
-        if (!valid)
-        {
-            return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
-        }
+        if (!valid) return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
@@ -89,48 +71,81 @@ public sealed class AuthService(
         var role = _sanitizer.Sanitize(request.Role);
 
         var existing = await _userManager.FindByEmailAsync(email);
-        if (existing is not null)
-        {
-            return AuthResult.Failure("Create user failed.", "Unable to create user with provided credentials.");
-        }
+        if (existing is not null) return AuthResult.Failure("Create user failed.", "Unable to create user with provided credentials.");
 
-        var user = new AppUser
-        {
-            UserName = email,
-            Email = email,
-            NormalizedEmail = email.ToUpperInvariant(),
-            NormalizedUserName = email.ToUpperInvariant(),
-            EmailConfirmed = true,
-        };
-
+        var user = new AppUser { UserName = email, Email = email, NormalizedEmail = email.ToUpperInvariant(), NormalizedUserName = email.ToUpperInvariant(), EmailConfirmed = true };
         var passwordValidation = await ValidatePasswordAsync(user, password);
-        if (passwordValidation.Count > 0)
-        {
-            return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
-        }
+        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
 
         var createResult = await _userManager.CreateAsync(user, password);
-        if (!createResult.Succeeded)
-        {
-            return AuthResult.Failure("Create user failed.", createResult.Errors.Select(e => e.Description).ToArray());
-        }
+        if (!createResult.Succeeded) return AuthResult.Failure("Create user failed.", createResult.Errors.Select(e => e.Description).ToArray());
 
         await EnsureRoleExistsAsync(role);
         await _userManager.AddToRoleAsync(user, role);
 
-        if (role.Equals("Recruiter", StringComparison.OrdinalIgnoreCase))
-        {
-            user.RecruiterProfile = new RecruiterProfileEntity { UserId = user.Id };
-        }
-        else
-        {
-            user.AdminProfile = new AdminProfileEntity { UserId = user.Id };
-        }
+        if (role.Equals("Recruiter", StringComparison.OrdinalIgnoreCase)) user.RecruiterProfile = new RecruiterProfileEntity { UserId = user.Id };
+        else user.AdminProfile = new AdminProfileEntity { UserId = user.Id };
 
         await _userManager.UpdateAsync(user);
-
         var roles = await _userManager.GetRolesAsync(user);
         return AuthResult.Success("User created successfully.", token: null, refreshToken: null, email: user.Email, userId: user.Id.ToString(), roles: roles.ToArray());
+    }
+
+    public async Task RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken)
+    {
+        var email = _sanitizer.SanitizeEmail(request.Email);
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null) return;
+
+        var pin = Random.Shared.Next(0, 1_000_000).ToString("D6");
+        var now = dateTimeProvider.UtcNow;
+
+        var existingPins = await dbContext.PasswordResetPins.Where(x => x.UserId == user.Id && !x.Used).ToListAsync(cancellationToken);
+        foreach (var existing in existingPins) existing.Used = true;
+
+        dbContext.PasswordResetPins.Add(new PasswordResetPinEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Pin = pin,
+            ExpiresAtUtc = now.AddMinutes(15),
+            Used = false,
+            CreatedAtUtc = now,
+        });
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await resetPinEmailSender.SendResetPinAsync(email, pin, cancellationToken);
+    }
+
+    public async Task<bool> VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken)
+    {
+        var email = _sanitizer.SanitizeEmail(request.Email);
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null) return false;
+
+        var pin = await dbContext.PasswordResetPins
+            .Where(x => x.UserId == user.Id)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return pin is not null && !pin.Used && pin.Pin == request.Pin && pin.ExpiresAtUtc >= dateTimeProvider.UtcNow;
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken)
+    {
+        var email = _sanitizer.SanitizeEmail(request.Email);
+        var user = await _userManager.FindByEmailAsync(email) ?? throw new InvalidOperationException("Invalid reset request.");
+
+        var pin = await dbContext.PasswordResetPins.Where(x => x.UserId == user.Id).OrderByDescending(x => x.CreatedAtUtc).FirstOrDefaultAsync(cancellationToken);
+        if (pin is null || pin.Used || pin.Pin != request.Pin || pin.ExpiresAtUtc < dateTimeProvider.UtcNow)
+            throw new InvalidOperationException("Invalid or expired reset PIN.");
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        if (!result.Succeeded) throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
+
+        pin.Used = true;
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)
@@ -139,20 +154,14 @@ public sealed class AuthService(
         foreach (var validator in _userManager.PasswordValidators)
         {
             var result = await validator.ValidateAsync(_userManager, user, password);
-            if (!result.Succeeded)
-            {
-                errors.AddRange(result.Errors.Select(e => e.Description));
-            }
+            if (!result.Succeeded) errors.AddRange(result.Errors.Select(e => e.Description));
         }
 
-        return errors.Distinct().ToList();
+        return errors.Distinct().ToArray();
     }
 
     private async Task EnsureRoleExistsAsync(string role)
     {
-        if (!await _roleManager.RoleExistsAsync(role))
-        {
-            await _roleManager.CreateAsync(new IdentityRole<Guid>(role));
-        }
+        if (!await _roleManager.RoleExistsAsync(role)) await _roleManager.CreateAsync(new IdentityRole<Guid>(role));
     }
 }
