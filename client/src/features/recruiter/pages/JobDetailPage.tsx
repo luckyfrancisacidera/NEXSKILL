@@ -10,6 +10,7 @@ import { splitToBullets, toList } from "@shared/utils/formatText";
 import { DetailBlock } from "@shared/components/DetailBlock";
 
 import { ConfirmationModal } from "@shared/components/ConfirmationModal";
+import { HighRiskVerificationModal } from "@shared/components/HighRiskVerificationModal";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { useToast } from "@app/providers/ToastProvider";
 
@@ -24,7 +25,9 @@ export const JobDetailPage = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
@@ -58,7 +61,6 @@ export const JobDetailPage = () => {
   return (
     <div className="space-y-4">
       <Card className="bg-zinc-50/60 p-3 sm:p-5">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-5">
           <div className="space-y-5">
             <header className="space-y-4 border-b border-zinc-200 pb-4">
               <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">
@@ -233,7 +235,7 @@ export const JobDetailPage = () => {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => setIsDeleteOpen(true)}
+                  onClick={() => { setIsVerificationOpen(false); setDeleteError(undefined); setIsDeleteOpen(true); }}
                   className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
                 >
                  Delete Job
@@ -241,7 +243,6 @@ export const JobDetailPage = () => {
               </aside>
             </div>
           </div>
-        </div>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -276,23 +277,33 @@ export const JobDetailPage = () => {
         </Card>
       </div>
        <ConfirmationModal
-        open={isDeleteOpen}
-        title="Delete this job?"
-        message="This action permanently removes the job post and cannot be undone."
-        confirmLabel="Delete Job"
+       open={isDeleteOpen && !isVerificationOpen}
+        title={job.status?.toLowerCase() === "published" ? "Delete published job?" : "Delete this job?"}
+        message={job.status?.toLowerCase() === "published"
+          ? "This job is published and needs an additional verification step before deletion."
+          : "This action permanently removes the job post and cannot be undone."}
+        confirmLabel={job.status?.toLowerCase() === "published" ? "Continue" : "Delete Job"}
         accent="red"
         loading={isDeleting}
         onClose={() => setIsDeleteOpen(false)}
         onCancel={() => setIsDeleteOpen(false)}
         onConfirm={async () => {
+          if (job.status?.toLowerCase() === "published") {
+            setIsVerificationOpen(true);
+            return;
+          }
+
           try {
             setIsDeleting(true);
+            setDeleteError(undefined);
             await recruiterService.deleteJob(job.id);
             showToast({
               title: "Job deleted successfully",
               description: `${job.title} was removed from your job posts.`,
               tone: "success",
             });
+            setIsDeleteOpen(false);
+            setIsVerificationOpen(false);
             navigate("/recruiter/job-posts");
           } catch {
             showToast({
@@ -302,7 +313,41 @@ export const JobDetailPage = () => {
             });
           } finally {
             setIsDeleting(false);
+          }
+        }}
+      />
+      <HighRiskVerificationModal
+        open={isDeleteOpen && isVerificationOpen}
+        title="Final verification required"
+        message="Type DELETE or the exact job title to permanently delete this published job."
+        expectedKeyword="DELETE"
+        expectedText={job.title}
+        loading={isDeleting}
+        error={deleteError}
+        onClose={() => setIsDeleteOpen(false)}
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={async () => {
+          try {
+            setIsDeleting(true);
+            setDeleteError(undefined);
+            await recruiterService.deleteJob(job.id);
+            showToast({
+              title: "Job deleted successfully",
+              description: `${job.title} was removed from your job posts.`,
+              tone: "success",
+            });
             setIsDeleteOpen(false);
+            setIsVerificationOpen(false);
+            navigate("/recruiter/job-posts");
+          } catch {
+            setDeleteError("Unable to delete this job right now. Please try again.");
+            showToast({
+              title: "Unable to delete job",
+              description: "Please try again.",
+              tone: "error",
+            });
+          } finally {
+            setIsDeleting(false);
           }
         }}
       />

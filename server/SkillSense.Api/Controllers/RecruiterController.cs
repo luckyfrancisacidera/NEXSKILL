@@ -46,8 +46,8 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     }
 
     [HttpGet("jobs")]
-    public async Task<ActionResult<PagedResult<JobListItemResponse>>> GetJobs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortDir = null, CancellationToken ct = default)
-        => Ok(await recruiterService.GetJobsAsync(GetUserId(), pageNumber, pageSize, search, sortBy, sortDir, ct));
+    public async Task<ActionResult<PagedResult<JobListItemResponse>>> GetJobs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? department = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortDir = null, CancellationToken ct = default)
+        => Ok(await recruiterService.GetJobsAsync(GetUserId(), pageNumber, pageSize, search, department, sortBy, sortDir, ct));
 
     [HttpGet("jobs/{id:guid}")]
     public async Task<ActionResult<JobListItemResponse>> GetJob(Guid id, CancellationToken ct)
@@ -59,7 +59,7 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     [HttpDelete("jobs/{id:guid}")]
     public async Task<IActionResult> DeleteJob(Guid id, CancellationToken ct)
     {
-        await recruiterService.DeleteDraftJobAsync(GetUserId(), id, ct);
+        await recruiterService.DeleteJobAsync(GetUserId(), id, ct);
         return NoContent();
     }
 
