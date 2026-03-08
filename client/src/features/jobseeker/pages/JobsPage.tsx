@@ -30,7 +30,7 @@ export const JobsPage = () => {
       <Card>
         <form className="flex items-center justify-between gap-2">
           <h2 className="text-2xl font-semibold text-zinc-900">Find Jobs</h2>
-          <input name="search" defaultValue={params.get('search') ?? ''} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm" placeholder="Search" aria-label="Filter jobs" />
+          <input name="search" defaultValue={params.get('search') ?? ''} className="h-11 w-full max-w-xs rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100" placeholder="Search" aria-label="Filter jobs" />
         </form>
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -47,7 +47,7 @@ export const JobsPage = () => {
             snippet: job.description,
           };
 
-          return <JobCard key={job.id} job={cardJob} onToggleSave={(jobId) => { void jobseekerService.saveJob(jobId); }} />;
+          return <JobCard key={job.id} job={cardJob} onToggleSave={(jobId, nextSavedState) => (nextSavedState ? jobseekerService.saveJob(jobId) : jobseekerService.removeSavedJob(jobId))} />;
         })}
       </div>
       <div className="flex items-center justify-between">

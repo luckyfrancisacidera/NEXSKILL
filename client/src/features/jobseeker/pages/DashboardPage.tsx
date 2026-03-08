@@ -49,7 +49,7 @@ export const DashboardPage = () => {
               id: String(item.id), title: String(item.title), company: String(item.company), location: String(item.location),
               salaryMin: Number(item.salary_min ?? 0), salaryMax: Number(item.salary_max ?? 0), currency: String(item.currency ?? 'PHP'), type: 'Full-time', snippet: String(item.job_type ?? '')
             };
-            return <JobCard key={job.id} job={job} isSaved onToggleSave={() => { void jobseekerService.removeSavedJob(job.id).then(() => updateRange(range)); }} />;
+            return <JobCard key={job.id} job={job} isSaved onToggleSave={(jobId, nextSavedState) => (nextSavedState ? jobseekerService.saveJob(jobId) : jobseekerService.removeSavedJob(jobId).then(() => updateRange(range)))} />;
           })}
         </div>
       </section>
@@ -58,7 +58,7 @@ export const DashboardPage = () => {
         <Card className="h-80">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-semibold">Recent Applications</h3>
-            <select value={range} onChange={(e) => { void updateRange(e.target.value); }} className="rounded border border-zinc-300 px-2 py-1 text-sm max-w-full">
+            <select value={range} onChange={(e) => { void updateRange(e.target.value); }} className="h-11 rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 max-w-full">
               {ranges.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
             </select>
           </div>
