@@ -200,6 +200,7 @@ export const recruiterService = {
     pageNumber: number;
     pageSize: number;
     search?: string;
+    department?: string;
   }) => (await http.get<Paged<JobDto>>("/api/recruiter/jobs", { params })).data,
 
   getRecruiterJob: async (id: string) =>
