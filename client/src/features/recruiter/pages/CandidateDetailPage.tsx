@@ -249,7 +249,7 @@ export const CandidateDetailPage = () => {
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_290px]">
+    <div className="grid gap-4 xl:grid-cols-[350px_minmax(0,1fr)]">
       <Card className="h-fit p-0 overflow-hidden">
         <div className="bg-linear-to-b from-slate-50 to-white px-5 py-6">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">
@@ -300,57 +300,7 @@ export const CandidateDetailPage = () => {
             </button>
           ) : null}
         </div>
-      </Card>
 
-      <div className="space-y-4">
-        <SectionCard title="Professional Summary">
-          {parsedResume?.summary?.length ? (
-            <p className="text-sm leading-7 text-zinc-700">{parsedResume.summary.join(" ")}</p>
-          ) : (
-            <p className="text-sm text-zinc-500">No summary extracted from parsed resume.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Skills">
-          {parsedResume?.skills?.length ? (
-            <div className="flex flex-wrap gap-2">
-              {parsedResume.skills.map((skill) => (
-                <span key={skill} className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No skills extracted.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Work Experience">
-          {parsedResume?.work_experience?.length ? (
-            <div className="space-y-3">
-              {parsedResume.work_experience.map((role, index) => (
-                <WorkExperienceCard key={`${role.job_title}-${index}`} role={role} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No work experience extracted.</p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Projects">
-          {parsedResume?.projects?.length ? (
-            <div className="grid gap-3 lg:grid-cols-1">
-              {parsedResume.projects.map((project, index) => (
-                <ProjectCard key={`${project.name}-${index}`} project={project} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No projects extracted.</p>
-          )}
-        </SectionCard>
-      </div>
-
-      <div className="space-y-4">
         <SectionCard title="Application Info">
           <ul className="space-y-2 text-sm">
             <li className="flex items-center justify-between"><span className="text-zinc-500">Applied:</span> <span className="font-semibold text-zinc-800">{new Date(candidate.created_at_utc).toLocaleDateString()}</span></li>
@@ -438,7 +388,7 @@ export const CandidateDetailPage = () => {
               </p>
             )}
           </div>
-        </SectionCard>
+        </SectionCard>  
 
         <SectionCard title="Education">
           {parsedResume?.education?.length ? (
@@ -452,6 +402,104 @@ export const CandidateDetailPage = () => {
             </div>
           ) : (
             <p className="text-sm text-zinc-500">No education extracted.</p>
+          )}
+        </SectionCard>
+      </Card>
+
+      <div className="space-y-4">
+        {candidate.submission_status === "Shortlisted" ? (
+        <SectionCard title="Fit explanation">
+          {candidate.candidate_explanation?.strengths?.length ? (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                AI-assisted insight
+              </p>
+
+              <p className="text-sm font-semibold text-zinc-900">
+                Why this candidate is a good fit
+              </p>
+
+              {candidate.candidate_explanation.summary ? (
+                <p className="mt-1 text-sm leading-6 text-zinc-700">
+                  {candidate.candidate_explanation.summary}
+                </p>
+              ) : null}
+
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                {candidate.candidate_explanation.strengths.map((item, index) => (
+                  <li key={`${item}-${index}`}>{item}</li>
+                ))}
+              </ul>
+
+              {candidate.candidate_explanation.gaps?.length ? (
+                <div className="mt-4 space-y-1">
+                  <p className="text-sm font-medium text-zinc-800">Possible gaps</p>
+
+                  <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                    {candidate.candidate_explanation.gaps.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <p className="mt-3 text-xs text-zinc-500">
+                These are insights based on the extracted resume
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+              <p className="text-sm text-zinc-500">
+                Explanation not available yet.
+              </p>
+            </div>
+          )}
+        </SectionCard>
+      ) : null}
+
+        <SectionCard title="Professional Summary">
+          {parsedResume?.summary?.length ? (
+            <p className="text-sm leading-7 text-zinc-700">{parsedResume.summary.join(" ")}</p>
+          ) : (
+            <p className="text-sm text-zinc-500">No summary extracted from parsed resume.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Skills">
+          {parsedResume?.skills?.length ? (
+            <div className="flex flex-wrap gap-2">
+              {parsedResume.skills.map((skill) => (
+                <span key={skill} className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">No skills extracted.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Work Experience">
+          {parsedResume?.work_experience?.length ? (
+            <div className="space-y-3">
+              {parsedResume.work_experience.map((role, index) => (
+                <WorkExperienceCard key={`${role.job_title}-${index}`} role={role} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">No work experience extracted.</p>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Projects">
+          {parsedResume?.projects?.length ? (
+            <div className="grid gap-3 lg:grid-cols-1">
+              {parsedResume.projects.map((project, index) => (
+                <ProjectCard key={`${project.name}-${index}`} project={project} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">No projects extracted.</p>
           )}
         </SectionCard>
       </div>

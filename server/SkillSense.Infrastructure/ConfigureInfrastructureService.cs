@@ -26,7 +26,15 @@ public static class ConfigureInfrastructureService
         services.Configure<SbertOptions>(configuration.GetSection(SbertOptions.SectionName));
         services.AddSingleton<ITextEmbeddingService, SbertOnnxEmbeddingService>();
 
-         services
+        services.Configure<GroqOptions>(configuration.GetSection(GroqOptions.SectionName));
+        services.AddHttpClient<IGenerativeExplanationProvider, GroqExplanationProvider>(http =>
+        {
+            http.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+            http.Timeout = TimeSpan.FromSeconds(20);
+        });
+
+        services
+
         .AddOptions<CloudflareR2Options>()
         .Bind(configuration.GetSection(CloudflareR2Options.SectionName))
         .Validate(o => !string.IsNullOrWhiteSpace(o.AccountId), "Missing Cloudflare R2 AccountId")
