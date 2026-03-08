@@ -176,16 +176,36 @@ export const JobDetailPage = () => {
                   onClick={() => {
                     if (isSavingJob) return;
                     setIsSavingJob(true);
-                    const request = isSaved ? jobseekerService.removeSavedJob(job.id) : jobseekerService.saveJob(job.id);
-                    void request.then(() => setIsSaved((prev) => !prev)).finally(() => setIsSavingJob(false));
+
+                    const request = isSaved
+                      ? jobseekerService.removeSavedJob(job.id)
+                      : jobseekerService.saveJob(job.id);
+
+                    void request
+                      .then(() => setIsSaved((prev) => !prev))
+                      .finally(() => setIsSavingJob(false));
                   }}
-                  className={`w-full rounded-lg border px-4 py-3 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${isSaved ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'}`}
+                  className={`w-full rounded-lg border px-4 py-3 text-base font-semibold transition 
+                  disabled:cursor-not-allowed disabled:opacity-60
+                  flex items-center justify-center gap-2
+                  ${
+                    isSaved
+                      ? "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                      : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50"
+                  }`}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    {isSavingJob ? <Loader2 className="h-4 w-4 animate-spin" /> : isSaved ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-                    {isSavingJob ? 'Saving...' : isSaved ? 'Saved' : 'Save Job'}
+                  {isSavingJob ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isSaved ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+
+                  <span>
+                    {isSavingJob ? "Saving..." : isSaved ? "Saved" : "Save Job"}
                   </span>
-                </button>
+              </button>
               </aside>
             </div>
           </div>
