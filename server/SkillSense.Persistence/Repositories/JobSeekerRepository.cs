@@ -180,17 +180,63 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
         await dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task<List<(DateTime Date, int Count)>> GetApplicationAnalyticsAsync(Guid userId, DateTime start, DateTime end, string granularity, CancellationToken ct = default)
+    public async Task<List<(DateTime Date, int Count)>> GetApplicationAnalyticsAsync(
+     Guid userId,
+     DateTime start,
+     DateTime end,
+     string granularity,
+     CancellationToken ct = default)
     {
-        var baseQuery = dbContext.ResumeSubmissions.AsNoTracking()
-            .Where(x => x.ApplicantUserId == userId && x.CreatedAtUtc >= start && x.CreatedAtUtc <= end);
+        var baseQuery = dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Where(x => x.ApplicantUserId == userId &&
+                        x.CreatedAtUtc >= start &&
+                        x.CreatedAtUtc <= end);
 
-        return granularity switch
+        if (granularity == "month")
         {
-            "month" => await baseQuery.GroupBy(x => new DateTime(x.CreatedAtUtc.Year, x.CreatedAtUtc.Month, 1))
-                .Select(g => new ValueTuple<DateTime, int>(g.Key, g.Count())).OrderBy(x => x.Item1).ToListAsync(ct),
-            _ => await baseQuery.GroupBy(x => x.CreatedAtUtc.Date)
-                .Select(g => new ValueTuple<DateTime, int>(g.Key, g.Count())).OrderBy(x => x.Item1).ToListAsync(ct)
-        };
+            var rows = await baseQuery
+                .GroupBy(x => new
+                {
+                    x.CreatedAtUtc.Year,
+                    x.CreatedAtUtc.Month
+                })
+                .Select(g => new
+                {
+                    g.Key.Year,
+                    g.Key.Month,
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Year)
+                .ThenBy(x => x.Month)
+                .ToListAsync(ct);
+
+            return rows
+                .Select(x => (new DateTime(x.Year, x.Month, 1), x.Count))
+                .ToList();
+        }
+
+        var dailyRows = await baseQuery
+            .GroupBy(x => new
+            {
+                x.CreatedAtUtc.Year,
+                x.CreatedAtUtc.Month,
+                x.CreatedAtUtc.Day
+            })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                g.Key.Day,
+                Count = g.Count()
+            })
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ThenBy(x => x.Day)
+            .ToListAsync(ct);
+
+        return dailyRows
+            .Select(x => (new DateTime(x.Year, x.Month, x.Day), x.Count))
+            .ToList();
     }
 }

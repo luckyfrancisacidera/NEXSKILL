@@ -55,12 +55,24 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
               type="button"
               variant="secondary"
               disabled={isSaving}
-              className={saved ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : ""}
-              onClick={() => { void handleToggleSave(); }}
+              className={`flex items-center gap-2 ${
+                saved
+                  ? "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                  : ""
+              }`}
+              onClick={() => {
+                void handleToggleSave();
+              }}
             >
-              {isSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-1 h-4 w-4" /> : <Bookmark className="mr-1 h-4 w-4" />}
-              {saved ? "Saved" : "Save"}
-            </Button>
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : saved ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Bookmark className="h-4 w-4" />
+              )}
+              <span>{saved ? "Saved" : "Save"}</span>
+          </Button>
           ) : null}
           <Link to={`/jobs/${job.id}`}>
             <Button type="button">{applyLabel}</Button>
