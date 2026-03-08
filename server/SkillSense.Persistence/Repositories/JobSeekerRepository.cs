@@ -55,8 +55,27 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            var normalizedStatus = status.Trim().ToLower();
-            query = query.Where(x => x.s.Status.ToString().ToLower() == normalizedStatus);
+            var normalizedStatus = status.Trim().ToLowerInvariant();
+            var statusFilter = normalizedStatus switch
+            {
+                "applied" or "submitted" or "recommended" or "shortlist" or "shortlisted" => new[]
+                {
+                    ResumeSubmissionStatus.Pending,
+                    ResumeSubmissionStatus.Processing,
+                    ResumeSubmissionStatus.Completed,
+                    ResumeSubmissionStatus.Shortlisted
+                },
+                "interview" => new[] { ResumeSubmissionStatus.Interview },
+                "hire" or "hired" or "offer" => new[] { ResumeSubmissionStatus.Offer, ResumeSubmissionStatus.Hire },
+                "rejected" => new[] { ResumeSubmissionStatus.Rejected },
+                "withdrawn" or "failed" => new[] { ResumeSubmissionStatus.Failed },
+                _ => []
+            };
+
+            if (statusFilter.Length > 0)
+            {
+                query = query.Where(x => statusFilter.Contains(x.s.Status));
+            }
         }
 
         if (startDate.HasValue) query = query.Where(x => x.s.CreatedAtUtc >= startDate.Value);

@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo, useState } from 'react';
+import { Bookmark, Check, Loader2 } from 'lucide-react';
 import { redirect, useActionData, useLoaderData, useNavigation, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router-dom';
 import { Card } from '@shared/components/Card';
 import { formatCurrencyAmount } from '@shared/data/currency';
@@ -47,6 +48,8 @@ export const JobDetailPage = () => {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === 'submitting';
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSavingJob, setIsSavingJob] = useState(false);
 
   const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
   const benefits = useMemo(() => splitToBullets(job.benefits), [job.benefits]);
@@ -169,10 +172,19 @@ export const JobDetailPage = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { void jobseekerService.saveJob(job.id); }}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-base font-semibold text-zinc-800 transition hover:bg-zinc-50"
+                  disabled={isSavingJob}
+                  onClick={() => {
+                    if (isSavingJob) return;
+                    setIsSavingJob(true);
+                    const request = isSaved ? jobseekerService.removeSavedJob(job.id) : jobseekerService.saveJob(job.id);
+                    void request.then(() => setIsSaved((prev) => !prev)).finally(() => setIsSavingJob(false));
+                  }}
+                  className={`w-full rounded-lg border px-4 py-3 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${isSaved ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'}`}
                 >
-                  Save Job
+                  <span className="inline-flex items-center gap-2">
+                    {isSavingJob ? <Loader2 className="h-4 w-4 animate-spin" /> : isSaved ? <Check className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                    {isSavingJob ? 'Saving...' : isSaved ? 'Saved' : 'Save Job'}
+                  </span>
                 </button>
               </aside>
             </div>
