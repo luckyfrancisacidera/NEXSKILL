@@ -7,27 +7,9 @@ import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader'
 import { DashboardAreaChart } from '@shared/components/DashboardAreaChart';
 import DatePicker from '@shared/components/DatePicker';
 import Dropdown, { type DropdownOption } from '@shared/components/Dropdown';
+import type { DashboardDto, DashboardGroupBy, DashboardQuickRange } from '@features/recruiter/types';
 
-type Metric = { value: number; previous_value: number; comparison_percent: number };
-type GroupByType = 'week' | 'month' | 'year' | 'department' | 'job';
-type QuickRangeType = '' | 'last7' | 'last28' | 'lastMonth';
-
-type DashboardData = {
-  filters: { departments: string[]; job_roles: string[]; job_roles_by_department: Record<string, string[]> };
-  summary: {
-    total_applicants: Metric;
-    total_shortlisted: Metric;
-    total_interview: Metric;
-    total_offer: Metric;
-    total_hired: Metric;
-  };
-  trends: {
-    labels: string[];
-    datasets: Array<{ key: string; label: string; data: number[]; border_color: string; background_color: string }>;
-  };
-};
-
-const cards: Array<{ key: keyof DashboardData['summary']; label: string; icon: typeof Users }> = [
+const cards: Array<{ key: keyof DashboardDto['summary']; label: string; icon: typeof Users }> = [
   { key: 'total_applicants', label: 'Total Applicants', icon: Users },
   { key: 'total_shortlisted', label: 'Shortlisted', icon: UserCheck2 },
   { key: 'total_interview', label: 'Interviewed', icon: UsersRound },
@@ -35,7 +17,7 @@ const cards: Array<{ key: keyof DashboardData['summary']; label: string; icon: t
   { key: 'total_hired', label: 'Hired', icon: UserRoundCheck },
 ];
 
-const tabGroupBy: GroupByType[] = ['week', 'month', 'year'];
+const tabGroupBy: DashboardGroupBy[] = ['week', 'month', 'year'];
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 const formatCompactNumber = (value: number) => Intl.NumberFormat('en-US').format(value);
 
@@ -56,7 +38,7 @@ const formatDateParam = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getQuickRange = (type: Exclude<QuickRangeType, ''>) => {
+const getQuickRange = (type: Exclude<DashboardQuickRange, ''>) => {
   const today = new Date();
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -74,11 +56,11 @@ const getQuickRange = (type: Exclude<QuickRangeType, ''>) => {
 };
 
 export const RecruiterDashboardPage = () => {
-  const data = useLoaderData() as DashboardData;
+  const data = useLoaderData() as DashboardDto;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [expanded, setExpanded] = useState(false);
-  const [quickRange, setQuickRange] = useState<QuickRangeType>('');
+  const [quickRange, setQuickRange] = useState<DashboardQuickRange>('');
 
   const selected = useMemo(
     () => ({
@@ -86,7 +68,7 @@ export const RecruiterDashboardPage = () => {
       endDate: searchParams.get('endDate') ?? '',
       department: searchParams.get('department') ?? '',
       jobRole: searchParams.get('jobRole') ?? '',
-      groupBy: (searchParams.get('groupBy') as GroupByType | null) ?? 'month',
+      groupBy: (searchParams.get('groupBy') as DashboardGroupBy | null) ?? 'month',
     }),
     [searchParams],
   );
@@ -97,7 +79,10 @@ export const RecruiterDashboardPage = () => {
     previousRequestRef.current = searchParams.toString();
   }, [searchParams]);
 
-  const title = useMemo(() => `${selected.groupBy[0].toUpperCase()}${selected.groupBy.slice(1)} Applicant Trends`, [selected.groupBy]);
+  const title = useMemo(
+    () => `${selected.groupBy[0].toUpperCase()}${selected.groupBy.slice(1)} Applicant Trends`,
+    [selected.groupBy],
+  );
 
   const updateFilters = useCallback((nextFilters: typeof selected) => {
     const next = new URLSearchParams(searchParams);
@@ -116,12 +101,7 @@ export const RecruiterDashboardPage = () => {
   }, [navigate, searchParams]);
 
   const updateFilterField = <K extends keyof typeof selected>(key: K, value: (typeof selected)[K]) => {
-    const nextFilters = { ...selected, [key]: value };
-    updateFilters(nextFilters);
-  };
-
-  const updateGroupBy = (groupBy: GroupByType) => {
-    updateFilterField('groupBy', groupBy);
+    updateFilters({ ...selected, [key]: value });
   };
 
   const roleOptionsByDepartment = data.filters.job_roles_by_department;
@@ -144,9 +124,8 @@ export const RecruiterDashboardPage = () => {
   };
 
   const clearFilters = () => {
-    const resetFilters = { ...selected, startDate: '', endDate: '', department: '', jobRole: '' };
     setQuickRange('');
-    updateFilters(resetFilters);
+    updateFilters({ ...selected, startDate: '', endDate: '', department: '', jobRole: '' });
   };
 
   const departmentOptions: DropdownOption[] = [{ value: '', label: 'All Departments' }, ...data.filters.departments.map((department) => ({ value: department, label: department }))];
@@ -158,13 +137,10 @@ export const RecruiterDashboardPage = () => {
     { value: 'lastMonth', label: 'Last Month' },
   ];
 
-  const handleQuickRangeChange = (value: QuickRangeType) => {
+  const handleQuickRangeChange = (value: DashboardQuickRange) => {
     setQuickRange(value);
     if (!value) return;
-
-    const range = getQuickRange(value);
-    const nextFilters = { ...selected, ...range };
-    updateFilters(nextFilters);
+    updateFilters({ ...selected, ...getQuickRange(value) });
   };
 
   const formattedTrendLabels = useMemo(() => {
@@ -198,30 +174,13 @@ export const RecruiterDashboardPage = () => {
           <div className="flex min-w-0 flex-nowrap items-end gap-3 pb-1">
             <DatePicker label="Start Date" value={selected.startDate} onChange={(value) => updateFilterField('startDate', value)} className="min-w-42.5 flex-1" />
             <DatePicker label="End Date" value={selected.endDate} onChange={(value) => updateFilterField('endDate', value)} className="min-w-42.5 flex-1" />
-
             <div className="min-w-42.5 flex-1">
-              <Dropdown
-                label="Department"
-                name="department"
-                value={selected.department}
-                options={departmentOptions}
-                onChange={(event) => handleDepartmentChange(event.target.value)}
-              />
+              <Dropdown label="Department" name="department" value={selected.department} options={departmentOptions} onChange={(event) => handleDepartmentChange(event.target.value)} />
             </div>
-
             <div className="min-w-42.5 flex-1">
-              <Dropdown
-                label="Job Role"
-                name="jobRole"
-                value={availableJobRoleSet.has(selected.jobRole) ? selected.jobRole : ''}
-                options={jobRoleOptions}
-                onChange={(event) => updateFilterField('jobRole', event.target.value)}
-              />
+              <Dropdown label="Job Role" name="jobRole" value={availableJobRoleSet.has(selected.jobRole) ? selected.jobRole : ''} options={jobRoleOptions} onChange={(event) => updateFilterField('jobRole', event.target.value)} />
             </div>
-
-            <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50" onClick={clearFilters}>
-              Clear Filters
-            </button>
+            <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50" onClick={clearFilters}>Clear Filters</button>
           </div>
         </form>
       </Card>
@@ -254,29 +213,15 @@ export const RecruiterDashboardPage = () => {
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-zinc-200 pb-3">
           <div className="inline-flex rounded-lg border border-zinc-300 bg-zinc-100 p-1">
             {tabGroupBy.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => updateGroupBy(item)}
-                className={`rounded-md px-5 py-1.5 text-sm font-semibold capitalize transition ${selected.groupBy === item ? 'bg-black text-white shadow-sm' : 'text-zinc-600 hover:bg-zinc-200'}`}
-              >
-                {item}
-              </button>
+              <button key={item} type="button" onClick={() => updateFilterField('groupBy', item)} className={`rounded-md px-5 py-1.5 text-sm font-semibold capitalize transition ${selected.groupBy === item ? 'bg-black text-white shadow-sm' : 'text-zinc-600 hover:bg-zinc-200'}`}>{item}</button>
             ))}
           </div>
 
           <div className="flex items-end gap-2">
             <div className="min-w-42.5">
-              <Dropdown
-                label="Quick Filter"
-                name="quickRange"
-                value={quickRange}
-                options={quickRangeOptions}
-                onChange={(event) => handleQuickRangeChange(event.target.value as QuickRangeType)}
-                buttonClassName="h-9 rounded-md"
-              />
+              <Dropdown label="Quick Filter" name="quickRange" value={quickRange} options={quickRangeOptions} onChange={(event) => handleQuickRangeChange(event.target.value as DashboardQuickRange)} buttonClassName="h-9 rounded-md" />
             </div>
-            <button type="button" className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700" onClick={() => setExpanded((v) => !v)}>
+            <button type="button" className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700" onClick={() => setExpanded((value) => !value)}>
               <Expand size={16} /> {expanded ? 'Back to Dashboard' : 'Expand'}
             </button>
           </div>
