@@ -1,58 +1,41 @@
-﻿using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Domain.Entities;
-using SkillSense.Persistence.Data;
+using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Application.Services.Recruiter;
 
+/// <summary>
+/// Generates recruiter-facing candidate explanations for shortlisted submissions.
+/// </summary>
+/// <remarks>
+/// The service combines deterministic ATS scoring facts with the configured explanation provider output,
+/// then persists a normalized explanation record for later retrieval by recruiter workflows.
+/// </remarks>
 public sealed class CandidateExplanationService(
-    SkillSenseDbContext dbContext,
+    ICandidateExplanationRepository candidateExplanationRepository,
     IGenerativeExplanationProvider explanationProvider,
     ILogger<CandidateExplanationService> logger) : ICandidateExplanationService
 {
     private const float MatchThreshold = 0.64f;
 
+    /// <summary>
+    /// Creates or refreshes the persisted explanation for a shortlisted submission when recruiter access is valid.
+    /// </summary>
     public async Task GenerateForShortlistedAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
-        var existing = await dbContext.CandidateExplanations
-            .FirstOrDefaultAsync(x => x.ResumeSubmissionId == submissionId, ct);
+        var existing = await candidateExplanationRepository.GetBySubmissionIdAsync(submissionId, ct);
 
         if (existing is not null && existing.Status is ExplanationStatus.Pending or ExplanationStatus.Succeeded)
         {
             return;
         }
 
-        var payload = await dbContext.ResumeSubmissions
-            .AsNoTracking()
-            .Join(
-                dbContext.Jobs.AsNoTracking(),
-                submission => submission.JobId,
-                job => job.Id,
-                (submission, job) => new { submission, job })
-            .Join(
-                dbContext.ResumeScores.AsNoTracking(),
-                x => x.submission.Id,
-                score => score.ResumeSubmissionId,
-                (x, score) => new
-                {
-                    x.submission,
-                    x.job,
-                    score
-                })
-            .Where(x => x.submission.Id == submissionId && x.job.RecruiterId == recruiterId)
-            .Select(x => new
-            {
-                Submission = x.submission,
-                Job = x.job,
-                Score = x.score
-            })
-            .FirstOrDefaultAsync(ct);
-
+        var payload = await candidateExplanationRepository.GetExplanationPayloadAsync(recruiterId, submissionId, ct);
         if (payload is null || payload.Submission.Status != ResumeSubmissionStatus.Shortlisted)
         {
             return;
@@ -84,10 +67,12 @@ public sealed class CandidateExplanationService(
 
         if (existing is null)
         {
-            dbContext.CandidateExplanations.Add(explanationEntity);
+            await candidateExplanationRepository.AddAsync(explanationEntity, ct);
         }
-
-        await dbContext.SaveChangesAsync(ct);
+        else
+        {
+            await candidateExplanationRepository.SaveChangesAsync(ct);
+        }
 
         try
         {
@@ -109,7 +94,7 @@ public sealed class CandidateExplanationService(
             explanationEntity.FailureReason = null;
             explanationEntity.UpdatedAtUtc = DateTime.UtcNow;
 
-            await dbContext.SaveChangesAsync(ct);
+            await candidateExplanationRepository.SaveChangesAsync(ct);
         }
         catch (Exception ex)
         {
@@ -119,13 +104,10 @@ public sealed class CandidateExplanationService(
             explanationEntity.FailureReason = ex.Message.Length > 400 ? ex.Message[..400] : ex.Message;
             explanationEntity.UpdatedAtUtc = DateTime.UtcNow;
 
-            await dbContext.SaveChangesAsync(ct);
+            await candidateExplanationRepository.SaveChangesAsync(ct);
         }
     }
 
-    // Hybrid explanation basis: deterministic ATS score artifacts + structured job/candidate profile facts.
-    // Design intent: prioritize role-specific candidate-vs-JD fit evidence (required skills, responsibilities, description alignment)
-    // over generic candidate traits, while still retaining hard requirement checks for auditability.
     private static CandidateExplanationFacts BuildFacts(
         ResumeSubmissionEntity submission,
         JobEntity job,
@@ -326,7 +308,6 @@ public sealed class CandidateExplanationService(
 
     private static List<string> BuildFallbackStrengths(CandidateExplanationFacts facts)
     {
-        // Keep fallback role-fit oriented: required skills -> responsibilities/description -> role-relevant experience -> baseline checks.
         var strengths = new List<string>();
 
         if (facts.MatchSummary.MatchedRequiredSkills.Count > 0)
@@ -342,13 +323,13 @@ public sealed class CandidateExplanationService(
         if (facts.MatchSummary.TopDescriptionAlignmentEvidence.Count > 0)
         {
             var descriptionEvidence = facts.MatchSummary.TopDescriptionAlignmentEvidence.First();
-            strengths.Add($"Description alignment evidence: {descriptionEvidence.JdItem} — {descriptionEvidence.BestResumeEvidence}");
+            strengths.Add($"Description alignment evidence: {descriptionEvidence.JdItem} - {descriptionEvidence.BestResumeEvidence}");
         }
 
         if (facts.MatchSummary.RoleRelevantExperienceEvidence.Count > 0)
         {
             var roleEvidence = facts.MatchSummary.RoleRelevantExperienceEvidence.First();
-            strengths.Add($"Role-relevant experience evidence: {roleEvidence.JdItem} — {roleEvidence.BestResumeEvidence}");
+            strengths.Add($"Role-relevant experience evidence: {roleEvidence.JdItem} - {roleEvidence.BestResumeEvidence}");
         }
 
         if (facts.MatchSummary.MatchedPreferredSkills.Count > 0)
@@ -381,7 +362,6 @@ public sealed class CandidateExplanationService(
             gaps.Add($"Some core responsibilities need deeper verification: {string.Join("; ", facts.MatchSummary.MissingResponsibilities.Take(1))}");
         }
 
-        // Only raise hard-requirement gaps when those checks are explicitly not met.
         if (facts.Scoring.MinimumYearsMet == false)
         {
             gaps.Add("Minimum years-of-experience requirement appears unmet");
@@ -423,8 +403,6 @@ public sealed class CandidateExplanationService(
     {
         var locationCompatibility = EvaluateLocationCompatibility(submission.Location, job.Location);
 
-        // No explicit candidate preference signal for work setup/employment type is currently available in parsed resume/submission.
-        // Keep these as auditable unknowns instead of inferring unsupported compatibility claims.
         return new CandidateExplanationCompatibilityFacts
         {
             LocationCompatibility = locationCompatibility,

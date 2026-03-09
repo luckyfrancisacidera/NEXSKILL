@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
@@ -14,14 +15,20 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
     public Task SaveChangesAsync(CancellationToken ct = default)
         => dbContext.SaveChangesAsync(ct);
 
-    public async Task<PagedData<JobEntity>> GetRecruiterJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default)
+    public async Task<PagedData<JobEntity>> GetRecruiterJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
     {
         var query = dbContext.Jobs.AsNoTracking().Where(x => x.RecruiterId == recruiterId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var normalizedSearch = search.Trim().ToLower();
-            query = query.Where(x => x.Title.ToLower().Contains(normalizedSearch) || x.Description.ToLower().Contains(normalizedSearch));
+            var normalizedSearch = search.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Title.ToLower().Contains(normalizedSearch) || x.Location.ToLower().Contains(normalizedSearch));
+        }
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            var normalizedDepartment = department.Trim().ToLowerInvariant();
+            query = query.Where(x => x.Department != null && x.Department.ToLower() == normalizedDepartment);
         }
 
         query = (sortBy?.ToLowerInvariant(), sortDir?.ToLowerInvariant()) switch
@@ -45,47 +52,118 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
         };
     }
 
-    public Task<List<JobEntity>> GetRecruiterJobsCreatedSinceAsync(Guid recruiterId, DateTime startDateUtc, CancellationToken ct = default)
-        => dbContext.Jobs
-            .AsNoTracking()
-            .Where(x => x.RecruiterId == recruiterId && x.CreatedAtUtc >= startDateUtc)
-            .ToListAsync(ct);
-
-    public Task<List<ResumeSubmissionEntity>> GetSubmissionsForJobsCreatedSinceAsync(IEnumerable<Guid> jobIds, DateTime startDateUtc, CancellationToken ct = default)
+    public Task<Dictionary<Guid, int>> GetHiredCountsByJobIdsAsync(IReadOnlyCollection<Guid> jobIds, CancellationToken ct = default)
     {
-        var jobIdSet = jobIds.ToHashSet();
-        if (jobIdSet.Count == 0)
+        if (jobIds.Count == 0)
         {
-            return Task.FromResult(new List<ResumeSubmissionEntity>());
+            return Task.FromResult(new Dictionary<Guid, int>());
         }
 
         return dbContext.ResumeSubmissions
             .AsNoTracking()
-            .Where(x => x.CreatedAtUtc >= startDateUtc && jobIdSet.Contains(x.JobId))
-            .ToListAsync(ct);
+            .Where(x => jobIds.Contains(x.JobId) && x.Status == ResumeSubmissionStatus.Hire)
+            .GroupBy(x => x.JobId)
+            .Select(x => new { JobId = x.Key, Count = x.Count() })
+            .ToDictionaryAsync(x => x.JobId, x => x.Count, ct);
     }
 
-    public Task<List<ApplicantScoreData>> GetApplicantScoreDataAsync(Guid recruiterId, Guid? jobId, string? search, CancellationToken ct = default)
-    {
-        var query = dbContext.ResumeSubmissions
+    public Task<int> GetHiredCountByJobIdAsync(Guid jobId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
             .AsNoTracking()
-            .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
-            .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new
-            {
-                x.job.RecruiterId,
-                Data = new ApplicantScoreData
-                {
-                    ResumeSubmissionId = x.submission.Id,
-                    ApplicantName = x.submission.FullName,
-                    ApplicantEmail = x.submission.Email,
-                    CreatedAtUtc = x.submission.CreatedAtUtc,
-                    JobId = x.submission.JobId,
-                    JobTitle = x.job.Title,
-                    Score = (int)score.FinalWeightedScore
-                }
-            })
-            .Where(x => x.RecruiterId == recruiterId && (!jobId.HasValue || x.Data.JobId == jobId.Value))
-            .Select(x => x.Data);
+            .CountAsync(x => x.JobId == jobId && x.Status == ResumeSubmissionStatus.Hire, ct);
+
+    public async Task<RecruiterDashboardFilterData> GetDashboardFilterDataAsync(Guid recruiterId, CancellationToken ct = default)
+    {
+        var recruiterJobsBaseQuery = dbContext.Jobs.AsNoTracking().Where(j => j.RecruiterId == recruiterId);
+        var departments = await recruiterJobsBaseQuery
+            .Where(j => j.Department != null && j.Department != string.Empty)
+            .Select(j => j.Department!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync(ct);
+        var jobRoles = await recruiterJobsBaseQuery
+            .Select(j => j.Title)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync(ct);
+
+        var rolesByDepartment = await recruiterJobsBaseQuery
+            .Where(j => j.Department != null && j.Department != string.Empty)
+            .Select(j => new { Department = j.Department!, j.Title })
+            .Distinct()
+            .ToListAsync(ct);
+
+        var jobRolesByDepartment = rolesByDepartment
+            .GroupBy(item => item.Department)
+            .OrderBy(group => group.Key)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<string>)group
+                    .Select(item => item.Title)
+                    .Distinct()
+                    .OrderBy(title => title)
+                    .ToList());
+
+        return new RecruiterDashboardFilterData
+        {
+            Departments = departments,
+            JobRoles = jobRoles,
+            JobRolesByDepartment = jobRolesByDepartment,
+        };
+    }
+
+    public Task<List<Guid>> GetDashboardJobIdsAsync(Guid recruiterId, string? department, string? jobRole, CancellationToken ct = default)
+    {
+        var jobsQuery = dbContext.Jobs.AsNoTracking().Where(j => j.RecruiterId == recruiterId);
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            jobsQuery = jobsQuery.Where(j => j.Department == department);
+        }
+
+        if (!string.IsNullOrWhiteSpace(jobRole))
+        {
+            jobsQuery = jobsQuery.Where(j => j.Title == jobRole);
+        }
+
+        return jobsQuery.Select(j => j.Id).ToListAsync(ct);
+    }
+
+    public Task<List<ResumeSubmissionEntity>> GetDashboardApplicationsAsync(IReadOnlyCollection<Guid> jobIds, DateTime? startUtc, DateTime? endExclusiveUtc, CancellationToken ct = default)
+    {
+        if (jobIds.Count == 0)
+        {
+            return Task.FromResult(new List<ResumeSubmissionEntity>());
+        }
+
+        var query = dbContext.ResumeSubmissions.AsNoTracking().Where(s => jobIds.Contains(s.JobId));
+        if (startUtc.HasValue)
+        {
+            query = query.Where(s => s.CreatedAtUtc >= startUtc.Value);
+        }
+
+        if (endExclusiveUtc.HasValue)
+        {
+            query = query.Where(s => s.CreatedAtUtc < endExclusiveUtc.Value);
+        }
+
+        return query.ToListAsync(ct);
+    }
+
+    public Task<Dictionary<Guid, (string Title, string Department)>> GetJobLookupAsync(Guid recruiterId, CancellationToken ct = default)
+        => dbContext.Jobs.AsNoTracking()
+            .Where(j => j.RecruiterId == recruiterId)
+            .Select(j => new { j.Id, j.Title, Department = j.Department ?? "Unassigned" })
+            .ToDictionaryAsync(j => j.Id, j => ValueTuple.Create(j.Title, j.Department), ct);
+
+    public Task<List<ApplicantScoreData>> GetApplicantScoreDataAsync(Guid recruiterId, string? department, string? search, CancellationToken ct = default)
+    {
+        var query = BuildApplicantScoreQuery(recruiterId);
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            query = query.Where(x => x.JobDepartment == department);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -99,15 +177,66 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
         return query.OrderByDescending(x => x.CreatedAtUtc).ToListAsync(ct);
     }
 
-    public Task<List<JobFilterData>> GetJobFiltersAsync(Guid recruiterId, CancellationToken ct = default)
-        => dbContext.Jobs
+    public Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => BuildApplicantScoreQuery(recruiterId)
+            .FirstOrDefaultAsync(x => x.ResumeSubmissionId == submissionId, ct);
+
+    public Task<List<JobFilterData>> GetJobFiltersAsync(Guid recruiterId, string? department, CancellationToken ct = default)
+    {
+        var query = dbContext.Jobs
             .AsNoTracking()
-            .Where(x => x.RecruiterId == recruiterId)
-            .OrderBy(x => x.Title)
+            .Where(x => x.RecruiterId == recruiterId && x.Status == JobStatus.Published)
             .Select(x => new JobFilterData
             {
                 Id = x.Id,
                 Title = x.Title,
+                Department = x.Department ?? "Unassigned",
+            });
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            query = query.Where(x => x.Department == department);
+        }
+
+        return query.OrderBy(x => x.Title).ToListAsync(ct);
+    }
+
+    public Task<string?> GetParsedResumeJsonAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Where(s => s.Id == submissionId)
+            .Where(s => dbContext.Jobs.Any(j => j.Id == s.JobId && j.RecruiterId == recruiterId))
+            .Select(s => s.ParsedResumeJson)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<ApplicantStageContextData?> GetApplicantStageContextAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(s => s.Id == submissionId)
+            .Join(dbContext.Jobs, s => s.JobId, j => j.Id, (submission, job) => new ApplicantStageContextData
+            {
+                Submission = submission,
+                Job = job,
             })
-            .ToListAsync(ct);
+            .FirstOrDefaultAsync(x => x.Job.RecruiterId == recruiterId, ct);
+
+    public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
+        => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+
+    private IQueryable<ApplicantScoreData> BuildApplicantScoreQuery(Guid recruiterId)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
+            .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new ApplicantScoreData
+            {
+                ResumeSubmissionId = x.submission.Id,
+                ApplicantName = x.submission.FullName,
+                ApplicantEmail = x.submission.Email,
+                CreatedAtUtc = x.submission.CreatedAtUtc,
+                JobId = x.submission.JobId,
+                Status = x.submission.Status,
+                JobTitle = x.job.Title,
+                JobDepartment = x.job.Department ?? "Unassigned",
+                Score = (decimal)score.FinalWeightedScore
+            })
+            .Where(x => dbContext.Jobs.Any(job => job.Id == x.JobId && job.RecruiterId == recruiterId && job.Status == JobStatus.Published));
 }
