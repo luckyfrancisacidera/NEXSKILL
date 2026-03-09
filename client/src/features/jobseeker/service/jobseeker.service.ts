@@ -13,7 +13,7 @@ import type {
   Paged,
   PublicJobsQueryParams,
   SavedJobDto,
-} from "../types/jobseeker.types";
+} from "@features/jobseeker/types";
 
 const cache = new Map<string, { expiresAt: number; value: unknown }>();
 
