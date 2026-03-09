@@ -1,11 +1,12 @@
-import type { LoaderFunctionArgs } from 'react-router-dom';
-import { redirect } from 'react-router-dom';
+import { redirect, type LoaderFunctionArgs } from 'react-router-dom';
 import { getRecruiterState } from '@features/recruiter/data/storage';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
-
+import type { DashboardGroupBy } from '@features/recruiter/types';
 import { ApiError } from '@shared/api/http';
 
-const rethrowAsRouteError = (error: unknown, fallbackMessage: string) => {
+const interviewers = ['Jordan Kim', 'Morgan Diaz', 'Sam Rivera', 'Priya Nair'];
+
+const rethrowAsRouteError = (error: unknown, fallbackMessage: string): never => {
   if (error instanceof ApiError) {
     if (error.status === 401) {
       throw redirect('/login');
@@ -24,21 +25,23 @@ const rethrowAsRouteError = (error: unknown, fallbackMessage: string) => {
   throw error;
 };
 
+/** Load recruiter dashboard metrics and trend data. */
 export const recruiterDashboardLoader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
-      return await recruiterService.getDashboardStats({
+    return await recruiterService.getDashboardStats({
       startDate: url.searchParams.get('startDate') ?? undefined,
       endDate: url.searchParams.get('endDate') ?? undefined,
       department: url.searchParams.get('department') ?? undefined,
       jobRole: url.searchParams.get('jobRole') ?? undefined,
-      groupBy: (url.searchParams.get('groupBy') as 'week' | 'month' | 'year' | 'department' | 'job' | null) ?? 'month',
+      groupBy: (url.searchParams.get('groupBy') as DashboardGroupBy | null) ?? 'month',
     });
   } catch (error) {
     rethrowAsRouteError(error, 'Unable to load recruiter dashboard.');
   }
 };
 
+/** Load paginated recruiter job posts and filter metadata. */
 export const recruiterJobsLoader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
@@ -48,7 +51,7 @@ export const recruiterJobsLoader = async ({ request }: LoaderFunctionArgs) => {
     const department = url.searchParams.get('department') ?? undefined;
     const data = await recruiterService.getRecruiterJobs({ pageNumber, pageSize, search, department });
     const dashboard = await recruiterService.getDashboardStats({ groupBy: 'month' }).catch(() => null);
-    const fallbackDepartments = Array.from(new Set(data.items.map((job) => job.department).filter(Boolean))).sort();
+    const fallbackDepartments = Array.from(new Set(data.items.map((job) => job.department).filter(Boolean))).sort() as string[];
     const departments = dashboard?.filters?.departments?.length ? dashboard.filters.departments : fallbackDepartments;
 
     return {
@@ -66,18 +69,23 @@ export const recruiterJobsLoader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+/** Load a single recruiter job detail. */
 export const recruiterJobDetailLoader = async ({ params }: LoaderFunctionArgs) => {
   try {
-      if (!params.jobId) throw new Response('Job not found', { status: 404 });
-      const job = await recruiterService.getRecruiterJob(params.jobId);
-      return { job, applicants: [], trend: [] };
-    } catch (error) {
-      rethrowAsRouteError(error, 'Unable to load job details.');
+    if (!params.jobId) {
+      throw new Response('Job not found', { status: 404 });
     }
+
+    const job = await recruiterService.getRecruiterJob(params.jobId);
+    return { job, applicants: [], trend: [] };
+  } catch (error) {
+    rethrowAsRouteError(error, 'Unable to load job details.');
+  }
 };
 
+/** Load recruiter candidates, filters, and pagination metadata. */
 export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs) => {
- try {
+  try {
     const url = new URL(request.url);
     const search = url.searchParams.get('search') ?? undefined;
     const stage = url.searchParams.get('stage') ?? 'all';
@@ -86,7 +94,6 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
     const recommendedTopPercent = Number(url.searchParams.get('recommendedTopPercent') ?? '10');
     const page = Number(url.searchParams.get('page') ?? '1');
     const pageSize = Number(url.searchParams.get('pageSize') ?? '10');
-
     const safeRecommendedTopPercent = Number.isFinite(recommendedTopPercent) ? recommendedTopPercent : 10;
     const safePage = Number.isFinite(page) ? page : 1;
     const safePageSize = Number.isFinite(pageSize) ? pageSize : 10;
@@ -125,7 +132,7 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
       departments: data.departments,
       counts: data.counts,
       recommendation: data.recommendation,
-        pagination: {
+      pagination: {
         page: data.page_number,
         pageSize: data.page_size,
         total: data.total_count,
@@ -145,14 +152,17 @@ export const recruiterCandidatesLoader = async ({ request }: LoaderFunctionArgs)
   }
 };
 
+/** Load a single candidate detail record. */
 export const recruiterCandidateDetailLoader = async ({ params }: LoaderFunctionArgs) => {
- 
   try {
-    if (!params.candidateId) throw new Response('Candidate not found', { status: 404 });
-      
-    const candidate = await recruiterService.getApplicantBySubmissionId(params.candidateId);
+    if (!params.candidateId) {
+      throw new Response('Candidate not found', { status: 404 });
+    }
 
-    if (!candidate) throw new Response('Candidate not found', { status: 404 });
+    const candidate = await recruiterService.getApplicantBySubmissionId(params.candidateId);
+    if (!candidate) {
+      throw new Response('Candidate not found', { status: 404 });
+    }
 
     return { candidate };
   } catch (error) {
@@ -160,36 +170,67 @@ export const recruiterCandidateDetailLoader = async ({ params }: LoaderFunctionA
   }
 };
 
+/** Load local interview scheduling data. */
 export const recruiterInterviewsLoader = async () => {
-  const state = getRecruiterState();
-  return {
-    interviews: state.interviews,
-    candidates: state.candidates,
-    jobs: state.jobs,
-    settings: state.settings,
-    interviewers: ['Jordan Kim', 'Morgan Diaz', 'Sam Rivera', 'Priya Nair'],
-  };
+  try {
+    const state = getRecruiterState();
+    return {
+      interviews: state.interviews,
+      candidates: state.candidates,
+      jobs: state.jobs,
+      settings: state.settings,
+      interviewers,
+    };
+  } catch (error) {
+    rethrowAsRouteError(error, 'Unable to load interviews.');
+  }
 };
 
+/** Load a single interview record. */
 export const recruiterInterviewDetailLoader = async ({ params }: LoaderFunctionArgs) => {
-  const state = getRecruiterState();
-  const interview = state.interviews.find((item) => item.id === params.interviewId);
-  if (!interview) throw new Response('Interview not found', { status: 404 });
-  return {
-    interview,
-    candidates: state.candidates,
-    jobs: state.jobs,
-    settings: state.settings,
-    interviewers: ['Jordan Kim', 'Morgan Diaz', 'Sam Rivera', 'Priya Nair'],
-  };
+  try {
+    const state = getRecruiterState();
+    const interview = state.interviews.find((item) => item.id === params.interviewId);
+
+    if (!interview) {
+      throw new Response('Interview not found', { status: 404 });
+    }
+
+    return {
+      interview,
+      candidates: state.candidates,
+      jobs: state.jobs,
+      settings: state.settings,
+      interviewers,
+    };
+  } catch (error) {
+    rethrowAsRouteError(error, 'Unable to load interview details.');
+  }
 };
 
+/** Load recruiter automation rules and audit data. */
 export const recruiterAutomationsLoader = async () => {
-  const state = getRecruiterState();
-  return { rules: state.automations, auditLog: state.auditLog, outbox: state.outbox, jobs: state.jobs };
+  try {
+    const state = getRecruiterState();
+    return {
+      rules: state.automations,
+      auditLog: state.auditLog,
+      outbox: state.outbox,
+      jobs: state.jobs,
+    };
+  } catch (error) {
+    rethrowAsRouteError(error, 'Unable to load automations.');
+  }
 };
 
+/** Load recruiter settings. */
 export const recruiterSettingsLoader = async () => {
-  const state = getRecruiterState();
-  return { settings: state.settings };
+  try {
+    const state = getRecruiterState();
+    return { settings: state.settings };
+  } catch (error) {
+    rethrowAsRouteError(error, 'Unable to load recruiter settings.');
+  }
 };
+
+

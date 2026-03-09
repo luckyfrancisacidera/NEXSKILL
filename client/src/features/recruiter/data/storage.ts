@@ -9,7 +9,7 @@ import type {
   RecruiterJob,
   RecruiterSettings,
   RecruiterState,
-} from '@features/recruiter/types/recruiter.type';
+} from '@features/recruiter/types';
 
 const KEY = 'nexskill.recruiter';
 
@@ -52,7 +52,7 @@ const seedJobs: RecruiterJob[] = [
 ];
 
 const seedCandidates: RecruiterCandidate[] = [
-  { id: 'cand-1', name: 'Alex Johnson', email: 'alex@example.com', jobId: 'job-1', stage: 'Screening', score: 86, notes: 'Strong product sense.', attachments: ['resume.pdf'], lastActivityAt: now() },
+  { id: 'cand-1', name: 'Alex Johnson', email: 'alex@example.com', jobId: 'job-1', stage: 'Shortlisted', score: 86, notes: 'Strong product sense.', attachments: ['resume.pdf'], lastActivityAt: now() },
   { id: 'cand-2', name: 'Mina Patel', email: 'mina@example.com', jobId: 'job-1', stage: 'Interview', score: 92, notes: 'Excellent leadership examples.', attachments: ['portfolio.pdf'], lastActivityAt: now() },
   { id: 'cand-3', name: 'Chris Lee', email: 'chris@example.com', jobId: 'job-2', stage: 'Applied', score: 79, notes: 'Needs stronger case studies.', attachments: ['resume.pdf'], lastActivityAt: now() },
 ];
@@ -60,9 +60,9 @@ const seedCandidates: RecruiterCandidate[] = [
 const seedAutomations: AutomationRule[] = [
   {
     id: 'rule-1', name: 'Stage Change Follow-up', enabled: true, trigger: 'candidate.stage_changed',
-    fromStage: 'Applied', toStage: 'Screening',
+    fromStage: 'Applied', toStage: 'Shortlisted',
     subject: 'Your application for {{jobTitle}} has moved forward',
-    body: 'Hi {{candidateName}},\n\nGreat news — your application moved to Screening for {{jobTitle}}.',
+    body: 'Hi {{candidateName}},\n\nGreat news - your application moved to Shortlisted for {{jobTitle}}.',
   },
   {
     id: 'rule-2', name: 'Interview Confirmation', enabled: true, trigger: 'interview.scheduled',

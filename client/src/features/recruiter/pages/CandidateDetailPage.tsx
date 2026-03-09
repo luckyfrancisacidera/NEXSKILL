@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { useLoaderData, useRevalidator } from "react-router-dom";
+import { useMemo, useState, type ReactNode } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router-dom';
 import {
   BriefcaseBusiness,
   Download,
@@ -7,85 +7,76 @@ import {
   Mail,
   MapPin,
   Phone,
-} from "lucide-react";
-import { Card } from "@shared/components/Card";
-import { ConfirmationModal } from "@shared/components/ConfirmationModal";
-import { ModalOverlay } from "@shared/components/ModalOverlay";
-import { useToast } from "@app/providers/ToastProvider";
-import {
-  recruiterService,
-  type ApplicantDetailDto,
-  type ApplicantScoreItemDto,
-  type ParsedResumeProjectDto,
-  type ParsedResumeWorkExperienceDto,
-} from "@features/recruiter/service/recruiter.service";
-import { ApiError } from "@shared/api/http";
-
-type CandidateStage = ApplicantScoreItemDto["submission_status"];
-type CandidateAction = {
-  action: string;
-  status?: CandidateStage;
-  label: string;
-  title: string;
-  message: (name: string) => string;
-  accent: "red" | "green" | "violet";
-};
+} from 'lucide-react';
+import { Card } from '@shared/components/Card';
+import { ConfirmationModal } from '@shared/components/ConfirmationModal';
+import { ModalOverlay } from '@shared/components/ModalOverlay';
+import { useToast } from '@app/providers/ToastProvider';
+import { recruiterService } from '@features/recruiter/service/recruiter.service';
+import type {
+  ApplicantDetailDto,
+  CandidateDetailAction,
+  CandidateStage,
+  ParsedResumeProjectDto,
+  ParsedResumeWorkExperienceDto,
+} from '@features/recruiter/types';
+import { ApiError } from '@shared/api/http';
 
 const stageBadgeClass: Record<CandidateStage, string> = {
-  Applied: "border-zinc-200 bg-zinc-100 text-zinc-700",
-  Recommended: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  Shortlisted: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  Interview: "border-violet-200 bg-violet-50 text-violet-700",
-  Offer: "border-amber-200 bg-amber-50 text-amber-700",
-  Hire: "border-teal-200 bg-teal-50 text-teal-700",
-  Rejected: "border-rose-200 bg-rose-50 text-rose-700",
+  Applied: 'border-zinc-200 bg-zinc-100 text-zinc-700',
+  Recommended: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+  Shortlisted: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  Interview: 'border-violet-200 bg-violet-50 text-violet-700',
+  Offer: 'border-amber-200 bg-amber-50 text-amber-700',
+  Hire: 'border-teal-200 bg-teal-50 text-teal-700',
+  Rejected: 'border-rose-200 bg-rose-50 text-rose-700',
 };
 
-const nextActionByStage: Partial<Record<CandidateStage, CandidateAction>> = {
+const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
   Recommended: {
-    action: "shortlist",
-    status: "Shortlisted",
-    label: "Shortlist",
-    title: "Shortlist candidate",
+    action: 'shortlist',
+    status: 'Shortlisted',
+    label: 'Shortlist',
+    title: 'Shortlist candidate',
     message: (name) => `Move ${name} to Shortlisted stage?`,
-    accent: "green",
+    accent: 'green',
   },
   Shortlisted: {
-    action: "set-interview",
-    status: "Interview",
-    label: "Set Interview",
-    title: "Set interview",
+    action: 'set-interview',
+    status: 'Interview',
+    label: 'Set Interview',
+    title: 'Set interview',
     message: (name) => `Move ${name} to Interview stage?`,
-    accent: "green",
+    accent: 'green',
   },
   Interview: {
-    action: "offer",
-    status: "Offer",
-    label: "Offer",
-    title: "Send offer",
+    action: 'offer',
+    status: 'Offer',
+    label: 'Offer',
+    title: 'Send offer',
     message: (name) => `Move ${name} to Offer stage?`,
-    accent: "green",
+    accent: 'green',
   },
   Offer: {
-    action: "hire",
-    status: "Hire",
-    label: "Hire",
-    title: "Hire candidate",
+    action: 'hire',
+    status: 'Hire',
+    label: 'Hire',
+    title: 'Hire candidate',
     message: (name) => `Move ${name} to Hire stage?`,
-    accent: "green",
+    accent: 'green',
   },
 };
 
 const getInitials = (name: string) =>
   name
-    .split(" ")
-    .map((part) => part[0] ?? "")
-    .join("")
+    .split(' ')
+    .map((part) => part[0] ?? '')
+    .join('')
     .slice(0, 2)
     .toUpperCase();
 
 const monthsToText = (months: number | undefined) => {
-  if (!months || months <= 0) return "Not available";
+  if (!months || months <= 0) return 'Not available';
   const years = Math.floor(months / 12);
   const remainder = months % 12;
 
@@ -96,9 +87,7 @@ const monthsToText = (months: number | undefined) => {
 
 const SectionCard = ({ title, children }: { title: string; children: ReactNode }) => (
   <Card className="p-4 sm:p-5">
-    <h3 className="border-b border-zinc-200 pb-2 text-[1.05rem] font-semibold text-zinc-800">
-      {title}
-    </h3>
+    <h3 className="border-b border-zinc-200 pb-2 text-[1.05rem] font-semibold text-zinc-800">{title}</h3>
     <div className="pt-3">{children}</div>
   </Card>
 );
@@ -107,12 +96,10 @@ const WorkExperienceCard = ({ role }: { role: ParsedResumeWorkExperienceDto }) =
   <article className="rounded-xl border border-zinc-200 bg-zinc-50/40 p-4">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div>
-        <h4 className="text-md font-semibold text-zinc-800 capitalize">{role.job_title || "Experience"}</h4>
-        <p className="text-sm text-zinc-500 capitalize">{role.company || "Company not provided"}</p>
+        <h4 className="text-md font-semibold text-zinc-800 capitalize">{role.job_title || 'Experience'}</h4>
+        <p className="text-sm text-zinc-500 capitalize">{role.company || 'Company not provided'}</p>
       </div>
-      <span className="text-sm text-zinc-500">  
-        {[role.start_date, role.end_date].filter(Boolean).join(" - ") || "Date not available"}
-      </span>
+      <span className="text-sm text-zinc-500">{[role.start_date, role.end_date].filter(Boolean).join(' - ') || 'Date not available'}</span>
     </div>
 
     {role.bullets?.length ? (
@@ -126,10 +113,7 @@ const WorkExperienceCard = ({ role }: { role: ParsedResumeWorkExperienceDto }) =
     {role.technologies?.length ? (
       <div className="mt-3 flex flex-wrap gap-2">
         {role.technologies.map((tech) => (
-          <span
-            key={`${role.job_title}-${tech}`}
-            className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs text-zinc-700"
-          >
+          <span key={`${role.job_title}-${tech}`} className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs text-zinc-700">
             {tech}
           </span>
         ))}
@@ -140,15 +124,12 @@ const WorkExperienceCard = ({ role }: { role: ParsedResumeWorkExperienceDto }) =
 
 const ProjectCard = ({ project }: { project: ParsedResumeProjectDto }) => (
   <article className="rounded-xl border border-zinc-200 p-4">
-    <h4 className="text-md font-semibold text-zinc-800">{project.name || "Untitled project"}</h4>
+    <h4 className="text-md font-semibold text-zinc-800">{project.name || 'Untitled project'}</h4>
 
     {project.technologies?.length ? (
       <div className="mt-1 flex flex-wrap gap-2">
         {project.technologies.map((tech) => (
-          <span
-            key={`${project.name}-${tech}`}
-            className="rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700"
-          >
+          <span key={`${project.name}-${tech}`} className="rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-xs text-zinc-700">
             {tech}
           </span>
         ))}
@@ -157,7 +138,6 @@ const ProjectCard = ({ project }: { project: ParsedResumeProjectDto }) => (
 
     {project.description ? <p className="mt-1 text-sm text-zinc-600">{project.description}</p> : null}
 
-
     {project.bullets?.length ? (
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
         {project.bullets.map((bullet) => (
@@ -165,54 +145,28 @@ const ProjectCard = ({ project }: { project: ParsedResumeProjectDto }) => (
         ))}
       </ul>
     ) : null}
-
   </article>
 );
 
 export const CandidateDetailPage = () => {
-  const { candidate: loaderCandidate } = useLoaderData() as {
-    candidate: ApplicantDetailDto;
-  };
-
+  const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<CandidateAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<CandidateDetailAction | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [interviewForm, setInterviewForm] = useState({
-    date: "",
-    time: "",
-    mode: "Virtual",
-    location: "",
-    notes: "",
-  });
-
-  const [offerForm, setOfferForm] = useState({
-    role: candidate.job_title,
-    packageSummary: "",
-    startDate: "",
-    message: "",
-  });
+  const [interviewForm, setInterviewForm] = useState({ date: '', time: '', mode: 'Virtual', location: '', notes: '' });
+  const [offerForm, setOfferForm] = useState({ role: candidate.job_title, packageSummary: '', startDate: '', message: '' });
 
   const { showToast } = useToast();
   const revalidator = useRevalidator();
-
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
 
-  const primaryAction = useMemo(
-    () => nextActionByStage[candidate.submission_status],
-    [candidate.submission_status],
-  );
+  const primaryAction = useMemo(() => nextActionByStage[candidate.submission_status], [candidate.submission_status]);
 
-  const runStageTransition = async (
-    action: string,
-    status: CandidateStage,
-    successTitle: string,
-    successDescription: string,
-  ) => {
+  const runStageTransition = async (action: string, status: CandidateStage, successTitle: string, successDescription: string) => {
     try {
       setIsSubmitting(true);
       const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], { action, status });
@@ -221,28 +175,18 @@ export const CandidateDetailPage = () => {
       if (itemResult && !itemResult.success) {
         throw new Error(itemResult.message);
       }
-      
+
       setCandidate((current) => ({ ...current, submission_status: status }));
-
-      showToast({
-        title: successTitle,
-        description: successDescription,
-        tone: "success",
-      });
-
+      showToast({ title: successTitle, description: successDescription, tone: 'success' });
       revalidator.revalidate();
     } catch (error) {
       const description = error instanceof ApiError
         ? ((error.data as { message?: string } | null)?.message ?? error.message)
         : error instanceof Error
           ? error.message
-          : "Unable to update candidate stage. Please try again.";
+          : 'Unable to update candidate stage. Please try again.';
 
-      showToast({
-        title: "Action failed",
-        description,
-        tone: "error",
-      });
+      showToast({ title: 'Action failed', description, tone: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -250,22 +194,16 @@ export const CandidateDetailPage = () => {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[350px_minmax(0,1fr)]">
-      <Card className="h-fit p-0 overflow-hidden">
+      <Card className="h-fit overflow-hidden p-0">
         <div className="bg-linear-to-b from-slate-50 to-white px-5 py-6">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">
-            {getInitials(candidate.applicant_name)}
-          </div>
-          <h2 className="mt-4 text-center text-md font-bold text-zinc-900">
-            {candidate.applicant_name}
-          </h2>
-          <p className="text-center text-sm text-zinc-500">
-            {personalInfo?.job_target || candidate.job_title}
-          </p>
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">{getInitials(candidate.applicant_name)}</div>
+          <h2 className="mt-4 text-center text-md font-bold text-zinc-900">{candidate.applicant_name}</h2>
+          <p className="text-center text-sm text-zinc-500">{personalInfo?.job_target || candidate.job_title}</p>
 
           <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-sm text-zinc-700">
             <p className="flex items-center gap-2"><Mail className="h-4 w-4 text-zinc-400" /> {candidate.applicant_email}</p>
-            <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-zinc-400" /> {personalInfo?.phone || "Not available"}</p>
-            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-zinc-400" /> {personalInfo?.location || "Location not provided"}</p>
+            <p className="flex items-center gap-2"><Phone className="h-4 w-4 text-zinc-400" /> {personalInfo?.phone || 'Not available'}</p>
+            <p className="flex items-center gap-2"><MapPin className="h-4 w-4 text-zinc-400" /> {personalInfo?.location || 'Location not provided'}</p>
           </div>
 
           <div className="mt-4 space-y-3 border-t border-zinc-200 pt-4">
@@ -276,18 +214,16 @@ export const CandidateDetailPage = () => {
             <div className="h-2 rounded-full bg-zinc-200">
               <div className="h-2 rounded-full bg-linear-to-r from-zinc-800 to-gray-700" style={{ width: `${Math.max(10, Math.min(100, candidate.score))}%` }} />
             </div>
-            <p className="text-xs text-zinc-500 capitalize">
-              {parsedResume?.derived?.education_max_level || "Education level unknown"} · {monthsToText(parsedResume?.derived?.total_experience_months)} experience
-            </p>
+            <p className="text-xs text-zinc-500 capitalize">{parsedResume?.derived?.education_max_level || 'Education level unknown'} - {monthsToText(parsedResume?.derived?.total_experience_months)} experience</p>
           </div>
 
           {primaryAction ? (
             <button
               type="button"
               onClick={() => {
-                if (candidate.submission_status === "Shortlisted") {
+                if (candidate.submission_status === 'Shortlisted') {
                   setIsInterviewOpen(true);
-                } else if (candidate.submission_status === "Interview") {
+                } else if (candidate.submission_status === 'Interview') {
                   setIsOfferOpen(true);
                 } else {
                   setPendingAction(primaryAction);
@@ -313,203 +249,93 @@ export const CandidateDetailPage = () => {
           <div className="space-y-2 text-sm">
             <p className="text-zinc-600">Resume ID: <span className="font-semibold text-zinc-800">{candidate.resume_submission_id.slice(0, 8)}</span></p>
             <p className="text-zinc-600">Parsed: <span className="font-semibold text-emerald-600">Successfully</span></p>
-            <button type="button" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600">
-              <Download className="h-4 w-4" /> Download Resume
-            </button>
+            <button type="button" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600"><Download className="h-4 w-4" /> Download Resume</button>
           </div>
         </SectionCard>
 
         <SectionCard title="Recruiter Actions">
           <div className="space-y-2">
             <p className="flex items-center gap-2 text-sm text-zinc-600"><BriefcaseBusiness className="h-4 w-4" /> {candidate.job_title}</p>
-             {candidate.submission_status !== "Rejected" ? (
+            {candidate.submission_status !== 'Rejected' ? (
               <>
-                {candidate.submission_status === "Interview" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingAction({
-                        action: "shortlist",
-                        status: "Shortlisted",
-                        label: "Shortlist",
-                        title: "Shortlist candidate",
-                        message: (name) => `Move ${name} back to Shortlisted stage?`,
-                        accent: "violet",
-                      });
-                      setIsConfirmOpen(true);
-                    }}
-                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                  >
-                    Shortlist
-                  </button>
+                {candidate.submission_status === 'Interview' ? (
+                  <button type="button" onClick={() => { setPendingAction({ action: 'shortlist', status: 'Shortlisted', label: 'Shortlist', title: 'Shortlist candidate', message: (name) => `Move ${name} back to Shortlisted stage?`, accent: 'violet' }); setIsConfirmOpen(true); }} className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">Shortlist</button>
                 ) : null}
 
-                {candidate.submission_status === "Shortlisted" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPendingAction({
-                        action: "remove-shortlist",
-                        status: "Applied",
-                        label: "Remove from Shortlist",
-                        title: "Remove from shortlist",
-                        message: (name) => `Remove shortlist status for ${name}? Candidate will remain active in the pipeline.`,
-                        accent: "violet",
-                      });
-                      setIsConfirmOpen(true);
-                    }}
-                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                  >
-                    Remove from Shortlist
-                  </button>
+                {candidate.submission_status === 'Shortlisted' ? (
+                  <button type="button" onClick={() => { setPendingAction({ action: 'remove-shortlist', status: 'Applied', label: 'Remove from Shortlist', title: 'Remove from shortlist', message: (name) => `Remove shortlist status for ${name}? Candidate will remain active in the pipeline.`, accent: 'violet' }); setIsConfirmOpen(true); }} className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">Remove from Shortlist</button>
                 ) : null}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingAction({
-                      action: "reject",
-                      status: "Rejected",
-                      label: "Reject",
-                      title: "Reject candidate",
-                      message: (name) => `Are you sure you want to reject ${name}?`,
-                      accent: "red",
-                    });
-                    setIsConfirmOpen(true);
-                  }}
-                  className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
-                >
-                  Reject Candidate
-                </button>
+                <button type="button" onClick={() => { setPendingAction({ action: 'reject', status: 'Rejected', label: 'Reject', title: 'Reject candidate', message: (name) => `Are you sure you want to reject ${name}?`, accent: 'red' }); setIsConfirmOpen(true); }} className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">Reject Candidate</button>
               </>
             ) : (
-              <p className={`rounded-md border px-2 py-1 text-sm font-semibold ${stageBadgeClass[candidate.submission_status]}`}>
-                Candidate rejected
-              </p>
+              <p className={`rounded-md border px-2 py-1 text-sm font-semibold ${stageBadgeClass[candidate.submission_status]}`}>Candidate rejected</p>
             )}
           </div>
-        </SectionCard>  
+        </SectionCard>
 
         <SectionCard title="Education">
           {parsedResume?.education?.length ? (
             <div className="space-y-2 text-sm">
               {parsedResume.education.map((item, index) => (
                 <div key={`${item.degree}-${index}`} className="rounded-lg border border-zinc-200 p-3">
-                  <p className="flex items-center gap-2 font-semibold text-zinc-800 "><GraduationCap className="h-4 w-4" /> {item.degree || "Education"}</p>
-                  <p className="mt-1 text-zinc-500">{[item.start_date, item.end_date].filter(Boolean).join(" - ") || "Date not available"}</p>
+                  <p className="flex items-center gap-2 font-semibold text-zinc-800"><GraduationCap className="h-4 w-4" /> {item.degree || 'Education'}</p>
+                  <p className="mt-1 text-zinc-500">{[item.start_date, item.end_date].filter(Boolean).join(' - ') || 'Date not available'}</p>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No education extracted.</p>
-          )}
+          ) : <p className="text-sm text-zinc-500">No education extracted.</p>}
         </SectionCard>
       </Card>
 
       <div className="space-y-4">
-        {candidate.submission_status === "Shortlisted" ? (
-        <SectionCard title="Fit explanation">
-          {candidate.candidate_explanation?.strengths?.length ? (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                AI-assisted insight
-              </p>
-
-              <p className="text-sm font-semibold text-zinc-900">
-                Why this candidate is a good fit
-              </p>
-
-              {candidate.candidate_explanation.summary ? (
-                <p className="mt-1 text-sm leading-6 text-zinc-700">
-                  {candidate.candidate_explanation.summary}
-                </p>
-              ) : null}
-
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
-                {candidate.candidate_explanation.strengths.map((item, index) => (
-                  <li key={`${item}-${index}`}>{item}</li>
-                ))}
-              </ul>
-
-              {candidate.candidate_explanation.gaps?.length ? (
-                <div className="mt-4 space-y-1">
-                  <p className="text-sm font-medium text-zinc-800">Possible gaps</p>
-
-                  <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
-                    {candidate.candidate_explanation.gaps.map((item, index) => (
-                      <li key={`${item}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              <p className="mt-3 text-xs text-zinc-500">
-                These are insights based on the extracted resume
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-              <p className="text-sm text-zinc-500">
-                Explanation not available yet.
-              </p>
-            </div>
-          )}
-        </SectionCard>
-      ) : null}
+        {candidate.submission_status === 'Shortlisted' ? (
+          <SectionCard title="Fit explanation">
+            {candidate.candidate_explanation?.strengths?.length ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">AI-assisted insight</p>
+                <p className="text-sm font-semibold text-zinc-900">Why this candidate is a good fit</p>
+                {candidate.candidate_explanation.summary ? <p className="mt-1 text-sm leading-6 text-zinc-700">{candidate.candidate_explanation.summary}</p> : null}
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                  {candidate.candidate_explanation.strengths.map((item, index) => (<li key={`${item}-${index}`}>{item}</li>))}
+                </ul>
+                {candidate.candidate_explanation.gaps?.length ? (
+                  <div className="mt-4 space-y-1">
+                    <p className="text-sm font-medium text-zinc-800">Possible gaps</p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                      {candidate.candidate_explanation.gaps.map((item, index) => (<li key={`${item}-${index}`}>{item}</li>))}
+                    </ul>
+                  </div>
+                ) : null}
+                <p className="mt-3 text-xs text-zinc-500">These are insights based on the extracted resume</p>
+              </div>
+            ) : <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3"><p className="text-sm text-zinc-500">Explanation not available yet.</p></div>}
+          </SectionCard>
+        ) : null}
 
         <SectionCard title="Professional Summary">
-          {parsedResume?.summary?.length ? (
-            <p className="text-sm leading-7 text-zinc-700">{parsedResume.summary.join(" ")}</p>
-          ) : (
-            <p className="text-sm text-zinc-500">No summary extracted from parsed resume.</p>
-          )}
+          {parsedResume?.summary?.length ? <p className="text-sm leading-7 text-zinc-700">{parsedResume.summary.join(' ')}</p> : <p className="text-sm text-zinc-500">No summary extracted from parsed resume.</p>}
         </SectionCard>
 
         <SectionCard title="Skills">
-          {parsedResume?.skills?.length ? (
-            <div className="flex flex-wrap gap-2">
-              {parsedResume.skills.map((skill) => (
-                <span key={skill} className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No skills extracted.</p>
-          )}
+          {parsedResume?.skills?.length ? <div className="flex flex-wrap gap-2">{parsedResume.skills.map((skill) => <span key={skill} className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">{skill}</span>)}</div> : <p className="text-sm text-zinc-500">No skills extracted.</p>}
         </SectionCard>
 
         <SectionCard title="Work Experience">
-          {parsedResume?.work_experience?.length ? (
-            <div className="space-y-3">
-              {parsedResume.work_experience.map((role, index) => (
-                <WorkExperienceCard key={`${role.job_title}-${index}`} role={role} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No work experience extracted.</p>
-          )}
+          {parsedResume?.work_experience?.length ? <div className="space-y-3">{parsedResume.work_experience.map((role, index) => <WorkExperienceCard key={`${role.job_title}-${index}`} role={role} />)}</div> : <p className="text-sm text-zinc-500">No work experience extracted.</p>}
         </SectionCard>
 
         <SectionCard title="Projects">
-          {parsedResume?.projects?.length ? (
-            <div className="grid gap-3 lg:grid-cols-1">
-              {parsedResume.projects.map((project, index) => (
-                <ProjectCard key={`${project.name}-${index}`} project={project} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">No projects extracted.</p>
-          )}
+          {parsedResume?.projects?.length ? <div className="grid gap-3 lg:grid-cols-1">{parsedResume.projects.map((project, index) => <ProjectCard key={`${project.name}-${index}`} project={project} />)}</div> : <p className="text-sm text-zinc-500">No projects extracted.</p>}
         </SectionCard>
       </div>
 
       <ConfirmationModal
         open={isConfirmOpen}
-        title={pendingAction?.title ?? "Confirm action"}
-        message={pendingAction?.message(candidate.applicant_name) ?? "Are you sure?"}
-        confirmLabel={pendingAction?.label ?? "Confirm"}
-        accent={pendingAction?.accent ?? "violet"}
+        title={pendingAction?.title ?? 'Confirm action'}
+        message={pendingAction?.message(candidate.applicant_name) ?? 'Are you sure?'}
+        confirmLabel={pendingAction?.label ?? 'Confirm'}
+        accent={pendingAction?.accent ?? 'violet'}
         loading={isSubmitting}
         onClose={() => {
           setIsConfirmOpen(false);
@@ -529,10 +355,8 @@ export const CandidateDetailPage = () => {
           setIsConfirmOpen(false);
           const actionToRun = pendingAction;
           setPendingAction(null);
-
           const statusToRun = actionToRun.status;
           if (!statusToRun) {
-        
             return;
           }
 
@@ -540,7 +364,7 @@ export const CandidateDetailPage = () => {
             actionToRun.action,
             statusToRun,
             `Candidate ${actionToRun.label.toLowerCase()} successfully`,
-            actionToRun.action === "reject"
+            actionToRun.action === 'reject'
               ? `${candidate.applicant_name} has been marked as rejected.`
               : `${candidate.applicant_name} is now in ${statusToRun} stage.`,
           );
@@ -549,81 +373,18 @@ export const CandidateDetailPage = () => {
 
       {isInterviewOpen ? (
         <ModalOverlay onClose={() => setIsInterviewOpen(false)}>
-          <form
-            className="space-y-3 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-violet-200"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await runStageTransition(
-                "set-interview",
-                "Interview",
-                "Interview scheduled successfully",
-                "Candidate moved to interview stage.",
-              );
-              setIsInterviewOpen(false);
-            }}
-          >
+          <form className="space-y-3 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-violet-200" onSubmit={async (event) => { event.preventDefault(); await runStageTransition('set-interview', 'Interview', 'Interview scheduled successfully', 'Candidate moved to interview stage.'); setIsInterviewOpen(false); }}>
             <h3 className="text-lg font-semibold">Set Interview</h3>
             <div className="grid grid-cols-2 gap-2">
-              <input
-                required
-                type="date"
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                value={interviewForm.date}
-                onChange={(event) =>
-                  setInterviewForm((s) => ({ ...s, date: event.target.value }))
-                }
-              />
-              <input
-                required
-                type="time"
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-                value={interviewForm.time}
-                onChange={(event) =>
-                  setInterviewForm((s) => ({ ...s, time: event.target.value }))
-                }
-              />
+              <input required type="date" className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" value={interviewForm.date} onChange={(event) => setInterviewForm((state) => ({ ...state, date: event.target.value }))} />
+              <input required type="time" className="rounded-lg border border-zinc-300 px-3 py-2 text-sm" value={interviewForm.time} onChange={(event) => setInterviewForm((state) => ({ ...state, time: event.target.value }))} />
             </div>
-            <input
-              required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              placeholder="Mode (Virtual/Onsite)"
-              value={interviewForm.mode}
-              onChange={(event) =>
-                setInterviewForm((s) => ({ ...s, mode: event.target.value }))
-              }
-            />
-            <input
-              required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              placeholder="Meeting link/location"
-              value={interviewForm.location}
-              onChange={(event) =>
-                setInterviewForm((s) => ({ ...s, location: event.target.value }))
-              }
-            />
-            <textarea
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              rows={3}
-              placeholder="Notes (optional)"
-              value={interviewForm.notes}
-              onChange={(event) =>
-                setInterviewForm((s) => ({ ...s, notes: event.target.value }))
-              }
-            />
+            <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Mode (Virtual/Onsite)" value={interviewForm.mode} onChange={(event) => setInterviewForm((state) => ({ ...state, mode: event.target.value }))} />
+            <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Meeting link/location" value={interviewForm.location} onChange={(event) => setInterviewForm((state) => ({ ...state, location: event.target.value }))} />
+            <textarea className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" rows={3} placeholder="Notes (optional)" value={interviewForm.notes} onChange={(event) => setInterviewForm((state) => ({ ...state, notes: event.target.value }))} />
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold"
-                onClick={() => setIsInterviewOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-white"
-              >
-                Confirm Interview
-              </button>
+              <button type="button" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold" onClick={() => setIsInterviewOpen(false)}>Cancel</button>
+              <button type="submit" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-white">Confirm Interview</button>
             </div>
           </form>
         </ModalOverlay>
@@ -631,70 +392,15 @@ export const CandidateDetailPage = () => {
 
       {isOfferOpen ? (
         <ModalOverlay onClose={() => setIsOfferOpen(false)}>
-          <form
-            className="space-y-3 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-violet-200"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await runStageTransition(
-                "offer",
-                "Offer",
-                "Offer sent successfully",
-                "Candidate moved to offer stage.",
-              );
-              setIsOfferOpen(false);
-            }}
-          >
-            <h3 className="text-lg font-semibold z-100">Create Offer</h3>
-            <input
-              required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              placeholder="Role/title"
-              value={offerForm.role}
-              onChange={(event) =>
-                setOfferForm((s) => ({ ...s, role: event.target.value }))
-              }
-            />
-            <input
-              required
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              placeholder="Compensation/package summary"
-              value={offerForm.packageSummary}
-              onChange={(event) =>
-                setOfferForm((s) => ({ ...s, packageSummary: event.target.value }))
-              }
-            />
-            <input
-              required
-              type="date"
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              value={offerForm.startDate}
-              onChange={(event) =>
-                setOfferForm((s) => ({ ...s, startDate: event.target.value }))
-              }
-            />
-            <textarea
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-              rows={3}
-              placeholder="Message (optional)"
-              value={offerForm.message}
-              onChange={(event) =>
-                setOfferForm((s) => ({ ...s, message: event.target.value }))
-              }
-            />
+          <form className="space-y-3 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-violet-200" onSubmit={async (event) => { event.preventDefault(); await runStageTransition('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.'); setIsOfferOpen(false); }}>
+            <h3 className="text-lg font-semibold">Create Offer</h3>
+            <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Role/title" value={offerForm.role} onChange={(event) => setOfferForm((state) => ({ ...state, role: event.target.value }))} />
+            <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Compensation/package summary" value={offerForm.packageSummary} onChange={(event) => setOfferForm((state) => ({ ...state, packageSummary: event.target.value }))} />
+            <input required type="date" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" value={offerForm.startDate} onChange={(event) => setOfferForm((state) => ({ ...state, startDate: event.target.value }))} />
+            <textarea className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" rows={3} placeholder="Message (optional)" value={offerForm.message} onChange={(event) => setOfferForm((state) => ({ ...state, message: event.target.value }))} />
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold"
-                onClick={() => setIsOfferOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-white"
-              >
-                Send Offer
-              </button>
+              <button type="button" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold" onClick={() => setIsOfferOpen(false)}>Cancel</button>
+              <button type="submit" className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-semibold text-white">Send Offer</button>
             </div>
           </form>
         </ModalOverlay>
@@ -702,3 +408,4 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
+
