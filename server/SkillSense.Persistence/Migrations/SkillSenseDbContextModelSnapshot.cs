@@ -454,7 +454,46 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Bio")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExperienceSummary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("ProfessionalTitle")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ResumeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Skills")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
@@ -466,6 +505,38 @@ namespace SkillSense.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("job_seeker_profiles", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.PasswordResetPinEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Pin")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Pin", "Used");
+
+                    b.ToTable("password_reset_pins", (string)null);
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.RecruiterProfileEntity", b =>
@@ -657,6 +728,31 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("resume_submissions", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.SavedJobEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("UserId", "JobId")
+                        .IsUnique();
+
+                    b.ToTable("saved_jobs", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -730,6 +826,17 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.PasswordResetPinEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
+                        .WithMany("PasswordResetPins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.RecruiterProfileEntity", b =>
                 {
                     b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
@@ -741,13 +848,36 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.SavedJobEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.JobEntity", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
+                        .WithMany("SavedJobs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Job");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.AppUser", b =>
                 {
                     b.Navigation("AdminProfile");
 
                     b.Navigation("JobSeekerProfile");
 
+                    b.Navigation("PasswordResetPins");
+
                     b.Navigation("RecruiterProfile");
+
+                    b.Navigation("SavedJobs");
                 });
 #pragma warning restore 612, 618
         }
