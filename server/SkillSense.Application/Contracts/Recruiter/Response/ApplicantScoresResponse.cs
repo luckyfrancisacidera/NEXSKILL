@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SkillSense.Application.Contracts.Recruiter.Response
@@ -140,8 +140,14 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("message")]
         public string Message { get; set; } = string.Empty;
 
+        [JsonPropertyName("previous_status")]
+        public string? PreviousStatus { get; set; }
+
         [JsonPropertyName("new_status")]
         public string? NewStatus { get; set; }
+
+        [JsonPropertyName("candidate")]
+        public ApplicantScoreItemResponse? Candidate { get; set; }
     }
 
     public sealed class BulkUpdateApplicantStageResponse

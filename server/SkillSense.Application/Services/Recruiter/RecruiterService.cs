@@ -1,4 +1,5 @@
 using System.Text.Json;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using SkillSense.Application.Common.Jobs;
 using SkillSense.Application.Common.Recruiter;
@@ -6,6 +7,7 @@ using SkillSense.Application.Common.Text;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Domain.Entities;
@@ -14,13 +16,6 @@ using SkillSense.Persistence.Models;
 
 namespace SkillSense.Application.Services.Recruiter;
 
-/// <summary>
-/// Coordinates recruiter-facing workflows for profile management, job administration, dashboards, and applicant review.
-/// </summary>
-/// <remarks>
-/// This service preserves the existing recruiter behavior while delegating database access to persistence repositories
-/// and extracting reusable normalization and projection helpers into application common components.
-/// </remarks>
 public sealed class RecruiterService(
     IRecruiterRepository recruiterRepository,
     IJobRepository jobRepository,
@@ -28,134 +23,109 @@ public sealed class RecruiterService(
     ITextEmbeddingService embeddingService,
     IAppCacheService cacheService,
     ICandidateExplanationService candidateExplanationService,
+    IMapper mapper,
     ILogger<RecruiterService> logger) : IRecruiterService
 {
-    /// <summary>
-    /// Returns the recruiter company profile currently associated with the supplied user identifier.
-    /// </summary>
     public async Task<RecruiterProfileResponse> GetProfileAsync(Guid recruiterId, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
             ?? throw new InvalidOperationException("Recruiter profile not found.");
 
-        return new RecruiterProfileResponse
-        {
-            CompanyName = profile.CompanyName,
-            CompanyEmail = profile.CompanyEmail,
-            IsComplete = !string.IsNullOrWhiteSpace(profile.CompanyName) && !string.IsNullOrWhiteSpace(profile.CompanyEmail)
-        };
+        return mapper.Map<RecruiterProfileResponse>(profile);
     }
 
-    /// <summary>
-    /// Updates the recruiter company profile and returns the normalized response contract.
-    /// </summary>
     public async Task<RecruiterProfileResponse> UpsertProfileAsync(Guid recruiterId, RecruiterProfileRequest request, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
             ?? throw new InvalidOperationException("Recruiter profile not found.");
 
-        profile.CompanyName = request.CompanyName.Trim();
-        profile.CompanyEmail = request.CompanyEmail.Trim();
+        mapper.Map(request, profile);
         await recruiterRepository.SaveChangesAsync(ct);
 
-        return await GetProfileAsync(recruiterId, ct);
+        return mapper.Map<RecruiterProfileResponse>(profile);
     }
 
-    /// <summary>
-    /// Creates a recruiter-owned job posting and invalidates dependent cache entries.
-    /// </summary>
     public async Task<JobListItemResponse> CreateJobAsync(Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         if (string.IsNullOrWhiteSpace(request.Location)) throw new ArgumentException("location is required");
         if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
-        var embedding = await embeddingService.EmbedAsync(request.Description, ct);
 
+        var embedding = await embeddingService.EmbedAsync(request.Description, ct);
         var status = ParseStatusOrDefault(request.Status);
-        var job = new JobEntity
-        {
-            Id = Guid.NewGuid(),
-            RecruiterId = recruiterId,
-            Title = request.Title,
-            Description = request.Description,
-            DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding),
-            ResponsibilitiesText = MultilineTextNormalizer.Normalize(request.Responsibilities),
-            RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills),
-            PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills),
-            ExperienceLevel = request.ExperienceLevel,
-            MinYears = request.MinYears,
-            Education = request.Education ?? request.MinEducation,
-            Department = request.Department,
-            Benefits = request.Benefits,
-            SalaryMinPerAnnum = request.SalaryMinPerAnnum,
-            SalaryMaxPerAnnum = request.SalaryMaxPerAnnum,
-            Currency = string.IsNullOrWhiteSpace(request.Currency) ? "PHP" : request.Currency,
-            Location = request.Location,
-            Schedule = request.Schedule,
-            WorkSetup = (WorkSetup)(request.WorkSetup ?? 0),
-            EmploymentType = (EmploymentType)(request.EmploymentType ?? 0),
-            Status = status,
-            CreatedAtUtc = DateTime.UtcNow,
-            PostedDateUtc = status == JobStatus.Published ? DateTime.UtcNow : null,
-            CompanyNameSnapshot = profile.CompanyName,
-            CompanyEmailSnapshot = profile.CompanyEmail,
-            JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(request)),
-            NumberOfVacancies = request.NumberOfVacancies
-        };
+        var job = mapper.Map<JobEntity>(request);
+
+        job.Id = Guid.NewGuid();
+        job.RecruiterId = recruiterId;
+        job.DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding);
+        job.RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills);
+        job.PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills);
+        job.Currency = string.IsNullOrWhiteSpace(request.Currency) ? "PHP" : request.Currency;
+        job.Status = status;
+        job.CreatedAtUtc = DateTime.UtcNow;
+        job.PostedDateUtc = status == JobStatus.Published ? DateTime.UtcNow : null;
+        job.CompanyNameSnapshot = profile.CompanyName;
+        job.CompanyEmailSnapshot = profile.CompanyEmail;
+        job.JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(request));
+        job.NumberOfVacancies = request.NumberOfVacancies;
 
         await jobRepository.AddAsync(job, ct);
         InvalidateRecruiterCaches(recruiterId);
         cacheService.RemoveByPrefix("jobs:public:list:");
-        return Map(job, job.NumberOfVacancies);
+        return MapJob(job, job.NumberOfVacancies);
     }
 
-    /// <summary>
-    /// Updates a recruiter-owned job posting and returns the updated list item projection.
-    /// </summary>
     public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
     {
         var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
-        var embedding = await embeddingService.EmbedAsync(request.Description, ct);
+        if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
 
-        job.Title = request.Title;
-        job.Description = request.Description;
+        var embedding = await embeddingService.EmbedAsync(request.Description, ct);
+        mapper.Map(request, job);
+
         job.DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding);
-        job.ResponsibilitiesText = MultilineTextNormalizer.Normalize(request.Responsibilities);
         job.RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills);
         job.PreferredSkillsJson = JsonSerializer.Serialize(request.PreferredSkills);
-        job.ExperienceLevel = request.ExperienceLevel;
-        job.MinYears = request.MinYears;
-        job.Education = request.Education ?? request.MinEducation;
-        job.Department = request.Department;
-        job.Benefits = request.Benefits;
-        job.SalaryMinPerAnnum = request.SalaryMinPerAnnum;
-        job.SalaryMaxPerAnnum = request.SalaryMaxPerAnnum;
         job.Currency = string.IsNullOrWhiteSpace(request.Currency) ? job.Currency : request.Currency;
-        job.Location = request.Location;
-        job.Schedule = request.Schedule;
         job.WorkSetup = (WorkSetup)(request.WorkSetup ?? (int)job.WorkSetup);
         job.EmploymentType = (EmploymentType)(request.EmploymentType ?? (int)job.EmploymentType);
-        if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
         job.NumberOfVacancies = request.NumberOfVacancies;
         job.Status = ParseStatusOrDefault(request.Status);
+        job.JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(request));
 
         if (job.Status == JobStatus.Published && job.PostedDateUtc is null)
         {
             job.PostedDateUtc = DateTime.UtcNow;
         }
 
-        job.JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(request));
-
         await jobRepository.UpdateAsync(job, ct);
         InvalidateAfterJobMutation(recruiterId, job.Id);
 
         var remainingVacancies = await GetRemainingVacanciesByJobIdAsync(job.Id, job.NumberOfVacancies, ct);
-        return Map(job, remainingVacancies);
+        return MapJob(job, remainingVacancies);
     }
 
-    /// <summary>
-    /// Returns recruiter-owned jobs using the existing search, filter, sort, and paging rules.
-    /// </summary>
+    public async Task<JobListItemResponse> UpdateJobStatusAsync(Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default)
+    {
+        var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
+        if (!TryParseUpdatableStatus(request.Status, out var status))
+        {
+            logger.LogWarning("Recruiter {RecruiterId} requested invalid job status {Status} for job {JobId}", recruiterId, request.Status, jobId);
+            throw new ArgumentException("Invalid job status. Allowed values are Draft, Published, and Closed.");
+        }
+
+        job.Status = status;
+        if (status == JobStatus.Published && job.PostedDateUtc is null)
+        {
+            job.PostedDateUtc = DateTime.UtcNow;
+        }
+
+        await jobRepository.UpdateAsync(job, ct);
+        InvalidateAfterJobMutation(recruiterId, jobId);
+        var remainingVacancies = await GetRemainingVacanciesByJobIdAsync(job.Id, job.NumberOfVacancies, ct);
+        return MapJob(job, remainingVacancies);
+    }
+
     public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
     {
         var normalizedPageNumber = Math.Max(1, pageNumber);
@@ -172,7 +142,7 @@ public sealed class RecruiterService(
 
             return new PagedResult<JobListItemResponse>
             {
-                Items = page.Items.Select(item => Map(item, remainingVacanciesByJobId.TryGetValue(item.Id, out var remaining) ? remaining : item.NumberOfVacancies)).ToList(),
+                Items = page.Items.Select(item => MapJob(item, remainingVacanciesByJobId.TryGetValue(item.Id, out var remaining) ? remaining : item.NumberOfVacancies)).ToList(),
                 PageNumber = page.PageNumber,
                 PageSize = page.PageSize,
                 TotalCount = page.TotalCount,
@@ -181,9 +151,6 @@ public sealed class RecruiterService(
         });
     }
 
-    /// <summary>
-    /// Returns a single recruiter-owned job projection or <see langword="null"/> when the job is unavailable.
-    /// </summary>
     public async Task<JobListItemResponse?> GetJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct);
@@ -193,12 +160,9 @@ public sealed class RecruiterService(
         }
 
         var remainingVacancies = await GetRemainingVacanciesByJobIdAsync(job.Id, job.NumberOfVacancies, ct);
-        return Map(job, remainingVacancies);
+        return MapJob(job, remainingVacancies);
     }
 
-    /// <summary>
-    /// Deletes a recruiter-owned job and invalidates affected cache entries.
-    /// </summary>
     public async Task DeleteJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
@@ -206,32 +170,6 @@ public sealed class RecruiterService(
         InvalidateAfterJobMutation(recruiterId, jobId);
     }
 
-    /// <summary>
-    /// Publishes a recruiter-owned job without changing any existing endpoint contract behavior.
-    /// </summary>
-    public async Task PublishJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
-    {
-        var job = await jobRepository.GetByIdAsync(jobId, ct) ?? throw new KeyNotFoundException("Job not found.");
-        job.Status = JobStatus.Published;
-        job.PostedDateUtc ??= DateTime.UtcNow;
-        await jobRepository.UpdateAsync(job, ct);
-        InvalidateAfterJobMutation(recruiterId, jobId);
-    }
-
-    /// <summary>
-    /// Closes a recruiter-owned job and invalidates dependent recruiter and public cache entries.
-    /// </summary>
-    public async Task CloseJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
-    {
-        var job = await jobRepository.GetByIdAsync(jobId, ct) ?? throw new KeyNotFoundException("Job not found.");
-        job.Status = JobStatus.Closed;
-        await jobRepository.UpdateAsync(job, ct);
-        InvalidateAfterJobMutation(recruiterId, jobId);
-    }
-
-    /// <summary>
-    /// Returns dashboard metrics, trends, and filter options for recruiter analytics views.
-    /// </summary>
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
         var normalizedStartDate = startDate?.Date;
@@ -292,9 +230,6 @@ public sealed class RecruiterService(
         });
     }
 
-    /// <summary>
-    /// Returns recruiter applicant score projections, summary counts, and filter metadata.
-    /// </summary>
     public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
     {
         var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
@@ -316,31 +251,12 @@ public sealed class RecruiterService(
             ? allItemsForCounts.Where(x => x.JobId == jobId.Value).ToList()
             : allItemsForCounts;
 
-        static List<ApplicantScoreItemResponse> BuildProjected(List<ApplicantScoreData> sourceItems, int topPercent)
-        {
-            var recommendedCount = sourceItems.Count == 0
-                ? 0
-                : (int)Math.Ceiling(sourceItems.Count * (topPercent / 100d));
-
-            var recommendedIds = sourceItems
-                .OrderByDescending(x => x.Score)
-                .Take(recommendedCount)
-                .Select(x => x.ResumeSubmissionId)
-                .ToHashSet();
-
-            return sourceItems
-                .Select(x => RecruiterApplicantProjection.ToApplicantScoreItem(x, recommendedIds))
-                .ToList();
-        }
-
-        var projected = BuildProjected(allItems, topPercent);
-        var projectedForCounters = BuildProjected(allItemsForCounts, topPercent);
+        var projected = BuildProjectedApplicants(allItems, topPercent);
+        var projectedForCounters = BuildProjectedApplicants(allItemsForCounts, topPercent);
 
         var filtered = normalizedStage == "all"
             ? projected
-            : projected
-                .Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            : projected.Where(x => x.SubmissionStatus.Equals(normalizedStage, StringComparison.OrdinalIgnoreCase)).ToList();
 
         filtered = filtered
             .OrderByDescending(x => x.Score)
@@ -362,9 +278,7 @@ public sealed class RecruiterService(
             .Select(job =>
             {
                 var hasValues = projectedByJobId.TryGetValue(job.Id, out var itemsForJob);
-                var safeItems = hasValues && itemsForJob is not null
-                    ? itemsForJob
-                    : new List<ApplicantScoreItemResponse>();
+                var safeItems = hasValues && itemsForJob is not null ? itemsForJob : [];
 
                 return new ApplicantScoreJobFilterResponse
                 {
@@ -413,76 +327,56 @@ public sealed class RecruiterService(
         };
     }
 
-    /// <summary>
-    /// Returns a detailed applicant view including parsed resume JSON and generated explanation data when available.
-    /// </summary>
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
-        var baseItem = (await GetApplicantScoresAsync(recruiterId, null, null, "all", null, 10, 1, 500, ct))
-             .Items
-             .FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
-
+        var baseItem = await BuildApplicantProjectionAsync(recruiterId, submissionId, ct);
         if (baseItem is null)
         {
             return null;
         }
 
         var parsedResumeJson = await recruiterRepository.GetParsedResumeJsonAsync(recruiterId, submissionId, ct);
-
         CandidateExplanationResponse? explanation = null;
         if (baseItem.SubmissionStatus == "Shortlisted")
         {
             var explanationEntity = await candidateExplanationRepository.GetSucceededExplanationAsync(submissionId, ct);
             if (explanationEntity is not null)
             {
-                explanation = new CandidateExplanationResponse
-                {
-                    Provider = explanationEntity.Provider,
-                    Model = explanationEntity.Model,
-                    Summary = explanationEntity.Summary,
-                    Strengths = RecruiterApplicantProjection.DeserializeListOrEmpty(explanationEntity.StrengthsJson),
-                    Gaps = RecruiterApplicantProjection.DeserializeListOrEmpty(explanationEntity.GapsJson),
-                    ExplanationText = explanationEntity.ExplanationText,
-                    GeneratedAtUtc = explanationEntity.GeneratedAtUtc,
-                };
+                explanation = mapper.Map<CandidateExplanationResponse>(explanationEntity);
             }
         }
 
-        return new ApplicantDetailResponse
-        {
-            ResumeSubmissionId = baseItem.ResumeSubmissionId,
-            ApplicantName = baseItem.ApplicantName,
-            ApplicantEmail = baseItem.ApplicantEmail,
-            JobId = baseItem.JobId,
-            JobTitle = baseItem.JobTitle,
-            Score = baseItem.Score,
-            SubmissionStatus = baseItem.SubmissionStatus,
-            JobseekerStage = baseItem.JobseekerStage,
-            CreatedAtUtc = baseItem.CreatedAtUtc,
-            ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson),
-            CandidateExplanation = explanation,
-        };
+        var detail = mapper.Map<ApplicantDetailResponse>(baseItem);
+        detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
+        detail.CandidateExplanation = explanation;
+        return detail;
     }
 
-    /// <summary>
-    /// Updates the applicant stage for a single submission while preserving the original transition rules.
-    /// </summary>
-    public async Task UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
+    public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
-
         await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
         var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, submissionId, ct)
             ?? throw new KeyNotFoundException("Submission not found.");
 
-        var nextStatus = ApplicantStageTransitionPolicy.ResolveNextStatus(context.Submission.Status, action);
-        var now = DateTime.UtcNow;
+        ResumeSubmissionStatus nextStatus;
+        try
+        {
+            nextStatus = ApplicantStageTransitionPolicy.ResolveNextStatus(context.Submission.Status, action);
+        }
+        catch (InvalidStageTransitionException ex)
+        {
+            logger.LogWarning(ex, "Invalid applicant transition {Action} from {Status} for submission {SubmissionId}", action, context.Submission.Status, submissionId);
+            throw;
+        }
 
+        var now = DateTime.UtcNow;
         if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
         {
             var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(context.Job.Id, ct);
             if (hiredCount >= context.Job.NumberOfVacancies)
             {
+                logger.LogWarning("Recruiter {RecruiterId} exceeded vacancy limit while hiring submission {SubmissionId} for job {JobId}", recruiterId, submissionId, context.Job.Id);
                 throw new InvalidOperationException("Cannot hire applicant. The number of vacancies for this position has already been filled.");
             }
         }
@@ -505,11 +399,12 @@ public sealed class RecruiterService(
         }
 
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        var updated = await BuildApplicantProjectionAsync(recruiterId, submissionId, ct)
+            ?? throw new KeyNotFoundException("Submission not found after update.");
+
+        return updated;
     }
 
-    /// <summary>
-    /// Applies a single stage transition request to multiple submissions and reports per-item success or failure.
-    /// </summary>
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
@@ -520,7 +415,8 @@ public sealed class RecruiterService(
         {
             try
             {
-                await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
+                var previousStatus = await ResolveDisplayedStatusAsync(recruiterId, submissionId, ct);
+                var candidate = await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
                 {
                     Action = request.Action,
                     Status = request.Status,
@@ -531,10 +427,14 @@ public sealed class RecruiterService(
                     SubmissionId = submissionId,
                     Success = true,
                     Message = "Applicant stage updated successfully.",
+                    PreviousStatus = previousStatus,
+                    NewStatus = candidate.SubmissionStatus,
+                    Candidate = candidate,
                 });
             }
-            catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or SkillSense.Application.Exceptions.InvalidStageTransitionException)
+            catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or InvalidStageTransitionException)
             {
+                logger.LogWarning(ex, "Recruiter {RecruiterId} failed applicant action {Action} for submission {SubmissionId}", recruiterId, action, submissionId);
                 results.Add(new BulkUpdateApplicantStageResultItemResponse
                 {
                     SubmissionId = submissionId,
@@ -578,35 +478,68 @@ public sealed class RecruiterService(
         return Enum.TryParse<JobStatus>(status, true, out var parsed) ? parsed : JobStatus.Draft;
     }
 
-    private static JobListItemResponse Map(JobEntity x, int remainingVacancies)
-        => new()
+    private static bool TryParseUpdatableStatus(string? status, out JobStatus parsedStatus)
+    {
+        if (Enum.TryParse<JobStatus>(status, true, out parsedStatus) && parsedStatus is JobStatus.Draft or JobStatus.Published or JobStatus.Closed)
         {
-            Id = x.Id,
-            Title = x.Title,
-            Department = x.Department,
-            Benefits = x.Benefits,
-            SalaryMinPerAnnum = x.SalaryMinPerAnnum,
-            SalaryMaxPerAnnum = x.SalaryMaxPerAnnum,
-            Currency = x.Currency,
-            Location = x.Location,
-            Schedule = x.Schedule,
-            WorkSetup = x.WorkSetup.ToString(),
-            EmploymentType = x.EmploymentType.ToString(),
-            Status = x.Status.ToString(),
-            CompanyName = x.CompanyNameSnapshot,
-            CompanyEmail = x.CompanyEmailSnapshot,
-            Description = x.Description,
-            Responsibilities = MultilineTextNormalizer.Normalize(x.ResponsibilitiesText),
-            RequiredSkills = JsonSerializer.Deserialize<List<string>>(x.RequiredSkillsJson) ?? [],
-            PreferredSkills = JsonSerializer.Deserialize<List<string>>(x.PreferredSkillsJson) ?? [],
-            ExperienceLevel = x.ExperienceLevel,
-            MinYears = x.MinYears,
-            Education = x.Education,
-            MinEducation = x.Education,
-            PostedDateUtc = x.PostedDateUtc,
-            NumberOfVacancies = x.NumberOfVacancies,
-            RemainingVacancies = Math.Max(0, remainingVacancies)
-        };
+            return true;
+        }
+
+        parsedStatus = default;
+        return false;
+    }
+
+    private JobListItemResponse MapJob(JobEntity job, int remainingVacancies)
+    {
+        var dto = mapper.Map<JobListItemResponse>(job);
+        dto.RemainingVacancies = Math.Max(0, remainingVacancies);
+        return dto;
+    }
+
+    private List<ApplicantScoreItemResponse> BuildProjectedApplicants(List<ApplicantScoreData> sourceItems, int topPercent)
+    {
+        var recommendedIds = BuildRecommendedIds(sourceItems, topPercent);
+        return sourceItems
+            .Select(x => mapper.Map<ApplicantScoreItemResponse>(x, opt => opt.Items["recommendedIds"] = recommendedIds))
+            .ToList();
+    }
+
+    private static IReadOnlySet<Guid> BuildRecommendedIds(List<ApplicantScoreData> sourceItems, int topPercent)
+    {
+        var recommendedCount = sourceItems.Count == 0
+            ? 0
+            : (int)Math.Ceiling(sourceItems.Count * (topPercent / 100d));
+
+        return sourceItems
+            .OrderByDescending(x => x.Score)
+            .Take(recommendedCount)
+            .Select(x => x.ResumeSubmissionId)
+            .ToHashSet();
+    }
+
+    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid submissionId, CancellationToken ct)
+    {
+        var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, submissionId, ct);
+        if (source is null)
+        {
+            return null;
+        }
+
+        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = new HashSet<Guid>());
+    }
+
+    private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid submissionId, CancellationToken ct)
+    {
+        var items = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+        var recommendedIds = BuildRecommendedIds(items, 10);
+        var source = items.FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
+        if (source is null)
+        {
+            return null;
+        }
+
+        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds).SubmissionStatus;
+    }
 
     private async Task<Dictionary<Guid, int>> BuildRemainingVacanciesLookupAsync(IReadOnlyCollection<JobEntity> jobs, CancellationToken ct)
     {
