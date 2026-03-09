@@ -1,19 +1,25 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using SkillSense.Application.Contracts.Auth;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Domain.Entities;
-using SkillSense.Persistence.Data;
+using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Application.Services.Auth;
 
+/// <summary>
+/// Coordinates authentication, registration, and password reset flows for application users.
+/// </summary>
+/// <remarks>
+/// This service preserves the existing identity workflow while delegating persistence concerns to repositories.
+/// It is responsible for sanitizing user input, creating identity users, issuing tokens, and managing reset PIN lifecycle state.
+/// </remarks>
 public sealed class AuthService(
     UserManager<AppUser> userManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     ITokenService tokenService,
     IInputSanitizer sanitizer,
-    SkillSenseDbContext dbContext,
+    IAuthRepository authRepository,
     IDateTimeProvider dateTimeProvider,
     IResetPinEmailSender resetPinEmailSender) : IAuthService
 {
@@ -22,6 +28,9 @@ public sealed class AuthService(
     private readonly ITokenService _tokenService = tokenService;
     private readonly IInputSanitizer _sanitizer = sanitizer;
 
+    /// <summary>
+    /// Registers a new job seeker account and returns the generated authentication tokens.
+    /// </summary>
     public async Task<AuthResult> RegisterJobSeekerAsync(RegisterJobSeekerRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -48,6 +57,9 @@ public sealed class AuthService(
         return AuthResult.Success("Registration successful.", token, refreshToken, user.Email, user.Id.ToString(), ["JobSeeker"]);
     }
 
+    /// <summary>
+    /// Authenticates an existing user and issues a fresh access token and refresh token pair.
+    /// </summary>
     public async Task<AuthResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -64,6 +76,9 @@ public sealed class AuthService(
         return AuthResult.Success("Login successful.", token, refreshToken, user.Email, user.Id.ToString(), roles.ToArray());
     }
 
+    /// <summary>
+    /// Creates a privileged account for recruiter or administrator roles.
+    /// </summary>
     public async Task<AuthResult> CreatePrivilegedUserAsync(CreatePrivilegedUserRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -91,6 +106,9 @@ public sealed class AuthService(
         return AuthResult.Success("User created successfully.", token: null, refreshToken: null, email: user.Email, userId: user.Id.ToString(), roles: roles.ToArray());
     }
 
+    /// <summary>
+    /// Generates a one-time reset PIN, invalidates previously unused PINs, and dispatches the email notification.
+    /// </summary>
     public async Task RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -100,10 +118,10 @@ public sealed class AuthService(
         var pin = Random.Shared.Next(0, 1_000_000).ToString("D6");
         var now = dateTimeProvider.UtcNow;
 
-        var existingPins = await dbContext.PasswordResetPins.Where(x => x.UserId == user.Id && !x.Used).ToListAsync(cancellationToken);
+        var existingPins = await authRepository.GetUnusedPasswordResetPinsAsync(user.Id, cancellationToken);
         foreach (var existing in existingPins) existing.Used = true;
 
-        dbContext.PasswordResetPins.Add(new PasswordResetPinEntity
+        await authRepository.AddPasswordResetPinAsync(new PasswordResetPinEntity
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
@@ -111,32 +129,38 @@ public sealed class AuthService(
             ExpiresAtUtc = now.AddMinutes(15),
             Used = false,
             CreatedAtUtc = now,
-        });
+        }, cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        if (existingPins.Count > 0)
+        {
+            await authRepository.SaveChangesAsync(cancellationToken);
+        }
+
         await resetPinEmailSender.SendResetPinAsync(email, pin, cancellationToken);
     }
 
+    /// <summary>
+    /// Validates whether the latest reset PIN for the supplied user is still active and matches the request.
+    /// </summary>
     public async Task<bool> VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null) return false;
 
-        var pin = await dbContext.PasswordResetPins
-            .Where(x => x.UserId == user.Id)
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .FirstOrDefaultAsync(cancellationToken);
-
+        var pin = await authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
         return pin is not null && !pin.Used && pin.Pin == request.Pin && pin.ExpiresAtUtc >= dateTimeProvider.UtcNow;
     }
 
+    /// <summary>
+    /// Resets the user's password after verifying the latest PIN and marks the PIN as consumed.
+    /// </summary>
     public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
         var user = await _userManager.FindByEmailAsync(email) ?? throw new InvalidOperationException("Invalid reset request.");
 
-        var pin = await dbContext.PasswordResetPins.Where(x => x.UserId == user.Id).OrderByDescending(x => x.CreatedAtUtc).FirstOrDefaultAsync(cancellationToken);
+        var pin = await authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
         if (pin is null || pin.Used || pin.Pin != request.Pin || pin.ExpiresAtUtc < dateTimeProvider.UtcNow)
             throw new InvalidOperationException("Invalid or expired reset PIN.");
 
@@ -145,7 +169,7 @@ public sealed class AuthService(
         if (!result.Succeeded) throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
 
         pin.Used = true;
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await authRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)

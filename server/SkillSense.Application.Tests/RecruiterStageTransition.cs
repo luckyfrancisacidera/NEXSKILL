@@ -1,5 +1,5 @@
-﻿using System.Reflection;
-using SkillSense.Application.Services;
+using System.Reflection;
+using SkillSense.Application.Services.Recruiter;
 using SkillSense.Domain.Entities;
 
 namespace SkillSense.Application.Tests;
