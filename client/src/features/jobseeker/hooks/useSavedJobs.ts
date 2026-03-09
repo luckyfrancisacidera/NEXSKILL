@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 
@@ -10,7 +11,6 @@ export const useSavedJobs = (search: string) => {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   }, [search]);
 
   return {

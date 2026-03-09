@@ -12,8 +12,6 @@ import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { ApiError } from "@shared/api/http";
 
-
-
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
