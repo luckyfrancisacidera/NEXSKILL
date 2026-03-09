@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillSense.Application.Contracts.Recruiter.Request;
@@ -45,6 +45,10 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
         return Ok(response);
     }
 
+    [HttpPut("jobs/{id:guid}/status")]
+    public async Task<ActionResult<JobListItemResponse>> UpdateJobStatus(Guid id, [FromBody] UpdateJobStatusRequest request, CancellationToken ct)
+        => Ok(await recruiterService.UpdateJobStatusAsync(GetUserId(), id, request, ct));
+
     [HttpGet("jobs")]
     public async Task<ActionResult<PagedResult<JobListItemResponse>>> GetJobs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? department = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortDir = null, CancellationToken ct = default)
         => Ok(await recruiterService.GetJobsAsync(GetUserId(), pageNumber, pageSize, search, department, sortBy, sortDir, ct));
@@ -64,18 +68,12 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     }
 
     [HttpPost("jobs/{id:guid}/publish")]
-    public async Task<IActionResult> PublishJob(Guid id, CancellationToken ct)
-    {
-        await recruiterService.PublishJobAsync(GetUserId(), id, ct);
-        return NoContent();
-    }
+    public async Task<ActionResult<JobListItemResponse>> PublishJob(Guid id, CancellationToken ct)
+        => Ok(await recruiterService.UpdateJobStatusAsync(GetUserId(), id, new UpdateJobStatusRequest { Status = "Published" }, ct));
 
     [HttpPost("jobs/{id:guid}/close")]
-    public async Task<IActionResult> CloseJob(Guid id, CancellationToken ct)
-    {
-        await recruiterService.CloseJobAsync(GetUserId(), id, ct);
-        return NoContent();
-    }
+    public async Task<ActionResult<JobListItemResponse>> CloseJob(Guid id, CancellationToken ct)
+        => Ok(await recruiterService.UpdateJobStatusAsync(GetUserId(), id, new UpdateJobStatusRequest { Status = "Closed" }, ct));
 
     [HttpGet("dashboard")]
     public async Task<ActionResult<RecruiterDashboardResponse>> Dashboard([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, [FromQuery] string? department = null, [FromQuery] string? jobRole = null, [FromQuery] string? groupBy = "month", CancellationToken ct = default)
@@ -93,11 +91,8 @@ public sealed class RecruiterController(IRecruiterService recruiterService, ILog
     }
 
     [HttpPut("applicants/scores/{submissionId:guid}/status")]
-    public async Task<IActionResult> UpdateApplicantStatus(Guid submissionId, [FromBody] UpdateApplicantStageRequest request, CancellationToken ct = default)
-    {
-        await recruiterService.UpdateApplicantStatusAsync(GetUserId(), submissionId, request, ct);
-        return NoContent();
-    }
+    public async Task<ActionResult<ApplicantScoreItemResponse>> UpdateApplicantStatus(Guid submissionId, [FromBody] UpdateApplicantStageRequest request, CancellationToken ct = default)
+        => Ok(await recruiterService.UpdateApplicantStatusAsync(GetUserId(), submissionId, request, ct));
 
     [HttpPut("applicants/scores/status")]
     public async Task<ActionResult<BulkUpdateApplicantStageResponse>> UpdateApplicantStatuses([FromBody] BulkUpdateApplicantStageRequest request, CancellationToken ct = default)

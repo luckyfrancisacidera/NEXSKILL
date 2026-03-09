@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SkillSense.Application.Interfaces;
@@ -14,16 +15,11 @@ using SkillSense.Application.Services.System;
 
 namespace SkillSense.Application;
 
-/// <summary>
-/// Registers application-layer services and orchestration components.
-/// </summary>a
 public static class ApplicationServiceRegistration
 {
-    /// <summary>
-    /// Adds application-layer dependencies required by API and background processing entry points.
-    /// </summary>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddAutoMapper(typeof(ApplicationServiceRegistration).Assembly);
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddScoped<IResumeScoringOrchestrator, ResumeEmbeddingScoringOrchestrator>();
         services.AddScoped<IResumeUploadService, ResumeUploadService>();

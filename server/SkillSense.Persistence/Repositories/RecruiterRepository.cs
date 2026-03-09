@@ -158,22 +158,7 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
 
     public Task<List<ApplicantScoreData>> GetApplicantScoreDataAsync(Guid recruiterId, string? department, string? search, CancellationToken ct = default)
     {
-        var query = dbContext.ResumeSubmissions
-            .AsNoTracking()
-            .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
-            .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new ApplicantScoreData
-            {
-                ResumeSubmissionId = x.submission.Id,
-                ApplicantName = x.submission.FullName,
-                ApplicantEmail = x.submission.Email,
-                CreatedAtUtc = x.submission.CreatedAtUtc,
-                JobId = x.submission.JobId,
-                Status = x.submission.Status,
-                JobTitle = x.job.Title,
-                JobDepartment = x.job.Department ?? "Unassigned",
-                Score = (decimal)score.FinalWeightedScore
-            })
-            .Where(x => dbContext.Jobs.Any(job => job.Id == x.JobId && job.RecruiterId == recruiterId && job.Status == JobStatus.Published));
+        var query = BuildApplicantScoreQuery(recruiterId);
 
         if (!string.IsNullOrWhiteSpace(department))
         {
@@ -191,6 +176,10 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
 
         return query.OrderByDescending(x => x.CreatedAtUtc).ToListAsync(ct);
     }
+
+    public Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => BuildApplicantScoreQuery(recruiterId)
+            .FirstOrDefaultAsync(x => x.ResumeSubmissionId == submissionId, ct);
 
     public Task<List<JobFilterData>> GetJobFiltersAsync(Guid recruiterId, string? department, CancellationToken ct = default)
     {
@@ -232,4 +221,22 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
 
     public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
         => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+
+    private IQueryable<ApplicantScoreData> BuildApplicantScoreQuery(Guid recruiterId)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
+            .Join(dbContext.ResumeScores.AsNoTracking(), x => x.submission.Id, score => score.ResumeSubmissionId, (x, score) => new ApplicantScoreData
+            {
+                ResumeSubmissionId = x.submission.Id,
+                ApplicantName = x.submission.FullName,
+                ApplicantEmail = x.submission.Email,
+                CreatedAtUtc = x.submission.CreatedAtUtc,
+                JobId = x.submission.JobId,
+                Status = x.submission.Status,
+                JobTitle = x.job.Title,
+                JobDepartment = x.job.Department ?? "Unassigned",
+                Score = (decimal)score.FinalWeightedScore
+            })
+            .Where(x => dbContext.Jobs.Any(job => job.Id == x.JobId && job.RecruiterId == recruiterId && job.Status == JobStatus.Published));
 }
