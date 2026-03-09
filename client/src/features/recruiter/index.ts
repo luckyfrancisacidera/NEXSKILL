@@ -1,5 +1,5 @@
-export * from '@features/recruiter/loaders';
-export * from '@features/recruiter/actions';
+export * from '@features/recruiter/recruiter.loaders';
+export * from '@features/recruiter/recruiter.actions';
 export * from '@features/recruiter/types';
 export * from '@features/recruiter/pages/RecruiterDashboardPage';
 export * from '@features/recruiter/pages/JobPostsPage';
