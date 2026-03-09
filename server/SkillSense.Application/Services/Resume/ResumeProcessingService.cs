@@ -1,12 +1,15 @@
-﻿using System.Text.Json;
-using SkillSense.Application.Contracts.Request;
+using SkillSense.Application.Common.Jobs;
+using SkillSense.Application.Common.Scoring;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
 
-namespace SkillSense.Application.Services;
+namespace SkillSense.Application.Services.Resume;
 
+/// <summary>
+/// Processes queued resume submissions, parses uploaded files, builds embeddings, and stores scoring results.
+/// </summary>
 public sealed class ResumeProcessingService(
     IObjectStorageService objectStorageService,
     IResumeSubmissionRepository resumeSubmissionRepository,
@@ -16,6 +19,9 @@ public sealed class ResumeProcessingService(
     IResumeEmbeddingRepository resumeEmbeddingRepository,
     IResumeScoringOrchestrator scoringOrchestrator) : IResumeProcessingService
 {
+    /// <summary>
+    /// Processes the next pending submissions up to the requested batch size.
+    /// </summary>
     public async Task<int> ProcessPendingBatchAsync(int batchSize, CancellationToken ct = default)
     {
         if (batchSize <= 0)
@@ -51,9 +57,10 @@ public sealed class ResumeProcessingService(
             await using var fileStream = await objectStorageService.DownloadAsync(submission.BlobObjectKey, ct);
             var parserVersion = Environment.GetEnvironmentVariable("DEFAULT_PARSER_VERSION");
             var parsedEnvelope = await parserClient.ParseAsync(fileStream, submission.FileName, submission.ContentType, parserVersion, ct);
-            var parsed = parsedEnvelope.ParsedResume; submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
+            var parsed = parsedEnvelope.ParsedResume;
+            submission.ParsedResumeJson = global::System.Text.Json.JsonSerializer.Serialize(parsed);
 
-            var request = BuildNormalizedJobDescription(job, submission.AppliedJobPosition);
+            var request = NormalizedJobDescriptionFactory.Create(job, submission.AppliedJobPosition);
             var result = await scoringOrchestrator.BuildAsync(submission.Id, parsed, request, ct);
 
             await resumeEmbeddingRepository.AddRangeAsync(result.Embeddings, ct);
@@ -72,47 +79,7 @@ public sealed class ResumeProcessingService(
         }
     }
 
-    private static NormalizedJobDescription BuildNormalizedJobDescription(JobEntity job, string appliedJobPosition)
-    {
-        var requiredSkills = JsonSerializer.Deserialize<List<string>>(job.RequiredSkillsJson) ?? [];
-        var preferredSkills = JsonSerializer.Deserialize<List<string>>(job.PreferredSkillsJson) ?? [];
-
-        var responsibilities = (job.ResponsibilitiesText ?? string.Empty)
-            .Split(['\n', ';', '.'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList();
-
-        return new NormalizedJobDescription
-        {
-            JobId = job.Id.ToString(),
-            Title = string.IsNullOrWhiteSpace(appliedJobPosition) ? job.Title : appliedJobPosition,
-            Description = job.Description,
-            Responsibilities = responsibilities,
-            RequiredSkills = requiredSkills,
-            PreferredSkills = preferredSkills,
-            MinimumYearsExperience = job.MinYears ?? 0,
-            MinimumEducationLevel = job.Education ?? string.Empty,
-            EducationRequirements = string.IsNullOrWhiteSpace(job.Education) ? [] : [job.Education],
-            Metadata = new Dictionary<string, string> { ["experience_level"] = job.ExperienceLevel ?? string.Empty }
-        };
-    }
-
     private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
-    {
-        var entity = new ResumeScoreEntity
-        {
-            Id = Guid.NewGuid(),
-            ResumeSubmissionId = submission.Id,
-            JobId = submission.JobId,
-            JobDescriptionText = jobDescriptionText,
-            SkillsScore = score.SectionScores.GetValueOrDefault("skills", 0f),
-            ExperienceScore = score.SectionScores.GetValueOrDefault("work_experience", 0f),
-            EducationScore = score.SectionScores.GetValueOrDefault("education", 0f),
-            SummaryScore = score.SectionScores.GetValueOrDefault("description", 0f),
-            FinalWeightedScore = score.FinalScore,
-            ScoreBreakdownJson = JsonSerializer.Serialize(score),
-            CreatedAtUtc = DateTime.UtcNow
-        };
-
-        await resumeScoreRepository.AddAsync(entity, ct);
-    }
+        => await resumeScoreRepository.AddAsync(ResumeScoreEntityFactory.Create(submission, jobDescriptionText, score), ct);
 }
+

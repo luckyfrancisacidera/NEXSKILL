@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,8 +32,11 @@ public static class ConfigurePersistenceServices
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<ICandidateExplanationRepository, CandidateExplanationRepository>();
         services.AddScoped<IJobRepository, JobRepository>();
         services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
+        services.AddScoped<IRecruiterRepository, RecruiterRepository>();
         services.AddScoped<IResumeSubmissionRepository, ResumeSubmissionRepository>();
         services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
         services.AddScoped<IResumeEmbeddingRepository, ResumeEmbeddingRepository>();

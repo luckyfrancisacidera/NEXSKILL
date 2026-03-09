@@ -1,15 +1,21 @@
-﻿using System.Text.Json;
+using System.Text.Json;
+using SkillSense.Application.Common.Jobs;
 using SkillSense.Application.Contracts.Recruiter.Request;
-using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
 
-namespace SkillSense.Application.Services;
+namespace SkillSense.Application.Services.Jobs;
 
+/// <summary>
+/// Creates job definitions from recruiter-supplied request contracts without altering existing creation behavior.
+/// </summary>
 public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingService embeddingService) : IJobService
 {
+    /// <summary>
+    /// Persists a new job posting and returns the original response contract used by the API layer.
+    /// </summary>
     public async Task<JobResponse> CreateAsync(CreateJobRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
@@ -19,7 +25,7 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
 
         var status = ParseStatusOrDefault(request.Status);
         var embedding = await embeddingService.EmbedAsync(request.Description, ct);
-        var structured = BuildNormalizedJobDescription(request);
+        var structured = NormalizedJobDescriptionFactory.Create(request);
 
         var job = new JobEntity
         {
@@ -48,23 +54,6 @@ public sealed class JobService(IJobRepository jobRepository, ITextEmbeddingServi
             Status = job.Status.ToString()
         };
     }
-
-    private static NormalizedJobDescription BuildNormalizedJobDescription(CreateJobRequest request)
-        => new()
-        {
-            Title = request.Title ?? string.Empty,
-            Description = request.Description ?? string.Empty,
-            Responsibilities = (request.Responsibilities ?? string.Empty)
-                .Split(new[] { "\n", ";", "." }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .ToList(),
-            RequiredSkills = request.RequiredSkills,
-            PreferredSkills = request.PreferredSkills,
-            MinimumYearsExperience = request.MinYears ?? 0,
-            MinimumEducationLevel = request.MinEducation ?? request.Education ?? string.Empty,
-            EducationRequirements = string.IsNullOrWhiteSpace(request.Education) ? [] : [request.Education],
-            Metadata = new Dictionary<string, string> { ["experience_level"] = request.ExperienceLevel ?? string.Empty }
-        };
-
 
     private static JobStatus ParseStatusOrDefault(string? status)
     {

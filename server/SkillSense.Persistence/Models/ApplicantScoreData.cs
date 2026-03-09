@@ -1,4 +1,6 @@
-﻿namespace SkillSense.Persistence.Models;
+using SkillSense.Domain.Entities;
+
+namespace SkillSense.Persistence.Models;
 
 public sealed class ApplicantScoreData
 {
@@ -7,7 +9,9 @@ public sealed class ApplicantScoreData
     public string? ApplicantEmail { get; init; }
     public DateTime CreatedAtUtc { get; init; }
     public Guid JobId { get; init; }
+    public ResumeSubmissionStatus Status { get; init; }
     public string JobTitle { get; init; } = string.Empty;
+    public string JobDepartment { get; init; } = "Unassigned";
     public decimal Score { get; init; }
 }
 
@@ -15,4 +19,5 @@ public sealed class JobFilterData
 {
     public Guid Id { get; init; }
     public string Title { get; init; } = string.Empty;
+    public string Department { get; init; } = "Unassigned";
 }
