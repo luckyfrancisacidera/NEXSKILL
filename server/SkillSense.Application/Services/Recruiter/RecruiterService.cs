@@ -337,7 +337,8 @@ public sealed class RecruiterService(
 
         var parsedResumeJson = await recruiterRepository.GetParsedResumeJsonAsync(recruiterId, submissionId, ct);
         CandidateExplanationResponse? explanation = null;
-        if (baseItem.SubmissionStatus == "Shortlisted")
+        var allowedStatusesForExplanation = new[] { "Shortlisted", "Interview", "Hire", "Offer" };
+        if (allowedStatusesForExplanation.Contains(baseItem.SubmissionStatus))
         {
             var explanationEntity = await candidateExplanationRepository.GetSucceededExplanationAsync(submissionId, ct);
             if (explanationEntity is not null)
