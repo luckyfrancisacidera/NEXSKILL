@@ -287,6 +287,9 @@ services/**/.pytype/
 # Cython debug symbols
 services/**/cython_debug/
 
+# .NET SDK/runtime installs
+.dotnet/
+
 # ===================================
 # COMMON / SHARED
 # ===================================
