@@ -1,16 +1,4 @@
-/**
- * Recruiter candidate detail page for reviewing parsed resume data and advancing pipeline stages.
- *
- * Main exports:
- * - `CandidateDetailPage`: Route component for a single applicant detail view.
- *
- * Usage notes:
- * - The route expects loader data shaped as `{ candidate: ApplicantDetailDto }`.
- * - Stage transition buttons intentionally follow the current recruiter workflow.
- * - Interview and offer dialogs currently collect UI-only details before moving the candidate stage.
- * - TODO: wire interview and offer form payloads into backend mutations when those APIs are finalized.
- */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 import {
   BriefcaseBusiness,
@@ -31,6 +19,7 @@ import {
 import { ProjectCard } from '@features/recruiter/pages/CandidateDetailPage/components/ProjectCard';
 import { WorkExperienceCard } from '@features/recruiter/pages/CandidateDetailPage/components/WorkExperienceCard';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
+
 import type {
   ApplicantDetailDto,
   CandidateDetailAction,
@@ -50,7 +39,17 @@ const stageBadgeClass: Record<CandidateStage, string> = {
   Rejected: 'border-rose-200 bg-rose-50 text-rose-700',
 };
 
+// Previously, the primary action map skipped "Applied", so the Shortlist button never rendered
+// for Applied candidates even though the action was valid. We now include Applied explicitly.
 const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
+  Applied: {
+    action: 'shortlist',
+    status: 'Shortlisted',
+    label: 'Shortlist',
+    title: 'Shortlist candidate',
+    message: (name) => `Move ${name} to Shortlisted stage?`,
+    accent: 'green',
+  },
   Recommended: {
     action: 'shortlist',
     status: 'Shortlisted',
@@ -112,9 +111,6 @@ const monthsToText = (months: number | undefined) => {
   return `${remainder} months`;
 };
 
-/**
- * Route component for recruiter candidate details.
- */
 export const CandidateDetailPage = () => {
   const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
@@ -142,6 +138,13 @@ export const CandidateDetailPage = () => {
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
 
+  useEffect(() => {
+    // recruiterSync removed; always trust loader data from the API
+    setCandidate(loaderCandidate);
+  }, [loaderCandidate]);
+
+
+
   const primaryAction = useMemo(
     () => nextActionByStage[candidate.submission_status],
     [candidate.submission_status],
@@ -161,13 +164,13 @@ export const CandidateDetailPage = () => {
       });
       const itemResult = result.results[0];
 
-      if (itemResult && !itemResult.success) {
-        throw new Error(itemResult.message);
+      if (!itemResult?.success || !itemResult.candidate) {
+        throw new Error(itemResult?.message ?? 'Unable to update candidate stage.');
       }
 
-      setCandidate((current) => ({ ...current, submission_status: status }));
-      showToast({ title: successTitle, description: successDescription, tone: 'success' });
+      // With recruiterSync removed, we revalidate to pull the authoritative stage from the API.
       revalidator.revalidate();
+      showToast({ title: successTitle, description: successDescription, tone: 'success' });
     } catch (error) {
       const description =
         error instanceof ApiError
@@ -529,6 +532,10 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
+
+
+
+
 
 
 

@@ -1,15 +1,4 @@
-/**
- * Recruiter job detail page for reviewing a single posting, applicant activity, and destructive actions.
- *
- * Main exports:
- * - `JobDetailPage`: Route component for the recruiter job detail experience.
- *
- * Usage notes:
- * - The route expects loader data shaped as `RecruiterJobDetailLoaderData`.
- * - URL flash params such as `?toast=created` and `?toast=updated` are consumed once.
- * - Published jobs intentionally require a second verification step before deletion.
- */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
@@ -31,19 +20,24 @@ import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
 
 const isPublishedJob = (job: JobDto) => job.status?.toLowerCase() === 'published';
 
-/**
- * Route component for a recruiter's job detail page.
- */
 export const JobDetailPage = () => {
-  const { job, applicants, trend } = useLoaderData() as RecruiterJobDetailLoaderData;
+  const { job: loaderJob, applicants, trend } = useLoaderData() as RecruiterJobDetailLoaderData;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
 
+  const [job, setJob] = useState(loaderJob);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
+
+  useEffect(() => {
+    setJob(loaderJob);
+  }, [loaderJob]);
+
+
 
   const statusAccent = getJobStatusAccent(job.status);
   const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
@@ -76,6 +70,27 @@ export const JobDetailPage = () => {
     handlers: toastHandlers,
     onCleanup: () => setSearchParams({}, { replace: true }),
   });
+
+  const updateStatus = async (status: 'Draft' | 'Published' | 'Closed') => {
+    try {
+      setIsUpdatingStatus(true);
+      const updated = await recruiterService.updateJobStatus(job.id, status);
+      setJob(updated);
+      showToast({
+        title: 'Job status updated',
+        description: `${updated.title} is now ${updated.status}.`,
+        tone: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Unable to update job status',
+        description: 'Please try again.',
+        tone: 'error',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   const deleteJob = async () => {
     try {
@@ -205,6 +220,30 @@ export const JobDetailPage = () => {
               </Link>
               <button
                 type="button"
+                onClick={() => void updateStatus('Draft')}
+                disabled={isUpdatingStatus || job.status === 'Draft'}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-base font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Move to Draft
+              </button>
+              <button
+                type="button"
+                onClick={() => void updateStatus('Published')}
+                disabled={isUpdatingStatus || job.status === 'Published'}
+                className="w-full rounded-lg border border-emerald-300 bg-white px-4 py-3 text-base font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+              >
+                Publish Job
+              </button>
+              <button
+                type="button"
+                onClick={() => void updateStatus('Closed')}
+                disabled={isUpdatingStatus || job.status === 'Closed'}
+                className="w-full rounded-lg border border-amber-300 bg-white px-4 py-3 text-base font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
+              >
+                Close Job
+              </button>
+              <button
+                type="button"
                 onClick={openDeleteFlow}
                 className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
               >
@@ -258,3 +297,5 @@ export const JobDetailPage = () => {
     </div>
   );
 };
+
+

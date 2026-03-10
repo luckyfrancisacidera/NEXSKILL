@@ -144,7 +144,9 @@ export interface BulkApplicantStageResultItemDto {
   submission_id: string;
   success: boolean;
   message: string;
-  new_status?: string;
+  previous_stage?: CandidateStage;
+  new_status?: CandidateStage;
+  candidate?: ApplicantScoreItemDto;
 }
 
 export interface BulkApplicantStageResponseDto {
@@ -154,6 +156,7 @@ export interface BulkApplicantStageResponseDto {
   success_count: number;
   failure_count: number;
   results: BulkApplicantStageResultItemDto[];
+  counts?: ApplicantStageCounts;
 }
 
 export interface CandidateFilters {
@@ -201,3 +204,5 @@ export interface CandidateDetailAction {
   message: (name: string) => string;
   accent: 'red' | 'green' | 'violet';
 }
+
+

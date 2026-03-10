@@ -62,6 +62,7 @@ export const recruiterCandidatesLoader = async ({
       });
     }
 
+    // recruiterSync removed: always return the latest candidates + counts from the API.
     return {
       candidates: data.items,
       jobs: data.jobs,
@@ -87,3 +88,4 @@ export const recruiterCandidatesLoader = async ({
     rethrowAsRouteError(error, "Unable to load candidates.");
   }
 };
+

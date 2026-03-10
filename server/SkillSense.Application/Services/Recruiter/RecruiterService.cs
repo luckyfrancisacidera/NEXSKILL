@@ -329,7 +329,7 @@ public sealed class RecruiterService(
 
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
-        var baseItem = await BuildApplicantProjectionAsync(recruiterId, submissionId, ct);
+        var baseItem = await BuildApplicantProjectionAsync(recruiterId, submissionId, null, ct);
         if (baseItem is null)
         {
             return null;
@@ -355,6 +355,7 @@ public sealed class RecruiterService(
     public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
+        logger.LogInformation("Recruiter {RecruiterId} updating submission {SubmissionId}. Action={Action}", recruiterId, submissionId, action);
         await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
         var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, submissionId, ct)
             ?? throw new KeyNotFoundException("Submission not found.");
@@ -399,7 +400,7 @@ public sealed class RecruiterService(
         }
 
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
-        var updated = await BuildApplicantProjectionAsync(recruiterId, submissionId, ct)
+        var updated = await BuildApplicantProjectionAsync(recruiterId, submissionId, null, ct)
             ?? throw new KeyNotFoundException("Submission not found after update.");
 
         return updated;
@@ -407,52 +408,180 @@ public sealed class RecruiterService(
 
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
-        var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
-        var submissionIds = request.SubmissionIds.Distinct().ToList();
-        var results = new List<BulkUpdateApplicantStageResultItemResponse>(submissionIds.Count);
+        var requestedIds = request.SubmissionIds ?? [];
+        var actionLabel = request.Action ?? request.Status ?? "unknown";
 
-        foreach (var submissionId in submissionIds)
+        logger.LogInformation("Recruiter {RecruiterId} bulk stage update requested. Action={Action} Count={Count}", recruiterId, actionLabel, requestedIds.Count);
+
+        if (requestedIds.Count == 0)
         {
-            try
-            {
-                var previousStatus = await ResolveDisplayedStatusAsync(recruiterId, submissionId, ct);
-                var candidate = await UpdateApplicantStatusAsync(recruiterId, submissionId, new UpdateApplicantStageRequest
-                {
-                    Action = request.Action,
-                    Status = request.Status,
-                }, ct);
-
-                results.Add(new BulkUpdateApplicantStageResultItemResponse
-                {
-                    SubmissionId = submissionId,
-                    Success = true,
-                    Message = "Applicant stage updated successfully.",
-                    PreviousStatus = previousStatus,
-                    NewStatus = candidate.SubmissionStatus,
-                    Candidate = candidate,
-                });
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or InvalidStageTransitionException)
-            {
-                logger.LogWarning(ex, "Recruiter {RecruiterId} failed applicant action {Action} for submission {SubmissionId}", recruiterId, action, submissionId);
-                results.Add(new BulkUpdateApplicantStageResultItemResponse
-                {
-                    SubmissionId = submissionId,
-                    Success = false,
-                    Message = ex.Message,
-                });
-            }
+            logger.LogWarning("Recruiter {RecruiterId} bulk stage update called with no submission IDs.", recruiterId);
+            return BuildBulkFailureResponse(actionLabel, requestedIds, "No submissions provided.");
         }
 
-        cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        try
+        {
+            var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
+            var submissionIds = requestedIds.Distinct().ToList();
+            var results = new List<BulkUpdateApplicantStageResultItemResponse>(submissionIds.Count);
+
+            var allItemsForStatus = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+            var recommendedIds = BuildRecommendedIds(allItemsForStatus, 10);
+            var statusById = allItemsForStatus.ToDictionary(x => x.ResumeSubmissionId, x => x.Status);
+
+            await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
+            var now = DateTime.UtcNow;
+            var reservedHiresByJobId = new Dictionary<Guid, int>();
+            var shortlistedForExplanation = new List<Guid>();
+
+            foreach (var submissionId in submissionIds)
+            {
+                var previousStatus = statusById.TryGetValue(submissionId, out var previousRaw)
+                    ? RecruiterApplicantProjection.ResolveSubmissionStatus(previousRaw, recommendedIds.Contains(submissionId))
+                    : null;
+
+                try
+                {
+                    var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, submissionId, ct)
+                        ?? throw new KeyNotFoundException("Submission not found.");
+
+                    ResumeSubmissionStatus nextStatus;
+                    try
+                    {
+                        nextStatus = ApplicantStageTransitionPolicy.ResolveNextStatus(context.Submission.Status, action);
+                    }
+                    catch (InvalidStageTransitionException ex)
+                    {
+                        logger.LogWarning(ex, "Invalid applicant transition {Action} from {Status} for submission {SubmissionId}", action, context.Submission.Status, submissionId);
+                        throw;
+                    }
+
+                    if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
+                    {
+                        if (!reservedHiresByJobId.TryGetValue(context.Job.Id, out var hiredCount))
+                        {
+                            hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(context.Job.Id, ct);
+                        }
+
+                        if (hiredCount >= context.Job.NumberOfVacancies)
+                        {
+                            logger.LogWarning("Recruiter {RecruiterId} exceeded vacancy limit while hiring submission {SubmissionId} for job {JobId}", recruiterId, submissionId, context.Job.Id);
+                            throw new InvalidOperationException("Cannot hire applicant. The number of vacancies for this position has already been filled.");
+                        }
+
+                        reservedHiresByJobId[context.Job.Id] = hiredCount + 1;
+                    }
+
+                   
+                    context.Submission.Status = nextStatus;
+                    context.Submission.UpdatedAtUtc = now;
+
+                    if (nextStatus == ResumeSubmissionStatus.Shortlisted)
+                    {
+                        shortlistedForExplanation.Add(submissionId);
+                    }
+
+                    var newStatus = RecruiterApplicantProjection.ResolveSubmissionStatus(nextStatus, recommendedIds.Contains(submissionId));
+
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = true,
+                        Message = "Applicant stage updated successfully.",
+                        PreviousStage = previousStatus,
+                        NewStatus = newStatus,
+                    });
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or InvalidStageTransitionException)
+                {
+                    logger.LogWarning(ex, "Recruiter {RecruiterId} failed applicant action {Action} for submission {SubmissionId}", recruiterId, action, submissionId);
+                    results.Add(new BulkUpdateApplicantStageResultItemResponse
+                    {
+                        SubmissionId = submissionId,
+                        Success = false,
+                        Message = ex.Message,
+                        PreviousStage = previousStatus,
+                    });
+                }
+            }
+
+            await recruiterRepository.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            foreach (var result in results.Where(x => x.Success))
+            {
+                var updatedCandidate = await BuildApplicantProjectionAsync(recruiterId, result.SubmissionId, recommendedIds, ct);
+                if (updatedCandidate is not null)
+                {
+                    result.Candidate = updatedCandidate;
+                    result.NewStatus = updatedCandidate.SubmissionStatus;
+                }
+            }
+
+            foreach (var submissionId in shortlistedForExplanation.Distinct())
+            {
+                try
+                {
+                    await candidateExplanationService.GenerateForShortlistedAsync(recruiterId, submissionId, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Shortlist succeeded but explanation generation failed for submission {SubmissionId}", submissionId);
+                }
+            }
+
+            // Recalculate counts from the database after updates so the API reflects real totals
+            // and never relies on client-side deltas that can drift or go negative.
+            var refreshedItems = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+            var projectedForCounts = BuildProjectedApplicants(refreshedItems, 10);
+            var counts = new ApplicantScoreCountsResponse
+            {
+                AllApplicants = projectedForCounts.Count,
+                Recommended = projectedForCounts.Count(x => x.SubmissionStatus == "Recommended"),
+                Shortlisted = projectedForCounts.Count(x => x.SubmissionStatus == "Shortlisted"),
+                Interview = projectedForCounts.Count(x => x.SubmissionStatus == "Interview"),
+                Offer = projectedForCounts.Count(x => x.SubmissionStatus == "Offer"),
+                Hire = projectedForCounts.Count(x => x.SubmissionStatus == "Hire"),
+            };
+
+            cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+
+            return new BulkUpdateApplicantStageResponse
+            {
+                Action = action,
+                RequestedCount = requestedIds.Count,
+                ProcessedCount = results.Count,
+                SuccessCount = results.Count(x => x.Success),
+                FailureCount = results.Count(x => !x.Success),
+                Results = results,
+                Counts = counts,
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Recruiter {RecruiterId} bulk stage update failed.", recruiterId);
+            return BuildBulkFailureResponse(actionLabel, requestedIds, "Bulk candidate stage update failed.");
+        }
+    }
+
+    private static BulkUpdateApplicantStageResponse BuildBulkFailureResponse(string action, IReadOnlyList<Guid> submissionIds, string message)
+    {
+        var results = submissionIds
+            .Select(id => new BulkUpdateApplicantStageResultItemResponse
+            {
+                SubmissionId = id,
+                Success = false,
+                Message = message,
+            })
+            .ToList();
 
         return new BulkUpdateApplicantStageResponse
         {
             Action = action,
-            RequestedCount = request.SubmissionIds.Count,
+            RequestedCount = submissionIds.Count,
             ProcessedCount = results.Count,
-            SuccessCount = results.Count(x => x.Success),
-            FailureCount = results.Count(x => !x.Success),
+            SuccessCount = 0,
+            FailureCount = results.Count,
             Results = results,
         };
     }
@@ -517,7 +646,7 @@ public sealed class RecruiterService(
             .ToHashSet();
     }
 
-    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid submissionId, CancellationToken ct)
+    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid submissionId, IReadOnlySet<Guid>? recommendedIds, CancellationToken ct)
     {
         var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, submissionId, ct);
         if (source is null)
@@ -525,7 +654,9 @@ public sealed class RecruiterService(
             return null;
         }
 
-        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = new HashSet<Guid>());
+        recommendedIds ??= BuildRecommendedIds(await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct), 10);
+
+        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds);
     }
 
     private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid submissionId, CancellationToken ct)
@@ -571,5 +702,16 @@ public sealed class RecruiterService(
         cacheService.RemoveByPrefix("jobs:public:list:");
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 

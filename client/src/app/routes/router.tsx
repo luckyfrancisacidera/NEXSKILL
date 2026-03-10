@@ -47,6 +47,7 @@ import {
   recruiterJobsLoader,
   recruiterSettingsLoader,
   runOfferAutomationAction,
+  candidatesAction,
   updateCandidateAction,
   updateJobStatusAction,
   updateRecruiterSettingsAction,
@@ -251,7 +252,7 @@ const recruiterRoutes: AppRoute = {
           index: true,
           access: "recruiterCandidates",
           loader: recruiterCandidatesLoader,
-          action: updateCandidateAction,
+          action: candidatesAction,
           element: <CandidatesPage />,
         }),
         protectedRoute({
@@ -383,5 +384,7 @@ export const router = createBrowserRouter([
   },
   { path: "*", element: <Navigate to="/login" replace /> },
 ]);
+
+
 
 
