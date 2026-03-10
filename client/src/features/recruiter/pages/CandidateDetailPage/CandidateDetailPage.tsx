@@ -377,7 +377,7 @@ export const CandidateDetailPage = () => {
       </Card>
 
       <div className="space-y-4">
-        {candidate.submission_status === 'Shortlisted' ? (
+        {(candidate.submission_status !== 'Applied' && candidate.submission_status !== 'Recommended') ? (
           <RecruiterSectionCard title="Fit explanation" variant="compact">
             {candidate.candidate_explanation?.strengths?.length ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">

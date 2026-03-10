@@ -85,7 +85,7 @@ namespace SkillSense.Application.Services.Jobseeker
             {
                 status = new
                 {
-                    applied = recentApps.TotalCount,
+                    applied = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Applied"),
                     interview = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Interview"),
                     offer = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Hire")
                 },

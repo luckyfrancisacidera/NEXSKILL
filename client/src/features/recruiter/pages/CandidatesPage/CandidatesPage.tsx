@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFetcher, useLoaderData, useRevalidator, useSubmit } from 'react-router-dom';
 
