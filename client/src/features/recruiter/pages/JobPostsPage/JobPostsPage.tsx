@@ -1,14 +1,3 @@
-/**
- * Recruiter job list page for browsing, filtering, and deleting job posts.
- *
- * Main exports:
- * - `JobPostsPage`: Route component for recruiter job management.
- *
- * Usage notes:
- * - The route expects `RecruiterJobsLoaderData` from its loader.
- * - Query-string state is the source of truth for search, department, and pagination.
- * - Deleting a published job intentionally requires a second confirmation step.
- */
 import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData, useNavigate, useNavigation, useSearchParams } from 'react-router-dom';
 
@@ -36,9 +25,6 @@ const buildJobPostsQuery = (searchParams: URLSearchParams, next: Record<string, 
   return new URLSearchParams(merged).toString();
 };
 
-/**
- * Route component for recruiter job management.
- */
 export const JobPostsPage = () => {
   const loaderData = useLoaderData() as RecruiterJobsLoaderData;
   const [searchParams] = useSearchParams();
@@ -56,6 +42,8 @@ export const JobPostsPage = () => {
   useEffect(() => {
     setJobs(loaderData.jobs);
   }, [loaderData.jobs]);
+
+
 
   const pageCount = Math.max(1, loaderData.totalPages ?? Math.ceil(loaderData.total / loaderData.pageSize));
   const currentDepartment = loaderData.filters.department ?? 'all';
@@ -220,3 +208,5 @@ export const JobPostsPage = () => {
     </div>
   );
 };
+
+

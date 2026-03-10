@@ -5,42 +5,30 @@ namespace SkillSense.Application.Common.Recruiter;
 
 internal static class ApplicantStageTransitionPolicy
 {
+    private static readonly IReadOnlySet<ResumeSubmissionStatus> ActiveStatuses = new HashSet<ResumeSubmissionStatus>
+    {
+        ResumeSubmissionStatus.Completed,
+        ResumeSubmissionStatus.Shortlisted,
+        ResumeSubmissionStatus.Interview,
+        ResumeSubmissionStatus.Offer,
+        ResumeSubmissionStatus.Hire,
+        ResumeSubmissionStatus.Rejected,
+    };
+
     private static readonly IReadOnlyDictionary<string, IReadOnlySet<ResumeSubmissionStatus>> AllowedTransitionsByAction =
         new Dictionary<string, IReadOnlySet<ResumeSubmissionStatus>>(StringComparer.OrdinalIgnoreCase)
         {
-            ["shortlist"] = new HashSet<ResumeSubmissionStatus>
-            {
-                ResumeSubmissionStatus.Completed,
-                ResumeSubmissionStatus.Shortlisted,
-                ResumeSubmissionStatus.Interview,
-            },
-            ["set-interview"] = new HashSet<ResumeSubmissionStatus>
-            {
-                ResumeSubmissionStatus.Shortlisted,
-                ResumeSubmissionStatus.Interview,
-            },
-            ["offer"] = new HashSet<ResumeSubmissionStatus>
-            {
-                ResumeSubmissionStatus.Interview,
-                ResumeSubmissionStatus.Offer,
-            },
-            ["hire"] = new HashSet<ResumeSubmissionStatus>
-            {
-                ResumeSubmissionStatus.Offer,
-                ResumeSubmissionStatus.Hire,
-            },
-            ["reject"] = new HashSet<ResumeSubmissionStatus>
-            {
-                ResumeSubmissionStatus.Completed,
-                ResumeSubmissionStatus.Shortlisted,
-                ResumeSubmissionStatus.Interview,
-                ResumeSubmissionStatus.Offer,
-                ResumeSubmissionStatus.Hire,
-            },
+            // Allow recruiters to move candidates between any active stages, including reviving rejected applicants.
+            ["shortlist"] = ActiveStatuses,
+            ["set-interview"] = ActiveStatuses,
+            ["offer"] = ActiveStatuses,
+            ["hire"] = ActiveStatuses,
+            ["reject"] = ActiveStatuses,
             ["remove-shortlist"] = new HashSet<ResumeSubmissionStatus>
             {
                 ResumeSubmissionStatus.Shortlisted,
                 ResumeSubmissionStatus.Interview,
+                ResumeSubmissionStatus.Rejected,
             },
         };
 
@@ -88,6 +76,7 @@ internal static class ApplicantStageTransitionPolicy
             "reject" => ResumeSubmissionStatus.Rejected,
             "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Shortlisted => ResumeSubmissionStatus.Completed,
             "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Interview => ResumeSubmissionStatus.Interview,
+            "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Rejected => ResumeSubmissionStatus.Completed,
             _ => throw new InvalidStageTransitionException(action, currentStatus.ToString()),
         };
     }

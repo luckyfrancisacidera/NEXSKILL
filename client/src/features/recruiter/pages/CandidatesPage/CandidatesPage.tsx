@@ -1,18 +1,5 @@
-/* eslint-disable react-hooks/preserve-manual-memoization */
-/**
- * Recruiter candidates page for filtering applicants and executing bulk stage transitions.
- *
- * Main exports:
- * - `CandidatesPage`: Route component for the recruiter candidate pipeline.
- *
- * Usage notes:
- * - The route expects `CandidatesLoaderData` from its loader.
- * - Filter state is owned by the query string so the page remains bookmarkable.
- * - Bulk actions intentionally respect stage eligibility rules before submitting.
- * - TODO: confirm whether rejected candidates should get a dedicated visible tab once backend support is finalized.
- */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFetcher, useLoaderData, useSubmit } from 'react-router-dom';
+import { useFetcher, useLoaderData, useRevalidator, useSubmit } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { BulkActionsBar } from '@features/recruiter/pages/CandidatesPage/components/BulkActionsBar';
@@ -20,6 +7,7 @@ import { CandidateStageTabs } from '@features/recruiter/pages/CandidatesPage/com
 import { CandidatesFilters } from '@features/recruiter/pages/CandidatesPage/components/CandidatesFilters';
 import { CandidatesPagination } from '@features/recruiter/pages/CandidatesPage/components/CandidatesPagination';
 import { CandidatesTable } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTable';
+
 import type {
   BulkApplicantStageResponseDto,
   CandidateBulkAction,
@@ -160,17 +148,16 @@ const getBulkActionsForStage = (stage: string, selectedCount: number): Candidate
   return [];
 };
 
-/**
- * Route component for recruiter candidates.
- */
 export const CandidatesPage = () => {
   const { candidates, jobs, departments, counts, filters, recommendation, pagination } =
     useLoaderData() as CandidatesLoaderData;
   const fetcher = useFetcher();
   const submit = useSubmit();
+  const revalidator = useRevalidator();
   const { showToast } = useToast();
   const filterFormRef = useRef<HTMLFormElement | null>(null);
 
+  // The recruiterSync cache is removed; loader data is the single source of truth.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<CandidateBulkAction | null>(null);
 
@@ -202,43 +189,44 @@ export const CandidatesPage = () => {
       return;
     }
 
-    const payload = fetcher.data as { error?: string; result?: BulkApplicantStageResponseDto };
+    const payload = fetcher.data as { error?: string } & Partial<BulkApplicantStageResponseDto>;
 
     if (payload.error) {
       showToast({ title: 'Action failed', description: payload.error, tone: 'error' });
       return;
     }
 
-    if (!payload.result) {
+    if (payload.success_count === undefined || payload.failure_count === undefined) {
       return;
     }
 
-    const { success_count, failure_count } = payload.result;
-    if (failure_count > 0 && success_count > 0) {
+    const successCount = payload.success_count;
+    const failureCount = payload.failure_count;
+
+    if (failureCount > 0 && successCount > 0) {
       showToast({
         title: 'Bulk action partially completed',
-        description: `${success_count} candidate(s) updated, ${failure_count} skipped.`,
+        description: `${successCount} candidate(s) updated, ${failureCount} skipped.`,
         tone: 'info',
       });
-      return;
-    }
-
-    if (failure_count > 0) {
-      const firstError = payload.result.results.find((item) => !item.success)?.message;
+    } else if (failureCount > 0) {
+      const firstError = payload.results?.find((item) => !item.success)?.message;
       showToast({
         title: 'Bulk action failed',
         description: firstError ?? 'No candidates were updated.',
         tone: 'error',
       });
-      return;
+    } else {
+      showToast({
+        title: 'Bulk action completed',
+        description: `${successCount} candidate(s) updated successfully.`,
+        tone: 'success',
+      });
     }
 
-    showToast({
-      title: 'Bulk action completed',
-      description: `${success_count} candidate(s) updated successfully.`,
-      tone: 'success',
-    });
-  }, [fetcher.data, fetcher.state, showToast]);
+    // With recruiterSync removed, revalidate the loader to pull fresh counts and stages.
+    revalidator.revalidate();
+  }, [fetcher.data, fetcher.state, revalidator, showToast]);
 
   const selectedIdsOnPage = useMemo(
     () => selectedIds.filter((id) => candidateIdsOnPage.has(id)),
@@ -253,6 +241,7 @@ export const CandidatesPage = () => {
   const isAllChecked = candidates.length > 0 && candidates.every((candidate) => selectedSet.has(candidate.resume_submission_id));
   const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(normalizedFilters.stage);
   const isSubmittingAction = fetcher.state !== 'idle';
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const bulkActions = useMemo(
     () => getBulkActionsForStage(normalizedFilters.stage, selectedIdsOnPage.length),
     [normalizedFilters.stage, selectedIdsOnPage.length],
@@ -320,9 +309,12 @@ export const CandidatesPage = () => {
     }
 
     formData.set('selectedIds', eligibleIds.join(','));
+    // When submitting to an index route in React Router data routes, include "?index"
+    // to disambiguate the nested route and ensure the correct action is invoked.
+    console.log('[CandidatesPage] submitting bulk action', action.action, eligibleIds);
     fetcher.submit(formData, {
       method: 'post',
-      action: '/recruiter/candidates',
+      action: '/recruiter/candidates?index',
     });
     setSelectedIds([]);
   };
@@ -428,3 +420,9 @@ export const CandidatesPage = () => {
     </Card>
   );
 };
+
+
+
+
+
+
