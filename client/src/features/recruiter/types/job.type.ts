@@ -1,4 +1,4 @@
-export type JobStatus = 'Open' | 'Paused' | 'Closed';
+export type JobStatus = 'Draft' | 'Published' | 'Closed';
 
 export type EmploymentType =
   | 'Full-Time'

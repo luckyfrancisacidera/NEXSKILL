@@ -140,8 +140,8 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("message")]
         public string Message { get; set; } = string.Empty;
 
-        [JsonPropertyName("previous_status")]
-        public string? PreviousStatus { get; set; }
+        [JsonPropertyName("previous_stage")]
+        public string? PreviousStage { get; set; }
 
         [JsonPropertyName("new_status")]
         public string? NewStatus { get; set; }
@@ -169,6 +169,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("results")]
         public IReadOnlyList<BulkUpdateApplicantStageResultItemResponse> Results { get; set; } = [];
+
+        [JsonPropertyName("counts")]
+        public ApplicantScoreCountsResponse? Counts { get; set; }
     }
 
     public sealed class UpdateApplicantStageRequest
@@ -192,3 +195,4 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         public string? Status { get; set; }
     }
 }
+

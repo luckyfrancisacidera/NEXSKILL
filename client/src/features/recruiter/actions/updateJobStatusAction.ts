@@ -6,12 +6,6 @@ import {
   getString,
 } from "@features/recruiter/actions/utils";
 
-/**
- * updateJobStatusAction
- *
- * Handles lightweight job lifecycle transitions such as publishing
- * and closing a recruiter job post.
- */
 export const updateJobStatusAction = async ({
   request,
   params,
@@ -24,13 +18,12 @@ export const updateJobStatusAction = async ({
     const formData = await request.formData();
     const status = getString(formData, "status");
 
-    if (status === "Published") {
-      await recruiterService.publishJob(params.jobId);
-    } else if (status === "Closed") {
-      await recruiterService.closeJob(params.jobId);
+    if (!status) {
+      return null;
     }
 
-    return null;
+    const job = await recruiterService.updateJobStatus(params.jobId, status);
+    return { job };
   } catch (error) {
     console.error("[Recruiter] Status update failed", error);
 
@@ -46,3 +39,4 @@ export const updateJobStatusAction = async ({
     };
   }
 };
+

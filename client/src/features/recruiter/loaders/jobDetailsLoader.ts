@@ -2,12 +2,6 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 
-/**
- * jobDetailsLoader
- *
- * Loads a single recruiter-managed job and prepares the
- * detail data required by job detail and edit routes.
- */
 export const recruiterJobDetailLoader = async ({
   params,
 }: LoaderFunctionArgs) => {

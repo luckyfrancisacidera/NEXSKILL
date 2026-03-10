@@ -34,7 +34,7 @@ const seedSettings: RecruiterSettings = {
 
 const seedJobs: RecruiterJob[] = [
   {
-    id: 'job-1', title: 'Product Manager', department: 'Product', location: 'New York, NY', type: 'Full-Time', status: 'Open',
+    id: 'job-1', title: 'Product Manager', department: 'Product', location: 'New York, NY', type: 'Full-Time', status: 'Published',
     tags: ['Roadmaps', 'B2B', 'Leadership'], salaryMin: 130000, salaryMax: 165000,
     description: {
       overview: ['Lead product strategy for the recruiting platform.'],
@@ -45,7 +45,7 @@ const seedJobs: RecruiterJob[] = [
     createdAt: now(), updatedAt: now(),
   },
   {
-    id: 'job-2', title: 'UX Designer', department: 'Design', location: 'Remote', type: 'Contract', status: 'Paused',
+    id: 'job-2', title: 'UX Designer', department: 'Design', location: 'Remote', type: 'Contract', status: 'Draft',
     tags: ['Figma', 'Research'], description: { overview: ['Design end-to-end candidate flows.'], responsibilities: ['Create wireframes'], requirements: ['Portfolio required'], benefits: ['Flexible hours'] },
     createdAt: now(), updatedAt: now(),
   },
@@ -165,3 +165,4 @@ export const runAutomations = (state: RecruiterState, context: AutomationContext
     return { ...rule, lastRunAt: now() };
   });
 };
+
