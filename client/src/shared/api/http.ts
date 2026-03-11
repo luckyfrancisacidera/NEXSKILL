@@ -21,6 +21,23 @@ export const http = axios.create({
   timeout: 10_000,
 });
 
+const requestContext: {
+  companyId: string | null;
+  recruiterProfileId: string | null;
+} = {
+  companyId: null,
+  recruiterProfileId: null,
+};
+
+export const setActiveCompanyHeader = (companyId: string | null) => {
+  requestContext.companyId = companyId;
+};
+
+export const setActiveRecruiterProfileHeader = (
+  recruiterProfileId: string | null,
+) => {
+  requestContext.recruiterProfileId = recruiterProfileId;
+};
 
 interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -43,6 +60,23 @@ const refreshAccessToken = async () => {
   await refreshPromise;
 };
 
+http.interceptors.request.use((config) => {
+  config.headers = config.headers ?? {};
+
+  if (requestContext.companyId) {
+    config.headers["X-Company-Id"] = requestContext.companyId;
+  } else {
+    delete config.headers["X-Company-Id"];
+  }
+
+  if (requestContext.recruiterProfileId) {
+    config.headers["X-Recruiter-Profile-Id"] = requestContext.recruiterProfileId;
+  } else {
+    delete config.headers["X-Recruiter-Profile-Id"];
+  }
+
+  return config;
+});
 
 http.interceptors.response.use(
   (response) => response,
@@ -64,7 +98,6 @@ http.interceptors.response.use(
         return Promise.reject(new ApiError("Session expired. Please log in again.", 401));
       }
     }
-
 
     const responseData = error.response?.data as
       | { message?: string }

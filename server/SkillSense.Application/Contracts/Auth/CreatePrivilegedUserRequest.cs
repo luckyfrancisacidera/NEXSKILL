@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace SkillSense.Application.Contracts.Auth;
 
@@ -11,6 +11,8 @@ public sealed class CreatePrivilegedUserRequest
     public string Password { get; set; } = string.Empty;
 
     [Required]
-    [RegularExpression("^(Recruiter|Admin)$", ErrorMessage = "Role must be Recruiter or Admin.")]
+    [RegularExpression("^(Recruiter|Admin|CompanyAdmin|SuperAdmin)$", ErrorMessage = "Role must be Recruiter, Admin, CompanyAdmin, or SuperAdmin.")]
     public string Role { get; set; } = string.Empty;
+
+    public Guid? CompanyId { get; set; }
 }

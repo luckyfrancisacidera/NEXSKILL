@@ -4,6 +4,7 @@ export type AppRouteKey =
   | "dashboard"
   | "jobs"
   | "applications"
+  | "offers"
   | "messages"
   | "saved"
   | "profile"
@@ -14,23 +15,24 @@ export type AppRouteKey =
   | "recruiterInterviews"
   | "recruiterAutomations"
   | "recruiterSettings"
-  | "adminDashboard"
-  | "adminUsers";
+  | "superAdminDashboard"
+  | "companyAdminDashboard";
 
 export const routeAccess: Record<AppRouteKey, Role[]> = {
-  dashboard: ["jobseeker", "admin"],
-  jobs: ["jobseeker", "admin"],
-  applications: ["jobseeker", "admin"],
-  messages: ["jobseeker", "admin"],
-  saved: ["jobseeker", "admin"],
-  profile: ["jobseeker", "admin"],
-  settings: ["jobseeker", "recruiter", "admin"],
-  recruiterDashboard: ["recruiter", "admin"],
-  recruiterJobs: ["recruiter", "admin"],
-  recruiterCandidates: ["recruiter", "admin"],
-  recruiterInterviews: ["recruiter", "admin"],
-  recruiterAutomations: ["recruiter", "admin"],
-  recruiterSettings: ["recruiter", "admin"],
-  adminDashboard: ["admin"],
-  adminUsers: ["admin"],
+  dashboard: ["jobseeker"],
+  jobs: ["jobseeker"],
+  applications: ["jobseeker"],
+  offers: ["jobseeker"],
+  messages: ["jobseeker"],
+  saved: ["jobseeker"],
+  profile: ["jobseeker"],
+  settings: ["jobseeker", "recruiter"],
+  recruiterDashboard: ["recruiter"],
+  recruiterJobs: ["recruiter"],
+  recruiterCandidates: ["recruiter"],
+  recruiterInterviews: ["recruiter"],
+  recruiterAutomations: ["recruiter"],
+  recruiterSettings: ["recruiter"],
+  superAdminDashboard: ["admin", "superAdmin"],
+  companyAdminDashboard: ["companyAdmin"],
 };

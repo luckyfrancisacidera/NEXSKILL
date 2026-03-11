@@ -1,5 +1,4 @@
 using AutoMapper;
-using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Domain.Entities;
 
@@ -10,16 +9,13 @@ public sealed class RecruiterMappingProfile : Profile
     public RecruiterMappingProfile()
     {
         CreateMap<RecruiterProfileEntity, RecruiterProfileResponse>()
+            .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.CompanyId, opt => opt.MapFrom(src => src.CompanyId))
+            .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Company.Name))
+            .ForMember(dest => dest.CompanyEmail, opt => opt.MapFrom(src => src.Company.PrimaryEmail))
             .ForMember(dest => dest.IsComplete, opt => opt.MapFrom(src =>
-                !string.IsNullOrWhiteSpace(src.CompanyName) &&
-                !string.IsNullOrWhiteSpace(src.CompanyEmail)));
-
-        CreateMap<RecruiterProfileRequest, RecruiterProfileEntity>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.UserId, opt => opt.Ignore())
-            .ForMember(dest => dest.User, opt => opt.Ignore())
-            .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.CompanyName.Trim()))
-            .ForMember(dest => dest.CompanyEmail, opt => opt.MapFrom(src => src.CompanyEmail.Trim()))
-            .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore());
+                src.CompanyId != Guid.Empty &&
+                src.Company != null &&
+                !string.IsNullOrWhiteSpace(src.Company.Name)));
     }
 }

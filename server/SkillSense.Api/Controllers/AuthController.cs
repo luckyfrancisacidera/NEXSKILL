@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using SkillSense.Api.Security;
+using SkillSense.Application.Common;
 using SkillSense.Application.Contracts.Auth;
 using SkillSense.Application.Interfaces.Auth;
 
@@ -19,7 +21,6 @@ public sealed class AuthController(
     private readonly ITokenService _tokenService = tokenService;
     private readonly UserManager<SkillSense.Domain.Entities.AppUser> _userManager = userManager;
     private readonly IConfiguration _configuration = configuration;
-
 
     [HttpPost("register")]
     [AllowAnonymous]
@@ -82,8 +83,6 @@ public sealed class AuthController(
         return Ok(new { message = "Token refreshed." });
     }
 
-
-
     [HttpPost("request-password-reset")]
     [AllowAnonymous]
     public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request, CancellationToken cancellationToken)
@@ -108,6 +107,7 @@ public sealed class AuthController(
         await _authService.ResetPasswordAsync(request, cancellationToken);
         return Ok(new { message = "Password reset successful." });
     }
+
     [HttpPost("logout")]
     [Authorize]
     public IActionResult Logout()
@@ -123,7 +123,18 @@ public sealed class AuthController(
     {
         if (User.Identity?.IsAuthenticated != true)
         {
-            return Ok(new { isAuthenticated = false, userId = (string?)null, email = (string?)null, roles = Array.Empty<string>() });
+            return Ok(new
+            {
+                isAuthenticated = false,
+                userId = (string?)null,
+                email = (string?)null,
+                role = (string?)null,
+                roles = Array.Empty<string>(),
+                activeCompanyId = (Guid?)null,
+                activeRecruiterProfileId = (Guid?)null,
+                companyIds = Array.Empty<Guid>(),
+                recruiterProfileIds = Array.Empty<Guid>(),
+            });
         }
 
         var roles = User.Claims
@@ -132,12 +143,31 @@ public sealed class AuthController(
             .Distinct()
             .ToArray();
 
+        var companyIds = User.FindAll(SkillSenseClaimTypes.CompanyIds)
+            .Select(claim => Guid.TryParse(claim.Value, out var companyId) ? companyId : (Guid?)null)
+            .Where(value => value.HasValue)
+            .Select(value => value!.Value)
+            .Distinct()
+            .ToArray();
+
+        var recruiterProfileIds = User.FindAll(SkillSenseClaimTypes.RecruiterProfileIds)
+            .Select(claim => Guid.TryParse(claim.Value, out var recruiterProfileId) ? recruiterProfileId : (Guid?)null)
+            .Where(value => value.HasValue)
+            .Select(value => value!.Value)
+            .Distinct()
+            .ToArray();
+
         return Ok(new
         {
             isAuthenticated = true,
-            userId = User.FindFirst("userId")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            userId = User.FindFirst(SkillSenseClaimTypes.UserId)?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value,
-            roles
+            role = CurrentUserContext.GetRole(User),
+            roles,
+            activeCompanyId = CurrentUserContext.GetActiveCompanyId(HttpContext),
+            activeRecruiterProfileId = CurrentUserContext.GetActiveRecruiterProfileId(HttpContext),
+            companyIds,
+            recruiterProfileIds,
         });
     }
 

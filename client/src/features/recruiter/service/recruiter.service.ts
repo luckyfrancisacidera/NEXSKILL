@@ -2,6 +2,7 @@ export type { JobDto, Paged } from '@features/recruiter/types';
 import { http } from '@shared/api/http';
 import type {
   ApplicantDetailDto,
+  ApplicantScoreItemDto,
   ApplicantScoresDto,
   BulkApplicantStageResponseDto,
   DashboardDto,
@@ -119,6 +120,20 @@ export const recruiterService = {
         submission_ids: submissionIds,
         ...payload,
       },
+    );
+    return response.data;
+  },
+
+  async sendOffer(submissionId: string): Promise<ApplicantScoreItemDto> {
+    const response = await http.post<ApplicantScoreItemDto>(
+      `/api/recruiter/applicants/${submissionId}/offer`,
+    );
+    return response.data;
+  },
+
+  async markHired(submissionId: string): Promise<ApplicantScoreItemDto> {
+    const response = await http.post<ApplicantScoreItemDto>(
+      `/api/recruiter/applicants/${submissionId}/hire`,
     );
     return response.data;
   },

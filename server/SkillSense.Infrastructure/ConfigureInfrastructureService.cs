@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
@@ -34,17 +34,17 @@ public static class ConfigureInfrastructureService
         });
 
         services
+            .AddOptions<CloudflareR2Options>()
+            .Bind(configuration.GetSection(CloudflareR2Options.SectionName))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.AccountId), "Missing Cloudflare R2 AccountId")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.AccessKeyId), "Missing Cloudflare R2 AccessKeyId")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.SecretAccessKey), "Missing Cloudflare R2 SecretAccessKey")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "Missing Cloudflare R2 BucketName")
+            .ValidateOnStart();
 
-        .AddOptions<CloudflareR2Options>()
-        .Bind(configuration.GetSection(CloudflareR2Options.SectionName))
-        .Validate(o => !string.IsNullOrWhiteSpace(o.AccountId), "Missing Cloudflare R2 AccountId")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.AccessKeyId), "Missing Cloudflare R2 AccessKeyId")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.SecretAccessKey), "Missing Cloudflare R2 SecretAccessKey")
-        .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "Missing Cloudflare R2 BucketName")
-        .ValidateOnStart();
-            services.AddSingleton<IObjectStorageService, CloudflareR2StorageService>();
-
+        services.AddSingleton<IObjectStorageService, CloudflareR2StorageService>();
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IInterviewCalendarService, InterviewCalendarService>();
         services.AddHttpClient<IResetPinEmailSender, MyMailResetPinEmailSender>();
 
         services

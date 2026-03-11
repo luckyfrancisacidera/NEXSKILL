@@ -54,10 +54,28 @@ namespace SkillSense.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "companies",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    PrimaryEmail = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_companies", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "jobs",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     RecruiterId = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
@@ -133,6 +151,7 @@ namespace SkillSense.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     ContentType = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     BlobObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
@@ -205,6 +224,7 @@ namespace SkillSense.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -304,6 +324,44 @@ namespace SkillSense.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "interviews",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RecruiterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobSeekerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ScheduledDateTimeUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LocationOrMeetingLink = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_interviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_interviews_jobs_JobId",
+                        column: x => x.JobId,
+                        principalTable: "jobs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_interviews_users_JobSeekerId",
+                        column: x => x.JobSeekerId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_interviews_users_RecruiterId",
+                        column: x => x.RecruiterId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "job_seeker_profiles",
                 columns: table => new
                 {
@@ -326,6 +384,30 @@ namespace SkillSense.Persistence.Migrations
                     table.PrimaryKey("PK_job_seeker_profiles", x => x.Id);
                     table.ForeignKey(
                         name: "FK_job_seeker_profiles_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "notifications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RelatedEntityId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_notifications_users_UserId",
                         column: x => x.UserId,
                         principalTable: "users",
                         principalColumn: "Id",
@@ -360,13 +442,18 @@ namespace SkillSense.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CompanyName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    CompanyEmail = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_recruiter_profiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_recruiter_profiles_companies_CompanyId",
+                        column: x => x.CompanyId,
+                        principalTable: "companies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_recruiter_profiles_users_UserId",
                         column: x => x.UserId,
@@ -399,6 +486,34 @@ namespace SkillSense.Persistence.Migrations
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "interview_reschedule_requests",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    InterviewId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobSeekerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
+                    AttachmentUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_interview_reschedule_requests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_interview_reschedule_requests_interviews_InterviewId",
+                        column: x => x.InterviewId,
+                        principalTable: "interviews",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_interview_reschedule_requests_users_JobSeekerId",
+                        column: x => x.JobSeekerId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -450,10 +565,60 @@ namespace SkillSense.Persistence.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_companies_IsActive",
+                table: "companies",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_companies_Name",
+                table: "companies",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interview_reschedule_requests_InterviewId",
+                table: "interview_reschedule_requests",
+                column: "InterviewId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interview_reschedule_requests_JobSeekerId",
+                table: "interview_reschedule_requests",
+                column: "JobSeekerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interviews_CompanyId",
+                table: "interviews",
+                column: "CompanyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interviews_JobId",
+                table: "interviews",
+                column: "JobId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interviews_JobSeekerId_ScheduledDateTimeUtc",
+                table: "interviews",
+                columns: new[] { "JobSeekerId", "ScheduledDateTimeUtc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interviews_RecruiterId_ScheduledDateTimeUtc",
+                table: "interviews",
+                columns: new[] { "RecruiterId", "ScheduledDateTimeUtc" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_interviews_Status",
+                table: "interviews",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_job_seeker_profiles_UserId",
                 table: "job_seeker_profiles",
                 column: "UserId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_jobs_CompanyId",
+                table: "jobs",
+                column: "CompanyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_jobs_CreatedAtUtc",
@@ -471,6 +636,16 @@ namespace SkillSense.Persistence.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_notifications_IsRead",
+                table: "notifications",
+                column: "IsRead");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_notifications_UserId",
+                table: "notifications",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_password_reset_pins_UserId",
                 table: "password_reset_pins",
                 column: "UserId");
@@ -479,6 +654,11 @@ namespace SkillSense.Persistence.Migrations
                 name: "IX_password_reset_pins_UserId_Pin_Used",
                 table: "password_reset_pins",
                 columns: new[] { "UserId", "Pin", "Used" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_recruiter_profiles_CompanyId",
+                table: "recruiter_profiles",
+                column: "CompanyId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_recruiter_profiles_UserId",
@@ -569,7 +749,13 @@ namespace SkillSense.Persistence.Migrations
                 name: "candidate_explanations");
 
             migrationBuilder.DropTable(
+                name: "interview_reschedule_requests");
+
+            migrationBuilder.DropTable(
                 name: "job_seeker_profiles");
+
+            migrationBuilder.DropTable(
+                name: "notifications");
 
             migrationBuilder.DropTable(
                 name: "password_reset_pins");
@@ -591,6 +777,12 @@ namespace SkillSense.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "interviews");
+
+            migrationBuilder.DropTable(
+                name: "companies");
 
             migrationBuilder.DropTable(
                 name: "jobs");

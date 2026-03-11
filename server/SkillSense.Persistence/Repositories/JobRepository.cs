@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
@@ -28,9 +28,11 @@ public sealed class JobRepository(SkillSenseDbContext dbContext) : IJobRepositor
     public Task<JobEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<JobEntity?> GetByIdForRecruiterAsync(Guid id, Guid recruiterId, CancellationToken ct = default)
-      => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id && x.RecruiterId == recruiterId, ct);
+    public Task<JobEntity?> GetByIdForCompanyAsync(Guid id, Guid companyId, CancellationToken ct = default)
+        => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id && x.CompanyId == companyId, ct);
 
+    public Task<JobEntity?> GetByIdForRecruiterAsync(Guid id, Guid recruiterId, CancellationToken ct = default)
+        => dbContext.Jobs.FirstOrDefaultAsync(x => x.Id == id && x.RecruiterId == recruiterId, ct);
 
     public IQueryable<JobEntity> Query() => dbContext.Jobs.AsQueryable();
 }

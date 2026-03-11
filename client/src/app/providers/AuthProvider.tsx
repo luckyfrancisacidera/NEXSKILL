@@ -36,13 +36,29 @@ interface AuthResponsePayload {
   };
 }
 
+const normalizeRole = (role: string): Role | null => {
+  const normalized = role.trim().toLowerCase();
+
+  switch (normalized) {
+    case "admin":
+      return "admin";
+    case "superadmin":
+      return "superAdmin";
+    case "companyadmin":
+      return "companyAdmin";
+    case "recruiter":
+      return "recruiter";
+    case "jobseeker":
+      return "jobseeker";
+    default:
+      return null;
+  }
+};
+
 const normalizeRoles = (roles: string[]): Role[] =>
   roles
-    .map((role) => role.toLowerCase())
-    .filter(
-      (role): role is Role =>
-        role === "admin" || role === "recruiter" || role === "jobseeker",
-    );
+    .map(normalizeRole)
+    .filter((role): role is Role => role !== null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<AuthUser | null>(null);

@@ -39,7 +39,14 @@ public sealed class RecruiterService(
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
             ?? throw new InvalidOperationException("Recruiter profile not found.");
 
-        mapper.Map(request, profile);
+        if (profile.CompanyId == Guid.Empty || profile.Company is null)
+        {
+            throw new InvalidOperationException("Recruiter company profile must be completed before it can be updated.");
+        }
+
+        profile.Company.Name = request.CompanyName.Trim();
+        profile.Company.PrimaryEmail = request.CompanyEmail.Trim();
+        profile.Company.UpdatedAtUtc = DateTime.UtcNow;
         await recruiterRepository.SaveChangesAsync(ct);
 
         return mapper.Map<RecruiterProfileResponse>(profile);
@@ -48,6 +55,12 @@ public sealed class RecruiterService(
     public async Task<JobListItemResponse> CreateJobAsync(Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await CreateJobAsync(profile.CompanyId, recruiterId, request, ct);
+    }
+
+    public async Task<JobListItemResponse> CreateJobAsync(Guid companyId, Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         if (string.IsNullOrWhiteSpace(request.Location)) throw new ArgumentException("location is required");
         if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
 
@@ -56,6 +69,7 @@ public sealed class RecruiterService(
         var job = mapper.Map<JobEntity>(request);
 
         job.Id = Guid.NewGuid();
+        job.CompanyId = companyId;
         job.RecruiterId = recruiterId;
         job.DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding);
         job.RequiredSkillsJson = JsonSerializer.Serialize(request.RequiredSkills);
@@ -64,8 +78,8 @@ public sealed class RecruiterService(
         job.Status = status;
         job.CreatedAtUtc = DateTime.UtcNow;
         job.PostedDateUtc = status == JobStatus.Published ? DateTime.UtcNow : null;
-        job.CompanyNameSnapshot = profile.CompanyName;
-        job.CompanyEmailSnapshot = profile.CompanyEmail;
+        job.CompanyNameSnapshot = profile.Company.Name;
+        job.CompanyEmailSnapshot = profile.Company.PrimaryEmail;
         job.JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(request));
         job.NumberOfVacancies = request.NumberOfVacancies;
 
@@ -77,7 +91,19 @@ public sealed class RecruiterService(
 
     public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
     {
-        var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await UpdateJobAsync(profile.CompanyId, recruiterId, jobId, request, ct);
+    }
+
+    public async Task<JobListItemResponse> UpdateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var job = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (job is null || job.RecruiterId != recruiterId)
+        {
+            throw new KeyNotFoundException("Job not found.");
+        }
+
         if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
 
         var embedding = await embeddingService.EmbedAsync(request.Description, ct);
@@ -107,7 +133,19 @@ public sealed class RecruiterService(
 
     public async Task<JobListItemResponse> UpdateJobStatusAsync(Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default)
     {
-        var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await UpdateJobStatusAsync(profile.CompanyId, recruiterId, jobId, request, ct);
+    }
+
+    public async Task<JobListItemResponse> UpdateJobStatusAsync(Guid companyId, Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var job = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (job is null || job.RecruiterId != recruiterId)
+        {
+            throw new KeyNotFoundException("Job not found.");
+        }
+
         if (!TryParseUpdatableStatus(request.Status, out var status))
         {
             logger.LogWarning("Recruiter {RecruiterId} requested invalid job status {Status} for job {JobId}", recruiterId, request.Status, jobId);
@@ -128,6 +166,13 @@ public sealed class RecruiterService(
 
     public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
     {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetJobsAsync(profile.CompanyId, recruiterId, pageNumber, pageSize, search, department, sortBy, sortDir, ct);
+    }
+
+    public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid companyId, Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         var normalizedPageNumber = Math.Max(1, pageNumber);
         var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
         var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
@@ -137,7 +182,7 @@ public sealed class RecruiterService(
 
         return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(30), async () =>
         {
-            var page = await recruiterRepository.GetRecruiterJobsAsync(recruiterId, normalizedPageNumber, normalizedPageSize, normalizedSearch, normalizedDepartment, sortBy, sortDir, ct);
+            var page = await recruiterRepository.GetRecruiterJobsAsync(recruiterId, companyId, normalizedPageNumber, normalizedPageSize, normalizedSearch, normalizedDepartment, sortBy, sortDir, ct);
             var remainingVacanciesByJobId = await BuildRemainingVacanciesLookupAsync(page.Items, ct);
 
             return new PagedResult<JobListItemResponse>
@@ -153,8 +198,15 @@ public sealed class RecruiterService(
 
     public async Task<JobListItemResponse?> GetJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
-        var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct);
-        if (job is null)
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetJobAsync(profile.CompanyId, recruiterId, jobId, ct);
+    }
+
+    public async Task<JobListItemResponse?> GetJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var job = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (job is null || job.RecruiterId != recruiterId)
         {
             return null;
         }
@@ -165,13 +217,32 @@ public sealed class RecruiterService(
 
     public async Task DeleteJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
-        var job = await jobRepository.GetByIdForRecruiterAsync(jobId, recruiterId, ct) ?? throw new KeyNotFoundException("Job not found.");
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        await DeleteJobAsync(profile.CompanyId, recruiterId, jobId, ct);
+    }
+
+    public async Task DeleteJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var job = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (job is null || job.RecruiterId != recruiterId)
+        {
+            throw new KeyNotFoundException("Job not found.");
+        }
+
         await jobRepository.DeleteAsync(job, ct);
         InvalidateAfterJobMutation(recruiterId, jobId);
     }
 
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetDashboardAsync(profile.CompanyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
+    }
+
+    public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid companyId, Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         var normalizedStartDate = startDate?.Date;
         var normalizedEndDate = endDate?.Date;
         if (normalizedStartDate.HasValue && normalizedEndDate.HasValue && normalizedStartDate.Value > normalizedEndDate.Value)
@@ -193,7 +264,7 @@ public sealed class RecruiterService(
         var cacheKey = $"dashboard:recruiter:{recruiterId}:{normalizedStartDate:yyyyMMdd}:{normalizedEndDate:yyyyMMdd}:{normalizedDepartment}:{normalizedRole}:{normalizedGroupBy}";
         return await cacheService.GetOrCreateAsync(cacheKey, TimeSpan.FromSeconds(30), async () =>
         {
-            var filterData = await recruiterRepository.GetDashboardFilterDataAsync(recruiterId, ct);
+            var filterData = await recruiterRepository.GetDashboardFilterDataAsync(recruiterId, companyId, ct);
             var effectiveRole = normalizedRole;
             if (normalizedDepartment is not null && normalizedRole is not null)
             {
@@ -204,7 +275,7 @@ public sealed class RecruiterService(
                 }
             }
 
-            var jobIds = await recruiterRepository.GetDashboardJobIdsAsync(recruiterId, normalizedDepartment, effectiveRole, ct);
+            var jobIds = await recruiterRepository.GetDashboardJobIdsAsync(recruiterId, companyId, normalizedDepartment, effectiveRole, ct);
             var applications = await recruiterRepository.GetDashboardApplicationsAsync(jobIds, startUtc, endExclusiveUtc, ct);
 
             var previousApplications = new List<ResumeSubmissionEntity>();
@@ -225,13 +296,20 @@ public sealed class RecruiterService(
                     JobRolesByDepartment = filterData.JobRolesByDepartment,
                 },
                 Summary = RecruiterDashboardComposer.BuildSummary(applications, previousApplications),
-                Trends = RecruiterDashboardComposer.BuildTrends(applications, normalizedGroupBy, await recruiterRepository.GetJobLookupAsync(recruiterId, ct)),
+                Trends = RecruiterDashboardComposer.BuildTrends(applications, normalizedGroupBy, await recruiterRepository.GetJobLookupAsync(recruiterId, companyId, ct)),
             };
         });
     }
 
     public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
     {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetApplicantScoresAsync(profile.CompanyId, recruiterId, jobId, department, stage, search, recommendedTopPercent, pageNumber, pageSize, ct);
+    }
+
+    public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid companyId, Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
         var normalizedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim().ToLowerInvariant();
         var normalizedDepartment = string.IsNullOrWhiteSpace(department) || department.Equals("all", StringComparison.OrdinalIgnoreCase)
@@ -241,12 +319,12 @@ public sealed class RecruiterService(
         var normalizedPageNumber = Math.Max(1, pageNumber);
         var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
 
-        var recruiterJobs = await recruiterRepository.GetJobFiltersAsync(recruiterId, null, ct);
+        var recruiterJobs = await recruiterRepository.GetJobFiltersAsync(recruiterId, companyId, null, ct);
         var recruiterJobsForFilter = normalizedDepartment is null
             ? recruiterJobs
             : recruiterJobs.Where(job => job.Department.Equals(normalizedDepartment, StringComparison.OrdinalIgnoreCase)).ToList();
 
-        var allItemsForCounts = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, normalizedDepartment, normalizedSearch, ct);
+        var allItemsForCounts = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, normalizedDepartment, normalizedSearch, ct);
         var allItems = jobId.HasValue
             ? allItemsForCounts.Where(x => x.JobId == jobId.Value).ToList()
             : allItemsForCounts;
@@ -329,13 +407,20 @@ public sealed class RecruiterService(
 
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
-        var baseItem = await BuildApplicantProjectionAsync(recruiterId, submissionId, null, ct);
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetApplicantBySubmissionIdAsync(profile.CompanyId, recruiterId, submissionId, ct);
+    }
+
+    public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var baseItem = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct);
         if (baseItem is null)
         {
             return null;
         }
 
-        var parsedResumeJson = await recruiterRepository.GetParsedResumeJsonAsync(recruiterId, submissionId, ct);
+        var parsedResumeJson = await recruiterRepository.GetParsedResumeJsonAsync(recruiterId, companyId, submissionId, ct);
         CandidateExplanationResponse? explanation = null;
         var allowedStatusesForExplanation = new[] { "Shortlisted", "Interview", "Hire", "Offer" };
         if (allowedStatusesForExplanation.Contains(baseItem.SubmissionStatus))
@@ -355,60 +440,44 @@ public sealed class RecruiterService(
 
     public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
     {
-        var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
-        logger.LogInformation("Recruiter {RecruiterId} updating submission {SubmissionId}. Action={Action}", recruiterId, submissionId, action);
-        await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
-        var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, submissionId, ct)
-            ?? throw new KeyNotFoundException("Submission not found.");
-
-        ResumeSubmissionStatus nextStatus;
-        try
-        {
-            nextStatus = ApplicantStageTransitionPolicy.ResolveNextStatus(context.Submission.Status, action);
-        }
-        catch (InvalidStageTransitionException ex)
-        {
-            logger.LogWarning(ex, "Invalid applicant transition {Action} from {Status} for submission {SubmissionId}", action, context.Submission.Status, submissionId);
-            throw;
-        }
-
-        var now = DateTime.UtcNow;
-        if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
-        {
-            var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(context.Job.Id, ct);
-            if (hiredCount >= context.Job.NumberOfVacancies)
-            {
-                logger.LogWarning("Recruiter {RecruiterId} exceeded vacancy limit while hiring submission {SubmissionId} for job {JobId}", recruiterId, submissionId, context.Job.Id);
-                throw new InvalidOperationException("Cannot hire applicant. The number of vacancies for this position has already been filled.");
-            }
-        }
-
-        context.Submission.Status = nextStatus;
-        context.Submission.UpdatedAtUtc = now;
-        await recruiterRepository.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-
-        if (nextStatus == ResumeSubmissionStatus.Shortlisted)
-        {
-            try
-            {
-                await candidateExplanationService.GenerateForShortlistedAsync(recruiterId, submissionId, CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Shortlist succeeded but explanation generation failed for submission {SubmissionId}", submissionId);
-            }
-        }
-
-        cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
-        var updated = await BuildApplicantProjectionAsync(recruiterId, submissionId, null, ct)
-            ?? throw new KeyNotFoundException("Submission not found after update.");
-
-        return updated;
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await UpdateApplicantStatusAsync(profile.CompanyId, recruiterId, submissionId, request, ct);
     }
+
+    public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
+    {
+        var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
+        var nextStatus = await ResolveTransitionStatusAsync(companyId, recruiterId, submissionId, action, ct);
+        return await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, nextStatus, ct);
+    }
+
+    public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await CreateOfferAsync(profile.CompanyId, recruiterId, submissionId, ct);
+    }
+
+    public Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Offer, ct);
+
+    public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await MarkHiredAsync(profile.CompanyId, recruiterId, submissionId, ct);
+    }
+
+    public Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+        => ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hire, ct);
 
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await UpdateApplicantStatusesAsync(profile.CompanyId, recruiterId, request, ct);
+    }
+
+    public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid companyId, Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         var requestedIds = request.SubmissionIds ?? [];
         var actionLabel = request.Action ?? request.Status ?? "unknown";
 
@@ -426,7 +495,7 @@ public sealed class RecruiterService(
             var submissionIds = requestedIds.Distinct().ToList();
             var results = new List<BulkUpdateApplicantStageResultItemResponse>(submissionIds.Count);
 
-            var allItemsForStatus = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+            var allItemsForStatus = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
             var recommendedIds = BuildRecommendedIds(allItemsForStatus, 10);
             var statusById = allItemsForStatus.ToDictionary(x => x.ResumeSubmissionId, x => x.Status);
 
@@ -443,7 +512,7 @@ public sealed class RecruiterService(
 
                 try
                 {
-                    var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, submissionId, ct)
+                    var context = await recruiterRepository.GetApplicantStageContextAsync(recruiterId, companyId, submissionId, ct)
                         ?? throw new KeyNotFoundException("Submission not found.");
 
                     ResumeSubmissionStatus nextStatus;
@@ -511,7 +580,7 @@ public sealed class RecruiterService(
 
             foreach (var result in results.Where(x => x.Success))
             {
-                var updatedCandidate = await BuildApplicantProjectionAsync(recruiterId, result.SubmissionId, recommendedIds, ct);
+                var updatedCandidate = await BuildApplicantProjectionAsync(recruiterId, companyId, result.SubmissionId, recommendedIds, ct);
                 if (updatedCandidate is not null)
                 {
                     result.Candidate = updatedCandidate;
@@ -533,7 +602,7 @@ public sealed class RecruiterService(
 
             // Recalculate counts from the database after updates so the API reflects real totals
             // and never relies on client-side deltas that can drift or go negative.
-            var refreshedItems = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+            var refreshedItems = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
             var projectedForCounts = BuildProjectedApplicants(refreshedItems, 10);
             var counts = new ApplicantScoreCountsResponse
             {
@@ -590,13 +659,74 @@ public sealed class RecruiterService(
     private static ResumeSubmissionStatus ResolveNextStatus(ResumeSubmissionStatus currentStatus, string action)
         => ApplicantStageTransitionPolicy.ResolveNextStatus(currentStatus, action);
 
+    private async Task<ResumeSubmissionStatus> ResolveTransitionStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, string action, CancellationToken ct)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+
+        try
+        {
+            return ResolveNextStatus(context.Submission.Status, action);
+        }
+        catch (InvalidStageTransitionException ex)
+        {
+            logger.LogWarning(ex, "Invalid applicant transition {Action} from {Status} for submission {SubmissionId}", action, context.Submission.Status, submissionId);
+            throw;
+        }
+    }
+
+    private async Task<ApplicantStageContextData> GetApplicantStageContextForCompanyAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct)
+        => await recruiterRepository.GetApplicantStageContextAsync(recruiterId, companyId, submissionId, ct)
+            ?? throw new KeyNotFoundException("Submission not found.");
+
+    private async Task<ApplicantScoreItemResponse> ApplyApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, ResumeSubmissionStatus nextStatus, CancellationToken ct)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        logger.LogInformation("Recruiter {RecruiterId} setting submission {SubmissionId} to {Status}", recruiterId, submissionId, nextStatus);
+
+        await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
+        var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+
+        if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
+        {
+            var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(context.Job.Id, ct);
+            if (hiredCount >= context.Job.NumberOfVacancies)
+            {
+                logger.LogWarning("Recruiter {RecruiterId} exceeded vacancy limit while hiring submission {SubmissionId} for job {JobId}", recruiterId, submissionId, context.Job.Id);
+                throw new InvalidOperationException("Cannot hire applicant. The number of vacancies for this position has already been filled.");
+            }
+        }
+
+        context.Submission.Status = nextStatus;
+        context.Submission.UpdatedAtUtc = DateTime.UtcNow;
+        await recruiterRepository.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct)
+            ?? throw new KeyNotFoundException("Submission not found after update.");
+
+        return updated;
+    }
+
     private async Task<RecruiterProfileEntity> EnsureProfileCompleteAsync(Guid recruiterId, CancellationToken ct)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
             ?? throw new InvalidOperationException("Recruiter profile not found.");
-        if (string.IsNullOrWhiteSpace(profile.CompanyName) || string.IsNullOrWhiteSpace(profile.CompanyEmail))
+        if (profile.CompanyId == Guid.Empty || profile.Company is null || string.IsNullOrWhiteSpace(profile.Company.Name))
         {
             throw new InvalidOperationException("Recruiter company profile must be completed before creating jobs.");
+        }
+
+        return profile;
+    }
+
+    private async Task<RecruiterProfileEntity> EnsureProfileInCompanyAsync(Guid companyId, Guid recruiterId, CancellationToken ct)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        if (profile.CompanyId != companyId)
+        {
+            throw new UnauthorizedAccessException("Recruiter profile does not belong to the active company.");
         }
 
         return profile;
@@ -647,22 +777,22 @@ public sealed class RecruiterService(
             .ToHashSet();
     }
 
-    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid submissionId, IReadOnlySet<Guid>? recommendedIds, CancellationToken ct)
+    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid companyId, Guid submissionId, IReadOnlySet<Guid>? recommendedIds, CancellationToken ct)
     {
-        var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, submissionId, ct);
+        var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, companyId, submissionId, ct);
         if (source is null)
         {
             return null;
         }
 
-        recommendedIds ??= BuildRecommendedIds(await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct), 10);
+        recommendedIds ??= BuildRecommendedIds(await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct), 10);
 
         return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds);
     }
 
-    private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid submissionId, CancellationToken ct)
+    private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct)
     {
-        var items = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, null, null, ct);
+        var items = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
         var recommendedIds = BuildRecommendedIds(items, 10);
         var source = items.FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
         if (source is null)
@@ -703,6 +833,9 @@ public sealed class RecruiterService(
         cacheService.RemoveByPrefix("jobs:public:list:");
     }
 }
+
+
+
 
 
 

@@ -5,7 +5,12 @@ import { Bell, ChevronDown, LogOut, Moon, Search, Sun } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useTheme } from "@app/providers/ThemeProvider";
+import { useCurrentCompany } from "@app/providers/CurrentCompanyProvider";
 import { cn } from "@shared/utils/cn";
+import {
+  notificationEventName,
+  type AppNotificationPayload,
+} from "@shared/utils/notifications";
 
 const topbarControlClassName =
   "inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors duration-300 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500";
@@ -15,17 +20,65 @@ const topbarIconButtonClassName = cn(
   "justify-center p-2",
 );
 
+interface AppNotification extends AppNotificationPayload {
+  id: string;
+  createdAt: string;
+  read: boolean;
+}
+
 export const Topbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { currentCompany } = useCurrentCompany();
   const { theme, toggleTheme } = useTheme();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const ThemeIcon = theme === "dark" ? Sun : Moon;
   const themeToggleLabel =
     theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const persistNotifications = (items: AppNotification[]) => {
+    try {
+      window.localStorage.setItem("app.notifications", JSON.stringify(items));
+    } catch {
+      // ignore storage failures
+    }
+  };
+
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("app.notifications");
+      if (raw) {
+        const parsed = JSON.parse(raw) as AppNotification[];
+        setNotifications(parsed);
+      }
+    } catch {
+      // ignore parse failures
+    }
+
+    const handleNotify = (event: Event) => {
+      const custom = event as CustomEvent<AppNotificationPayload>;
+      const now = new Date().toISOString();
+      const next: AppNotification = {
+        id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+        title: custom.detail.title,
+        description: custom.detail.description,
+        actor: custom.detail.actor,
+        createdAt: now,
+        read: false,
+      };
+
+      setNotifications((current) => {
+        const updated = [next, ...current].slice(0, 20);
+        persistNotifications(updated);
+        return updated;
+      });
+    };
+
     const onPointerDown = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
@@ -35,17 +88,37 @@ export const Topbar = () => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsUserMenuOpen(false);
+        setIsNotificationsOpen(false);
       }
     };
 
     window.addEventListener("mousedown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener(notificationEventName, handleNotify as EventListener);
 
     return () => {
       window.removeEventListener("mousedown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener(
+        notificationEventName,
+        handleNotify as EventListener,
+      );
     };
   }, []);
+
+  const toggleNotifications = () => {
+    setIsNotificationsOpen((current) => {
+      const next = !current;
+      if (next) {
+        setNotifications((items) => {
+          const updated = items.map((item) => ({ ...item, read: true }));
+          persistNotifications(updated);
+          return updated;
+        });
+      }
+      return next;
+    });
+  };
 
   const onLogout = async () => {
     await logout();
@@ -55,14 +128,34 @@ export const Topbar = () => {
 
   return (
     <header className="fixed left-64 right-0 top-0 z-30 flex items-center justify-between gap-4 border-b border-zinc-200/80 bg-white/75 px-6 py-4 shadow-[0_1px_0_rgba(255,255,255,0.7),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-md transition-colors duration-300 supports-backdrop-filter:bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-950/75 dark:shadow-[0_1px_0_rgba(24,24,27,0.85),0_10px_30px_rgba(0,0,0,0.3)] dark:supports-backdrop-filter:bg-zinc-950/70">
-      <label className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950">
+      <div className="flex flex-1 items-center gap-3">
+        <div className="hidden min-w-0 flex-1 flex-col text-left text-xs text-zinc-500 dark:text-zinc-400 sm:flex">
+          {currentCompany ? (
+            <>
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {currentCompany.name}
+              </span>
+              {currentCompany.primaryEmail && (
+                <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {currentCompany.primaryEmail}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="font-medium text-zinc-600 dark:text-zinc-300">
+              SkillSense ATS
+            </span>
+          )}
+        </div>
+        <label className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950">
         <Search className="h-4 w-4" />
         <input
           aria-label="Search jobs"
           className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors duration-300 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           placeholder="Search job title or keywords"
         />
-      </label>
+        </label>
+      </div>
       <button type="button" className={topbarControlClassName}>
         Remote
         <ChevronDown className="h-4 w-4" />
@@ -78,11 +171,77 @@ export const Topbar = () => {
       </button>
       <button
         type="button"
-        className={topbarIconButtonClassName}
+        className={cn(topbarIconButtonClassName, "relative")}
         aria-label="Notifications"
+        onClick={toggleNotifications}
       >
         <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </button>
+      <div className="relative">
+        {isNotificationsOpen && (
+          <div className="absolute right-0 top-12 z-20 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Notifications
+              </p>
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotifications((items) => {
+                      const updated = items.map((item) => ({
+                        ...item,
+                        read: true,
+                      }));
+                      persistNotifications(updated);
+                      return updated;
+                    });
+                  }}
+                  className="text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+              {notifications.length === 0 ? (
+                <p className="px-1 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                  You&apos;re all caught up.
+                </p>
+              ) : (
+                notifications.map((item) => (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "rounded-lg px-3 py-2 text-xs transition-colors",
+                      item.read
+                        ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                        : "bg-violet-50 text-zinc-800 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-zinc-100 dark:ring-violet-900/60",
+                    )}
+                  >
+                    <p className="font-semibold">{item.title}</p>
+                    {item.description ? (
+                      <p className="mt-0.5 line-clamp-2">{item.description}</p>
+                    ) : null}
+                    <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-400">
+                      {item.actor === "recruiter"
+                        ? "Recruiter"
+                        : item.actor === "jobseeker"
+                          ? "Jobseeker"
+                          : "System"}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       <div className="relative" ref={menuRef}>
         <button
           type="button"

@@ -1,20 +1,25 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using SkillSense.Application.Common;
 using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Domain.Entities;
+using SkillSense.Persistence.Data;
 
 namespace SkillSense.Infrastructure.Auth;
 
 public sealed class JwtTokenService(
     IConfiguration configuration,
-    UserManager<AppUser> userManager) : ITokenService
+    UserManager<AppUser> userManager,
+    SkillSenseDbContext dbContext) : ITokenService
 {
     private readonly IConfiguration _configuration = configuration;
     private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly SkillSenseDbContext _dbContext = dbContext;
 
     public async Task<string> CreateTokenAsync(AppUser user, CancellationToken cancellationToken)
     {
@@ -33,12 +38,13 @@ public sealed class JwtTokenService(
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new("userId", user.Id.ToString()),
+            new(SkillSenseClaimTypes.UserId, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email ?? string.Empty),
         };
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(await BuildContextClaimsAsync(user, roles.ToArray(), cancellationToken));
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -57,7 +63,70 @@ public sealed class JwtTokenService(
 
         return token;
     }
-      public Task<string> CreateRefreshTokenAsync(AppUser user, CancellationToken cancellationToken)
+
+    private async Task<IReadOnlyCollection<Claim>> BuildContextClaimsAsync(
+        AppUser user,
+        IReadOnlyCollection<string> roles,
+        CancellationToken cancellationToken)
+    {
+        var recruiterProfiles = await _dbContext.RecruiterProfiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == user.Id)
+            .Select(profile => new { profile.Id, profile.CompanyId })
+            .ToListAsync(cancellationToken);
+
+        var adminCompanyIds = await _dbContext.AdminProfiles
+            .AsNoTracking()
+            .Where(profile => profile.UserId == user.Id && profile.CompanyId.HasValue && profile.CompanyId != Guid.Empty)
+            .Select(profile => profile.CompanyId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var recruiterCompanyIds = recruiterProfiles
+            .Where(profile => profile.CompanyId != Guid.Empty)
+            .Select(profile => profile.CompanyId);
+
+        var companyIds = recruiterCompanyIds
+            .Concat(adminCompanyIds)
+            .Distinct()
+            .ToList();
+
+        Guid? activeRecruiterProfileId = recruiterProfiles
+            .Select(profile => (Guid?)profile.Id)
+            .FirstOrDefault();
+
+        Guid? activeCompanyId = null;
+        if (roles.Any(role => string.Equals(role, "Recruiter", StringComparison.OrdinalIgnoreCase)))
+        {
+            activeCompanyId = recruiterProfiles
+                .Where(profile => profile.CompanyId != Guid.Empty)
+                .Select(profile => (Guid?)profile.CompanyId)
+                .FirstOrDefault();
+        }
+
+        activeCompanyId ??= adminCompanyIds
+            .Select(companyId => (Guid?)companyId)
+            .FirstOrDefault();
+
+        var claims = new List<Claim>();
+
+        if (activeCompanyId.HasValue)
+        {
+            claims.Add(new Claim(SkillSenseClaimTypes.ActiveCompanyId, activeCompanyId.Value.ToString()));
+        }
+
+        if (activeRecruiterProfileId.HasValue)
+        {
+            claims.Add(new Claim(SkillSenseClaimTypes.ActiveRecruiterProfileId, activeRecruiterProfileId.Value.ToString()));
+        }
+
+        claims.AddRange(companyIds.Select(companyId => new Claim(SkillSenseClaimTypes.CompanyIds, companyId.ToString())));
+        claims.AddRange(recruiterProfiles.Select(profile => new Claim(SkillSenseClaimTypes.RecruiterProfileIds, profile.Id.ToString())));
+
+        return claims;
+    }
+
+    public Task<string> CreateRefreshTokenAsync(AppUser user, CancellationToken cancellationToken)
     {
         var key = _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Missing Jwt:Key");

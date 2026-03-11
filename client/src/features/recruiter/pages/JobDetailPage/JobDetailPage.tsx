@@ -11,9 +11,9 @@ import { recruiterService } from '@features/recruiter/service/recruiter.service'
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
-import { ConfirmationModal } from '@shared/components/ConfirmationModal';
 import { DetailBlock } from '@shared/components/DetailBlock';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { splitToBullets, toList } from '@shared/utils/formatText';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
@@ -25,9 +25,9 @@ export const JobDetailPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
+  const confirm = useConfirmation();
 
   const [job, setJob] = useState(loaderJob);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -102,7 +102,6 @@ export const JobDetailPage = () => {
         description: `${job.title} was removed from your job posts.`,
         tone: 'success',
       });
-      setIsDeleteOpen(false);
       setIsVerificationOpen(false);
       navigate('/recruiter/job-posts');
     } catch {
@@ -113,10 +112,33 @@ export const JobDetailPage = () => {
     }
   };
 
-  const openDeleteFlow = () => {
+  const openDeleteFlow = async () => {
+    if (isDeleting) {
+      return;
+    }
+
     setIsVerificationOpen(false);
     setDeleteError(undefined);
-    setIsDeleteOpen(true);
+
+    const confirmed = await confirm({
+      title: isPublishedJob(job) ? 'Delete published job?' : 'Delete this job?',
+      message: isPublishedJob(job)
+        ? 'This job is published and needs an additional verification step before deletion.'
+        : 'This action permanently removes the job post and cannot be undone.',
+      confirmLabel: isPublishedJob(job) ? 'Continue' : 'Delete Job',
+      accent: 'red',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    if (isPublishedJob(job)) {
+      setIsVerificationOpen(true);
+      return;
+    }
+
+    await deleteJob();
   };
 
   return (
@@ -259,39 +281,16 @@ export const JobDetailPage = () => {
         <ApplicantsTrendCard trend={trend} />
       </div>
 
-      <ConfirmationModal
-        open={isDeleteOpen && !isVerificationOpen}
-        title={isPublishedJob(job) ? 'Delete published job?' : 'Delete this job?'}
-        message={
-          isPublishedJob(job)
-            ? 'This job is published and needs an additional verification step before deletion.'
-            : 'This action permanently removes the job post and cannot be undone.'
-        }
-        confirmLabel={isPublishedJob(job) ? 'Continue' : 'Delete Job'}
-        accent="red"
-        loading={isDeleting}
-        onClose={() => setIsDeleteOpen(false)}
-        onCancel={() => setIsDeleteOpen(false)}
-        onConfirm={async () => {
-          if (isPublishedJob(job)) {
-            setIsVerificationOpen(true);
-            return;
-          }
-
-          await deleteJob();
-        }}
-      />
-
       <HighRiskVerificationModal
-        open={isDeleteOpen && isVerificationOpen}
+        open={isVerificationOpen}
         title="Final verification required"
         message="Type DELETE or the exact job title to permanently delete this published job."
         expectedKeyword="DELETE"
         expectedText={job.title}
         loading={isDeleting}
         error={deleteError}
-        onClose={() => setIsDeleteOpen(false)}
-        onCancel={() => setIsDeleteOpen(false)}
+        onClose={() => setIsVerificationOpen(false)}
+        onCancel={() => setIsVerificationOpen(false)}
         onConfirm={deleteJob}
       />
     </div>

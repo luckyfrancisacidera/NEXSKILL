@@ -1,8 +1,9 @@
-﻿namespace SkillSense.Domain.Entities;
+namespace SkillSense.Domain.Entities;
 
 public sealed class JobEntity
 {
     public Guid Id { get; set; }
+    public Guid CompanyId { get; set; }
     public Guid RecruiterId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

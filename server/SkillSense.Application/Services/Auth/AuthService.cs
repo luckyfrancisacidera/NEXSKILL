@@ -77,7 +77,7 @@ public sealed class AuthService(
     }
 
     /// <summary>
-    /// Creates a privileged account for recruiter or administrator roles.
+    /// Creates a privileged account for recruiter, company admin, or super admin roles.
     /// </summary>
     public async Task<AuthResult> CreatePrivilegedUserAsync(CreatePrivilegedUserRequest request, CancellationToken cancellationToken)
     {
@@ -98,8 +98,22 @@ public sealed class AuthService(
         await EnsureRoleExistsAsync(role);
         await _userManager.AddToRoleAsync(user, role);
 
-        if (role.Equals("Recruiter", StringComparison.OrdinalIgnoreCase)) user.RecruiterProfile = new RecruiterProfileEntity { UserId = user.Id };
-        else user.AdminProfile = new AdminProfileEntity { UserId = user.Id };
+        if (role.Equals("Recruiter", StringComparison.OrdinalIgnoreCase))
+        {
+            user.RecruiterProfile = new RecruiterProfileEntity
+            {
+                UserId = user.Id,
+                CompanyId = request.CompanyId ?? Guid.Empty
+            };
+        }
+        else
+        {
+            user.AdminProfile = new AdminProfileEntity
+            {
+                UserId = user.Id,
+                CompanyId = role.Equals("CompanyAdmin", StringComparison.OrdinalIgnoreCase) ? request.CompanyId : null
+            };
+        }
 
         await _userManager.UpdateAsync(user);
         var roles = await _userManager.GetRolesAsync(user);

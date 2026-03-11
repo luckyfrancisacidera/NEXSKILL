@@ -158,6 +158,9 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -321,6 +324,129 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("candidate_explanations", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PrimaryEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("companies", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JobSeekerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LocationOrMeetingLink")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("RecruiterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ScheduledDateTimeUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("JobSeekerId", "ScheduledDateTimeUtc");
+
+                    b.HasIndex("RecruiterId", "ScheduledDateTimeUtc");
+
+                    b.ToTable("interviews", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.InterviewRescheduleRequestEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InterviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JobSeekerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InterviewId");
+
+                    b.HasIndex("JobSeekerId");
+
+                    b.ToTable("interview_reschedule_requests", (string)null);
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.JobEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -333,6 +459,9 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<string>("CompanyEmailSnapshot")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CompanyNameSnapshot")
                         .HasMaxLength(200)
@@ -439,6 +568,8 @@ namespace SkillSense.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompanyId");
+
                     b.HasIndex("CreatedAtUtc");
 
                     b.HasIndex("RecruiterId");
@@ -507,6 +638,46 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("job_seeker_profiles", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.NotificationEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid?>("RelatedEntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.PasswordResetPinEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -545,13 +716,8 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CompanyEmail")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<string>("CompanyName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -560,6 +726,8 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -670,6 +838,9 @@ namespace SkillSense.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
@@ -815,11 +986,68 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.JobEntity", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "JobSeeker")
+                        .WithMany()
+                        .HasForeignKey("JobSeekerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "Recruiter")
+                        .WithMany()
+                        .HasForeignKey("RecruiterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Job");
+
+                    b.Navigation("JobSeeker");
+
+                    b.Navigation("Recruiter");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.InterviewRescheduleRequestEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.InterviewEntity", "Interview")
+                        .WithMany("RescheduleRequests")
+                        .HasForeignKey("InterviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "JobSeeker")
+                        .WithMany()
+                        .HasForeignKey("JobSeekerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Interview");
+
+                    b.Navigation("JobSeeker");
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.JobSeekerProfileEntity", b =>
                 {
                     b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
                         .WithOne("JobSeekerProfile")
                         .HasForeignKey("SkillSense.Domain.Entities.JobSeekerProfileEntity", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.NotificationEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -839,11 +1067,19 @@ namespace SkillSense.Persistence.Migrations
 
             modelBuilder.Entity("SkillSense.Domain.Entities.RecruiterProfileEntity", b =>
                 {
+                    b.HasOne("SkillSense.Domain.Entities.CompanyEntity", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
                         .WithOne("RecruiterProfile")
                         .HasForeignKey("SkillSense.Domain.Entities.RecruiterProfileEntity", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Company");
 
                     b.Navigation("User");
                 });
@@ -878,6 +1114,11 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("RecruiterProfile");
 
                     b.Navigation("SavedJobs");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>
+                {
+                    b.Navigation("RescheduleRequests");
                 });
 #pragma warning restore 612, 618
         }

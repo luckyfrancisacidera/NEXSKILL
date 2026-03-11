@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { Form } from "react-router-dom";
 import { ApplyWizardStepper } from "@features/jobseeker/pages/JobDetailPage/components/ApplyWizardStepper";
+import { useConfirmation } from "@shared/hooks/useConfirmation";
 
 type Step = 1 | 2 | 3;
 
@@ -35,6 +36,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
 
+  const confirm = useConfirmation();
   const modalRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const allowSubmitRef = useRef(false);
@@ -73,12 +75,22 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
     };
   }, [resumePreviewUrl]);
 
-  const handleClose = useCallback(() => {
-    if (isDirty && !window.confirm("You have unsaved application data. Close anyway?")) {
-      return;
+  const handleClose = useCallback(async () => {
+    if (isDirty) {
+      const shouldClose = await confirm({
+        title: "Discard application progress?",
+        message: "You have unsaved application data. Close anyway?",
+        confirmLabel: "Discard",
+        accent: "red",
+      });
+
+      if (!shouldClose) {
+        return;
+      }
     }
+
     onClose();
-  }, [isDirty, onClose]);
+  }, [confirm, isDirty, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -86,7 +98,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
 
       if (event.key === "Escape") {
         event.preventDefault();
-        handleClose();
+        void handleClose();
         return;
       }
 
@@ -132,7 +144,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-3 backdrop-blur-sm sm:p-6"
       onClick={(event) => {
-        if (event.target === event.currentTarget) handleClose();
+        if (event.target === event.currentTarget) void handleClose();
       }}
     >
       <div
@@ -148,11 +160,13 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
           </h3>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={() => {
+              void handleClose();
+            }}
             aria-label="Close application modal"
             className="rounded-md px-2 py-1 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
           >
-            ×
+            Ã—
           </button>
         </div>
 

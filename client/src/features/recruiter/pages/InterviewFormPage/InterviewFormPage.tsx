@@ -1,93 +1,121 @@
-/**
- * Recruiter interview form page used for creating and editing interview records.
- *
- * Main exports:
- * - `InterviewFormPage`: Route component for scheduling or rescheduling interviews.
- *
- * Usage notes:
- * - The route expects loader data containing supporting candidate, job, interviewer, and settings lists.
- * - Form field names are preserved so existing route actions continue to work unchanged.
- */
-import { Form, useActionData, useLoaderData } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import type { Interview } from "@features/recruiter/types/interview.types";
+import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
+import { Card } from "@shared/components/Card";
+import { emitNotification } from "@shared/utils/notifications";
+import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
+import { InterviewList } from "./components/InterviewList";
 
-import { RecruiterLabeledField } from '@features/recruiter/components/RecruiterLabeledField';
-import type { RecruiterInterview } from '@features/recruiter/types';
-import { Card } from '@shared/components/Card';
+export const InterviewFormPage = () => {
+  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-type InterviewFormMode = 'create' | 'edit';
+  useEffect(() => {
+    let cancelled = false;
 
-interface InterviewFormPageProps {
-  mode: InterviewFormMode;
-}
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        const data = await recruiterInterviewService.getRecruiterInterviews();
+        if (!cancelled) {
+          setInterviews(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load interviews. Please try again.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-interface InterviewFormActionData {
-  error?: string;
-}
+    void load();
 
-interface InterviewFormLoaderData {
-  interview?: Pick<RecruiterInterview, 'candidateId' | 'jobId' | 'interviewer' | 'startsAt' | 'durationMinutes' | 'location' | 'status'>;
-  candidates: Array<{ id: string; name: string }>;
-  jobs: Array<{ id: string; title: string }>;
-  interviewers: string[];
-  settings: { defaultInterviewDuration: number; bufferBefore: number; bufferAfter: number };
-}
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-/**
- * Route component for interview creation and editing.
- */
-export const InterviewFormPage = ({ mode }: InterviewFormPageProps) => {
-  const actionData = useActionData() as InterviewFormActionData | undefined;
-  const { interview, candidates, jobs, interviewers, settings } = useLoaderData() as InterviewFormLoaderData;
+  const addInterview = (interview: Interview) => {
+    setInterviews((items) => [interview, ...items]);
+  };
+
+  const updateInterview = (updated: Interview) => {
+    setInterviews((items) =>
+      items.map((item) => (item.id === updated.id ? updated : item)),
+    );
+  };
+
+  const handleSchedule = async (
+    input: Omit<Interview, "id" | "status"> & { status?: Interview["status"] },
+  ) => {
+    const scheduled = await recruiterInterviewService.scheduleInterview({
+      recruiterId: input.recruiterId,
+      jobseekerId: input.jobseekerId,
+      candidateName: input.candidateName,
+      scheduledDate: input.scheduledDate,
+      meetingLink: input.meetingLink,
+      location: input.location,
+      message: input.message,
+    });
+    addInterview(scheduled);
+
+    emitNotification({
+      title: "Interview scheduled",
+      description: `${scheduled.candidateName} has been invited.`,
+      actor: "recruiter",
+    });
+  };
+
+  const handleReschedule = async (
+    id: string,
+    scheduledDate: string,
+    message?: string,
+  ) => {
+    const updated = await recruiterInterviewService.rescheduleInterview(id, {
+      scheduledDate,
+      message,
+    });
+    updateInterview(updated);
+
+    emitNotification({
+      title: "Interview rescheduled",
+      description: `${updated.candidateName} has been notified of the change.`,
+      actor: "recruiter",
+    });
+  };
 
   return (
-    <Card className="max-w-3xl">
-      <h2 className="mb-4 text-xl font-semibold">
-        {mode === 'create' ? 'Schedule Interview' : 'Reschedule Interview'}
-      </h2>
-      {actionData?.error ? <p className="mb-3 rounded bg-zinc-100 p-2 text-sm">{actionData.error}</p> : null}
-      <Form method="post" className="grid gap-3 md:grid-cols-2">
-        <RecruiterLabeledField label="Candidate">
-          <select aria-label="candidate" name="candidateId" defaultValue={interview?.candidateId} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
-            {candidates.map((candidate) => (
-              <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
-            ))}
-          </select>
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Job">
-          <select aria-label="job" name="jobId" defaultValue={interview?.jobId} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
-            {jobs.map((job) => (
-              <option key={job.id} value={job.id}>{job.title}</option>
-            ))}
-          </select>
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Interviewer">
-          <select aria-label="interviewer" name="interviewer" defaultValue={interview?.interviewer} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
-            {interviewers.map((person) => (
-              <option key={person} value={person}>{person}</option>
-            ))}
-          </select>
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Date & time">
-          <input aria-label="interview date" type="datetime-local" name="startsAt" defaultValue={interview?.startsAt?.slice(0, 16)} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Location / meeting link">
-          <input aria-label="location" name="location" defaultValue={interview?.location} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Duration (minutes)">
-          <input aria-label="duration" type="number" name="durationMinutes" defaultValue={interview?.durationMinutes ?? settings.defaultInterviewDuration} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
-        </RecruiterLabeledField>
-        <RecruiterLabeledField label="Status">
-          <select aria-label="status" name="status" defaultValue={interview?.status ?? 'Scheduled'} className="w-full rounded-lg border border-zinc-300 px-3 py-2">
-            {['Scheduled', 'Completed', 'Canceled'].map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </RecruiterLabeledField>
-        <p className="text-xs text-zinc-500 md:col-span-2">Buffer awareness: {settings.bufferBefore}m before / {settings.bufferAfter}m after.</p>
-        <button className="rounded-lg bg-zinc-900 px-4 py-2 text-white md:col-span-2" type="submit">Save interview</button>
-      </Form>
-    </Card>
-  );
-};
+    <div className="space-y-4">
+      <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-900">
+            Schedule interviews
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Pick a time, personalize the invite, and track responses in a
+            Sneat-style dashboard.
+          </p>
+        </div>
+      </Card>
 
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <InterviewSchedulerForm onSchedule={handleSchedule} />
+        <InterviewList
+          interviews={interviews}
+          isLoading={isLoading}
+          error={error}
+          onReschedule={handleReschedule}
+        />
+      </div>
+    </div>
+  );
+}
 

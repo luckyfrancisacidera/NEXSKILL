@@ -27,7 +27,8 @@ import type {
 } from '@features/recruiter/types';
 import { ApiError } from '@shared/api/http';
 import { Card } from '@shared/components/Card';
-import { ConfirmationModal } from '@shared/components/ConfirmationModal';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
+import { usePermissions } from '@shared/hooks/usePermissions';
 
 const stageBadgeClass: Record<CandidateStage, string> = {
   Applied: 'border-zinc-200 bg-zinc-100 text-zinc-700',
@@ -69,7 +70,7 @@ const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> 
   Interview: {
     action: 'offer',
     status: 'Offer',
-    label: 'Offer',
+    label: 'Send Offer',
     title: 'Send offer',
     message: (name) => `Move ${name} to Offer stage?`,
     accent: 'green',
@@ -77,7 +78,7 @@ const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> 
   Offer: {
     action: 'hire',
     status: 'Hire',
-    label: 'Hire',
+    label: 'Mark Hired',
     title: 'Hire candidate',
     message: (name) => `Move ${name} to Hire stage?`,
     accent: 'green',
@@ -114,11 +115,8 @@ const monthsToText = (months: number | undefined) => {
 export const CandidateDetailPage = () => {
   const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<CandidateDetailAction | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [interviewForm, setInterviewForm] = useState<InterviewFormValues>({
     date: '',
     time: '',
@@ -134,6 +132,8 @@ export const CandidateDetailPage = () => {
   });
 
   const { showToast } = useToast();
+  const confirm = useConfirmation();
+  const { canSendOffers, canHireCandidates } = usePermissions();
   const revalidator = useRevalidator();
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
@@ -150,25 +150,87 @@ export const CandidateDetailPage = () => {
     [candidate.submission_status],
   );
 
-  const runStageTransition = async (
+  const canRunAction = (action: CandidateDetailAction) => {
+    if (action.action === 'offer') {
+      return canSendOffers;
+    }
+
+    if (action.action === 'hire') {
+      return canHireCandidates;
+    }
+
+    return true;
+  };
+
+  const describeActionSuccess = (action: CandidateDetailAction, statusToRun: CandidateStage) =>
+    action.action === 'reject'
+      ? `${candidate.applicant_name} has been marked as rejected.`
+      : `${candidate.applicant_name} is now in ${statusToRun} stage.`;
+
+  const requestCandidateAction = async (action: CandidateDetailAction) => {
+    if (!action.status) {
+      return;
+    }
+
+    if (!canRunAction(action)) {
+      showToast({
+        title: 'Action unavailable',
+        description:
+          action.action === 'offer'
+            ? 'You do not have permission to send offers in the current recruiter context.'
+            : 'You do not have permission to hire candidates in the current recruiter context.',
+        tone: 'error',
+      });
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: action.title,
+      message: action.message(candidate.applicant_name),
+      confirmLabel: action.label,
+      accent: action.accent,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    await runCandidateAction(
+      action.action,
+      action.status,
+      `Candidate ${action.label.toLowerCase()} successfully`,
+      describeActionSuccess(action, action.status),
+    );
+  };
+
+  const runCandidateAction = async (
     action: string,
     status: CandidateStage,
     successTitle: string,
     successDescription: string,
   ) => {
     try {
-      setIsSubmitting(true);
-      const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], {
-        action,
-        status,
-      });
-      const itemResult = result.results[0];
+      if (action === 'offer') {
+        const updatedCandidate = await recruiterService.sendOffer(candidate.resume_submission_id);
+        setCandidate((current) => ({ ...current, ...updatedCandidate }));
+      } else if (action === 'hire') {
+        const updatedCandidate = await recruiterService.markHired(candidate.resume_submission_id);
+        setCandidate((current) => ({ ...current, ...updatedCandidate }));
+      } else {
+        const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], {
+          action,
+          status,
+        });
+        const itemResult = result.results[0];
 
-      if (!itemResult?.success || !itemResult.candidate) {
-        throw new Error(itemResult?.message ?? 'Unable to update candidate stage.');
+        if (!itemResult?.success || !itemResult.candidate) {
+          throw new Error(itemResult?.message ?? 'Unable to update candidate stage.');
+        }
+
+        setCandidate((current) => ({ ...current, ...itemResult.candidate }));
       }
 
-      // With recruiterSync removed, we revalidate to pull the authoritative stage from the API.
+      // Reload the canonical candidate payload so dashboard and detail views stay aligned with backend metrics.
       revalidator.revalidate();
       showToast({ title: successTitle, description: successDescription, tone: 'success' });
     } catch (error) {
@@ -180,8 +242,6 @@ export const CandidateDetailPage = () => {
             : 'Unable to update candidate stage. Please try again.';
 
       showToast({ title: 'Action failed', description, tone: 'error' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -231,13 +291,22 @@ export const CandidateDetailPage = () => {
                 if (candidate.submission_status === 'Shortlisted') {
                   setIsInterviewOpen(true);
                 } else if (candidate.submission_status === 'Interview') {
+                  if (!canSendOffers) {
+                    showToast({
+                      title: 'Action unavailable',
+                      description: 'You do not have permission to send offers in the current recruiter context.',
+                      tone: 'error',
+                    });
+                    return;
+                  }
+
                   setIsOfferOpen(true);
                 } else {
-                  setPendingAction(primaryAction);
-                  setIsConfirmOpen(true);
+                  void requestCandidateAction(primaryAction);
                 }
               }}
-              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-600"
+              disabled={(candidate.submission_status === 'Interview' && !canSendOffers) || (candidate.submission_status === 'Offer' && !canHireCandidates)}
+              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {primaryAction.label}
             </button>
@@ -293,7 +362,7 @@ export const CandidateDetailPage = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setPendingAction({
+                      void requestCandidateAction({
                         action: 'shortlist',
                         status: 'Shortlisted',
                         label: 'Shortlist',
@@ -301,7 +370,6 @@ export const CandidateDetailPage = () => {
                         message: (name) => `Move ${name} back to Shortlisted stage?`,
                         accent: 'violet',
                       });
-                      setIsConfirmOpen(true);
                     }}
                     className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   >
@@ -313,7 +381,7 @@ export const CandidateDetailPage = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setPendingAction({
+                      void requestCandidateAction({
                         action: 'remove-shortlist',
                         status: 'Applied',
                         label: 'Remove from Shortlist',
@@ -322,7 +390,6 @@ export const CandidateDetailPage = () => {
                           `Remove shortlist status for ${name}? Candidate will remain active in the pipeline.`,
                         accent: 'violet',
                       });
-                      setIsConfirmOpen(true);
                     }}
                     className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   >
@@ -333,7 +400,7 @@ export const CandidateDetailPage = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setPendingAction({
+                    void requestCandidateAction({
                       action: 'reject',
                       status: 'Rejected',
                       label: 'Reject',
@@ -341,7 +408,6 @@ export const CandidateDetailPage = () => {
                       message: (name) => `Are you sure you want to reject ${name}?`,
                       accent: 'red',
                     });
-                    setIsConfirmOpen(true);
                   }}
                   className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
                 >
@@ -460,47 +526,6 @@ export const CandidateDetailPage = () => {
         </RecruiterSectionCard>
       </div>
 
-      <ConfirmationModal
-        open={isConfirmOpen}
-        title={pendingAction?.title ?? 'Confirm action'}
-        message={pendingAction?.message(candidate.applicant_name) ?? 'Are you sure?'}
-        confirmLabel={pendingAction?.label ?? 'Confirm'}
-        accent={pendingAction?.accent ?? 'violet'}
-        loading={isSubmitting}
-        onClose={() => {
-          setIsConfirmOpen(false);
-          setPendingAction(null);
-        }}
-        onCancel={() => {
-          setIsConfirmOpen(false);
-          setPendingAction(null);
-        }}
-        onConfirm={async () => {
-          if (!pendingAction || !pendingAction.status) {
-            setIsConfirmOpen(false);
-            setPendingAction(null);
-            return;
-          }
-
-          setIsConfirmOpen(false);
-          const actionToRun = pendingAction;
-          setPendingAction(null);
-          const statusToRun = actionToRun.status;
-          if (!statusToRun) {
-            return;
-          }
-
-          await runStageTransition(
-            actionToRun.action,
-            statusToRun,
-            `Candidate ${actionToRun.label.toLowerCase()} successfully`,
-            actionToRun.action === 'reject'
-              ? `${candidate.applicant_name} has been marked as rejected.`
-              : `${candidate.applicant_name} is now in ${statusToRun} stage.`,
-          );
-        }}
-      />
-
       <InterviewModal
         open={isInterviewOpen}
         form={interviewForm}
@@ -508,7 +533,7 @@ export const CandidateDetailPage = () => {
         onChange={(field, value) => setInterviewForm((state) => ({ ...state, [field]: value }))}
         onSubmit={async (event) => {
           event.preventDefault();
-          await runStageTransition(
+          await runCandidateAction(
             'set-interview',
             'Interview',
             'Interview scheduled successfully',
@@ -525,7 +550,7 @@ export const CandidateDetailPage = () => {
         onChange={(field, value) => setOfferForm((state) => ({ ...state, [field]: value }))}
         onSubmit={async (event) => {
           event.preventDefault();
-          await runStageTransition('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.');
+          await runCandidateAction('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.');
           setIsOfferOpen(false);
         }}
       />
