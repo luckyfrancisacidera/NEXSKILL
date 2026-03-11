@@ -1,11 +1,13 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using SkillSense.Application.Contracts.Jobseeker.Request;
+using SkillSense.Application.Contracts.Jobseeker.Response;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Jobseeker;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
+using SkillSense.Persistence.Models;
 
 namespace SkillSense.Application.Services.Jobseeker
 {
@@ -50,22 +52,12 @@ namespace SkillSense.Application.Services.Jobseeker
             return response;
         }
 
-        public async Task<PagedResult<object>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+        public async Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
         {
             var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, search, status, startDate, endDate, ct);
-            return new PagedResult<object>
+            return new PagedResult<JobSeekerApplicationResponse>
             {
-                Items = pagedApplications.Items.Select(x => (object)new
-                {
-                    id = x.Id,
-                    job_id = x.JobId,
-                    job_title = x.JobTitle,
-                    company = x.Company,
-                    full_name = x.FullName,
-                    email = x.Email,
-                    status = ResolveJobseekerApplicationStatus(x.Status),
-                    created_at_utc = x.CreatedAtUtc
-                }).ToList(),
+                Items = pagedApplications.Items.Select(MapApplication).ToList(),
                 PageNumber = pagedApplications.PageNumber,
                 PageSize = pagedApplications.PageSize,
                 TotalCount = pagedApplications.TotalCount,
@@ -79,15 +71,16 @@ namespace SkillSense.Application.Services.Jobseeker
             var (start, end, granularity) = ResolveRange(normalizedRange);
             var analytics = await jobSeekerRepository.GetApplicationAnalyticsAsync(userId, start, end, granularity, ct);
             var recentApps = await jobSeekerRepository.GetApplicationsByUserAsync(userId, 1, 5, null, null, null, null, ct);
+            var recentApplicationResponses = recentApps.Items.Select(MapApplication).ToList();
             var savedJobs = await jobSeekerRepository.GetSavedJobsAsync(userId, null, ct);
 
             return new
             {
                 status = new
                 {
-                    applied = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Applied"),
-                    interview = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Interview"),
-                    offer = recentApps.Items.Count(x => ResolveJobseekerApplicationStatus(x.Status) == "Hire")
+                    applied = recentApplicationResponses.Count(x => x.CurrentStage == "Applied" || x.CurrentStage == "Shortlisted"),
+                    interview = recentApplicationResponses.Count(x => x.CurrentStage == "Interview"),
+                    offer = recentApplicationResponses.Count(x => x.CurrentStage == "Offer")
                 },
                 saved_jobs = savedJobs.Take(4).Select(x => new
                 {
@@ -101,13 +94,13 @@ namespace SkillSense.Application.Services.Jobseeker
                     job_type = x.EmploymentType,
                     is_saved = true
                 }).ToList(),
-                recent_applications = recentApps.Items.Select(x => new
+                recent_applications = recentApplicationResponses.Select(x => new
                 {
                     id = x.Id,
                     job_title = x.JobTitle,
-                    company = x.Company,
+                    company = x.CompanyName,
                     applied_at = x.CreatedAtUtc,
-                    status = ResolveJobseekerApplicationStatus(x.Status)
+                    status = x.CurrentStage
                 }).ToList(),
                 analytics = new
                 {
@@ -176,20 +169,12 @@ namespace SkillSense.Application.Services.Jobseeker
             return ToProfileResponse(profile);
         }
 
-        public async Task<object> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        public async Task<JobSeekerApplicationResponse> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
-            var item = await jobSeekerRepository.GetApplicationDetailAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
-            return new
-            {
-                id = item.Id,
-                job_id = item.JobId,
-                job_title = item.JobTitle,
-                company = item.Company,
-                full_name = item.FullName,
-                email = item.Email,
-                status = ResolveJobseekerApplicationStatus(item.Status),
-                created_at_utc = item.CreatedAtUtc
-            };
+            var item = await jobSeekerRepository.GetApplicationDetailAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Application not found.");
+
+            return MapApplication(item);
         }
 
         public async Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
@@ -200,6 +185,61 @@ namespace SkillSense.Application.Services.Jobseeker
             entity.Status = ResumeSubmissionStatus.Failed;
             entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
             await jobSeekerRepository.SaveChangesAsync(ct);
+        }
+
+        private static JobSeekerApplicationResponse MapApplication(ApplicationListItemData item)
+        {
+            var currentStage = ResolveCurrentStage(item.Status);
+            var hasOffer = item.Status is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire;
+            var isHired = item.Status == ResumeSubmissionStatus.Hire;
+
+            return new JobSeekerApplicationResponse
+            {
+                Id = item.Id,
+                JobId = item.JobId,
+                JobTitle = item.JobTitle,
+                Company = item.CompanyName,
+                CompanyName = item.CompanyName,
+                RecruiterName = ResolveRecruiterName(item.RecruiterName, item.RecruiterEmail),
+                RecruiterEmail = item.RecruiterEmail,
+                FullName = item.FullName,
+                Email = item.Email,
+                Status = currentStage,
+                CurrentStage = currentStage,
+                HasOffer = hasOffer,
+                IsHired = isHired,
+                OfferedAtUtc = item.Status == ResumeSubmissionStatus.Offer ? item.UpdatedAtUtc : null,
+                HiredAtUtc = item.Status == ResumeSubmissionStatus.Hire ? item.UpdatedAtUtc : null,
+                CreatedAtUtc = item.CreatedAtUtc,
+            };
+        }
+
+        private static string ResolveCurrentStage(ResumeSubmissionStatus status)
+            => status switch
+            {
+                ResumeSubmissionStatus.Shortlisted => "Shortlisted",
+                ResumeSubmissionStatus.Interview => "Interview",
+                ResumeSubmissionStatus.Offer => "Offer",
+                ResumeSubmissionStatus.Hire => "Hire",
+                ResumeSubmissionStatus.Rejected => "Rejected",
+                ResumeSubmissionStatus.Failed => "Withdrawn",
+                ResumeSubmissionStatus.Pending or ResumeSubmissionStatus.Processing or ResumeSubmissionStatus.Completed => "Applied",
+                _ => "Applied"
+            };
+
+        private static string? ResolveRecruiterName(string? recruiterName, string? recruiterEmail)
+        {
+            if (!string.IsNullOrWhiteSpace(recruiterName))
+            {
+                return recruiterName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(recruiterEmail))
+            {
+                return recruiterEmail;
+            }
+
+            return null;
         }
 
         private static object ToProfileResponse(JobSeekerProfileEntity profile) => new
@@ -229,17 +269,6 @@ namespace SkillSense.Application.Services.Jobseeker
                 _ => (now.Date.AddDays(-(int)now.DayOfWeek), now, "day")
             };
         }
-
-        private static string ResolveJobseekerApplicationStatus(string? status)
-            => status?.Trim().ToLowerInvariant() switch
-            {
-                "applied" or "submitted" or "recommended" or "shortlist" or "shortlisted" or "pending" or "processing" or "completed" => "Applied",
-                "interview" => "Interview",
-                "hire" or "hired" or "offer" => "Hire",
-                "rejected" => "Rejected",
-                "withdrawn" or "failed" => "Withdrawn",
-                _ => "Submitted",
-            };
 
         private static JobListItemResponse Map(JobEntity x)
             => new()
@@ -272,7 +301,8 @@ namespace SkillSense.Application.Services.Jobseeker
         private static string NormalizeMultilineText(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-            var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(line => line.Replace("\r", string.Empty).Trim());
+            var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Replace("\r", string.Empty).Trim());
             return string.Join(Environment.NewLine, lines);
         }
     }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SkillSense.Domain.Entities;
 
@@ -11,6 +11,7 @@ namespace SkillSense.Persistence.Configurations
             builder.ToTable("jobs");
             builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.CompanyId).IsRequired();
             builder.Property(x => x.RecruiterId).IsRequired();
 
             builder.Property(x => x.Title)
@@ -80,6 +81,7 @@ namespace SkillSense.Persistence.Configurations
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.CreatedAtUtc);
             builder.HasIndex(x => x.RecruiterId);
+            builder.HasIndex(x => x.CompanyId);
         }
     }
 }

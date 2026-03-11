@@ -1,15 +1,20 @@
 namespace SkillSense.Persistence.Models;
 
+using SkillSense.Domain.Entities;
+
 public sealed class ApplicationListItemData
 {
     public Guid Id { get; set; }
     public Guid JobId { get; set; }
     public string JobTitle { get; set; } = string.Empty;
-    public string Company { get; set; } = string.Empty;
+    public string CompanyName { get; set; } = string.Empty;
+    public string? RecruiterName { get; set; }
+    public string? RecruiterEmail { get; set; }
     public string? FullName { get; set; }
     public string? Email { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public ResumeSubmissionStatus Status { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
 }
 
 public sealed class SavedJobData

@@ -10,6 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { ApiError } from "@shared/api/http";
+import { hasAnyAllowedRole } from "@shared/utils/permissions";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const RegisterPage = () => {
     try {
       const roles = await register(email, password);
       navigate(
-        roles.includes("jobseeker") ? "/dashboard" : "/login",
+        hasAnyAllowedRole(roles, ["jobseeker"]) ? "/dashboard" : "/login",
         { replace: true }
       );
     } catch (error) {

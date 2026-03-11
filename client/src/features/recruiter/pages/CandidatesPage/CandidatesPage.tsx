@@ -15,7 +15,7 @@ import type {
   CandidatesLoaderData,
 } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
-import { ConfirmationModal } from '@shared/components/ConfirmationModal';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
 import type { DropdownOption } from '@shared/components/Dropdown';
 
 const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
@@ -155,11 +155,11 @@ export const CandidatesPage = () => {
   const submit = useSubmit();
   const revalidator = useRevalidator();
   const { showToast } = useToast();
+  const confirm = useConfirmation();
   const filterFormRef = useRef<HTMLFormElement | null>(null);
 
   // The recruiterSync cache is removed; loader data is the single source of truth.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [pendingAction, setPendingAction] = useState<CandidateBulkAction | null>(null);
 
   const normalizedFilters: CandidateFilters = {
     search: filters.search ?? '',
@@ -268,7 +268,7 @@ export const CandidatesPage = () => {
     );
   };
 
-  const queueBulkAction = (action: CandidateBulkAction) => {
+  const queueBulkAction = async (action: CandidateBulkAction) => {
     if (selectedIdsOnPage.length === 0 || isSubmittingAction) {
       return;
     }
@@ -291,7 +291,18 @@ export const CandidatesPage = () => {
     const summaryMessage = `${action.message} Eligible: ${eligibleIds.length}.${
       skippedCount > 0 ? ` Skipped: ${skippedCount} ineligible candidate(s).` : ''
     }`;
-    setPendingAction({ ...action, eligibleIds, skippedCount, message: summaryMessage });
+    const confirmed = await confirm({
+      title: action.title,
+      message: summaryMessage,
+      confirmLabel: action.label,
+      accent: action.accent,
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    submitBulkAction({ ...action, eligibleIds, skippedCount, message: summaryMessage });
   };
 
   const submitBulkAction = (action: CandidateBulkAction) => {
@@ -366,7 +377,9 @@ export const CandidatesPage = () => {
           actions={bulkActions}
           selectedCount={selectedIdsOnPage.length}
           isSubmittingAction={isSubmittingAction}
-          onQueueAction={queueBulkAction}
+          onQueueAction={(action) => {
+            void queueBulkAction(action);
+          }}
         />
       </div>
 
@@ -386,37 +399,6 @@ export const CandidatesPage = () => {
         nextHref={buildCandidateQuery(normalizedFilters, Math.min(pagination.totalPages, pagination.page + 1))}
       />
 
-      <ConfirmationModal
-        open={Boolean(pendingAction)}
-        title={pendingAction?.title ?? 'Confirm action'}
-        message={pendingAction?.message ?? 'Are you sure?'}
-        confirmLabel={pendingAction?.label ?? 'Confirm'}
-        accent={pendingAction?.accent ?? 'violet'}
-        loading={isSubmittingAction}
-        onClose={() => {
-          if (isSubmittingAction) {
-            return;
-          }
-
-          setPendingAction(null);
-        }}
-        onCancel={() => {
-          if (isSubmittingAction) {
-            return;
-          }
-
-          setPendingAction(null);
-        }}
-        onConfirm={() => {
-          if (!pendingAction || isSubmittingAction) {
-            return;
-          }
-
-          const actionToSubmit = pendingAction;
-          setPendingAction(null);
-          submitBulkAction(actionToSubmit);
-        }}
-      />
     </Card>
   );
 };

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +15,7 @@ namespace SkillSense.Persistence.Data
         }
 
         #region DbSets
+        public DbSet<CompanyEntity> Companies => Set<CompanyEntity>();
         public DbSet<JobEntity> Jobs => Set<JobEntity>();
         public DbSet<ResumeSubmissionEntity> ResumeSubmissions => Set<ResumeSubmissionEntity>();
         public DbSet<ResumeScoreEntity> ResumeScores => Set<ResumeScoreEntity>();
@@ -25,6 +26,9 @@ namespace SkillSense.Persistence.Data
         public DbSet<AdminProfileEntity> AdminProfiles => Set<AdminProfileEntity>();
         public DbSet<SavedJobEntity> SavedJobs => Set<SavedJobEntity>();
         public DbSet<PasswordResetPinEntity> PasswordResetPins => Set<PasswordResetPinEntity>();
+        public DbSet<InterviewEntity> Interviews => Set<InterviewEntity>();
+        public DbSet<InterviewRescheduleRequestEntity> InterviewRescheduleRequests => Set<InterviewRescheduleRequestEntity>();
+        public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
 
         #endregion
 

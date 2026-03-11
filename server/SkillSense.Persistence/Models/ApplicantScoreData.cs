@@ -7,6 +7,8 @@ public sealed class ApplicantScoreData
     public Guid ResumeSubmissionId { get; init; }
     public string? ApplicantName { get; init; }
     public string? ApplicantEmail { get; init; }
+    public string? PostalCode { get; init; }
+    public string? MatchSummary { get; init; }
     public DateTime CreatedAtUtc { get; init; }
     public Guid JobId { get; init; }
     public ResumeSubmissionStatus Status { get; init; }

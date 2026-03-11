@@ -1,6 +1,8 @@
 import type { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@app/providers/AuthProvider";
+import { usePermissions } from "@shared/hooks/usePermissions";
+import { getDefaultRouteForRoles, hasAnyAllowedRole } from "@shared/utils/permissions";
 import type { Role } from "@shared/types";
 
 interface RequireRoleProps extends PropsWithChildren {
@@ -21,7 +23,7 @@ export const RequireAuth = ({ children }: PropsWithChildren) => {
 
 export const RequireRole = ({ allowedRoles, children }: RequireRoleProps) => {
   const { roles } = useAuth();
-  const isAllowed = roles.some((role) => allowedRoles.includes(role));
+  const isAllowed = hasAnyAllowedRole(roles, allowedRoles);
 
   if (!isAllowed) {
     return <Navigate to="/not-authorized" replace />;
@@ -31,19 +33,24 @@ export const RequireRole = ({ allowedRoles, children }: RequireRoleProps) => {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const getDefaultRouteByRole = (roles: Role[]) => {
-  if (roles.includes("admin")) return "/admin";
-  if (roles.includes("recruiter")) return "/recruiter/dashboard";
-  return "/dashboard";
-};
+export const getDefaultRouteByRole = (roles: Role[]) => getDefaultRouteForRoles(roles);
 
 export const PublicOnly = ({ children }: PropsWithChildren) => {
   const { isAuthenticated, roles, isHydrating } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin, isRecruiter } = usePermissions();
 
   if (isHydrating) return null;
 
   if (isAuthenticated) {
-    return <Navigate to={getDefaultRouteByRole(roles)} replace />;
+    const redirectTo = isSuperAdmin
+      ? "/admin/super"
+      : isCompanyAdmin
+        ? "/admin/company"
+        : isRecruiter
+          ? "/recruiter/dashboard"
+          : getDefaultRouteByRole(roles);
+
+    return <Navigate to={redirectTo} replace />;
   }
 
   return <>{children}</>;

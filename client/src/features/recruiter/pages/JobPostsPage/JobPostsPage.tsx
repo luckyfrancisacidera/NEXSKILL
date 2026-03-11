@@ -10,8 +10,8 @@ import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToa
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import type { JobListItem, RecruiterJobsLoaderData } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
-import { ConfirmationModal } from '@shared/components/ConfirmationModal';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
 
 const buildJobPostsQuery = (searchParams: URLSearchParams, next: Record<string, string>) => {
   const merged = { ...Object.fromEntries(searchParams.entries()), ...next };
@@ -31,9 +31,9 @@ export const JobPostsPage = () => {
   const navigate = useNavigate();
   const navigation = useNavigation();
   const { showToast } = useToast();
+  const confirm = useConfirmation();
 
   const [jobs, setJobs] = useState(loaderData.jobs);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
@@ -78,11 +78,36 @@ export const JobPostsPage = () => {
     },
   });
 
-  const openDeleteFlow = (job: JobListItem) => {
+  const openDeleteFlow = async (job: JobListItem) => {
+    if (isDeleting) {
+      return;
+    }
+
     setSelectedJob(job);
     setDeleteError(undefined);
     setIsVerificationOpen(false);
-    setIsDeleteOpen(true);
+
+    const isPublished = job.status?.toLowerCase() === 'published';
+    const confirmed = await confirm({
+      title: isPublished ? 'Delete published job?' : 'Delete this job?',
+      message: isPublished
+        ? "This job is published. You'll need one more verification step before it is deleted."
+        : 'This action permanently removes the job post and cannot be undone.',
+      confirmLabel: isPublished ? 'Continue' : 'Delete Job',
+      accent: 'red',
+    });
+
+    if (!confirmed) {
+      setSelectedJob(null);
+      return;
+    }
+
+    if (isPublished) {
+      setIsVerificationOpen(true);
+      return;
+    }
+
+    await runDelete(job);
   };
 
   const closeDeleteFlow = () => {
@@ -92,11 +117,11 @@ export const JobPostsPage = () => {
 
     setDeleteError(undefined);
     setIsVerificationOpen(false);
-    setIsDeleteOpen(false);
+    setSelectedJob(null);
   };
 
-  const runDelete = async () => {
-    if (!selectedJob || isDeleting) {
+  const runDelete = async (jobToDelete: JobListItem = selectedJob as JobListItem) => {
+    if (!jobToDelete || isDeleting) {
       return;
     }
 
@@ -105,10 +130,9 @@ export const JobPostsPage = () => {
     try {
       setIsDeleting(true);
       setDeleteError(undefined);
-      setJobs((current) => current.filter((job) => job.id !== selectedJob.id));
-      await recruiterService.deleteJob(selectedJob.id);
-      showToast({ title: 'Job deleted', description: `${selectedJob.title} has been removed.`, tone: 'success' });
-      setIsDeleteOpen(false);
+      setJobs((current) => current.filter((job) => job.id !== jobToDelete.id));
+      await recruiterService.deleteJob(jobToDelete.id);
+      showToast({ title: 'Job deleted', description: `${jobToDelete.title} has been removed.`, tone: 'success' });
       setIsVerificationOpen(false);
       setSelectedJob(null);
       navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { page: String(loaderData.page) })}`, {
@@ -168,31 +192,8 @@ export const JobPostsPage = () => {
         />
       </Card>
 
-      <ConfirmationModal
-        open={isDeleteOpen && !isVerificationOpen}
-        title={selectedJob?.status?.toLowerCase() === 'published' ? 'Delete published job?' : 'Delete this job?'}
-        message={
-          selectedJob?.status?.toLowerCase() === 'published'
-            ? "This job is published. You'll need one more verification step before it is deleted."
-            : 'This action permanently removes the job post and cannot be undone.'
-        }
-        confirmLabel={selectedJob?.status?.toLowerCase() === 'published' ? 'Continue' : 'Delete Job'}
-        accent="red"
-        loading={isDeleting}
-        onClose={closeDeleteFlow}
-        onCancel={closeDeleteFlow}
-        onConfirm={() => {
-          if (selectedJob?.status?.toLowerCase() === 'published') {
-            setIsVerificationOpen(true);
-            return;
-          }
-
-          void runDelete();
-        }}
-      />
-
       <HighRiskVerificationModal
-        open={isDeleteOpen && isVerificationOpen}
+        open={Boolean(selectedJob) && isVerificationOpen}
         title="Final verification required"
         message="For published job posts, type DELETE or the exact job title to confirm this destructive action."
         expectedKeyword="DELETE"

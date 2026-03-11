@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
@@ -44,58 +44,33 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
 
     public async Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
     {
-        var query = dbContext.ResumeSubmissions.AsNoTracking().Where(x => x.ApplicantUserId == userId)
-            .Join(dbContext.Jobs.AsNoTracking(), s => s.JobId, j => j.Id, (s, j) => new { s, j });
+        var query = BuildApplicationsQuery(userId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.Trim().ToLower();
-            query = query.Where(x => x.j.Title.ToLower().Contains(normalizedSearch) || (x.j.CompanyNameSnapshot ?? string.Empty).ToLower().Contains(normalizedSearch));
+            query = query.Where(x => x.JobTitle.ToLower().Contains(normalizedSearch) || x.CompanyName.ToLower().Contains(normalizedSearch));
         }
 
-        if (!string.IsNullOrWhiteSpace(status))
+        var statusFilter = ResolveStatusFilter(status);
+        if (statusFilter.Count > 0)
         {
-            var normalizedStatus = status.Trim().ToLowerInvariant();
-            var statusFilter = normalizedStatus switch
-            {
-                "applied" or "submitted" or "recommended" or "shortlist" or "shortlisted" => new[]
-                {
-                    ResumeSubmissionStatus.Pending,
-                    ResumeSubmissionStatus.Processing,
-                    ResumeSubmissionStatus.Completed,
-                    ResumeSubmissionStatus.Shortlisted
-                },
-                "interview" => new[] { ResumeSubmissionStatus.Interview },
-                "hire" or "hired" or "offer" => new[] { ResumeSubmissionStatus.Offer, ResumeSubmissionStatus.Hire },
-                "rejected" => new[] { ResumeSubmissionStatus.Rejected },
-                "withdrawn" or "failed" => new[] { ResumeSubmissionStatus.Failed },
-                _ => []
-            };
-
-            if (statusFilter.Length > 0)
-            {
-                query = query.Where(x => statusFilter.Contains(x.s.Status));
-            }
+            query = query.Where(x => statusFilter.Contains(x.Status));
         }
 
-        if (startDate.HasValue) query = query.Where(x => x.s.CreatedAtUtc >= startDate.Value);
-        if (endDate.HasValue) query = query.Where(x => x.s.CreatedAtUtc <= endDate.Value);
+        if (startDate.HasValue)
+        {
+            query = query.Where(x => x.CreatedAtUtc >= startDate.Value);
+        }
 
-        query = query.OrderByDescending(x => x.s.CreatedAtUtc);
+        if (endDate.HasValue)
+        {
+            query = query.Where(x => x.CreatedAtUtc <= endDate.Value);
+        }
+
+        query = query.OrderByDescending(x => x.CreatedAtUtc);
         var totalCount = await query.CountAsync(ct);
-
-        var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize)
-            .Select(x => new ApplicationListItemData
-            {
-                Id = x.s.Id,
-                JobId = x.s.JobId,
-                JobTitle = x.j.Title,
-                Company = x.j.CompanyNameSnapshot ?? "Company",
-                FullName = x.s.FullName,
-                Email = x.s.Email,
-                Status = x.s.Status.ToString(),
-                CreatedAtUtc = x.s.CreatedAtUtc
-            }).ToListAsync(ct);
+        var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(ct);
 
         return new PagedData<ApplicationListItemData>
         {
@@ -107,20 +82,8 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
         };
     }
 
-    public async Task<ApplicationListItemData?> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
-        => await dbContext.ResumeSubmissions.AsNoTracking()
-            .Where(x => x.ApplicantUserId == userId && x.Id == applicationId)
-            .Join(dbContext.Jobs.AsNoTracking(), s => s.JobId, j => j.Id, (s, j) => new ApplicationListItemData
-            {
-                Id = s.Id,
-                JobId = s.JobId,
-                JobTitle = j.Title,
-                Company = j.CompanyNameSnapshot ?? "Company",
-                FullName = s.FullName,
-                Email = s.Email,
-                Status = s.Status.ToString(),
-                CreatedAtUtc = s.CreatedAtUtc
-            }).FirstOrDefaultAsync(ct);
+    public Task<ApplicationListItemData?> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => BuildApplicationsQuery(userId).FirstOrDefaultAsync(x => x.Id == applicationId, ct);
 
     public Task<ResumeSubmissionEntity?> GetApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.ResumeSubmissions.FirstOrDefaultAsync(x => x.ApplicantUserId == userId && x.Id == applicationId, ct);
@@ -131,12 +94,16 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     {
         var query = dbContext.SavedJobs.AsNoTracking().Where(x => x.UserId == userId)
             .Join(dbContext.Jobs.AsNoTracking(), s => s.JobId, j => j.Id, (s, j) => new { s, j })
+            .GroupJoin(dbContext.Companies.AsNoTracking(), item => item.j.CompanyId, company => company.Id, (item, companies) => new { item.s, item.j, companies })
+            .SelectMany(item => item.companies.DefaultIfEmpty(), (item, company) => new { item.s, item.j, company })
             .Where(x => x.j.Status == JobStatus.Published);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalized = search.Trim().ToLower();
-            query = query.Where(x => x.j.Title.ToLower().Contains(normalized) || (x.j.CompanyNameSnapshot ?? string.Empty).ToLower().Contains(normalized));
+            query = query.Where(x =>
+                x.j.Title.ToLower().Contains(normalized) ||
+                ((x.company != null && x.company.Name != null ? x.company.Name : x.j.CompanyNameSnapshot) ?? string.Empty).ToLower().Contains(normalized));
         }
 
         return await query.OrderByDescending(x => x.s.CreatedAtUtc)
@@ -144,7 +111,9 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
             {
                 JobId = x.j.Id,
                 Title = x.j.Title,
-                Company = x.j.CompanyNameSnapshot ?? "Company",
+                Company = x.company != null && !string.IsNullOrWhiteSpace(x.company.Name)
+                    ? x.company.Name
+                    : x.j.CompanyNameSnapshot ?? "Company",
                 Location = x.j.Location,
                 SalaryMin = x.j.SalaryMinPerAnnum,
                 SalaryMax = x.j.SalaryMaxPerAnnum,
@@ -238,5 +207,57 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
         return dailyRows
             .Select(x => (new DateTime(x.Year, x.Month, x.Day), x.Count))
             .ToList();
+    }
+
+    private IQueryable<ApplicationListItemData> BuildApplicationsQuery(Guid userId)
+        => from submission in dbContext.ResumeSubmissions.AsNoTracking()
+           where submission.ApplicantUserId == userId
+           join job in dbContext.Jobs.AsNoTracking() on submission.JobId equals job.Id
+           join recruiterUser in dbContext.Users.AsNoTracking() on job.RecruiterId equals recruiterUser.Id into recruiterUsers
+           from recruiterUser in recruiterUsers.DefaultIfEmpty()
+           join company in dbContext.Companies.AsNoTracking() on job.CompanyId equals company.Id into companies
+           from company in companies.DefaultIfEmpty()
+           select new ApplicationListItemData
+           {
+               Id = submission.Id,
+               JobId = submission.JobId,
+               JobTitle = job.Title,
+               CompanyName = company != null && company.Name != null && company.Name != ""
+                   ? company.Name
+                   : (job.CompanyNameSnapshot ?? "Company"),
+               RecruiterName = recruiterUser != null ? recruiterUser.UserName : null,
+               RecruiterEmail = recruiterUser != null ? recruiterUser.Email : null,
+               FullName = submission.FullName,
+               Email = submission.Email,
+               Status = submission.Status,
+               CreatedAtUtc = submission.CreatedAtUtc,
+               UpdatedAtUtc = submission.UpdatedAtUtc,
+           };
+
+    private static IReadOnlyCollection<ResumeSubmissionStatus> ResolveStatusFilter(string? status)
+    {
+        var normalizedStatus = status?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalizedStatus))
+        {
+            return [];
+        }
+
+        return normalizedStatus switch
+        {
+            "applied" or "submitted" or "recommended" =>
+            [
+                ResumeSubmissionStatus.Pending,
+                ResumeSubmissionStatus.Processing,
+                ResumeSubmissionStatus.Completed,
+                ResumeSubmissionStatus.Shortlisted
+            ],
+            "shortlist" or "shortlisted" => [ResumeSubmissionStatus.Shortlisted],
+            "interview" => [ResumeSubmissionStatus.Interview],
+            "offer" => [ResumeSubmissionStatus.Offer],
+            "hire" or "hired" => [ResumeSubmissionStatus.Hire],
+            "rejected" => [ResumeSubmissionStatus.Rejected],
+            "withdrawn" or "failed" => [ResumeSubmissionStatus.Failed],
+            _ => []
+        };
     }
 }

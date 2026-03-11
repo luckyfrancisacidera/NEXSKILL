@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SkillSense.Domain.Entities;
 
@@ -31,10 +31,14 @@ internal sealed class RecruiterProfileConfiguration : IEntityTypeConfiguration<R
     {
         builder.ToTable("recruiter_profiles");
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.CompanyName).HasMaxLength(200);
-        builder.Property(x => x.CompanyEmail).HasMaxLength(320);
+        builder.Property(x => x.CompanyId).IsRequired();
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
+        builder
+            .HasOne(x => x.Company)
+            .WithMany()
+            .HasForeignKey(x => x.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

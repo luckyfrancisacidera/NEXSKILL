@@ -1,12 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactElement } from "react";
-import { Suspense, lazy } from "react";
 import { createBrowserRouter, Navigate, Outlet, type RouteObject } from "react-router-dom";
 import { AppShell } from "@app/layouts/AppShell";
+import { useAuth } from "@app/providers/AuthProvider";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
 import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
 import { ScrollToTop } from "@shared/components/ScrollToTop";
-import { PublicOnly, RequireAuth, RequireRole } from "@app/routes/routes.guard";
+import { PublicOnly, RequireAuth, RequireRole, getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { routeAccess, type AppRouteKey } from "@app/routes/route.config";
 import {
   ApplicationsPage,
@@ -22,13 +22,14 @@ import {
   JobDetailPage as JobSeekerJobDetailPage,
   jobDetailLoader,
   applyJobAction,
+  InterviewPage,
+  OffersPage,
 } from "@features/jobseeker";
 import {
   AutomationsPage,
   CandidateDetailPage,
   CandidatesPage,
   InterviewFormPage,
-  InterviewsPage,
   JobDetailPage,
   JobFormPage,
   JobPostsPage,
@@ -54,6 +55,12 @@ import {
   upsertInterviewAction,
   upsertJobAction,
 } from "@features/recruiter";
+import {
+  CompanyAdminDashboardPage,
+  SuperAdminDashboardPage,
+  companyAdminDashboardLoader,
+  superAdminDashboardLoader,
+} from "@features/admin";
 import { RegisterAccount, LoginAccount } from "@features/auth";
 import { ForgotPasswordPage } from "@features/auth/pages/ForgotPasswordPage";
 
@@ -80,10 +87,6 @@ type ActionOnlyRouteOptions = Omit<ProtectedRouteOptions, "element"> & {
   redirectTo: string;
 };
 
-const LazyAdminPlaceholderPage = lazy(async () => ({
-  default: (await import("@features/admin/AdminPlaceholderPage")).AdminPlaceholderPage,
-}));
-
 const withPageScroll = (element: ReactElement) => (
   <>
     <ScrollToTop />
@@ -102,11 +105,11 @@ const AppShellRoute = () => (
 
 const ActionRouteFallback = ({ to }: { to: string }) => <Navigate to={to} replace />;
 
-const AdminPlaceholder = ({ title }: { title: string }) => (
-  <Suspense fallback={null}>
-    <LazyAdminPlaceholderPage title={title} />
-  </Suspense>
-);
+const AdminIndexRedirect = () => {
+  const { roles } = useAuth();
+  const route = getDefaultRouteByRole(roles);
+  return <Navigate to={route.startsWith("/admin") ? route : "/not-authorized"} replace />;
+};
 
 const protectElement = (access: AppRouteKey, element: ReactElement) => (
   <RequireRole allowedRoles={routeAccess[access]}>{element}</RequireRole>
@@ -162,6 +165,12 @@ const sharedRoutes: AppRoute[] = [
     element: <ApplicationsPage />,
   }),
   protectedRoute({
+    path: "offers",
+    access: "offers",
+    loader: applicationsLoader,
+    element: <OffersPage />,
+  }),
+  protectedRoute({
     path: "messages",
     access: "messages",
     element: <MessagesPage />,
@@ -181,9 +190,13 @@ const sharedRoutes: AppRoute[] = [
     access: "settings",
     element: <SettingsPage />,
   }),
+  protectedRoute({
+    path: "jobseeker/interviews",
+    access: "applications",
+    element: <InterviewPage />,
+  }),
 ];
 
-// Recruiter routes now live in one nested tree so child segments stay relative and role guards are applied through helpers.
 const recruiterRoutes: AppRoute = {
   path: "recruiter",
   element: <Outlet />,
@@ -272,14 +285,7 @@ const recruiterRoutes: AppRoute = {
           index: true,
           access: "recruiterInterviews",
           loader: recruiterInterviewsLoader,
-          element: <InterviewsPage />,
-        }),
-        protectedRoute({
-          path: "new",
-          access: "recruiterInterviews",
-          loader: recruiterInterviewsLoader,
-          action: upsertInterviewAction,
-          element: <InterviewFormPage mode="create" />,
+          element: <InterviewFormPage />,
         }),
         {
           path: ":interviewId",
@@ -290,7 +296,7 @@ const recruiterRoutes: AppRoute = {
               access: "recruiterInterviews",
               loader: recruiterInterviewDetailLoader,
               action: upsertInterviewAction,
-              element: <InterviewFormPage mode="edit" />,
+              element: <InterviewFormPage />,
             }),
             actionOnlyRoute({
               path: "cancel",
@@ -337,20 +343,22 @@ const recruiterRoutes: AppRoute = {
   ],
 };
 
-// Admin pages are grouped separately, and the placeholder screens are lazy-loaded to reduce up-front bundle work.
 const adminRoutes: AppRoute = {
   path: "admin",
   element: <Outlet />,
   children: [
+    { index: true, element: <AdminIndexRedirect /> },
     protectedRoute({
-      index: true,
-      access: "adminDashboard",
-      element: <AdminPlaceholder title="Admin Dashboard" />,
+      path: "super",
+      access: "superAdminDashboard",
+      loader: superAdminDashboardLoader,
+      element: <SuperAdminDashboardPage />,
     }),
     protectedRoute({
-      path: "users",
-      access: "adminUsers",
-      element: <AdminPlaceholder title="Admin Users" />,
+      path: "company",
+      access: "companyAdminDashboard",
+      loader: companyAdminDashboardLoader,
+      element: <CompanyAdminDashboardPage />,
     }),
   ],
 };
@@ -384,7 +392,4 @@ export const router = createBrowserRouter([
   },
   { path: "*", element: <Navigate to="/login" replace /> },
 ]);
-
-
-
 

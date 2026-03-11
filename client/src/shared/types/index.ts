@@ -1,4 +1,4 @@
-export type Role = 'jobseeker' | 'recruiter' | 'admin';
+export type Role = 'jobseeker' | 'recruiter' | 'admin' | 'companyAdmin' | 'superAdmin';
 
 export type JobType = 'Full-time' | 'Part-time' | 'Contract' | 'Remote';
 
@@ -8,7 +8,7 @@ export interface Job {
   company: string;
   salaryMin: number;
   salaryMax: number;
-  currency : string ;
+  currency: string;
   location: string;
   type: JobType;
   snippet: string;
