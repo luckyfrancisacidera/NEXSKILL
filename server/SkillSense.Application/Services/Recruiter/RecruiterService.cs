@@ -236,13 +236,33 @@ public sealed class RecruiterService(
 
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
-        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
-        return await GetDashboardAsync(profile.CompanyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
+        var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct);
+        if (!HasDashboardCompanyContext(profile))
+        {
+            return CreateEmptyDashboardResponse();
+        }
+
+        return await GetDashboardCoreAsync(profile!.CompanyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
     }
 
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid companyId, Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
-        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct);
+        if (!HasDashboardCompanyContext(profile))
+        {
+            return CreateEmptyDashboardResponse();
+        }
+
+        if (profile!.CompanyId != companyId)
+        {
+            throw new UnauthorizedAccessException("Recruiter profile does not belong to the active company.");
+        }
+
+        return await GetDashboardCoreAsync(companyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
+    }
+
+    private async Task<RecruiterDashboardResponse> GetDashboardCoreAsync(Guid companyId, Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct)
+    {
         var normalizedStartDate = startDate?.Date;
         var normalizedEndDate = endDate?.Date;
         if (normalizedStartDate.HasValue && normalizedEndDate.HasValue && normalizedStartDate.Value > normalizedEndDate.Value)
@@ -709,11 +729,20 @@ public sealed class RecruiterService(
         return updated;
     }
 
+    private static bool HasDashboardCompanyContext(RecruiterProfileEntity? profile)
+        => profile is not null
+            && profile.CompanyId != Guid.Empty
+            && profile.Company is not null
+            && !string.IsNullOrWhiteSpace(profile.Company.Name);
+
+    private static RecruiterDashboardResponse CreateEmptyDashboardResponse()
+        => new();
+
     private async Task<RecruiterProfileEntity> EnsureProfileCompleteAsync(Guid recruiterId, CancellationToken ct)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
             ?? throw new InvalidOperationException("Recruiter profile not found.");
-        if (profile.CompanyId == Guid.Empty || profile.Company is null || string.IsNullOrWhiteSpace(profile.Company.Name))
+        if (!HasDashboardCompanyContext(profile))
         {
             throw new InvalidOperationException("Recruiter company profile must be completed before creating jobs.");
         }

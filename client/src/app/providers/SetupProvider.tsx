@@ -11,6 +11,7 @@ import { http } from "@shared/api/http";
 import { useAuth } from "@app/providers/AuthProvider";
 import { RecruiterInitialSetupModal } from "@shared/components/setup/RecruiterInitialSetupModal";
 import { CompanyAdminInitialSetupModal } from "@shared/components/setup/CompanyAdminInitialSetupModal";
+import { getDefaultRouteForRoles } from "@shared/utils/permissions";
 
 type SetupType = "recruiter" | "companyAdmin" | null;
 
@@ -21,50 +22,71 @@ interface SetupStatus {
 
 interface SetupContextValue {
   status: SetupStatus;
+  isLoading: boolean;
   refresh: () => Promise<void>;
 }
 
 const SetupContext = createContext<SetupContextValue | null>(null);
 
 export const SetupProvider = ({ children }: PropsWithChildren) => {
-  const { isAuthenticated, isHydrating } = useAuth();
+  const { isAuthenticated, isHydrating, roles } = useAuth();
   const [status, setStatus] = useState<SetupStatus>({
     requiresSetup: false,
     type: null,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadStatus = useCallback(async () => {
-    if (!isAuthenticated) {
-      setStatus({ requiresSetup: false, type: null });
+    if (isHydrating) {
       return;
     }
 
-    const response = await http.get<{
-      requiresSetup?: boolean;
-      type?: "recruiter" | "companyAdmin";
-    }>("/api/account/setup-status");
+    setIsLoading(true);
 
-    setStatus({
-      requiresSetup: response.data.requiresSetup ?? false,
-      type: (response.data.type as SetupType) ?? null,
-    });
-  }, [isAuthenticated]);
+    if (!isAuthenticated) {
+      setStatus({ requiresSetup: false, type: null });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await http.get<{
+        requiresSetup?: boolean;
+        type?: "recruiter" | "companyAdmin";
+      }>("/api/account/setup-status");
+
+      setStatus({
+        requiresSetup: response.data.requiresSetup ?? false,
+        type: (response.data.type as SetupType) ?? null,
+      });
+    } catch {
+      setStatus({ requiresSetup: false, type: null });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, isHydrating]);
 
   useEffect(() => {
-    if (isHydrating) return;
+    if (isHydrating) {
+      return;
+    }
+
     void loadStatus();
   }, [isHydrating, loadStatus]);
 
   const handleCompleted = async () => {
     await loadStatus();
+    const redirectTo = getDefaultRouteForRoles(roles);
+    window.location.replace(redirectTo);
   };
 
   const value = useMemo<SetupContextValue>(
     () => ({
       status,
+      isLoading,
       refresh: loadStatus,
     }),
-    [status, loadStatus],
+    [status, isLoading, loadStatus],
   );
 
   const showRecruiterSetup =
@@ -93,4 +115,3 @@ export const useSetup = () => {
 
   return context;
 };
-

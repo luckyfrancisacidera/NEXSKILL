@@ -16,6 +16,8 @@ public sealed class InterviewDto
     public string? RecruiterName { get; init; }
     public string? RecruiterEmail { get; init; }
     public string? CompanyName { get; init; }
+    public string? JobTitle { get; init; }
+    public string? JobSeekerName { get; init; }
 }
 
 public sealed class ScheduleInterviewRequest

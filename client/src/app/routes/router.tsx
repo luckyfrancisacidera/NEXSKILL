@@ -57,9 +57,13 @@ import {
 } from "@features/recruiter";
 import {
   CompanyAdminDashboardPage,
+  SuperAdminCompanyAdminsPage,
   SuperAdminDashboardPage,
+  SuperAdminRecruitersPage,
   companyAdminDashboardLoader,
+  superAdminCompanyAdminsLoader,
   superAdminDashboardLoader,
+  superAdminRecruitersLoader,
 } from "@features/admin";
 import { RegisterAccount, LoginAccount } from "@features/auth";
 import { ForgotPasswordPage } from "@features/auth/pages/ForgotPasswordPage";
@@ -353,6 +357,18 @@ const adminRoutes: AppRoute = {
       access: "superAdminDashboard",
       loader: superAdminDashboardLoader,
       element: <SuperAdminDashboardPage />,
+    }),
+    protectedRoute({
+      path: "super/company-admins",
+      access: "superAdminCompanyAdmins",
+      loader: superAdminCompanyAdminsLoader,
+      element: <SuperAdminCompanyAdminsPage />,
+    }),
+    protectedRoute({
+      path: "super/recruiters",
+      access: "superAdminRecruiters",
+      loader: superAdminRecruitersLoader,
+      element: <SuperAdminRecruitersPage />,
     }),
     protectedRoute({
       path: "company",

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SkillSense.Api.Security;
@@ -13,13 +12,9 @@ namespace SkillSense.Api.Controllers;
 [ApiController]
 public sealed class AuthController(
     IAuthService authService,
-    ITokenService tokenService,
-    UserManager<SkillSense.Domain.Entities.AppUser> userManager,
     IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
-    private readonly ITokenService _tokenService = tokenService;
-    private readonly UserManager<SkillSense.Domain.Entities.AppUser> _userManager = userManager;
     private readonly IConfiguration _configuration = configuration;
 
     [HttpPost("register")]
@@ -62,25 +57,16 @@ public sealed class AuthController(
             return Unauthorized(new { message = "Refresh token is missing." });
         }
 
-        var userId = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
-        if (!userId.HasValue)
+        var result = await _authService.RefreshAsync(refreshToken, cancellationToken);
+        if (!result.Succeeded)
         {
-            return Unauthorized(new { message = "Invalid refresh token." });
+            return Unauthorized(new { message = result.Message, errors = result.Errors });
         }
 
-        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
-        if (user is null)
-        {
-            return Unauthorized(new { message = "Invalid refresh token." });
-        }
+        WriteAccessCookie(result.Token!);
+        WriteRefreshCookie(result.RefreshToken!);
 
-        var accessToken = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        var newRefreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
-
-        WriteAccessCookie(accessToken);
-        WriteRefreshCookie(newRefreshToken);
-
-        return Ok(new { message = "Token refreshed." });
+        return Ok(new { message = result.Message });
     }
 
     [HttpPost("request-password-reset")]

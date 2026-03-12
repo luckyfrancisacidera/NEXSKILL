@@ -1,3 +1,11 @@
+export interface Paged<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 export interface SuperAdminDashboardDto {
   summary: {
     totalCompanies: number;
@@ -7,8 +15,19 @@ export interface SuperAdminDashboardDto {
     totalJobs: number;
     activeJobs: number;
   };
-  companies: AdminCompanyOverviewDto[];
-  recentRecruiters: AdminRecruiterOverviewDto[];
+  companies: Paged<AdminCompanyOverviewDto>;
+  companyAdmins: Paged<AdminCompanyAdminOverviewDto>;
+  recruiters: Paged<AdminRecruiterOverviewDto>;
+}
+
+export interface SuperAdminCompanyAdminsPageDto {
+  summary: SuperAdminDashboardDto['summary'];
+  companyAdmins: Paged<AdminCompanyAdminOverviewDto>;
+}
+
+export interface SuperAdminRecruitersPageDto {
+  summary: SuperAdminDashboardDto['summary'];
+  recruiters: Paged<AdminRecruiterOverviewDto>;
 }
 
 export interface CompanyAdminDashboardDto {
@@ -27,7 +46,7 @@ export interface CompanyAdminDashboardDto {
     totalOffers: number;
     totalHires: number;
   };
-  recruiters: AdminRecruiterOverviewDto[];
+  recruiters: Paged<AdminRecruiterOverviewDto>;
 }
 
 export interface AdminCompanyOverviewDto {
@@ -39,6 +58,15 @@ export interface AdminCompanyOverviewDto {
   activeJobs: number;
   upcomingInterviews: number;
   updatedAtUtc: string;
+}
+
+export interface AdminCompanyAdminOverviewDto {
+  userId: string;
+  companyId: string;
+  companyName: string;
+  email: string;
+  isActive: boolean;
+  createdAtUtc: string;
 }
 
 export interface AdminRecruiterOverviewDto {
@@ -58,4 +86,17 @@ export interface AdminRecruiterOverviewDto {
 export interface CreateManagedRecruiterPayload {
   email: string;
   password: string;
+}
+
+export interface CreateCompanyAccountPayload {
+  name: string;
+  primaryEmail?: string;
+  location?: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export interface AdminCompanyAccountDto {
+  company: AdminCompanyOverviewDto;
+  companyAdmin: AdminCompanyAdminOverviewDto;
 }

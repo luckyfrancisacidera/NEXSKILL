@@ -16,6 +16,8 @@ const statusChipClassName: Record<Interview["status"], string> = {
     "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-200 dark:ring-rose-900/70",
   RescheduleRequested:
     "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-900/70",
+  Rescheduled:
+    "bg-sky-50 text-sky-700 ring-1 ring-sky-200/70 dark:bg-sky-900/30 dark:text-sky-200 dark:ring-sky-900/70",
 };
 
 export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) => {
@@ -76,12 +78,15 @@ export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) =
                 month: "short",
                 day: "numeric",
               })}{" "}
-              ·{" "}
+              -{" "}
               {scheduledAt.toLocaleTimeString(undefined, {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
             </p>
+            {interview.jobTitle ? (
+              <p className="mt-1 text-xs text-zinc-500">{interview.jobTitle}</p>
+            ) : null}
           </div>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusChipClassName[interview.status]}`}

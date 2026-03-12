@@ -3,7 +3,7 @@ using SkillSense.Application.Contracts.Auth;
 namespace SkillSense.Application.Interfaces.Auth;
 
 /// <summary>
-/// Defines authentication, registration, and password reset operations.
+/// Defines authentication, registration, refresh, and password reset operations.
 /// </summary>
 public interface IAuthService
 {
@@ -16,6 +16,16 @@ public interface IAuthService
     /// Authenticates an existing user.
     /// </summary>
     Task<AuthResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Refreshes an existing authenticated session.
+    /// </summary>
+    Task<AuthResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Determines whether the current authenticated session is still allowed to access protected resources.
+    /// </summary>
+    Task<bool> IsSessionActiveAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates an administrator or recruiter account.

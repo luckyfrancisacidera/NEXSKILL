@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillSense.Api.Security;
+using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
@@ -16,11 +17,18 @@ namespace SkillSense.Api.Controllers;
 [Authorize(Roles = "Recruiter")]
 public sealed class RecruiterController(
     IRecruiterService recruiterService,
+    IInterviewService interviewService,
     IInterviewRepository interviewRepository,
     IInterviewCalendarService interviewCalendarService,
-    IRecruiterRepository recruiterRepository,
     ILogger<RecruiterController> logger) : ControllerBase
 {
+    public sealed record RecruiterScheduleInterviewRequest(
+        Guid JobId,
+        Guid JobSeekerId,
+        DateTime ScheduledDateTimeUtc,
+        string LocationOrMeetingLink,
+        string? Message);
+
     [HttpGet("profile")]
     public async Task<ActionResult<RecruiterProfileResponse>> GetProfile(CancellationToken ct)
         => Ok(await recruiterService.GetProfileAsync(CurrentUserContext.GetUserId(User), ct));
@@ -119,9 +127,12 @@ public sealed class RecruiterController(
     public async Task<ActionResult<RecruiterDashboardResponse>> Dashboard([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, [FromQuery] string? department = null, [FromQuery] string? jobRole = null, [FromQuery] string? groupBy = "month", CancellationToken ct = default)
     {
         var userId = CurrentUserContext.GetUserId(User);
-        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
-            ?? throw new UnauthorizedAccessException("Active company context is required.");
-        return Ok(await recruiterService.GetDashboardAsync(companyId, userId, startDate, endDate, department, jobRole, groupBy, ct));
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext);
+        var response = companyId.HasValue
+            ? await recruiterService.GetDashboardAsync(companyId.Value, userId, startDate, endDate, department, jobRole, groupBy, ct)
+            : await recruiterService.GetDashboardAsync(userId, startDate, endDate, department, jobRole, groupBy, ct);
+
+        return Ok(response);
     }
 
     [HttpGet("applicants/scores")]
@@ -186,28 +197,64 @@ public sealed class RecruiterController(
         return Ok(await recruiterService.MarkHiredAsync(companyId, userId, id, ct));
     }
 
+    [HttpGet("interviews")]
+    public async Task<ActionResult<IReadOnlyList<InterviewDto>>> GetInterviews(CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.GetByRecruiterAsync(companyId, userId, ct));
+    }
+
+    [HttpGet("interviews/{id:guid}")]
+    public async Task<ActionResult<InterviewDto>> GetInterview(Guid id, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.GetRecruiterInterviewAsync(companyId, userId, id, ct));
+    }
+
+    [HttpPost("interviews")]
+    public async Task<ActionResult<InterviewDto>> ScheduleInterview([FromBody] RecruiterScheduleInterviewRequest request, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        var result = await interviewService.ScheduleInterviewAsync(
+            companyId,
+            new ScheduleInterviewRequest
+            {
+                JobId = request.JobId,
+                RecruiterId = userId,
+                JobSeekerId = request.JobSeekerId,
+                ScheduledDateTimeUtc = request.ScheduledDateTimeUtc,
+                LocationOrMeetingLink = request.LocationOrMeetingLink,
+                Message = request.Message,
+            },
+            ct);
+
+        return CreatedAtAction(nameof(GetInterview), new { id = result.Id }, result);
+    }
+
+    [HttpPut("interviews/{id:guid}")]
+    public async Task<ActionResult<InterviewDto>> RescheduleInterview(Guid id, [FromBody] RescheduleInterviewRequest request, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.RescheduleInterviewAsync(companyId, userId, id, request, ct));
+    }
+
     [HttpGet("interviews/{id:guid}/ics")]
     public async Task<IActionResult> DownloadInterviewCalendar(Guid id, CancellationToken ct)
     {
         var userId = CurrentUserContext.GetUserId(User);
         var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
             ?? throw new UnauthorizedAccessException("Active company context is required.");
-        var activeRecruiterProfileId = CurrentUserContext.GetActiveRecruiterProfileId(HttpContext);
-        var recruiterProfile = activeRecruiterProfileId.HasValue
-            ? await recruiterRepository.GetProfileByUserAndProfileIdAsync(userId, activeRecruiterProfileId.Value, ct)
-            : await recruiterRepository.GetProfileByUserIdAsync(userId, ct);
 
-        if (recruiterProfile is null)
-        {
-            throw new UnauthorizedAccessException("Recruiter profile not found.");
-        }
-
-        if (recruiterProfile.CompanyId != companyId)
-        {
-            throw new UnauthorizedAccessException("Active recruiter profile does not belong to the active company.");
-        }
-
-        var interview = await interviewRepository.GetByIdForRecruiterAsync(id, userId, recruiterProfile.CompanyId, ct);
+        var interview = await interviewRepository.GetByIdForRecruiterAsync(id, userId, companyId, ct);
         if (interview is null)
         {
             return NotFound();
@@ -217,4 +264,3 @@ public sealed class RecruiterController(
         return File(Encoding.UTF8.GetBytes(calendarContent), "text/calendar", $"interview-{id}.ics");
     }
 }
-

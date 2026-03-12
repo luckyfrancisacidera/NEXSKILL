@@ -3,7 +3,7 @@ import { ModalOverlay } from "@shared/components/ModalOverlay";
 import { http } from "@shared/api/http";
 
 interface RecruiterInitialSetupModalProps {
-  onCompleted: () => void;
+  onCompleted: () => Promise<void>;
 }
 
 export const RecruiterInitialSetupModal = ({
@@ -30,7 +30,7 @@ export const RecruiterInitialSetupModal = ({
         companyEmail,
         location,
       });
-      onCompleted();
+      await onCompleted();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to complete setup. Please try again.",
@@ -104,4 +104,3 @@ export const RecruiterInitialSetupModal = ({
     </ModalOverlay>
   );
 };
-

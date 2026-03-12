@@ -16,6 +16,8 @@ export type AppRouteKey =
   | "recruiterAutomations"
   | "recruiterSettings"
   | "superAdminDashboard"
+  | "superAdminCompanyAdmins"
+  | "superAdminRecruiters"
   | "companyAdminDashboard";
 
 export const routeAccess: Record<AppRouteKey, Role[]> = {
@@ -34,5 +36,7 @@ export const routeAccess: Record<AppRouteKey, Role[]> = {
   recruiterAutomations: ["recruiter"],
   recruiterSettings: ["recruiter"],
   superAdminDashboard: ["admin", "superAdmin"],
+  superAdminCompanyAdmins: ["admin", "superAdmin"],
+  superAdminRecruiters: ["admin", "superAdmin"],
   companyAdminDashboard: ["companyAdmin"],
 };

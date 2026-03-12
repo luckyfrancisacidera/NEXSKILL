@@ -1,10 +1,13 @@
+using SkillSense.Application.Contracts.Response;
+
 namespace SkillSense.Application.Contracts.Admin.Response;
 
 public sealed class SuperAdminDashboardResponse
 {
     public SuperAdminDashboardSummaryResponse Summary { get; set; } = new();
-    public IReadOnlyList<AdminCompanyOverviewResponse> Companies { get; set; } = [];
-    public IReadOnlyList<AdminRecruiterOverviewResponse> RecentRecruiters { get; set; } = [];
+    public PagedResult<AdminCompanyOverviewResponse> Companies { get; set; } = new();
+    public PagedResult<AdminCompanyAdminOverviewResponse> CompanyAdmins { get; set; } = new();
+    public PagedResult<AdminRecruiterOverviewResponse> Recruiters { get; set; } = new();
 }
 
 public sealed class SuperAdminDashboardSummaryResponse
@@ -21,7 +24,7 @@ public sealed class CompanyAdminDashboardResponse
 {
     public AdminCompanyIdentityResponse Company { get; set; } = new();
     public CompanyAdminDashboardSummaryResponse Summary { get; set; } = new();
-    public IReadOnlyList<AdminRecruiterOverviewResponse> Recruiters { get; set; } = [];
+    public PagedResult<AdminRecruiterOverviewResponse> Recruiters { get; set; } = new();
 }
 
 public sealed class CompanyAdminDashboardSummaryResponse
@@ -55,6 +58,16 @@ public sealed class AdminCompanyOverviewResponse
     public DateTime UpdatedAtUtc { get; set; }
 }
 
+public sealed class AdminCompanyAdminOverviewResponse
+{
+    public Guid UserId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+}
+
 public sealed class AdminRecruiterOverviewResponse
 {
     public Guid ProfileId { get; set; }
@@ -68,4 +81,10 @@ public sealed class AdminRecruiterOverviewResponse
     public int ActiveJobs { get; set; }
     public int UpcomingInterviews { get; set; }
     public int TotalHires { get; set; }
+}
+
+public sealed class AdminCompanyAccountResponse
+{
+    public AdminCompanyOverviewResponse Company { get; set; } = new();
+    public AdminCompanyAdminOverviewResponse CompanyAdmin { get; set; } = new();
 }

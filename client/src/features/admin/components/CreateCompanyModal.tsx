@@ -1,0 +1,104 @@
+import { useState, type FormEvent } from 'react';
+import { Button } from '@shared/components/Button';
+import { ModalOverlay } from '@shared/components/ModalOverlay';
+import type { CreateCompanyAccountPayload } from '@features/admin/types/admin.type';
+
+interface CreateCompanyModalProps {
+  open: boolean;
+  isSubmitting: boolean;
+  error: string | null;
+  onClose: () => void;
+  onSubmit: (payload: CreateCompanyAccountPayload) => Promise<void>;
+}
+
+const inputClassName = 'mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white';
+
+export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmit }: CreateCompanyModalProps) => {
+  const [name, setName] = useState('');
+  const [primaryEmail, setPrimaryEmail] = useState('');
+  const [location, setLocation] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
+  if (!open) {
+    return null;
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    try {
+      await onSubmit({
+        name: name.trim(),
+        primaryEmail: primaryEmail.trim() || undefined,
+        location: location.trim() || undefined,
+        adminEmail: adminEmail.trim(),
+        adminPassword,
+      });
+
+      setName('');
+      setPrimaryEmail('');
+      setLocation('');
+      setAdminEmail('');
+      setAdminPassword('');
+    } catch {
+      // The parent surfaces the error state for the modal body.
+    }
+  };
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Super Admin</p>
+            <h2 className="mt-2 text-2xl font-semibold text-zinc-950">Create company account</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
+              Add a company tenant and provision the initial company admin in one flow.
+            </p>
+          </div>
+          <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+        </div>
+
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <label className="block text-sm font-medium text-zinc-700">
+            Company name
+            <input className={inputClassName} value={name} onChange={(event) => setName(event.target.value)} required />
+          </label>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block text-sm font-medium text-zinc-700">
+              Primary email
+              <input type="email" className={inputClassName} value={primaryEmail} onChange={(event) => setPrimaryEmail(event.target.value)} placeholder="hello@company.com" />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700">
+              Location
+              <input className={inputClassName} value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Singapore" />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block text-sm font-medium text-zinc-700">
+              Company admin email
+              <input type="email" className={inputClassName} value={adminEmail} onChange={(event) => setAdminEmail(event.target.value)} required />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700">
+              Initial admin password
+              <input type="password" className={inputClassName} value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} required />
+            </label>
+          </div>
+
+          {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating company...' : 'Create company'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </ModalOverlay>
+  );
+};
+

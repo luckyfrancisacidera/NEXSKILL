@@ -1,47 +1,27 @@
 import { useEffect, useState } from "react";
-import type { Interview } from "@features/recruiter/types/interview.types";
+import { useLoaderData } from "react-router-dom";
+import type {
+  Interview,
+  ScheduleInterviewInput,
+} from "@features/recruiter/types/interview.types";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
 import { Card } from "@shared/components/Card";
 import { emitNotification } from "@shared/utils/notifications";
 import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
 import { InterviewList } from "./components/InterviewList";
 
+interface InterviewFormLoaderData {
+  interviews: Interview[];
+}
+
 export const InterviewFormPage = () => {
-  const [interviews, setInterviews] = useState<Interview[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const loaderData = useLoaderData() as InterviewFormLoaderData;
+  const [interviews, setInterviews] = useState<Interview[]>(loaderData.interviews);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        setIsLoading(true);
-        const data = await recruiterInterviewService.getRecruiterInterviews();
-        if (!cancelled) {
-          setInterviews(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Unable to load interviews. Please try again.",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    setInterviews(loaderData.interviews);
+  }, [loaderData]);
 
   const addInterview = (interview: Interview) => {
     setInterviews((items) => [interview, ...items]);
@@ -53,25 +33,25 @@ export const InterviewFormPage = () => {
     );
   };
 
-  const handleSchedule = async (
-    input: Omit<Interview, "id" | "status"> & { status?: Interview["status"] },
-  ) => {
-    const scheduled = await recruiterInterviewService.scheduleInterview({
-      recruiterId: input.recruiterId,
-      jobseekerId: input.jobseekerId,
-      candidateName: input.candidateName,
-      scheduledDate: input.scheduledDate,
-      meetingLink: input.meetingLink,
-      location: input.location,
-      message: input.message,
-    });
-    addInterview(scheduled);
+  const handleSchedule = async (input: ScheduleInterviewInput) => {
+    try {
+      const scheduled = await recruiterInterviewService.scheduleInterview(input);
+      addInterview(scheduled);
+      setError(null);
 
-    emitNotification({
-      title: "Interview scheduled",
-      description: `${scheduled.candidateName} has been invited.`,
-      actor: "recruiter",
-    });
+      emitNotification({
+        title: "Interview scheduled",
+        description: `${scheduled.candidateName} has been invited.`,
+        actor: "recruiter",
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to schedule the interview. Please try again.",
+      );
+      throw err;
+    }
   };
 
   const handleReschedule = async (
@@ -79,17 +59,26 @@ export const InterviewFormPage = () => {
     scheduledDate: string,
     message?: string,
   ) => {
-    const updated = await recruiterInterviewService.rescheduleInterview(id, {
-      scheduledDate,
-      message,
-    });
-    updateInterview(updated);
+    try {
+      const updated = await recruiterInterviewService.rescheduleInterview(id, {
+        scheduledDate,
+        message,
+      });
+      updateInterview(updated);
+      setError(null);
 
-    emitNotification({
-      title: "Interview rescheduled",
-      description: `${updated.candidateName} has been notified of the change.`,
-      actor: "recruiter",
-    });
+      emitNotification({
+        title: "Interview rescheduled",
+        description: `${updated.candidateName} has been notified of the change.`,
+        actor: "recruiter",
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to reschedule the interview. Please try again.",
+      );
+    }
   };
 
   return (
@@ -110,12 +99,11 @@ export const InterviewFormPage = () => {
         <InterviewSchedulerForm onSchedule={handleSchedule} />
         <InterviewList
           interviews={interviews}
-          isLoading={isLoading}
+          isLoading={false}
           error={error}
           onReschedule={handleReschedule}
         />
       </div>
     </div>
   );
-}
-
+};

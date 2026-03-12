@@ -8,8 +8,9 @@ public sealed class SuperAdminDashboardData
     public int ActiveRecruiters { get; set; }
     public int TotalJobs { get; set; }
     public int ActiveJobs { get; set; }
-    public IReadOnlyList<AdminCompanyOverviewData> Companies { get; set; } = [];
-    public IReadOnlyList<AdminRecruiterOverviewData> RecentRecruiters { get; set; } = [];
+    public PagedData<AdminCompanyOverviewData> Companies { get; set; } = new();
+    public PagedData<AdminCompanyAdminOverviewData> CompanyAdmins { get; set; } = new();
+    public PagedData<AdminRecruiterOverviewData> Recruiters { get; set; } = new();
 }
 
 public sealed class CompanyAdminDashboardData
@@ -21,7 +22,7 @@ public sealed class CompanyAdminDashboardData
     public int UpcomingInterviews { get; set; }
     public int TotalOffers { get; set; }
     public int TotalHires { get; set; }
-    public IReadOnlyList<AdminRecruiterOverviewData> Recruiters { get; set; } = [];
+    public PagedData<AdminRecruiterOverviewData> Recruiters { get; set; } = new();
 }
 
 public sealed class AdminCompanyIdentityData
@@ -43,6 +44,16 @@ public sealed class AdminCompanyOverviewData
     public int ActiveJobs { get; set; }
     public int UpcomingInterviews { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+}
+
+public sealed class AdminCompanyAdminOverviewData
+{
+    public Guid UserId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
 }
 
 public sealed class AdminRecruiterOverviewData

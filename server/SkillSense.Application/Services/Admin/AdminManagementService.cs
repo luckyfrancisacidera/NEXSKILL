@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using SkillSense.Application.Contracts.Admin.Request;
 using SkillSense.Application.Contracts.Admin.Response;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Admin;
 using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Domain.Entities;
@@ -13,11 +15,22 @@ namespace SkillSense.Application.Services.Admin;
 public sealed class AdminManagementService(
     IAdminManagementRepository adminManagementRepository,
     IAuthService authService,
+    IDateTimeProvider dateTimeProvider,
     UserManager<AppUser> userManager) : IAdminManagementService
 {
-    public async Task<SuperAdminDashboardResponse> GetSuperAdminDashboardAsync(CancellationToken ct = default)
+    public async Task<SuperAdminDashboardResponse> GetSuperAdminDashboardAsync(
+        int companiesPage,
+        int companyAdminsPage,
+        int recruitersPage,
+        int pageSize,
+        CancellationToken ct = default)
     {
-        var data = await adminManagementRepository.GetSuperAdminDashboardAsync(ct);
+        var data = await adminManagementRepository.GetSuperAdminDashboardAsync(
+            companiesPage,
+            companyAdminsPage,
+            recruitersPage,
+            NormalizePageSize(pageSize),
+            ct);
 
         return new SuperAdminDashboardResponse
         {
@@ -30,16 +43,22 @@ public sealed class AdminManagementService(
                 TotalJobs = data.TotalJobs,
                 ActiveJobs = data.ActiveJobs,
             },
-            Companies = data.Companies.Select(MapCompany).ToList(),
-            RecentRecruiters = data.RecentRecruiters.Select(MapRecruiter).ToList(),
+            Companies = MapPaged(data.Companies, MapCompany),
+            CompanyAdmins = MapPaged(data.CompanyAdmins, MapCompanyAdmin),
+            Recruiters = MapPaged(data.Recruiters, MapRecruiter),
         };
     }
 
-    public async Task<CompanyAdminDashboardResponse> GetCompanyAdminDashboardAsync(Guid adminUserId, Guid companyId, CancellationToken ct = default)
+    public async Task<CompanyAdminDashboardResponse> GetCompanyAdminDashboardAsync(
+        Guid adminUserId,
+        Guid companyId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
 
-        var data = await adminManagementRepository.GetCompanyAdminDashboardAsync(companyId, ct)
+        var data = await adminManagementRepository.GetCompanyAdminDashboardAsync(companyId, pageNumber, NormalizePageSize(pageSize), ct)
             ?? throw new KeyNotFoundException("Company not found.");
 
         return new CompanyAdminDashboardResponse
@@ -61,7 +80,74 @@ public sealed class AdminManagementService(
                 TotalOffers = data.TotalOffers,
                 TotalHires = data.TotalHires,
             },
-            Recruiters = data.Recruiters.Select(MapRecruiter).ToList(),
+            Recruiters = MapPaged(data.Recruiters, MapRecruiter),
+        };
+    }
+
+    public async Task<AdminCompanyAccountResponse> CreateCompanyAccountAsync(CreateCompanyAccountRequest request, CancellationToken ct = default)
+    {
+        var companyName = request.Name.Trim();
+        if (await adminManagementRepository.CompanyNameExistsAsync(companyName, ct))
+        {
+            throw new InvalidOperationException("A company with this name already exists.");
+        }
+
+        var adminEmail = request.AdminEmail.Trim();
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+        if (existingAdmin is not null)
+        {
+            throw new InvalidOperationException("A user with this admin email already exists.");
+        }
+
+        var now = dateTimeProvider.UtcNow;
+        var company = new CompanyEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = companyName,
+            PrimaryEmail = string.IsNullOrWhiteSpace(request.PrimaryEmail) ? adminEmail : request.PrimaryEmail.Trim(),
+            Location = string.IsNullOrWhiteSpace(request.Location) ? null : request.Location.Trim(),
+            IsActive = true,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
+        };
+
+        await adminManagementRepository.AddCompanyAsync(company, ct);
+        await adminManagementRepository.SaveChangesAsync(ct);
+
+        var result = await authService.CreatePrivilegedUserAsync(new CreatePrivilegedUserRequest
+        {
+            Email = adminEmail,
+            Password = request.AdminPassword,
+            Role = "CompanyAdmin",
+            CompanyId = company.Id,
+        }, ct);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(result.Errors.FirstOrDefault() ?? result.Message);
+        }
+
+        var companyAdminUserId = Guid.TryParse(result.UserId, out var parsedUserId)
+            ? parsedUserId
+            : throw new InvalidOperationException("Company admin user could not be resolved.");
+
+        var companyAdmin = await adminManagementRepository.GetCompanyAdminOverviewByUserIdAsync(companyAdminUserId, ct)
+            ?? throw new KeyNotFoundException("Company admin could not be loaded after creation.");
+
+        return new AdminCompanyAccountResponse
+        {
+            Company = MapCompany(new AdminCompanyOverviewData
+            {
+                CompanyId = company.Id,
+                Name = company.Name,
+                PrimaryEmail = company.PrimaryEmail,
+                IsActive = company.IsActive,
+                RecruiterCount = 0,
+                ActiveJobs = 0,
+                UpcomingInterviews = 0,
+                UpdatedAtUtc = company.UpdatedAtUtc,
+            }),
+            CompanyAdmin = MapCompanyAdmin(companyAdmin),
         };
     }
 
@@ -92,28 +178,84 @@ public sealed class AdminManagementService(
         return MapRecruiter(recruiter);
     }
 
+    public Task ActivateCompanyAsync(Guid companyId, CancellationToken ct = default)
+        => SetCompanyActiveStatusAsync(companyId, true, ct);
+
+    public Task DeactivateCompanyAsync(Guid companyId, CancellationToken ct = default)
+        => SetCompanyActiveStatusAsync(companyId, false, ct);
+
+    public Task ActivateCompanyAdminAsync(Guid adminUserId, CancellationToken ct = default)
+        => SetCompanyAdminActiveStatusAsync(adminUserId, true, ct);
+
+    public Task DeactivateCompanyAdminAsync(Guid adminUserId, CancellationToken ct = default)
+        => SetCompanyAdminActiveStatusAsync(adminUserId, false, ct);
+
+    public Task ActivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default)
+        => SetRecruiterActiveStatusAsync(recruiterUserId, null, true, ct);
+
+    public Task DeactivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default)
+        => SetRecruiterActiveStatusAsync(recruiterUserId, null, false, ct);
+
+    public async Task ActivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default)
+    {
+        await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
+        await SetRecruiterActiveStatusAsync(recruiterUserId, companyId, true, ct);
+    }
+
     public async Task DeactivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
+        await SetRecruiterActiveStatusAsync(recruiterUserId, companyId, false, ct);
+    }
 
+    private async Task SetCompanyActiveStatusAsync(Guid companyId, bool isActive, CancellationToken ct)
+    {
+        var company = await adminManagementRepository.GetCompanyByIdAsync(companyId, ct)
+            ?? throw new KeyNotFoundException("Company not found.");
+
+        company.IsActive = isActive;
+        company.UpdatedAtUtc = dateTimeProvider.UtcNow;
+        await adminManagementRepository.SaveChangesAsync(ct);
+    }
+
+    private async Task SetCompanyAdminActiveStatusAsync(Guid adminUserId, bool isActive, CancellationToken ct)
+    {
+        var companyAdmin = await adminManagementRepository.GetCompanyAdminOverviewByUserIdAsync(adminUserId, ct)
+            ?? throw new KeyNotFoundException("Company admin not found.");
+
+        await SetIdentityAccountActiveStatusAsync(companyAdmin.UserId, "CompanyAdmin", isActive);
+    }
+
+    private async Task SetRecruiterActiveStatusAsync(Guid recruiterUserId, Guid? scopedCompanyId, bool isActive, CancellationToken ct)
+    {
         var recruiter = await adminManagementRepository.GetRecruiterOverviewByUserIdAsync(recruiterUserId, ct)
             ?? throw new KeyNotFoundException("Recruiter not found.");
 
-        if (recruiter.CompanyId != companyId)
+        if (scopedCompanyId.HasValue && recruiter.CompanyId != scopedCompanyId.Value)
         {
             throw new UnauthorizedAccessException("Recruiter does not belong to your company.");
         }
 
-        var user = await userManager.FindByIdAsync(recruiterUserId.ToString())
-            ?? throw new KeyNotFoundException("Recruiter user account not found.");
+        await SetIdentityAccountActiveStatusAsync(recruiter.UserId, "Recruiter", isActive);
+    }
+
+    private async Task SetIdentityAccountActiveStatusAsync(Guid userId, string requiredRole, bool isActive)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new KeyNotFoundException("User account not found.");
+
+        if (!await userManager.IsInRoleAsync(user, requiredRole))
+        {
+            throw new InvalidOperationException($"User is not assigned to the {requiredRole} role.");
+        }
 
         user.LockoutEnabled = true;
-        user.LockoutEnd = DateTimeOffset.MaxValue;
+        user.LockoutEnd = isActive ? null : DateTimeOffset.MaxValue;
 
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? "Could not deactivate recruiter.");
+            throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? $"Could not update {requiredRole} status.");
         }
     }
 
@@ -128,6 +270,18 @@ public sealed class AdminManagementService(
         }
     }
 
+    private static int NormalizePageSize(int pageSize) => Math.Clamp(pageSize <= 0 ? 10 : pageSize, 1, 100);
+
+    private static PagedResult<TResponse> MapPaged<TData, TResponse>(PagedData<TData> data, Func<TData, TResponse> map)
+        => new()
+        {
+            Items = data.Items.Select(map).ToList(),
+            PageNumber = data.PageNumber,
+            PageSize = data.PageSize,
+            TotalCount = data.TotalCount,
+            TotalPages = data.TotalPages,
+        };
+
     private static AdminCompanyOverviewResponse MapCompany(AdminCompanyOverviewData company)
         => new()
         {
@@ -139,6 +293,17 @@ public sealed class AdminManagementService(
             ActiveJobs = company.ActiveJobs,
             UpcomingInterviews = company.UpcomingInterviews,
             UpdatedAtUtc = company.UpdatedAtUtc,
+        };
+
+    private static AdminCompanyAdminOverviewResponse MapCompanyAdmin(AdminCompanyAdminOverviewData admin)
+        => new()
+        {
+            UserId = admin.UserId,
+            CompanyId = admin.CompanyId,
+            CompanyName = admin.CompanyName,
+            Email = admin.Email,
+            IsActive = admin.IsActive,
+            CreatedAtUtc = admin.CreatedAtUtc,
         };
 
     private static AdminRecruiterOverviewResponse MapRecruiter(AdminRecruiterOverviewData recruiter)

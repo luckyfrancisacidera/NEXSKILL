@@ -36,6 +36,12 @@ public sealed class InterviewService(
         await interviewRepository.AddAsync(entity, ct);
         await interviewRepository.SaveChangesAsync(ct);
 
+        return await GetRecruiterInterviewAsync(scopedCompanyId, request.RecruiterId, entity.Id, ct);
+    }
+
+    public async Task<InterviewDto> GetRecruiterInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
         return await MapAsync(entity, ct);
     }
 
@@ -43,6 +49,18 @@ public sealed class InterviewService(
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
+
+        entity.ScheduledDateTimeUtc = request.ScheduledDateTimeUtc;
+        entity.Message = string.IsNullOrWhiteSpace(request.Message) ? entity.Message : request.Message.Trim();
+        entity.Status = InterviewStatus.Rescheduled;
+
+        await interviewRepository.SaveChangesAsync(ct);
+        return await MapAsync(entity, ct);
+    }
+
+    public async Task<InterviewDto> RescheduleInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, RescheduleInterviewRequest request, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
 
         entity.ScheduledDateTimeUtc = request.ScheduledDateTimeUtc;
         entity.Message = string.IsNullOrWhiteSpace(request.Message) ? entity.Message : request.Message.Trim();
@@ -136,6 +154,25 @@ public sealed class InterviewService(
         return await MapAsync(items, ct);
     }
 
+    private async Task<InterviewEntity> GetInterviewForRecruiterAsync(Guid interviewId, Guid? companyId, Guid recruiterId, CancellationToken ct)
+    {
+        InterviewEntity? entity;
+        if (companyId.HasValue && companyId.Value != Guid.Empty)
+        {
+            entity = await interviewRepository.GetByIdForRecruiterAsync(interviewId, recruiterId, companyId.Value, ct);
+        }
+        else
+        {
+            entity = await interviewRepository.GetByIdAsync(interviewId, ct);
+            if (entity is not null && entity.RecruiterId != recruiterId)
+            {
+                entity = null;
+            }
+        }
+
+        return entity ?? throw new KeyNotFoundException("Interview not found.");
+    }
+
     private async Task<InterviewEntity> GetInterviewForJobSeekerAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct)
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
@@ -156,6 +193,11 @@ public sealed class InterviewService(
         return entities.Select(entity =>
         {
             recruiterLookup.TryGetValue(entity.RecruiterId, out var recruiterContext);
+            var jobSeekerName = entity.JobSeeker.UserName;
+            if (string.IsNullOrWhiteSpace(jobSeekerName))
+            {
+                jobSeekerName = entity.JobSeeker.Email;
+            }
 
             return new InterviewDto
             {
@@ -171,6 +213,8 @@ public sealed class InterviewService(
                 RecruiterName = recruiterContext?.RecruiterName,
                 RecruiterEmail = recruiterContext?.RecruiterEmail,
                 CompanyName = recruiterContext?.CompanyName,
+                JobTitle = entity.Job?.Title,
+                JobSeekerName = string.IsNullOrWhiteSpace(jobSeekerName) ? "Candidate" : jobSeekerName,
             };
         }).ToList();
     }
