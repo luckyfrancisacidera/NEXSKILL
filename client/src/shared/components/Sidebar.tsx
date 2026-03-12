@@ -28,6 +28,8 @@ const recruiterItems = [
 
 const superAdminItems = [
   { label: "Platform Overview", to: "/admin/super", icon: LayoutDashboard },
+  { label: "Company Admins", to: "/admin/super/company-admins", icon: Users },
+  { label: "Recruiters", to: "/admin/super/recruiters", icon: BriefcaseBusiness },
 ];
 
 const companyAdminItems = [

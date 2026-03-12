@@ -38,18 +38,87 @@ public sealed class AdminController(
 
     [HttpGet("super/dashboard")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<ActionResult<SuperAdminDashboardResponse>> GetSuperAdminDashboard(CancellationToken cancellationToken)
-        => Ok(await _adminManagementService.GetSuperAdminDashboardAsync(cancellationToken));
+    public async Task<ActionResult<SuperAdminDashboardResponse>> GetSuperAdminDashboard(
+        [FromQuery] int companiesPage = 1,
+        [FromQuery] int companyAdminsPage = 1,
+        [FromQuery] int recruitersPage = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+        => Ok(await _adminManagementService.GetSuperAdminDashboardAsync(
+            companiesPage,
+            companyAdminsPage,
+            recruitersPage,
+            pageSize,
+            cancellationToken));
+
+    [HttpPost("super/companies")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<ActionResult<AdminCompanyAccountResponse>> CreateCompanyAccount([FromBody] CreateCompanyAccountRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _adminManagementService.CreateCompanyAccountAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetSuperAdminDashboard), new { }, result);
+    }
+
+    [HttpPost("super/companies/{companyId:guid}/activate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ActivateCompany(Guid companyId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.ActivateCompanyAsync(companyId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/companies/{companyId:guid}/deactivate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> DeactivateCompany(Guid companyId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.DeactivateCompanyAsync(companyId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/company-admins/{adminUserId:guid}/activate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ActivateCompanyAdmin(Guid adminUserId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.ActivateCompanyAdminAsync(adminUserId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/company-admins/{adminUserId:guid}/deactivate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> DeactivateCompanyAdmin(Guid adminUserId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.DeactivateCompanyAdminAsync(adminUserId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/recruiters/{recruiterUserId:guid}/activate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ActivateRecruiter(Guid recruiterUserId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.ActivateRecruiterAsync(recruiterUserId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/recruiters/{recruiterUserId:guid}/deactivate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> DeactivateRecruiterBySuperAdmin(Guid recruiterUserId, CancellationToken cancellationToken)
+    {
+        await _adminManagementService.DeactivateRecruiterAsync(recruiterUserId, cancellationToken);
+        return NoContent();
+    }
 
     [HttpGet("company/dashboard")]
     [Authorize(Roles = "CompanyAdmin")]
-    public async Task<ActionResult<CompanyAdminDashboardResponse>> GetCompanyAdminDashboard(CancellationToken cancellationToken)
+    public async Task<ActionResult<CompanyAdminDashboardResponse>> GetCompanyAdminDashboard(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
     {
         var userId = CurrentUserContext.GetUserId(User);
         var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
             ?? throw new UnauthorizedAccessException("Active company context is required.");
 
-        return Ok(await _adminManagementService.GetCompanyAdminDashboardAsync(userId, companyId, cancellationToken));
+        return Ok(await _adminManagementService.GetCompanyAdminDashboardAsync(userId, companyId, page, pageSize, cancellationToken));
     }
 
     [HttpPost("company/recruiters")]
@@ -61,6 +130,17 @@ public sealed class AdminController(
             ?? throw new UnauthorizedAccessException("Active company context is required.");
         var recruiter = await _adminManagementService.CreateRecruiterAsync(userId, companyId, request, cancellationToken);
         return CreatedAtAction(nameof(GetCompanyAdminDashboard), new { }, recruiter);
+    }
+
+    [HttpPost("company/recruiters/{recruiterUserId:guid}/activate")]
+    [Authorize(Roles = "CompanyAdmin")]
+    public async Task<IActionResult> ActivateCompanyRecruiter(Guid recruiterUserId, CancellationToken cancellationToken)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        await _adminManagementService.ActivateRecruiterAsync(userId, companyId, recruiterUserId, cancellationToken);
+        return NoContent();
     }
 
     [HttpPost("company/recruiters/{recruiterUserId:guid}/deactivate")]

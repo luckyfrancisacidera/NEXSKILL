@@ -197,6 +197,6 @@ public sealed class JwtTokenService(
             return null;
         }
 
-        return null;
+        return userId;
     }
 }

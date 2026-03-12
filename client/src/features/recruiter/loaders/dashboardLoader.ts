@@ -1,7 +1,27 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import { guardProtectedLoader } from "@app/routes/protectedLoader";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
-import type { DashboardGroupBy } from "@features/recruiter/types";
+import type { DashboardDto, DashboardGroupBy } from "@features/recruiter/types";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
+
+const createEmptyDashboardData = (): DashboardDto => ({
+  filters: {
+    departments: [],
+    job_roles: [],
+    job_roles_by_department: {},
+  },
+  summary: {
+    total_applicants: { value: 0, previous_value: 0, comparison_percent: 0 },
+    total_shortlisted: { value: 0, previous_value: 0, comparison_percent: 0 },
+    total_interview: { value: 0, previous_value: 0, comparison_percent: 0 },
+    total_offer: { value: 0, previous_value: 0, comparison_percent: 0 },
+    total_hired: { value: 0, previous_value: 0, comparison_percent: 0 },
+  },
+  trends: {
+    labels: [],
+    datasets: [],
+  },
+});
 
 /**
  * dashboardLoader
@@ -12,6 +32,17 @@ import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 export const recruiterDashboardLoader = async ({
   request,
 }: LoaderFunctionArgs) => {
+  const guard = await guardProtectedLoader({
+    allowedRoles: ["recruiter"],
+    fallback: createEmptyDashboardData,
+    requireCompany: true,
+    requireRecruiter: true,
+  });
+
+  if (!guard.shouldLoad) {
+    return guard.data;
+  }
+
   try {
     const url = new URL(request.url);
     return await recruiterService.getDashboardStats({

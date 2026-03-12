@@ -23,10 +23,18 @@ public sealed class AuthService(
     IDateTimeProvider dateTimeProvider,
     IResetPinEmailSender resetPinEmailSender) : IAuthService
 {
+    private const string AuthenticationFailedMessage = "Authentication failed.";
+    private const string InvalidCredentialsError = "Invalid email or password.";
+    private const string InactiveAccountError = "Your account is inactive. Please contact your administrator.";
+    private const string InactiveCompanyError = "Your company account is inactive. Please contact your administrator.";
+
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IInputSanitizer _sanitizer = sanitizer;
+    private readonly IAuthRepository _authRepository = authRepository;
+    private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
+    private readonly IResetPinEmailSender _resetPinEmailSender = resetPinEmailSender;
 
     /// <summary>
     /// Registers a new job seeker account and returns the generated authentication tokens.
@@ -52,9 +60,7 @@ public sealed class AuthService(
         user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id, FullName = email.Split('@')[0] };
         await _userManager.UpdateAsync(user);
 
-        var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
-        return AuthResult.Success("Registration successful.", token, refreshToken, user.Email, user.Id.ToString(), ["JobSeeker"]);
+        return await CreateSuccessAuthResultAsync(user, "Registration successful.", cancellationToken);
     }
 
     /// <summary>
@@ -66,14 +72,55 @@ public sealed class AuthService(
         var password = _sanitizer.Sanitize(request.Password);
 
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null) return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
-        var valid = await _userManager.CheckPasswordAsync(user, password);
-        if (!valid) return AuthResult.Failure("Authentication failed.", "Invalid email or password.");
+        if (user is null) return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
-        return AuthResult.Success("Login successful.", token, refreshToken, user.Email, user.Id.ToString(), roles.ToArray());
+        var valid = await _userManager.CheckPasswordAsync(user, password);
+        if (!valid) return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+
+        var blockedResult = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
+        if (blockedResult is not null)
+        {
+            return blockedResult;
+        }
+
+        return await CreateSuccessAuthResultAsync(user, "Login successful.", cancellationToken);
+    }
+
+    /// <summary>
+    /// Refreshes an authenticated session after revalidating account eligibility.
+    /// </summary>
+    public async Task<AuthResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
+    {
+        var userId = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
+        if (!userId.HasValue)
+        {
+            return AuthResult.Failure("Invalid refresh token.");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+        if (user is null)
+        {
+            return AuthResult.Failure("Invalid refresh token.");
+        }
+
+        var blockedResult = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
+        if (blockedResult is not null)
+        {
+            return blockedResult;
+        }
+
+        return await CreateSuccessAuthResultAsync(user, "Token refreshed.", cancellationToken);
+    }
+
+    public async Task<bool> IsSessionActiveAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return false;
+        }
+
+        return await GetBlockedAuthenticationResultAsync(user, cancellationToken) is null;
     }
 
     /// <summary>
@@ -130,12 +177,12 @@ public sealed class AuthService(
         if (user is null) return;
 
         var pin = Random.Shared.Next(0, 1_000_000).ToString("D6");
-        var now = dateTimeProvider.UtcNow;
+        var now = _dateTimeProvider.UtcNow;
 
-        var existingPins = await authRepository.GetUnusedPasswordResetPinsAsync(user.Id, cancellationToken);
+        var existingPins = await _authRepository.GetUnusedPasswordResetPinsAsync(user.Id, cancellationToken);
         foreach (var existing in existingPins) existing.Used = true;
 
-        await authRepository.AddPasswordResetPinAsync(new PasswordResetPinEntity
+        await _authRepository.AddPasswordResetPinAsync(new PasswordResetPinEntity
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
@@ -147,10 +194,10 @@ public sealed class AuthService(
 
         if (existingPins.Count > 0)
         {
-            await authRepository.SaveChangesAsync(cancellationToken);
+            await _authRepository.SaveChangesAsync(cancellationToken);
         }
 
-        await resetPinEmailSender.SendResetPinAsync(email, pin, cancellationToken);
+        await _resetPinEmailSender.SendResetPinAsync(email, pin, cancellationToken);
     }
 
     /// <summary>
@@ -162,8 +209,8 @@ public sealed class AuthService(
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null) return false;
 
-        var pin = await authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
-        return pin is not null && !pin.Used && pin.Pin == request.Pin && pin.ExpiresAtUtc >= dateTimeProvider.UtcNow;
+        var pin = await _authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
+        return pin is not null && !pin.Used && pin.Pin == request.Pin && pin.ExpiresAtUtc >= _dateTimeProvider.UtcNow;
     }
 
     /// <summary>
@@ -174,8 +221,8 @@ public sealed class AuthService(
         var email = _sanitizer.SanitizeEmail(request.Email);
         var user = await _userManager.FindByEmailAsync(email) ?? throw new InvalidOperationException("Invalid reset request.");
 
-        var pin = await authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
-        if (pin is null || pin.Used || pin.Pin != request.Pin || pin.ExpiresAtUtc < dateTimeProvider.UtcNow)
+        var pin = await _authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
+        if (pin is null || pin.Used || pin.Pin != request.Pin || pin.ExpiresAtUtc < _dateTimeProvider.UtcNow)
             throw new InvalidOperationException("Invalid or expired reset PIN.");
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -183,7 +230,38 @@ public sealed class AuthService(
         if (!result.Succeeded) throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
 
         pin.Used = true;
-        await authRepository.SaveChangesAsync(cancellationToken);
+        await _authRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<AuthResult> CreateSuccessAuthResultAsync(AppUser user, string message, CancellationToken cancellationToken)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+
+        return AuthResult.Success(message, token, refreshToken, user.Email, user.Id.ToString(), roles.ToArray());
+    }
+
+    private async Task<AuthResult?> GetBlockedAuthenticationResultAsync(AppUser user, CancellationToken cancellationToken)
+    {
+        if (IsIdentityAccountInactive(user))
+        {
+            return AuthResult.Failure(AuthenticationFailedMessage, InactiveAccountError);
+        }
+
+        var companyAccess = await _authRepository.GetUserCompanyAccessAsync(user.Id, cancellationToken);
+        if (companyAccess is not null && !companyAccess.CompanyIsActive)
+        {
+            return AuthResult.Failure(AuthenticationFailedMessage, InactiveCompanyError);
+        }
+
+        return null;
+    }
+
+    private bool IsIdentityAccountInactive(AppUser user)
+    {
+        var now = new DateTimeOffset(DateTime.SpecifyKind(_dateTimeProvider.UtcNow, DateTimeKind.Utc));
+        return user.LockoutEnd.HasValue && user.LockoutEnd > now;
     }
 
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)

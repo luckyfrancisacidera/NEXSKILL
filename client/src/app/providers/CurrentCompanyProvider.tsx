@@ -9,6 +9,10 @@ import {
 import type { PropsWithChildren } from "react";
 import { http, setActiveCompanyHeader } from "@shared/api/http";
 import { useAuth } from "@app/providers/AuthProvider";
+import { useSetup } from "@app/providers/SetupProvider";
+import {
+  CURRENT_COMPANY_STORAGE_KEY,
+} from "@app/providers/contextStorage";
 import { readStorage, writeStorage } from "@shared/utils/storage";
 
 export interface CurrentCompany {
@@ -20,6 +24,7 @@ export interface CurrentCompany {
 interface CurrentCompanyContextValue {
   currentCompany: CurrentCompany | null;
   availableCompanies: CurrentCompany[];
+  isLoading: boolean;
   setCurrentCompany: (companyId: string) => void;
   refresh: () => Promise<void>;
 }
@@ -39,80 +44,99 @@ interface SetupStatusResponse {
   } | null;
 }
 
-const CURRENT_COMPANY_STORAGE_KEY = "app.currentCompanyId";
-
 const CurrentCompanyContext = createContext<CurrentCompanyContextValue | null>(
   null,
 );
 
 export const CurrentCompanyProvider = ({ children }: PropsWithChildren) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isHydrating } = useAuth();
+  const { status, isLoading: isSetupLoading } = useSetup();
   const [availableCompanies, setAvailableCompanies] = useState<CurrentCompany[]>(
     [],
   );
   const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadCompanies = useCallback(async () => {
-    if (!isAuthenticated) {
-      setAvailableCompanies([]);
-      setCurrentCompanyId(null);
-      setActiveCompanyHeader(null);
+    if (isHydrating) {
       return;
     }
 
-    const [meResponse, setupStatusResponse] = await Promise.all([
-      http.get<AuthMeResponse>("/api/auth/me"),
-      http.get<SetupStatusResponse>("/api/account/setup-status"),
-    ]);
+    setIsLoading(true);
 
-    const discoveredCompanyIds = new Set<string>(
-      (meResponse.data.companyIds ?? []).filter(Boolean),
-    );
-
-    if (setupStatusResponse.data.activeCompanyId) {
-      discoveredCompanyIds.add(setupStatusResponse.data.activeCompanyId);
+    if (!isAuthenticated || isSetupLoading || status.requiresSetup) {
+      setAvailableCompanies([]);
+      setCurrentCompanyId(null);
+      setActiveCompanyHeader(null);
+      setIsLoading(false);
+      return;
     }
 
-    if (setupStatusResponse.data.company?.id) {
-      discoveredCompanyIds.add(setupStatusResponse.data.company.id);
-    }
+    try {
+      const [meResponse, setupStatusResponse] = await Promise.all([
+        http.get<AuthMeResponse>("/api/auth/me"),
+        http.get<SetupStatusResponse>("/api/account/setup-status"),
+      ]);
 
-    const companies = Array.from(discoveredCompanyIds).map<CurrentCompany>((id) => {
-      if (setupStatusResponse.data.company?.id === id) {
-        return {
-          id,
-          name: setupStatusResponse.data.company.name?.trim() || "Company",
-          primaryEmail: setupStatusResponse.data.company.primaryEmail ?? null,
-        };
+      const discoveredCompanyIds = new Set<string>(
+        (meResponse.data.companyIds ?? []).filter(Boolean),
+      );
+
+      if (setupStatusResponse.data.activeCompanyId) {
+        discoveredCompanyIds.add(setupStatusResponse.data.activeCompanyId);
       }
 
-      return {
-        id,
-        name: "Company",
-        primaryEmail: null,
-      };
-    });
+      if (setupStatusResponse.data.company?.id) {
+        discoveredCompanyIds.add(setupStatusResponse.data.company.id);
+      }
 
-    const storedCompanyId = readStorage<string | null>(
-      CURRENT_COMPANY_STORAGE_KEY,
-      null,
-    );
+      const companies = Array.from(discoveredCompanyIds).map<CurrentCompany>((id) => {
+        if (setupStatusResponse.data.company?.id === id) {
+          return {
+            id,
+            name: setupStatusResponse.data.company.name?.trim() || "Company",
+            primaryEmail: setupStatusResponse.data.company.primaryEmail ?? null,
+          };
+        }
 
-    const resolvedCompanyId =
-      storedCompanyId && companies.some((company) => company.id === storedCompanyId)
-        ? storedCompanyId
-        : meResponse.data.activeCompanyId ||
-          setupStatusResponse.data.activeCompanyId ||
-          companies[0]?.id ||
-          null;
+        return {
+          id,
+          name: "Company",
+          primaryEmail: null,
+        };
+      });
 
-    setAvailableCompanies(companies);
-    setCurrentCompanyId(resolvedCompanyId);
-  }, [isAuthenticated]);
+      const storedCompanyId = readStorage<string | null>(
+        CURRENT_COMPANY_STORAGE_KEY,
+        null,
+      );
+
+      const resolvedCompanyId =
+        storedCompanyId && companies.some((company) => company.id === storedCompanyId)
+          ? storedCompanyId
+          : meResponse.data.activeCompanyId ||
+            setupStatusResponse.data.activeCompanyId ||
+            companies[0]?.id ||
+            null;
+
+      setAvailableCompanies(companies);
+      setCurrentCompanyId(resolvedCompanyId);
+    } catch {
+      setAvailableCompanies([]);
+      setCurrentCompanyId(null);
+      setActiveCompanyHeader(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, isHydrating, isSetupLoading, status.requiresSetup]);
 
   useEffect(() => {
+    if (isHydrating) {
+      return;
+    }
+
     void loadCompanies();
-  }, [loadCompanies]);
+  }, [isHydrating, loadCompanies]);
 
   useEffect(() => {
     setActiveCompanyHeader(currentCompanyId);
@@ -132,10 +156,11 @@ export const CurrentCompanyProvider = ({ children }: PropsWithChildren) => {
     () => ({
       currentCompany,
       availableCompanies,
+      isLoading,
       setCurrentCompany,
       refresh: loadCompanies,
     }),
-    [currentCompany, availableCompanies, loadCompanies],
+    [currentCompany, availableCompanies, isLoading, loadCompanies],
   );
 
   return (

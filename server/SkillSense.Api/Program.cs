@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SkillSense.Api;
+using SkillSense.Application.Common;
 using SkillSense.Application;
 using SkillSense.Application.Exceptions;
+using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Infrastructure;
 using SkillSense.Persistence;
 
@@ -57,6 +59,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var userIdValue = context.Principal?.FindFirst(SkillSenseClaimTypes.UserId)?.Value
+                    ?? context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!Guid.TryParse(userIdValue, out var userId))
+                {
+                    context.Fail("Authenticated user is missing a valid identifier.");
+                    return;
+                }
+
+                var authService = context.HttpContext.RequestServices.GetRequiredService<IAuthService>();
+                var isActive = await authService.IsSessionActiveAsync(userId, context.HttpContext.RequestAborted);
+                if (!isActive)
+                {
+                    context.Fail("Authenticated session is no longer active.");
+                }
             }
         };
     });
@@ -141,6 +160,7 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
     var (statusCode, message) = error.Error switch
     {
         ArgumentException ex => (StatusCodes.Status400BadRequest, ex.Message),
+        UnauthorizedAccessException ex => (StatusCodes.Status403Forbidden, ex.Message),
         InvalidStageTransitionException ex => (StatusCodes.Status409Conflict, ex.Message),
         KeyNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message),
         _ => (StatusCodes.Status500InternalServerError, error.Error.Message),

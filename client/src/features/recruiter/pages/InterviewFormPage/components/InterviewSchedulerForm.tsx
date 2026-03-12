@@ -1,21 +1,16 @@
 import { useState, type FormEvent } from "react";
-import type { Interview } from "@features/recruiter/types/interview.types";
+import type { ScheduleInterviewInput } from "@features/recruiter/types/interview.types";
 import { Card } from "@shared/components/Card";
 
 interface InterviewSchedulerFormProps {
-  onSchedule: (
-    input: Omit<Interview, "id" | "status"> & {
-      status?: Interview["status"];
-    },
-  ) => Promise<void> | void;
+  onSchedule: (input: ScheduleInterviewInput) => Promise<void> | void;
 }
 
 export const InterviewSchedulerForm = ({
   onSchedule,
 }: InterviewSchedulerFormProps) => {
-  const [candidateName, setCandidateName] = useState("");
+  const [jobId, setJobId] = useState("");
   const [jobseekerId, setJobseekerId] = useState("");
-  const [recruiterId, setRecruiterId] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [meetingLink, setMeetingLink] = useState("");
   const [location, setLocation] = useState("");
@@ -27,18 +22,16 @@ export const InterviewSchedulerForm = ({
     setIsSubmitting(true);
     try {
       await onSchedule({
-        recruiterId,
+        jobId,
         jobseekerId,
-        candidateName,
         scheduledDate,
         meetingLink: meetingLink || undefined,
         location: location || undefined,
         message: message || undefined,
       });
 
-      setCandidateName("");
+      setJobId("");
       setJobseekerId("");
-      setRecruiterId("");
       setScheduledDate("");
       setMeetingLink("");
       setLocation("");
@@ -62,36 +55,26 @@ export const InterviewSchedulerForm = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
           <label className="text-xs font-medium text-zinc-700">
-            Candidate name
-            <input
-              required
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-              value={candidateName}
-              onChange={(event) => setCandidateName(event.target.value)}
-              placeholder="e.g. Mina Patel"
-            />
-          </label>
-          <label className="text-xs font-medium text-zinc-700">
             Candidate ID
             <input
               required
               className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
               value={jobseekerId}
               onChange={(event) => setJobseekerId(event.target.value)}
-              placeholder="Internal candidate identifier"
+              placeholder="Candidate user identifier"
             />
           </label>
           <label className="text-xs font-medium text-zinc-700">
-            Recruiter ID
+            Job ID
             <input
               required
               className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-              value={recruiterId}
-              onChange={(event) => setRecruiterId(event.target.value)}
-              placeholder="Your recruiter identifier"
+              value={jobId}
+              onChange={(event) => setJobId(event.target.value)}
+              placeholder="Job identifier"
             />
           </label>
-          <label className="text-xs font-medium text-zinc-700">
+          <label className="text-xs font-medium text-zinc-700 md:col-span-2">
             Date & time
             <input
               required
@@ -151,4 +134,3 @@ export const InterviewSchedulerForm = ({
     </Card>
   );
 };
-

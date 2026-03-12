@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
+using SkillSense.Persistence.Seed;
 
 namespace SkillSense.Api;
 
@@ -33,7 +35,7 @@ public static class DatabaseStartupExtensions
                 }
             }
 
-            await EnsureCoreRolesAsync(scope.ServiceProvider, logger);
+            await SeedIdentityAsync(scope.ServiceProvider, logger);
         }
         catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.DuplicateTable)
         {
@@ -41,29 +43,21 @@ public static class DatabaseStartupExtensions
                 "Skipping automatic EF migration due to duplicate-table conflict. " +
                 "This usually means the schema already contains Identity tables without matching migration history.");
 
-            await EnsureCoreRolesAsync(scope.ServiceProvider, logger);
+            await SeedIdentityAsync(scope.ServiceProvider, logger);
         }
     }
 
-    private static async Task EnsureCoreRolesAsync(IServiceProvider services, ILogger logger)
+    private static async Task SeedIdentityAsync(IServiceProvider services, ILogger logger)
     {
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-        var requiredRoles = new[] { "Admin", "Recruiter", "JobSeeker" };
-
-        foreach (var role in requiredRoles)
+        try
         {
-            if (await roleManager.RoleExistsAsync(role))
-            {
-                continue;
-            }
-
-            var result = await roleManager.CreateAsync(new IdentityRole<Guid>(role));
-            if (!result.Succeeded)
-            {
-                logger.LogWarning("Failed to seed role {Role}. Errors: {Errors}",
-                    role,
-                    string.Join("; ", result.Errors.Select(e => e.Description)));
-            }
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+            var userManager = services.GetRequiredService<UserManager<AppUser>>();
+            await IdentitySeeder.SeedAsync(userManager, roleManager);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to seed Identity roles and users.");
         }
     }
 

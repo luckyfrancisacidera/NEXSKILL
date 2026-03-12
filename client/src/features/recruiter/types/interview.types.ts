@@ -1,21 +1,30 @@
-export type InterviewStatus = "Pending" | "Accepted" | "Declined" | "RescheduleRequested";
+export type InterviewStatus =
+  | "Pending"
+  | "Accepted"
+  | "Declined"
+  | "RescheduleRequested"
+  | "Rescheduled";
 
 export interface Interview {
   id: string;
+  jobId: string;
   recruiterId: string;
   jobseekerId: string;
   candidateName: string;
+  jobTitle?: string;
   scheduledDate: string;
   meetingLink?: string;
   location?: string;
   message?: string;
   status: InterviewStatus;
+  recruiterName?: string;
+  recruiterEmail?: string;
+  companyName?: string;
 }
 
 export interface ScheduleInterviewInput {
-  recruiterId: string;
+  jobId: string;
   jobseekerId: string;
-  candidateName: string;
   scheduledDate: string;
   meetingLink?: string;
   location?: string;
@@ -26,4 +35,3 @@ export interface RescheduleInterviewInput {
   scheduledDate: string;
   message?: string;
 }
-

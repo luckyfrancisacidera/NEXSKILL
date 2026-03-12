@@ -3,7 +3,7 @@ import { ModalOverlay } from "@shared/components/ModalOverlay";
 import { http } from "@shared/api/http";
 
 interface CompanyAdminInitialSetupModalProps {
-  onCompleted: () => void;
+  onCompleted: () => Promise<void>;
 }
 
 export const CompanyAdminInitialSetupModal = ({
@@ -34,7 +34,7 @@ export const CompanyAdminInitialSetupModal = ({
         adminName,
         adminEmail,
       });
-      onCompleted();
+      await onCompleted();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to complete setup. Please try again.",
@@ -135,4 +135,3 @@ export const CompanyAdminInitialSetupModal = ({
     </ModalOverlay>
   );
 };
-

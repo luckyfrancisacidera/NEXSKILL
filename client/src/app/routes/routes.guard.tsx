@@ -1,8 +1,12 @@
 import type { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@app/providers/AuthProvider";
+import { useSetup } from "@app/providers/SetupProvider";
 import { usePermissions } from "@shared/hooks/usePermissions";
-import { getDefaultRouteForRoles, hasAnyAllowedRole } from "@shared/utils/permissions";
+import {
+  getDefaultRouteForRoles,
+  hasAnyAllowedRole,
+} from "@shared/utils/permissions";
 import type { Role } from "@shared/types";
 
 interface RequireRoleProps extends PropsWithChildren {
@@ -10,20 +14,44 @@ interface RequireRoleProps extends PropsWithChildren {
 }
 
 export const RequireAuth = ({ children }: PropsWithChildren) => {
-  const { isAuthenticated, isHydrating } = useAuth();
+  const { isAuthenticated, isHydrating, roles } = useAuth();
+  const { status, isLoading } = useSetup();
   const location = useLocation();
 
-  if (isHydrating) return null;
+  if (isHydrating || (isAuthenticated && isLoading)) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  if (status.requiresSetup) {
+    const redirectTo = getDefaultRouteByRole(roles);
+    if (location.pathname !== redirectTo) {
+      return <Navigate to={redirectTo} replace />;
+    }
+  }
+
   return <>{children}</>;
 };
 
 export const RequireRole = ({ allowedRoles, children }: RequireRoleProps) => {
-  const { roles } = useAuth();
+  const { isAuthenticated, roles, isHydrating } = useAuth();
+  const { status, isLoading } = useSetup();
+  const location = useLocation();
   const isAllowed = hasAnyAllowedRole(roles, allowedRoles);
+
+  if (isHydrating || (isAuthenticated && isLoading)) {
+    return null;
+  }
+
+  if (isAuthenticated && status.requiresSetup) {
+    const redirectTo = getDefaultRouteByRole(roles);
+    if (location.pathname !== redirectTo) {
+      return <Navigate to={redirectTo} replace />;
+    }
+
+    return <>{children}</>;
+  }
 
   if (!isAllowed) {
     return <Navigate to="/not-authorized" replace />;
@@ -37,9 +65,10 @@ export const getDefaultRouteByRole = (roles: Role[]) => getDefaultRouteForRoles(
 
 export const PublicOnly = ({ children }: PropsWithChildren) => {
   const { isAuthenticated, roles, isHydrating } = useAuth();
+  const { isLoading } = useSetup();
   const { isSuperAdmin, isCompanyAdmin, isRecruiter } = usePermissions();
 
-  if (isHydrating) return null;
+  if (isHydrating || (isAuthenticated && isLoading)) return null;
 
   if (isAuthenticated) {
     const redirectTo = isSuperAdmin
