@@ -5,6 +5,7 @@ import { AuthProvider } from '@app/providers/AuthProvider';
 import { SetupProvider } from '@app/providers/SetupProvider';
 import { CurrentCompanyProvider } from '@app/providers/CurrentCompanyProvider';
 import { CurrentRecruiterProvider } from '@app/providers/CurrentRecruiterProvider';
+import { NotificationsProvider } from '@app/providers/NotificationsProvider';
 import { ToastProvider } from './providers/ToastProvider';
 import { ConfirmationProvider } from '@shared/hooks/useConfirmation';
 
@@ -15,9 +16,11 @@ const App = () => (
         <SetupProvider>
           <CurrentCompanyProvider>
             <CurrentRecruiterProvider>
-              <ConfirmationProvider>
-                <RouterProvider router={router} />
-              </ConfirmationProvider>
+              <NotificationsProvider>
+                <ConfirmationProvider>
+                  <RouterProvider router={router} />
+                </ConfirmationProvider>
+              </NotificationsProvider>
             </CurrentRecruiterProvider>
           </CurrentCompanyProvider>
         </SetupProvider>

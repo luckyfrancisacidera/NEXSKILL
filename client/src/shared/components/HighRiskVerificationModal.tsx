@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { ShieldAlert } from "lucide-react";
 import { ModalOverlay } from "@shared/components/ModalOverlay";
 
@@ -69,7 +69,15 @@ export const HighRiskVerificationModal = ({
 
   return (
     <ModalOverlay onClose={handleClose}>
-      <div className="rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-amber-200" role="dialog" aria-modal="true">
+      <div
+        className="rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-amber-200"
+        role="dialog"
+        aria-modal="true"
+        onClick={(event: MouseEvent<HTMLDivElement>) => {
+          // Stop propagation so clicks inside the verification modal stay inside the modal.
+          event.stopPropagation();
+        }}
+      >
         <div className="flex items-start gap-3">
           <span className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
             <ShieldAlert className="h-5 w-5 text-amber-700" />
@@ -98,7 +106,11 @@ export const HighRiskVerificationModal = ({
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
-            onClick={handleCancel}
+            onClick={(event) => {
+              // Stop propagation so cancel does not bubble into page-level click handlers.
+              event.stopPropagation();
+              handleCancel();
+            }}
             disabled={loading}
             className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -106,7 +118,11 @@ export const HighRiskVerificationModal = ({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={(event) => {
+              // Stop propagation so confirm only acts on the active verification modal.
+              event.stopPropagation();
+              onConfirm();
+            }}
             disabled={loading || !isValid}
             className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
           >

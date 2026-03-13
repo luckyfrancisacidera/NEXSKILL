@@ -147,32 +147,6 @@ namespace SkillSense.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "resume_submissions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    ContentType = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    BlobObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
-                    AppliedJobPosition = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
-                    PostalCode = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
-                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    ApplicantUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    ParsedResumeJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_resume_submissions", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "users",
                 columns: table => new
                 {
@@ -333,9 +307,14 @@ namespace SkillSense.Persistence.Migrations
                     RecruiterId = table.Column<Guid>(type: "uuid", nullable: false),
                     JobSeekerId = table.Column<Guid>(type: "uuid", nullable: false),
                     ScheduledDateTimeUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    InterviewType = table.Column<int>(type: "integer", nullable: false),
                     LocationOrMeetingLink = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Message = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
+                    CancelReason = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    CancelledAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    ArchivedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -460,6 +439,38 @@ namespace SkillSense.Persistence.Migrations
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "resume_submissions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FileName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ContentType = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    BlobObjectKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AppliedJobPosition = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    PostalCode = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    JobSeekerUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    ParsedResumeJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_resume_submissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_resume_submissions_users_JobSeekerUserId",
+                        column: x => x.JobSeekerUserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -590,6 +601,11 @@ namespace SkillSense.Persistence.Migrations
                 column: "CompanyId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_interviews_IsArchived",
+                table: "interviews",
+                column: "IsArchived");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_interviews_JobId",
                 table: "interviews",
                 column: "JobId");
@@ -687,14 +703,14 @@ namespace SkillSense.Persistence.Migrations
                 column: "ResumeSubmissionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_resume_submissions_ApplicantUserId",
-                table: "resume_submissions",
-                column: "ApplicantUserId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_resume_submissions_JobId",
                 table: "resume_submissions",
                 column: "JobId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_submissions_JobSeekerUserId",
+                table: "resume_submissions",
+                column: "JobSeekerUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_resume_submissions_Status",

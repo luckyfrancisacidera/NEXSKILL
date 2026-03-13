@@ -37,11 +37,11 @@ public static class DatabaseStartupExtensions
 
             await SeedIdentityAsync(scope.ServiceProvider, logger);
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.DuplicateTable)
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.DuplicateTable || ex.SqlState == PostgresErrorCodes.DuplicateColumn)
         {
             logger.LogWarning(ex,
-                "Skipping automatic EF migration due to duplicate-table conflict. " +
-                "This usually means the schema already contains Identity tables without matching migration history.");
+                "Skipping automatic EF migration due to duplicate schema conflict. " +
+                "This usually means the schema already contains objects without matching migration history.");
 
             await SeedIdentityAsync(scope.ServiceProvider, logger);
         }

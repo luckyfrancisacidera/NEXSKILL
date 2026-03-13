@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SkillSense.Application.Common.Jobs;
 using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Text;
+using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
@@ -456,6 +457,35 @@ public sealed class RecruiterService(
         detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
         detail.CandidateExplanation = explanation;
         return detail;
+    }
+
+    public async Task<IReadOnlyList<ShortlistedCandidateOptionDto>> GetShortlistedCandidatesByJobAsync(Guid companyId, Guid recruiterId, Guid jobId, string? department = null, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var job = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (job is null || job.RecruiterId != recruiterId)
+        {
+            throw new KeyNotFoundException("Job not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(department)
+            && !string.Equals(job.Department ?? "Unassigned", department.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return [];
+        }
+
+        // Recruiters choose from shortlisted candidates only so scheduling stays connected
+        // to the applicant-review workflow and never depends on manually typed database IDs.
+        var candidates = await recruiterRepository.GetShortlistedCandidatesByJobAsync(jobId, ct);
+        return candidates
+            .Select(candidate => new ShortlistedCandidateOptionDto
+            {
+                JobSeekerUserId = candidate.JobSeekerUserId,
+                ResumeSubmissionId = candidate.ResumeSubmissionId,
+                CandidateName = candidate.CandidateName,
+                CandidateEmail = candidate.CandidateEmail,
+            })
+            .ToList();
     }
 
     public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)

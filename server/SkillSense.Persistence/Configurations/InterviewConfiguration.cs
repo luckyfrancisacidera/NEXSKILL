@@ -13,8 +13,10 @@ internal sealed class InterviewConfiguration : IEntityTypeConfiguration<Intervie
 
         builder.Property(x => x.CompanyId).IsRequired();
         builder.Property(x => x.ScheduledDateTimeUtc).IsRequired();
+        builder.Property(x => x.InterviewType).IsRequired();
         builder.Property(x => x.LocationOrMeetingLink).HasMaxLength(500).IsRequired();
         builder.Property(x => x.Message).HasMaxLength(2000);
+        builder.Property(x => x.CancelReason).HasMaxLength(2000);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
 
         builder.HasOne(x => x.Job)
@@ -36,6 +38,7 @@ internal sealed class InterviewConfiguration : IEntityTypeConfiguration<Intervie
         builder.HasIndex(x => new { x.JobSeekerId, x.ScheduledDateTimeUtc });
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.CompanyId);
+        builder.HasIndex(x => x.IsArchived);
     }
 }
 
@@ -84,4 +87,3 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
         builder.HasIndex(x => x.IsRead);
     }
 }
-

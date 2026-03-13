@@ -13,13 +13,13 @@ public sealed class MyMailResetPinEmailSender(HttpClient httpClient, IConfigurat
         var apiKey = configuration["MyMail:ApiKey"];
         var fromEmail = configuration["MyMail:FromEmail"] ?? "no-reply@nexskill.local";
 
-        if (string.IsNullOrWhiteSpace(apiUrl) || string.IsNullOrWhiteSpace(apiKey))
+        if (!TryBuildSendEndpoint(apiUrl, out var sendEndpoint) || string.IsNullOrWhiteSpace(apiKey))
         {
             logger.LogInformation("MyMail not configured. Password reset PIN for {Email}: {Pin}", toEmail, pin);
             return;
         }
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, apiUrl.TrimEnd('/') + "/send")
+        using var req = new HttpRequestMessage(HttpMethod.Post, sendEndpoint)
         {
             Content = JsonContent.Create(new
             {
@@ -36,5 +36,24 @@ public sealed class MyMailResetPinEmailSender(HttpClient httpClient, IConfigurat
         {
             logger.LogWarning("Failed to send reset PIN email. Status: {Status}", response.StatusCode);
         }
+    }
+
+    private static bool TryBuildSendEndpoint(string? apiUrl, out string endpoint)
+    {
+        endpoint = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(apiUrl))
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(apiUrl.Trim(), UriKind.Absolute, out var baseUri)
+            || (baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps))
+        {
+            return false;
+        }
+
+        endpoint = new Uri(baseUri, "send").ToString();
+        return true;
     }
 }

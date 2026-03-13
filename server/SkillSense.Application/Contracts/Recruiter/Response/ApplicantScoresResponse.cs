@@ -38,6 +38,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("resume_submission_id")]
         public Guid ResumeSubmissionId { get; set; }
 
+        [JsonPropertyName("jobseeker_user_id")]
+        public Guid? JobSeekerUserId { get; set; }
+
         [JsonPropertyName("applicant_name")]
         public string ApplicantName { get; set; } = "Unknown Applicant";
 
@@ -195,4 +198,3 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         public string? Status { get; set; }
     }
 }
-

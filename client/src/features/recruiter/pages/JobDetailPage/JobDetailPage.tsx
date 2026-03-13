@@ -266,7 +266,11 @@ export const JobDetailPage = () => {
               </button>
               <button
                 type="button"
-                onClick={openDeleteFlow}
+                onClick={(event) => {
+                  // Stop propagation so delete only opens one controlled verification modal.
+                  event.stopPropagation();
+                  void openDeleteFlow();
+                }}
                 className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
               >
                 Delete Job

@@ -3,6 +3,10 @@ import { RescheduleRequestModal } from "./RescheduleRequestModal";
 import { useState } from "react";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
+import {
+  interviewStatusChipClassName,
+  isTerminalInterviewStatus,
+} from "@shared/utils/interviewStatus";
 
 interface JobseekerInterviewCardProps {
   interview: JobseekerInterview;
@@ -13,28 +17,24 @@ interface JobseekerInterviewCardProps {
     message: string,
     attachment?: File,
   ) => Promise<void> | void;
+  onArchive: (id: string) => Promise<void> | void;
+  isPending?: boolean;
 }
-
-const statusChipClassName: Record<JobseekerInterview["status"], string> = {
-  Pending:
-    "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900/70",
-  Accepted:
-    "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-900/70",
-  Declined:
-    "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-200 dark:ring-rose-900/70",
-  RescheduleRequested:
-    "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-900/70",
-  Rescheduled:
-    "bg-sky-50 text-sky-700 ring-1 ring-sky-200/70 dark:bg-sky-900/30 dark:text-sky-200 dark:ring-sky-900/70",
-};
 
 export const JobseekerInterviewCard = ({
   interview,
   onAccept,
   onDecline,
   onRequestReschedule,
+  onArchive,
+  isPending = false,
 }: JobseekerInterviewCardProps) => {
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+  const isTerminal = isTerminalInterviewStatus(interview.status);
+  const canRespond =
+    !isPending && !isTerminal && interview.status !== "Accepted";
+  const canRequestReschedule = !isPending && !isTerminal;
+  const canArchive = !isPending && isTerminal;
 
   const scheduledAt = new Date(interview.scheduledDate);
   const recruiterLine = interview.recruiterName
@@ -80,7 +80,7 @@ export const JobseekerInterviewCard = ({
                 month: "short",
                 day: "numeric",
               })}{" "}
-              ·{" "}
+              Â·{" "}
               {scheduledAt.toLocaleTimeString(undefined, {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -98,7 +98,7 @@ export const JobseekerInterviewCard = ({
             ) : null}
           </div>
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusChipClassName[interview.status]}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}
           >
             {interview.status}
           </span>
@@ -136,31 +136,55 @@ export const JobseekerInterviewCard = ({
             </button>
             <button
               type="button"
-              className="rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              disabled={!canRespond}
+              className="rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-zinc-800 shadow-sm transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               onClick={() => onAccept(interview.id)}
             >
               Accept
             </button>
             <button
               type="button"
-              className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              disabled={!canRespond}
+              className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
               onClick={() => onDecline(interview.id)}
             >
               Decline
             </button>
             <button
               type="button"
-              className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              disabled={!canRequestReschedule}
+              className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               onClick={() => setIsRescheduleOpen(true)}
             >
               Request reschedule
             </button>
+            {canArchive ? (
+              <button
+                type="button"
+                disabled={isPending}
+                className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                onClick={() => onArchive(interview.id)}
+              >
+                Archive
+              </button>
+            ) : null}
           </div>
         </div>
+        {interview.cancelReason ? (
+          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-300">
+            Cancellation reason: {interview.cancelReason}
+          </p>
+        ) : null}
+        {isTerminal ? (
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            Declined and cancelled interviews are terminal scheduling states.
+            They can be archived, but they cannot be rescheduled in place.
+          </p>
+        ) : null}
       </article>
 
       <RescheduleRequestModal
-        open={isRescheduleOpen}
+        open={isRescheduleOpen && canRequestReschedule}
         onClose={() => setIsRescheduleOpen(false)}
         onSubmit={async (message, attachment) => {
           await onRequestReschedule(interview.id, message, attachment);

@@ -39,9 +39,14 @@ namespace SkillSense.Persistence.Configurations
                 .HasColumnType("jsonb")
                 .HasDefaultValueSql("'{}'::jsonb");
 
+            builder.HasOne(x => x.JobSeekerUser)
+                .WithMany()
+                .HasForeignKey(x => x.JobSeekerUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasIndex(x => x.Status);
             builder.HasIndex(x => x.JobId);
-            builder.HasIndex(x => x.ApplicantUserId);
+            builder.HasIndex(x => x.JobSeekerUserId);
         }
     }
 }

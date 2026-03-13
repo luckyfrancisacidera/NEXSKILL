@@ -50,6 +50,13 @@ export interface DashboardStatsQueryParams {
   groupBy?: 'week' | 'month' | 'year' | 'department' | 'job';
 }
 
+export interface ShortlistedCandidateOptionDto {
+  jobSeekerUserId: string;
+  resumeSubmissionId: string;
+  candidateName: string;
+  candidateEmail: string;
+}
+
 export const recruiterService = {
   async getProfile(): Promise<RecruiterProfileDto> {
     const response = await http.get<RecruiterProfileDto>('/api/recruiter/profile');
@@ -83,6 +90,15 @@ export const recruiterService = {
 
   async getRecruiterJob(id: string): Promise<JobDto> {
     const response = await http.get<JobDto>(`/api/recruiter/jobs/${id}`);
+    return response.data;
+  },
+
+  async getShortlistedCandidates(jobId: string, department?: string): Promise<ShortlistedCandidateOptionDto[]> {
+    const response = await http.get<ShortlistedCandidateOptionDto[]>(`/api/recruiter/jobs/${jobId}/shortlisted-candidates`, {
+      params: {
+        department: department || undefined,
+      },
+    });
     return response.data;
   },
 

@@ -1,7 +1,12 @@
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Notifications;
+using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Exceptions;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace SkillSense.Application.Services.Interviews;
 
@@ -9,7 +14,11 @@ public sealed class InterviewService(
     IInterviewRepository interviewRepository,
     IRecruiterRepository recruiterRepository,
     IJobRepository jobRepository,
-    IDateTimeProvider dateTimeProvider) : IInterviewService
+    IInterviewCalendarService interviewCalendarService,
+    IInterviewInviteEmailSender interviewInviteEmailSender,
+    IDateTimeProvider dateTimeProvider,
+    INotificationService notificationService,
+    ILogger<InterviewService> logger) : IInterviewService
 {
     public async Task<InterviewDto> ScheduleInterviewAsync(ScheduleInterviewRequest request, CancellationToken ct = default)
         => await ScheduleInterviewAsync(null, request, ct);
@@ -18,6 +27,9 @@ public sealed class InterviewService(
     {
         var now = dateTimeProvider.UtcNow;
         var scopedCompanyId = await ResolveCompanyIdAsync(companyId, request.RecruiterId, request.JobId, ct);
+        var interviewType = MapInterviewType(request.InterviewType);
+        ValidateInterviewDetails(interviewType, request.LocationOrMeetingLink);
+        await EnsureCandidateIsShortlistedAsync(request.JobId, request.JobSeekerId, ct);
 
         var entity = new InterviewEntity
         {
@@ -27,6 +39,7 @@ public sealed class InterviewService(
             RecruiterId = request.RecruiterId,
             JobSeekerId = request.JobSeekerId,
             ScheduledDateTimeUtc = request.ScheduledDateTimeUtc,
+            InterviewType = interviewType,
             LocationOrMeetingLink = request.LocationOrMeetingLink.Trim(),
             Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim(),
             Status = InterviewStatus.Pending,
@@ -34,9 +47,20 @@ public sealed class InterviewService(
         };
 
         await interviewRepository.AddAsync(entity, ct);
+        await SyncSubmissionToInterviewStageAsync(entity, ct);
         await interviewRepository.SaveChangesAsync(ct);
 
-        return await GetRecruiterInterviewAsync(scopedCompanyId, request.RecruiterId, entity.Id, ct);
+        var scheduledInterview = await interviewRepository.GetByIdForRecruiterAsync(entity.Id, request.RecruiterId, scopedCompanyId, ct)
+            ?? throw new KeyNotFoundException("Interview not found.");
+
+        await CreateCalendarInvite(scheduledInterview, ct);
+        await CreateJobSeekerNotificationAsync(
+            scheduledInterview,
+            NotificationType.Info,
+            "Interview scheduled",
+            BuildScheduleNotificationMessage(scheduledInterview),
+            ct);
+        return await MapAsync(scheduledInterview, ct);
     }
 
     public async Task<InterviewDto> GetRecruiterInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
@@ -50,24 +74,46 @@ public sealed class InterviewService(
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
 
-        entity.ScheduledDateTimeUtc = request.ScheduledDateTimeUtc;
-        entity.Message = string.IsNullOrWhiteSpace(request.Message) ? entity.Message : request.Message.Trim();
-        entity.Status = InterviewStatus.Rescheduled;
+        EnsureCanReschedule(entity);
+        ApplyReschedule(entity, request);
+        await SaveInterviewChangesAsync(interviewId, ct);
+        var updatedInterview = await interviewRepository.GetByIdAsync(interviewId, ct)
+            ?? throw new KeyNotFoundException("Interview not found.");
 
-        await interviewRepository.SaveChangesAsync(ct);
-        return await MapAsync(entity, ct);
+        await CreateCalendarInvite(updatedInterview, ct);
+        await CreateJobSeekerNotificationAsync(
+            updatedInterview,
+            NotificationType.Warning,
+            "Interview rescheduled",
+            BuildRescheduleNotificationMessage(updatedInterview),
+            ct);
+        return await MapAsync(updatedInterview, ct);
     }
 
     public async Task<InterviewDto> RescheduleInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, RescheduleInterviewRequest request, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
 
-        entity.ScheduledDateTimeUtc = request.ScheduledDateTimeUtc;
-        entity.Message = string.IsNullOrWhiteSpace(request.Message) ? entity.Message : request.Message.Trim();
-        entity.Status = InterviewStatus.Rescheduled;
+        EnsureCanReschedule(entity);
+        ApplyReschedule(entity, request);
+        await SaveInterviewChangesAsync(interviewId, ct);
+        var updatedInterview = companyId.HasValue && companyId.Value != Guid.Empty
+            ? await interviewRepository.GetByIdForRecruiterAsync(interviewId, recruiterId, companyId.Value, ct)
+            : await interviewRepository.GetByIdAsync(interviewId, ct);
 
-        await interviewRepository.SaveChangesAsync(ct);
-        return await MapAsync(entity, ct);
+        if (updatedInterview is null)
+        {
+            throw new KeyNotFoundException("Interview not found.");
+        }
+
+        await CreateCalendarInvite(updatedInterview, ct);
+        await CreateJobSeekerNotificationAsync(
+            updatedInterview,
+            NotificationType.Warning,
+            "Interview rescheduled",
+            BuildRescheduleNotificationMessage(updatedInterview),
+            ct);
+        return await MapAsync(updatedInterview, ct);
     }
 
     public async Task<InterviewDto> AcceptInterviewAsync(Guid interviewId, CancellationToken ct = default)
@@ -75,6 +121,7 @@ public sealed class InterviewService(
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
 
+        EnsureCanRespond(entity);
         entity.Status = InterviewStatus.Accepted;
         await interviewRepository.SaveChangesAsync(ct);
         return await MapAsync(entity, ct);
@@ -83,8 +130,21 @@ public sealed class InterviewService(
     public async Task<InterviewDto> AcceptInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
+        EnsureCanRespond(entity);
+        if (entity.Status == InterviewStatus.Accepted)
+        {
+            return await MapAsync(entity, ct);
+        }
+
         entity.Status = InterviewStatus.Accepted;
+        await SyncSubmissionToInterviewStageAsync(entity, ct);
         await interviewRepository.SaveChangesAsync(ct);
+        await CreateRecruiterNotificationAsync(
+            entity,
+            NotificationType.Success,
+            "Interview accepted",
+            $"{ResolveCandidateName(entity)} accepted the interview for {entity.Job.Title}.",
+            ct);
         return await MapAsync(entity, ct);
     }
 
@@ -93,6 +153,7 @@ public sealed class InterviewService(
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
 
+        EnsureCanRespond(entity);
         entity.Status = InterviewStatus.Declined;
         await interviewRepository.SaveChangesAsync(ct);
         return await MapAsync(entity, ct);
@@ -101,8 +162,20 @@ public sealed class InterviewService(
     public async Task<InterviewDto> DeclineInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
+        EnsureCanRespond(entity);
+        if (entity.Status == InterviewStatus.Declined)
+        {
+            return await MapAsync(entity, ct);
+        }
+
         entity.Status = InterviewStatus.Declined;
         await interviewRepository.SaveChangesAsync(ct);
+        await CreateRecruiterNotificationAsync(
+            entity,
+            NotificationType.Warning,
+            "Interview declined",
+            $"{ResolveCandidateName(entity)} declined the interview for {entity.Job.Title}.",
+            ct);
         return await MapAsync(entity, ct);
     }
 
@@ -114,6 +187,11 @@ public sealed class InterviewService(
         }
 
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
+        EnsureCanReschedule(entity);
+        if (entity.Status == InterviewStatus.RescheduleRequested)
+        {
+            return await MapAsync(entity, ct);
+        }
 
         var rescheduleRequest = new InterviewRescheduleRequestEntity
         {
@@ -128,7 +206,55 @@ public sealed class InterviewService(
         entity.Status = InterviewStatus.RescheduleRequested;
         await interviewRepository.AddRescheduleRequestAsync(rescheduleRequest, ct);
         await interviewRepository.SaveChangesAsync(ct);
+        await CreateRecruiterNotificationAsync(
+            entity,
+            NotificationType.Info,
+            "Interview reschedule requested",
+            $"{ResolveCandidateName(entity)} requested to reschedule the interview for {entity.Job.Title}.",
+            ct);
 
+        return await MapAsync(entity, ct);
+    }
+
+    public async Task<InterviewDto> CancelInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancelInterviewRequest request, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
+        EnsureCanCancel(entity);
+
+        entity.Status = InterviewStatus.Cancelled;
+        entity.CancelReason = string.IsNullOrWhiteSpace(request.Reason) ? "Cancelled by recruiter." : request.Reason.Trim();
+        entity.CancelledAtUtc = dateTimeProvider.UtcNow;
+
+        await SaveInterviewChangesAsync(interviewId, ct);
+        await CreateJobSeekerNotificationAsync(
+            entity,
+            NotificationType.Warning,
+            "Interview cancelled",
+            BuildCancelNotificationMessage(entity),
+            ct);
+
+        return await MapAsync(entity, ct);
+    }
+
+    public async Task<InterviewDto> ArchiveInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
+        EnsureCanArchive(entity);
+
+        entity.IsArchived = true;
+        entity.ArchivedAtUtc = dateTimeProvider.UtcNow;
+        await SaveInterviewChangesAsync(interviewId, ct);
+        return await MapAsync(entity, ct);
+    }
+
+    public async Task<InterviewDto> ArchiveInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
+        EnsureCanArchive(entity);
+
+        entity.IsArchived = true;
+        entity.ArchivedAtUtc = dateTimeProvider.UtcNow;
+        await SaveInterviewChangesAsync(interviewId, ct);
         return await MapAsync(entity, ct);
     }
 
@@ -152,6 +278,65 @@ public sealed class InterviewService(
     {
         var items = await interviewRepository.GetByJobSeekerAsync(jobSeekerId, ct);
         return await MapAsync(items, ct);
+    }
+
+    /// <summary>
+    /// Generates and emails the ICS invite immediately after interview scheduling so both participants
+    /// receive the same canonical calendar event.
+    /// </summary>
+    private async Task CreateCalendarInvite(InterviewEntity interview, CancellationToken ct)
+    {
+        var calendarContent = interviewCalendarService.BuildCalendarContent(interview);
+        var fileName = $"interview-{interview.Id}.ics";
+        var subject = $"Interview scheduled: {ResolveCandidateName(interview)} for {interview.Job.Title}";
+        var body = BuildInviteEmailBody(interview);
+
+        if (!string.IsNullOrWhiteSpace(interview.Recruiter.Email))
+        {
+            await interviewInviteEmailSender.SendCalendarInviteAsync(
+                interview.Recruiter.Email,
+                subject,
+                body,
+                fileName,
+                calendarContent,
+                ct);
+        }
+
+        if (!string.IsNullOrWhiteSpace(interview.JobSeeker.Email))
+        {
+            await interviewInviteEmailSender.SendCalendarInviteAsync(
+                interview.JobSeeker.Email,
+                subject,
+                body,
+                fileName,
+                calendarContent,
+                ct);
+        }
+    }
+
+    private async Task CreateRecruiterNotificationAsync(
+        InterviewEntity interview,
+        NotificationType type,
+        string title,
+        string message,
+        CancellationToken ct)
+    {
+        if (interview.RecruiterId == Guid.Empty)
+        {
+            logger.LogWarning("Skipping recruiter notification for interview {InterviewId} because RecruiterId is empty.", interview.Id);
+            return;
+        }
+
+        await notificationService.CreateNotificationAsync(
+            new CreateNotificationRequest
+            {
+                UserId = interview.RecruiterId,
+                Title = title,
+                Message = message,
+                Type = type,
+                RelatedEntityId = interview.Id,
+            },
+            ct);
     }
 
     private async Task<InterviewEntity> GetInterviewForRecruiterAsync(Guid interviewId, Guid? companyId, Guid recruiterId, CancellationToken ct)
@@ -206,9 +391,12 @@ public sealed class InterviewService(
                 RecruiterId = entity.RecruiterId,
                 JobSeekerId = entity.JobSeekerId,
                 ScheduledDateTimeUtc = entity.ScheduledDateTimeUtc,
+                InterviewType = MapInterviewType(entity.InterviewType),
                 LocationOrMeetingLink = entity.LocationOrMeetingLink,
                 Message = entity.Message,
                 Status = entity.Status,
+                CancelReason = entity.CancelReason,
+                IsArchived = entity.IsArchived,
                 CreatedAtUtc = entity.CreatedAtUtc,
                 RecruiterName = recruiterContext?.RecruiterName,
                 RecruiterEmail = recruiterContext?.RecruiterEmail,
@@ -268,6 +456,256 @@ public sealed class InterviewService(
 
         return job.CompanyId;
     }
+
+    private async Task EnsureCandidateIsShortlistedAsync(Guid jobId, Guid jobSeekerId, CancellationToken ct)
+    {
+        // Interview scheduling is restricted to shortlisted candidates so recruiters cannot
+        // create interview records for arbitrary accounts outside the review workflow.
+        var matches = await recruiterRepository.GetShortlistedCandidatesByJobAsync(jobId, ct);
+        if (!matches.Any(candidate => candidate.JobSeekerUserId == jobSeekerId))
+        {
+            throw new ArgumentException("Only shortlisted candidates can be scheduled for interviews.");
+        }
+    }
+
+    private async Task SyncSubmissionToInterviewStageAsync(InterviewEntity interview, CancellationToken ct)
+    {
+        var submission = await recruiterRepository.GetSubmissionForInterviewAsync(
+            interview.RecruiterId,
+            interview.CompanyId,
+            interview.JobId,
+            interview.JobSeekerId,
+            ct);
+
+        if (submission is null)
+        {
+            logger.LogWarning(
+                "No resume submission found while syncing interview stage for recruiter {RecruiterId}, job {JobId}, jobseeker {JobSeekerId}.",
+                interview.RecruiterId,
+                interview.JobId,
+                interview.JobSeekerId);
+            return;
+        }
+
+        // Scheduling moves the linked application into Interview stage so every recruiter entry
+        // point stays aligned and accepted interviews never remain stuck in Shortlisted.
+        if (submission.Status == ResumeSubmissionStatus.Shortlisted)
+        {
+            submission.Status = ApplicantStageTransitionPolicy.ResolveNextStatus(
+                submission.Status,
+                "set-interview");
+            submission.UpdatedAtUtc = dateTimeProvider.UtcNow;
+        }
+    }
+
+    private static string BuildInviteEmailBody(InterviewEntity interview)
+    {
+        var candidateName = ResolveCandidateName(interview);
+        var recruiterName = ResolveRecruiterName(interview);
+        var interviewType = interview.InterviewType.ToString();
+        var statusLabel = interview.Status == InterviewStatus.Rescheduled ? "rescheduled" : "scheduled";
+        var locationLabel = interview.InterviewType == InterviewType.Virtual ? "Meeting link" : "Location / Address";
+
+        return string.Join(Environment.NewLine, new[]
+        {
+            $"Interview {statusLabel} for {candidateName}.",
+            $"Job title: {interview.Job.Title}",
+            $"Recruiter: {recruiterName}",
+            $"Interview date (UTC): {interview.ScheduledDateTimeUtc:yyyy-MM-dd}",
+            $"Interview time (UTC): {interview.ScheduledDateTimeUtc:HH:mm}",
+            $"Interview type: {interviewType}",
+            $"{locationLabel}: {interview.LocationOrMeetingLink}",
+        });
+    }
+
+    private static string ResolveCandidateName(InterviewEntity interview)
+        => string.IsNullOrWhiteSpace(interview.JobSeeker.UserName)
+            ? interview.JobSeeker.Email ?? "Candidate"
+            : interview.JobSeeker.UserName;
+
+    private static string ResolveRecruiterName(InterviewEntity interview)
+        => string.IsNullOrWhiteSpace(interview.Recruiter.UserName)
+            ? interview.Recruiter.Email ?? "Recruiter"
+            : interview.Recruiter.UserName;
+
+    private static void ValidateInterviewDetails(InterviewType interviewType, string locationOrMeetingLink)
+    {
+        if (string.IsNullOrWhiteSpace(locationOrMeetingLink))
+        {
+            throw new ArgumentException(
+                interviewType == InterviewType.Virtual
+                    ? "Meeting link is required for virtual interviews."
+                    : "Location / Address is required for onsite interviews.");
+        }
+
+        if (interviewType == InterviewType.Virtual
+            && (!Uri.TryCreate(locationOrMeetingLink.Trim(), UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+        {
+            throw new ArgumentException("A valid meeting link is required for virtual interviews.");
+        }
+    }
+
+    private static void ValidateScheduledDate(DateTime scheduledDateTimeUtc, DateTime utcNow)
+    {
+        if (scheduledDateTimeUtc == default)
+        {
+            throw new ArgumentException("Interview date and time is required.");
+        }
+
+        if (scheduledDateTimeUtc.Kind == DateTimeKind.Unspecified)
+        {
+            throw new ArgumentException("Interview date and time must include a timezone.");
+        }
+
+        if (scheduledDateTimeUtc.ToUniversalTime() <= utcNow.AddMinutes(-1))
+        {
+            throw new ArgumentException("Interview date and time must be in the future.");
+        }
+    }
+
+    private void ApplyReschedule(InterviewEntity entity, RescheduleInterviewRequest request)
+    {
+        var interviewType = MapInterviewType(request.InterviewType);
+        ValidateScheduledDate(request.ScheduledDateTimeUtc, dateTimeProvider.UtcNow);
+        ValidateInterviewDetails(interviewType, request.LocationOrMeetingLink);
+
+        entity.ScheduledDateTimeUtc = request.ScheduledDateTimeUtc.ToUniversalTime();
+        entity.InterviewType = interviewType;
+        entity.LocationOrMeetingLink = request.LocationOrMeetingLink.Trim();
+        entity.Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim();
+        entity.Status = InterviewStatus.Rescheduled;
+    }
+
+    private static void EnsureCanReschedule(InterviewEntity entity)
+    {
+        // Declined and cancelled interviews are terminal scheduling states.
+        // They may be archived, but they cannot be rescheduled in-place.
+        if (entity.IsArchived)
+        {
+            throw new ArgumentException("Archived interviews cannot be modified.");
+        }
+
+        if (entity.Status == InterviewStatus.Declined)
+        {
+            throw new ArgumentException("Declined interviews cannot be rescheduled.");
+        }
+
+        if (entity.Status == InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Cancelled interviews cannot be rescheduled.");
+        }
+    }
+
+    private static void EnsureCanRespond(InterviewEntity entity)
+    {
+        if (entity.IsArchived)
+        {
+            throw new ArgumentException("Archived interviews cannot be updated.");
+        }
+
+        if (entity.Status == InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Cancelled interviews cannot be updated.");
+        }
+    }
+
+    private static void EnsureCanCancel(InterviewEntity entity)
+    {
+        if (entity.IsArchived)
+        {
+            throw new ArgumentException("Archived interviews cannot be cancelled.");
+        }
+
+        if (entity.Status == InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Interview is already cancelled.");
+        }
+    }
+
+    private static void EnsureCanArchive(InterviewEntity entity)
+    {
+        if (entity.IsArchived)
+        {
+            throw new ArgumentException("Interview is already archived.");
+        }
+
+        if (entity.Status is not InterviewStatus.Declined and not InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Only declined or cancelled interviews can be archived.");
+        }
+    }
+
+    private async Task SaveInterviewChangesAsync(Guid interviewId, CancellationToken ct)
+    {
+        try
+        {
+            await interviewRepository.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to save interview changes for interview {InterviewId}. Inner exception: {InnerMessage}",
+                interviewId,
+                ex.InnerException?.Message);
+            throw;
+        }
+    }
+
+    private async Task CreateJobSeekerNotificationAsync(
+        InterviewEntity interview,
+        NotificationType type,
+        string title,
+        string message,
+        CancellationToken ct)
+    {
+        if (interview.JobSeekerId == Guid.Empty)
+        {
+            logger.LogWarning("Skipping jobseeker notification for interview {InterviewId} because JobSeekerId is empty.", interview.Id);
+            return;
+        }
+
+        await notificationService.CreateNotificationAsync(
+            new CreateNotificationRequest
+            {
+                UserId = interview.JobSeekerId,
+                Title = title,
+                Message = message,
+                Type = type,
+                RelatedEntityId = interview.Id,
+            },
+            ct);
+    }
+
+    private static string BuildScheduleNotificationMessage(InterviewEntity interview)
+        => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was scheduled for {interview.ScheduledDateTimeUtc:yyyy-MM-dd HH:mm} UTC.";
+
+    private static string BuildRescheduleNotificationMessage(InterviewEntity interview)
+        => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was rescheduled to {interview.ScheduledDateTimeUtc:yyyy-MM-dd HH:mm} UTC.";
+
+    private static string BuildCancelNotificationMessage(InterviewEntity interview)
+        => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was cancelled."
+            + (string.IsNullOrWhiteSpace(interview.CancelReason) ? string.Empty : $" Reason: {interview.CancelReason.Trim()}");
+
+    private static string ResolveCompanyName(InterviewEntity interview)
+        => string.IsNullOrWhiteSpace(interview.Job.CompanyNameSnapshot) ? "the company" : interview.Job.CompanyNameSnapshot;
+
+    private static InterviewType MapInterviewType(InterviewTypeDto interviewType)
+        => interviewType switch
+        {
+            InterviewTypeDto.Virtual => InterviewType.Virtual,
+            InterviewTypeDto.Onsite => InterviewType.Onsite,
+            _ => throw new ArgumentOutOfRangeException(nameof(interviewType), interviewType, "Unsupported interview type."),
+        };
+
+    private static InterviewTypeDto MapInterviewType(InterviewType interviewType)
+        => interviewType switch
+        {
+            InterviewType.Virtual => InterviewTypeDto.Virtual,
+            InterviewType.Onsite => InterviewTypeDto.Onsite,
+            _ => throw new ArgumentOutOfRangeException(nameof(interviewType), interviewType, "Unsupported interview type."),
+        };
 
     private sealed record RecruiterContext(string RecruiterName, string? RecruiterEmail, string? CompanyName);
 }

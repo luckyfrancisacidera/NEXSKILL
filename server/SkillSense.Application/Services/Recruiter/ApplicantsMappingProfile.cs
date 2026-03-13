@@ -12,6 +12,7 @@ public sealed class ApplicantsMappingProfile : Profile
     public ApplicantsMappingProfile()
     {
         CreateMap<ApplicantScoreData, ApplicantScoreItemResponse>()
+            .ForMember(dest => dest.JobSeekerUserId, opt => opt.MapFrom(src => src.JobSeekerUserId))
             .ForMember(dest => dest.Score, opt => opt.MapFrom(src => (int)Math.Round(src.Score)))
             .ForMember(dest => dest.SubmissionStatus, opt => opt.MapFrom<SubmissionStatusResolver>())
             .ForMember(dest => dest.JobseekerStage, opt => opt.MapFrom(src => RecruiterApplicantProjection.ResolveJobseekerStage(src.Status)));

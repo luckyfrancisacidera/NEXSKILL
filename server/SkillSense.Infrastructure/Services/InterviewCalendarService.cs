@@ -18,7 +18,10 @@ public sealed class InterviewCalendarService : IInterviewCalendarService
         var effectiveDuration = duration ?? DefaultDuration;
         var startUtc = EnsureUtc(interview.ScheduledDateTimeUtc);
         var endUtc = startUtc.Add(effectiveDuration);
-        var title = $"Interview for {interview.Job.Title}";
+        var candidateName = ResolveDisplayName(interview.JobSeeker, "Candidate");
+        var recruiterName = ResolveDisplayName(interview.Recruiter, "Recruiter");
+        var interviewType = interview.InterviewType.ToString();
+        var title = $"Interview with {candidateName}";
         var location = string.IsNullOrWhiteSpace(interview.LocationOrMeetingLink)
             ? string.Empty
             : Escape(interview.LocationOrMeetingLink.Trim());
@@ -74,11 +77,23 @@ public sealed class InterviewCalendarService : IInterviewCalendarService
     private static string BuildDescription(InterviewEntity interview)
     {
         var parts = new List<string>();
+        var candidateName = ResolveDisplayName(interview.JobSeeker, "Candidate");
+        var recruiterName = ResolveDisplayName(interview.Recruiter, "Recruiter");
+        var interviewType = interview.InterviewType.ToString();
+
+        parts.Add($"Interview title: Interview with {candidateName}");
+        parts.Add($"Candidate name: {candidateName}");
+        parts.Add($"Job title: {interview.Job.Title}");
+        parts.Add($"Interview date (UTC): {EnsureUtc(interview.ScheduledDateTimeUtc):yyyy-MM-dd}");
+        parts.Add($"Interview time (UTC): {EnsureUtc(interview.ScheduledDateTimeUtc):HH:mm}");
+        parts.Add($"Interview type: {interviewType}");
 
         if (!string.IsNullOrWhiteSpace(interview.Message))
         {
             parts.Add($"Message: {interview.Message.Trim()}");
         }
+
+        parts.Add($"Recruiter: {recruiterName}");
 
         if (!string.IsNullOrWhiteSpace(interview.Recruiter.Email))
         {
@@ -92,7 +107,7 @@ public sealed class InterviewCalendarService : IInterviewCalendarService
 
         if (!string.IsNullOrWhiteSpace(interview.LocationOrMeetingLink))
         {
-            parts.Add($"Meeting: {interview.LocationOrMeetingLink.Trim()}");
+            parts.Add($"{(interview.InterviewType == InterviewType.Virtual ? "Meeting link" : "Location / Address")}: {interview.LocationOrMeetingLink.Trim()}");
         }
 
         return Escape(string.Join("\\n", parts));
@@ -120,4 +135,7 @@ public sealed class InterviewCalendarService : IInterviewCalendarService
 
     private static string EscapeEmail(string value)
         => value.Trim().Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal);
+
+    private static string ResolveDisplayName(AppUser user, string fallback)
+        => string.IsNullOrWhiteSpace(user.UserName) ? user.Email ?? fallback : user.UserName;
 }

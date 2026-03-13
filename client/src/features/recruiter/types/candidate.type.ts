@@ -23,6 +23,9 @@ export interface RecruiterCandidate {
 
 export interface ApplicantScoreItemDto {
   resume_submission_id: string;
+  jobseeker_user_id?: string;
+  // Backward-compatible alias for older references during the applicant->jobseeker rename.
+  applicant_user_id?: string;
   applicant_name: string;
   applicant_email: string;
   job_id: string;
@@ -204,5 +207,3 @@ export interface CandidateDetailAction {
   message: (name: string) => string;
   accent: 'red' | 'green' | 'violet';
 }
-
-

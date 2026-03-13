@@ -46,8 +46,13 @@ export const CandidatesTable = ({ candidates, isAllChecked, selectedSet, onToggl
             <td className="px-3 py-3 font-semibold text-zinc-900">{candidate.score}</td>
             <td className="px-3 py-3 text-zinc-700">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>
             <td className="px-3 py-3">
-              <Link to={`/recruiter/candidates/${candidate.resume_submission_id}`} className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-zinc-700 transition hover:bg-zinc-100" title="View profile">
+              <Link
+                to={`/recruiter/candidates/${candidate.resume_submission_id}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+                title="View candidate"
+              >
                 <Eye size={16} />
+                <span>View Candidate</span>
               </Link>
             </td>
           </tr>

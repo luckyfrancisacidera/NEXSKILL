@@ -20,7 +20,7 @@ public sealed class ResumeUploadService(
         string? email = null,
         string? postalCode = null,
         string? location = null,
-        Guid? applicantUserId = null,
+        Guid? jobSeekerUserId = null,
         CancellationToken ct = default)
     {
         var blobKey = await objectStorageService.UploadAsync(fileStream, fileName, contentType, ct);
@@ -37,7 +37,7 @@ public sealed class ResumeUploadService(
             Email = email,
             PostalCode = postalCode,
             Location = location,
-            ApplicantUserId = applicantUserId,
+            JobSeekerUserId = jobSeekerUserId,
             Status = ResumeSubmissionStatus.Pending,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow

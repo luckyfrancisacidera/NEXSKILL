@@ -23,10 +23,6 @@ const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
 const isActionAllowed = (action: string, submissionStatus: string) => {
   const allowedByAction: Record<string, string[]> = {
     shortlist: ['Applied', 'Recommended', 'Shortlisted', 'Interview'],
-    'set-interview': ['Shortlisted', 'Interview'],
-    offer: ['Interview', 'Offer'],
-    hire: ['Offer', 'Hire'],
-    reject: ['Applied', 'Recommended', 'Shortlisted', 'Interview', 'Offer', 'Hire'],
     'remove-shortlist': ['Shortlisted', 'Interview'],
   };
 
@@ -63,22 +59,6 @@ const getBulkActionsForStage = (stage: string, selectedCount: number): Candidate
         message: `Remove shortlist status for ${countLabel}?`,
         accent: 'violet',
       },
-      {
-        action: 'set-interview',
-        status: 'Interview',
-        label: 'Set Interview',
-        title: 'Move to interview',
-        message: `Move ${countLabel} to Interview stage?`,
-        accent: 'green',
-      },
-      {
-        action: 'reject',
-        status: 'Rejected',
-        label: 'Reject',
-        title: 'Reject candidates',
-        message: `Reject ${countLabel}? This cannot be undone.`,
-        accent: 'red',
-      },
     ];
   }
 
@@ -91,56 +71,6 @@ const getBulkActionsForStage = (stage: string, selectedCount: number): Candidate
         title: 'Shortlist interview candidates',
         message: `Move ${countLabel} back to Shortlisted stage?`,
         accent: 'violet',
-      },
-      {
-        action: 'offer',
-        status: 'Offer',
-        label: 'Give Offer',
-        title: 'Move to offer',
-        message: `Move ${countLabel} to Offer stage?`,
-        accent: 'green',
-      },
-      {
-        action: 'reject',
-        status: 'Rejected',
-        label: 'Reject',
-        title: 'Reject candidates',
-        message: `Reject ${countLabel}? This cannot be undone.`,
-        accent: 'red',
-      },
-    ];
-  }
-
-  if (stage === 'Offer') {
-    return [
-      {
-        action: 'hire',
-        status: 'Hire',
-        label: 'Hire',
-        title: 'Hire candidates',
-        message: `Move ${countLabel} to Hire stage?`,
-        accent: 'green',
-      },
-      {
-        action: 'reject',
-        status: 'Rejected',
-        label: 'Reject',
-        title: 'Reject candidates',
-        message: `Reject ${countLabel}? This cannot be undone.`,
-        accent: 'red',
-      },
-    ];
-  }
-
-  if (stage === 'Hire') {
-    return [
-      {
-        action: 'reject',
-        status: 'Rejected',
-        label: 'Reject',
-        title: 'Reject candidates',
-        message: `Reject ${countLabel}? This cannot be undone.`,
-        accent: 'red',
       },
     ];
   }

@@ -45,6 +45,7 @@ public static class ConfigureInfrastructureService
         services.AddSingleton<IObjectStorageService, CloudflareR2StorageService>();
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IInterviewCalendarService, InterviewCalendarService>();
+        services.AddHttpClient<IInterviewInviteEmailSender, MyMailInterviewInviteEmailSender>();
         services.AddHttpClient<IResetPinEmailSender, MyMailResetPinEmailSender>();
 
         services

@@ -11,12 +11,16 @@ export const recruiterCandidateDetailLoader = async ({
   params,
 }: LoaderFunctionArgs) => {
   try {
-    if (!params.candidateId) {
+    const resumeSubmissionId = params.candidateId;
+
+    if (!resumeSubmissionId) {
       throw new Response("Candidate not found", { status: 404 });
     }
 
+    // The route stays submission-based for recruiter review.
+    // Interview scheduling resolves the linked jobseeker identity from the API payload.
     const candidate = await recruiterService.getApplicantBySubmissionId(
-      params.candidateId,
+      resumeSubmissionId,
     );
 
     if (!candidate) {

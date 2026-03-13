@@ -1,6 +1,7 @@
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Contracts.Interviews;
 
 namespace SkillSense.Application.Interfaces.Recruiter;
 
@@ -26,6 +27,7 @@ public interface IRecruiterService
     Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid companyId, Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default);
     Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
+    Task<IReadOnlyList<ShortlistedCandidateOptionDto>> GetShortlistedCandidatesByJobAsync(Guid companyId, Guid recruiterId, Guid jobId, string? department = null, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);

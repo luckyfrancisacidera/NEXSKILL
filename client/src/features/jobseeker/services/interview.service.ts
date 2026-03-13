@@ -5,10 +5,13 @@ interface JobseekerInterviewDto {
   id: string;
   recruiterId: string;
   jobSeekerId: string;
+  jobTitle?: string | null;
   scheduledDateTimeUtc: string;
   locationOrMeetingLink: string;
   message?: string | null;
   status: JobseekerInterview["status"];
+  cancelReason?: string | null;
+  isArchived?: boolean;
   recruiterName?: string | null;
   recruiterEmail?: string | null;
   companyName?: string | null;
@@ -22,11 +25,14 @@ const mapInterview = (dto: JobseekerInterviewDto): JobseekerInterview => {
     id: dto.id,
     recruiterId: dto.recruiterId,
     jobseekerId: dto.jobSeekerId,
+    jobTitle: dto.jobTitle ?? undefined,
     scheduledDate: dto.scheduledDateTimeUtc,
     meetingLink: looksLikeLink ? value : undefined,
     location: !looksLikeLink && value ? value : undefined,
     message: dto.message ?? undefined,
     status: dto.status,
+    cancelReason: dto.cancelReason ?? undefined,
+    isArchived: dto.isArchived ?? false,
     recruiterName: dto.recruiterName ?? undefined,
     recruiterEmail: dto.recruiterEmail ?? undefined,
     companyName: dto.companyName ?? undefined,
@@ -76,6 +82,14 @@ export const jobseekerInterviewService = {
       },
     );
 
+    return mapInterview(response.data);
+  },
+
+  async archiveInterview(interviewId: string): Promise<JobseekerInterview> {
+    const response = await http.post<JobseekerInterviewDto>(
+      `/api/jobseeker/interviews/${interviewId}/archive`,
+      {},
+    );
     return mapInterview(response.data);
   },
 };

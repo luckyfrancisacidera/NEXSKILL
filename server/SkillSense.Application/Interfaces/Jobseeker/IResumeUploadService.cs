@@ -14,6 +14,6 @@ public interface IResumeUploadService
            string? email = null,
            string? postalCode = null,
            string? location = null,
-           Guid? applicantUserId = null,
+           Guid? jobSeekerUserId = null,
            CancellationToken ct = default);
 }
