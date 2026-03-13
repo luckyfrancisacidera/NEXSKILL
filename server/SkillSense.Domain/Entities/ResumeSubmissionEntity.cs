@@ -13,11 +13,15 @@ public sealed class ResumeSubmissionEntity
     public string? Email { get; set; }
     public string? PostalCode { get; set; }
     public string? Location { get; set; }
-    public Guid? ApplicantUserId { get; set; }
+    // ResumeSubmission identifies the application record.
+    // JobSeekerUserId identifies the actual account/person behind that submission.
+    public Guid? JobSeekerUserId { get; set; }
     public ResumeSubmissionStatus Status { get; set; }
     public string ParsedResumeJson { get; set; } = "{}";
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+
+    public AppUser? JobSeekerUser { get; set; }
 }
 
 public enum ResumeSubmissionStatus

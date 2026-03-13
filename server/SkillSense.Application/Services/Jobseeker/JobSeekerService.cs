@@ -41,14 +41,14 @@ namespace SkillSense.Application.Services.Jobseeker
                 return job is null ? null : Map(job);
             });
 
-        public async Task<ResumeUploadResponse> ApplyAsync(Guid jobId, ApplyToJobRequest request, Stream fileStream, string fileName, string contentType, Guid? applicantUserId, CancellationToken ct = default)
+        public async Task<ResumeUploadResponse> ApplyAsync(Guid jobId, ApplyToJobRequest request, Stream fileStream, string fileName, string contentType, Guid? jobSeekerUserId, CancellationToken ct = default)
         {
             var job = await jobSeekerRepository.GetPublishedJobByIdAsync(jobId, ct)
                 ?? throw new InvalidOperationException("Published job not found.");
 
-            var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, request.FullName, request.Email, request.PostalCode, request.Location, applicantUserId, ct);
+            var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, request.FullName, request.Email, request.PostalCode, request.Location, jobSeekerUserId, ct);
             cacheService.RemoveByPrefix("dashboard:recruiter:");
-            cacheService.RemoveByPrefix($"dashboard:jobseeker:{applicantUserId}");
+            cacheService.RemoveByPrefix($"dashboard:jobseeker:{jobSeekerUserId}");
             return response;
         }
 

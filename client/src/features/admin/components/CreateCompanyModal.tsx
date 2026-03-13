@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '@shared/components/Button';
 import { ModalOverlay } from '@shared/components/ModalOverlay';
 import type { CreateCompanyAccountPayload } from '@features/admin/types/admin.type';
+import { AdminPasswordField } from '@features/admin/components/AdminPasswordField';
 
 interface CreateCompanyModalProps {
   open: boolean;
@@ -19,13 +20,40 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
   const [location, setLocation] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (!open) {
     return null;
   }
 
+  const validatePasswords = () => {
+    if (!adminPassword) {
+      setPasswordError('Password is required.');
+      return false;
+    }
+
+    if (!confirmPassword) {
+      setPasswordError('Confirm password is required.');
+      return false;
+    }
+
+    if (adminPassword !== confirmPassword) {
+      setPasswordError('Password and confirm password must match.');
+      return false;
+    }
+
+    setPasswordError(null);
+    return true;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!validatePasswords()) {
+      return;
+    }
 
     try {
       await onSubmit({
@@ -41,6 +69,8 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
       setLocation('');
       setAdminEmail('');
       setAdminPassword('');
+      setConfirmPassword('');
+      setPasswordError(null);
     } catch {
       // The parent surfaces the error state for the modal body.
     }
@@ -66,7 +96,7 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
             <input className={inputClassName} value={name} onChange={(event) => setName(event.target.value)} required />
           </label>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             <label className="block text-sm font-medium text-zinc-700">
               Primary email
               <input type="email" className={inputClassName} value={primaryEmail} onChange={(event) => setPrimaryEmail(event.target.value)} placeholder="hello@company.com" />
@@ -77,15 +107,44 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
             </label>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             <label className="block text-sm font-medium text-zinc-700">
               Company admin email
               <input type="email" className={inputClassName} value={adminEmail} onChange={(event) => setAdminEmail(event.target.value)} required />
             </label>
-            <label className="block text-sm font-medium text-zinc-700">
-              Initial admin password
-              <input type="password" className={inputClassName} value={adminPassword} onChange={(event) => setAdminPassword(event.target.value)} required />
-            </label>
+            <AdminPasswordField
+              label="Initial admin password"
+              value={adminPassword}
+              visible={showAdminPassword}
+              ariaLabel={showAdminPassword ? 'Hide password' : 'Show password'}
+              onChange={(value) => {
+                setAdminPassword(value);
+                if (confirmPassword) {
+                  void validatePasswords();
+                }
+              }}
+              onBlur={validatePasswords}
+              onToggleVisibility={() => setShowAdminPassword((current) => !current)}
+              error={passwordError ?? undefined}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <AdminPasswordField
+              label="Confirm password"
+              value={confirmPassword}
+              visible={showConfirmPassword}
+              ariaLabel={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              onChange={(value) => {
+                setConfirmPassword(value);
+                if (adminPassword) {
+                  void validatePasswords();
+                }
+              }}
+              onBlur={validatePasswords}
+              onToggleVisibility={() => setShowConfirmPassword((current) => !current)}
+              error={passwordError ?? undefined}
+            />
           </div>
 
           {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}

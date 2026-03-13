@@ -243,6 +243,35 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
             })
             .FirstOrDefaultAsync(x => x.Job.RecruiterId == recruiterId && x.Job.CompanyId == companyId, ct);
 
+    public async Task<IReadOnlyList<ShortlistedCandidateData>> GetShortlistedCandidatesByJobAsync(Guid jobId, CancellationToken ct = default)
+        => await dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Where(submission => submission.JobId == jobId
+                && submission.Status == ResumeSubmissionStatus.Shortlisted
+                && submission.JobSeekerUserId.HasValue)
+            .Select(submission => new ShortlistedCandidateData
+            {
+                ResumeSubmissionId = submission.Id,
+                JobId = submission.JobId,
+                JobSeekerUserId = submission.JobSeekerUserId!.Value,
+                CandidateName = submission.FullName ?? submission.Email ?? "Candidate",
+                CandidateEmail = submission.Email ?? string.Empty,
+            })
+            .OrderBy(candidate => candidate.CandidateName)
+            .ToListAsync(ct);
+
+    public Task<ResumeSubmissionEntity?> GetSubmissionForInterviewAsync(Guid recruiterId, Guid companyId, Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(submission => submission.JobId == jobId
+                && submission.JobSeekerUserId == jobSeekerUserId)
+            .Where(submission => dbContext.Jobs.Any(job =>
+                job.Id == submission.JobId
+                && job.RecruiterId == recruiterId
+                && job.CompanyId == companyId))
+            .OrderByDescending(submission => submission.UpdatedAtUtc)
+            .ThenByDescending(submission => submission.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
     public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
         => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
 
@@ -261,6 +290,7 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
                 (x, score) => new ApplicantScoreData
                 {
                     ResumeSubmissionId = x.submission.Id,
+                    JobSeekerUserId = x.submission.JobSeekerUserId,
                     JobId = x.job.Id,
                     JobTitle = x.job.Title,
                     JobDepartment = x.job.Department ?? "Unassigned",

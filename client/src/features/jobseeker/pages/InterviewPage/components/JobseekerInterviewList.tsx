@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@shared/components/Card";
 import type { JobseekerInterview } from "@features/jobseeker/types";
 import { JobseekerInterviewCard } from "./JobseekerInterviewCard";
+import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewStatus";
 
 interface JobseekerInterviewListProps {
   interviews: JobseekerInterview[];
@@ -14,6 +15,8 @@ interface JobseekerInterviewListProps {
     message: string,
     attachment?: File,
   ) => Promise<void> | void;
+  onArchive: (id: string) => Promise<void> | void;
+  pendingActionId?: string | null;
 }
 
 type ViewMode = "list" | "calendar";
@@ -27,6 +30,8 @@ export const JobseekerInterviewList = ({
   onAccept,
   onDecline,
   onRequestReschedule,
+  onArchive,
+  pendingActionId = null,
 }: JobseekerInterviewListProps) => {
   const [view, setView] = useState<ViewMode>("list");
 
@@ -78,9 +83,9 @@ export const JobseekerInterviewList = ({
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold text-zinc-900">
-          Upcoming interviews
-        </h3>
+          <h3 className="text-lg font-semibold text-zinc-900">
+            Active interviews
+          </h3>
         <div className="inline-flex rounded-full bg-zinc-100 p-1 text-xs font-medium text-zinc-600">
           <button
             type="button"
@@ -116,6 +121,8 @@ export const JobseekerInterviewList = ({
               onAccept={onAccept}
               onDecline={onDecline}
               onRequestReschedule={onRequestReschedule}
+              onArchive={onArchive}
+              isPending={pendingActionId === interview.id}
             />
           ))}
         </div>
@@ -156,7 +163,7 @@ export const JobseekerInterviewList = ({
                         },
                       )}
                     </span>
-                    <span className="mt-1 inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                    <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusCalendarPillClassName[interview.status]}`}>
                       {interview.status}
                     </span>
                   </button>

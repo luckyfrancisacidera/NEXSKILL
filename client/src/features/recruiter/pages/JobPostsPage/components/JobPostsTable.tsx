@@ -44,7 +44,18 @@ export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps
                 <div className="flex gap-2">
                   <Link className="rounded border border-zinc-300 px-2 py-1" to={`/recruiter/job-posts/${job.id}`}><Eye size={16} /></Link>
                   <Link className="rounded border border-zinc-300 px-2 py-1" to={`/recruiter/job-posts/${job.id}/edit`}><Pencil size={16} /></Link>
-                  <button type="button" className="rounded border border-rose-300 px-2 py-1 text-rose-700" onClick={() => onDelete(job)} disabled={isDeleting}><Trash2 size={16} /></button>
+                  <button
+                    type="button"
+                    className="rounded border border-rose-300 px-2 py-1 text-rose-700"
+                    onClick={(event) => {
+                      // Stop propagation so delete only opens one controlled verification modal.
+                      event.stopPropagation();
+                      onDelete(job);
+                    }}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </td>
             </tr>

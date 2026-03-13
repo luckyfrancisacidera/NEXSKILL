@@ -150,6 +150,7 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 {
     ctx.Response.ContentType = "application/json";
     var error = ctx.Features.Get<IExceptionHandlerFeature>();
+    var logger = ctx.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("GlobalExceptionHandler");
     if (error is null)
     {
         ctx.Response.StatusCode = 500;
@@ -165,6 +166,11 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
         KeyNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message),
         _ => (StatusCodes.Status500InternalServerError, error.Error.Message),
     };
+
+    if (statusCode >= 500)
+    {
+        logger.LogError(error.Error, "Unhandled server exception. Inner exception: {InnerMessage}", error.Error.InnerException?.Message);
+    }
 
     ctx.Response.StatusCode = statusCode;
     await ctx.Response.WriteAsJsonAsync(new { message });

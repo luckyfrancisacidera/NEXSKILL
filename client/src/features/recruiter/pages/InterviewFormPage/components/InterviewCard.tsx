@@ -1,37 +1,33 @@
 import type { Interview } from "@features/recruiter/types/interview.types";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
+import {
+  interviewStatusChipClassName,
+  isTerminalInterviewStatus,
+} from "@shared/utils/interviewStatus";
 
 interface InterviewCardProps {
   interview: Interview;
-  onReschedule: (id: string, scheduledDate: string, message?: string) => void;
+  onReschedule: (interview: Interview) => void;
+  onCancel: (interview: Interview) => void;
+  onArchive: (interview: Interview) => void;
+  isPending?: boolean;
 }
 
-const statusChipClassName: Record<Interview["status"], string> = {
-  Pending:
-    "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900/70",
-  Accepted:
-    "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-900/70",
-  Declined:
-    "bg-rose-50 text-rose-700 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-200 dark:ring-rose-900/70",
-  RescheduleRequested:
-    "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-900/70",
-  Rescheduled:
-    "bg-sky-50 text-sky-700 ring-1 ring-sky-200/70 dark:bg-sky-900/30 dark:text-sky-200 dark:ring-sky-900/70",
-};
-
-export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) => {
+export const InterviewCard = ({
+  interview,
+  onReschedule,
+  onCancel,
+  onArchive,
+  isPending = false,
+}: InterviewCardProps) => {
   const scheduledAt = new Date(interview.scheduledDate);
-
-  const onQuickReschedule = () => {
-    const next = prompt(
-      "New date & time (ISO or YYYY-MM-DDTHH:mm):",
-      interview.scheduledDate.slice(0, 16),
-    );
-    if (!next) return;
-    const note = prompt("Optional message to candidate (leave blank to skip):");
-    onReschedule(interview.id, next, note || undefined);
-  };
+  const isTerminal = isTerminalInterviewStatus(interview.status);
+  const canReschedule = !isPending && !isTerminal;
+  const canCancel = !isPending && interview.status !== "Cancelled" && !interview.isArchived;
+  const canArchive =
+    !isPending &&
+    (interview.status === "Declined" || interview.status === "Cancelled");
 
   const onDownloadCalendar = async () => {
     try {
@@ -89,7 +85,7 @@ export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) =
             ) : null}
           </div>
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusChipClassName[interview.status]}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}
           >
             {interview.status}
           </span>
@@ -98,6 +94,11 @@ export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) =
         {interview.message ? (
           <p className="rounded-lg bg-zinc-50 p-2 text-xs text-zinc-600 dark:bg-zinc-950/60 dark:text-zinc-300">
             {interview.message}
+          </p>
+        ) : null}
+        {interview.cancelReason ? (
+          <p className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-300">
+            Cancellation reason: {interview.cancelReason}
           </p>
         ) : null}
 
@@ -130,19 +131,38 @@ export const InterviewCard = ({ interview, onReschedule }: InterviewCardProps) =
             </button>
             <button
               type="button"
-              className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              onClick={onQuickReschedule}
+              disabled={!canReschedule}
+              className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              onClick={() => onReschedule(interview)}
             >
               Reschedule
             </button>
             <button
               type="button"
-              className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              disabled={!canCancel}
+              className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              onClick={() => onCancel(interview)}
             >
               Cancel
             </button>
+            {canArchive ? (
+              <button
+                type="button"
+                disabled={isPending}
+                className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                onClick={() => onArchive(interview)}
+              >
+                Archive
+              </button>
+            ) : null}
           </div>
         </div>
+        {isTerminal ? (
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            Declined and cancelled interviews are terminal scheduling states.
+            Archive them or create a new schedule instead of rescheduling them.
+          </p>
+        ) : null}
       </div>
     </article>
   );

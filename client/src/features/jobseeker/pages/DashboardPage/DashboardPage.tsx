@@ -1,8 +1,10 @@
 import { Link, useLoaderData } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   Bookmark,
   Briefcase,
+  CalendarClock,
   Search,
 } from "lucide-react";
 import { Card } from "@shared/components/Card";
@@ -12,8 +14,10 @@ import { JobCard } from "@shared/components/JobCard";
 import { Progress } from "@shared/components/Progress";
 import type { Job } from "@shared/types";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { useDashboardData } from "@features/jobseeker/hooks";
-import type { DashboardLoaderData } from "@features/jobseeker/types";
+import type { DashboardLoaderData, JobseekerInterview } from "@features/jobseeker/types";
+import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
 
 const ranges: DropdownOption[] = [
   { label: "This Week", value: "this_week" },
@@ -27,11 +31,57 @@ const ranges: DropdownOption[] = [
 export const DashboardPage = () => {
   const initialData = useLoaderData() as DashboardLoaderData;
   const { data, range, updateRange } = useDashboardData(initialData);
+  const [interviews, setInterviews] = useState<JobseekerInterview[]>([]);
+  const [isLoadingInterviews, setIsLoadingInterviews] = useState(true);
 
   const totalApplications = Object.values(data.status).reduce(
     (sum, value) => sum + Number(value),
     0,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUpcomingInterviews = async () => {
+      try {
+        setIsLoadingInterviews(true);
+        const result = await jobseekerInterviewService.getJobseekerInterviews();
+        if (!cancelled) {
+          setInterviews(result);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingInterviews(false);
+        }
+      }
+    };
+
+    void loadUpcomingInterviews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const upcomingInterviews = useMemo(() => {
+    const now = Date.now();
+    return interviews
+      .filter((interview) => {
+        const scheduledAt = new Date(interview.scheduledDate).getTime();
+        return (
+          !interview.isArchived &&
+          scheduledAt > now &&
+          interview.status !== "Declined" &&
+          interview.status !== "Cancelled"
+        );
+      })
+      .sort(
+        (left, right) =>
+          new Date(left.scheduledDate).getTime() -
+          new Date(right.scheduledDate).getTime(),
+      )
+      .slice(0, 4);
+  }, [interviews]);
 
   return (
     <div className="space-y-6">
@@ -68,6 +118,94 @@ export const DashboardPage = () => {
           </Card>
         ))}
       </div>
+
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-zinc-900">
+            Upcoming Interviews
+          </h2>
+          <Link
+            to="/jobseeker/interviews"
+            className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
+          >
+            View all
+          </Link>
+        </div>
+
+        {isLoadingInterviews ? (
+          <Card className="grid gap-3 lg:grid-cols-2">
+            <div className="h-24 animate-pulse rounded-xl bg-zinc-100" />
+            <div className="h-24 animate-pulse rounded-xl bg-zinc-100" />
+          </Card>
+        ) : upcomingInterviews.length === 0 ? (
+          <Card className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100">
+              <CalendarClock className="h-6 w-6 text-zinc-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-zinc-900">
+              No upcoming interviews
+            </h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              Future active interviews will appear here as soon as recruiters schedule them.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {upcomingInterviews.map((interview) => {
+              const scheduledAt = new Date(interview.scheduledDate);
+
+              return (
+                <Card key={interview.id} className="space-y-3 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-zinc-400">
+                        Upcoming interview
+                      </p>
+                      <h3 className="text-lg font-semibold text-zinc-900">
+                        {interview.jobTitle || "Interview"}
+                      </h3>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {interview.companyName || interview.recruiterName || "Company"}
+                      </p>
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}>
+                      {interview.status}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 text-sm text-zinc-600">
+                    <p>
+                      {scheduledAt.toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      at{" "}
+                      {scheduledAt.toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    <p>Type: {interview.meetingLink ? "Virtual" : "Onsite"}</p>
+                    {interview.meetingLink ? (
+                      <a
+                        href={interview.meetingLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-violet-600 transition hover:text-violet-700"
+                      >
+                        Open meeting link
+                      </a>
+                    ) : interview.location ? (
+                      <p>Location: {interview.location}</p>
+                    ) : null}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
@@ -190,7 +328,7 @@ export const DashboardPage = () => {
                 </p>
 
                 <p className="text-sm text-zinc-500">
-                  {String(item.company)} •{" "}
+                  {String(item.company)} â€¢{" "}
                   {new Date(String(item.applied_at)).toLocaleDateString()}
                 </p>
 

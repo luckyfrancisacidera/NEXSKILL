@@ -5,6 +5,7 @@ namespace SkillSense.Persistence.Models;
 public sealed class ApplicantScoreData
 {
     public Guid ResumeSubmissionId { get; init; }
+    public Guid? JobSeekerUserId { get; init; }
     public string? ApplicantName { get; init; }
     public string? ApplicantEmail { get; init; }
     public string? PostalCode { get; init; }

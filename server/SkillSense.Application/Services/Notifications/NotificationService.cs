@@ -11,12 +11,27 @@ public sealed class NotificationService(
 {
     public async Task<NotificationDto> CreateNotificationAsync(CreateNotificationRequest request, CancellationToken ct = default)
     {
+        var title = request.Title.Trim();
+        var message = request.Message.Trim();
+        var existing = await notificationRepository.FindDuplicateAsync(
+            request.UserId,
+            request.Type,
+            request.RelatedEntityId,
+            title,
+            message,
+            ct);
+
+        if (existing is not null)
+        {
+            return Map(existing);
+        }
+
         var entity = new NotificationEntity
         {
             Id = Guid.NewGuid(),
             UserId = request.UserId,
-            Title = request.Title.Trim(),
-            Message = request.Message.Trim(),
+            Title = title,
+            Message = message,
             Type = request.Type,
             IsRead = false,
             CreatedAtUtc = dateTimeProvider.UtcNow,
@@ -34,13 +49,68 @@ public sealed class NotificationService(
         return items.Select(Map).ToList();
     }
 
-    public async Task MarkAsReadAsync(Guid notificationId, CancellationToken ct = default)
+    public async Task MarkAsReadAsync(Guid userId, Guid notificationId, CancellationToken ct = default)
     {
-        var entity = await notificationRepository.GetByIdAsync(notificationId, ct)
+        var entity = await notificationRepository.GetByIdForUserAsync(notificationId, userId, ct)
             ?? throw new KeyNotFoundException("Notification not found.");
+
+        if (entity.IsRead)
+        {
+            return;
+        }
 
         entity.IsRead = true;
         await notificationRepository.SaveChangesAsync(ct);
+    }
+
+    public async Task MarkAllAsReadAsync(Guid userId, CancellationToken ct = default)
+    {
+        var unreadItems = await notificationRepository.GetUnreadByUserAsync(userId, ct);
+        if (unreadItems.Count == 0)
+        {
+          return;
+        }
+
+        foreach (var item in unreadItems)
+        {
+            item.IsRead = true;
+        }
+
+        await notificationRepository.SaveChangesAsync(ct);
+    }
+
+    public async Task<int> DeleteNotificationsAsync(Guid userId, IReadOnlyList<Guid> notificationIds, CancellationToken ct = default)
+    {
+        var validIds = notificationIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToArray();
+
+        if (validIds.Length == 0)
+        {
+            return 0;
+        }
+
+        var deletedCount = await notificationRepository.DeleteByIdsForUserAsync(userId, validIds, ct);
+        if (deletedCount == 0)
+        {
+            return 0;
+        }
+
+        await notificationRepository.SaveChangesAsync(ct);
+        return deletedCount;
+    }
+
+    public async Task<int> DeleteAllNotificationsAsync(Guid userId, CancellationToken ct = default)
+    {
+        var deletedCount = await notificationRepository.DeleteAllForUserAsync(userId, ct);
+        if (deletedCount == 0)
+        {
+            return 0;
+        }
+
+        await notificationRepository.SaveChangesAsync(ct);
+        return deletedCount;
     }
 
     private static NotificationDto Map(NotificationEntity entity) => new()
@@ -55,4 +125,3 @@ public sealed class NotificationService(
         RelatedEntityId = entity.RelatedEntityId,
     };
 }
-

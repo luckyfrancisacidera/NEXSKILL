@@ -26,8 +26,17 @@ public sealed class RecruiterController(
         Guid JobId,
         Guid JobSeekerId,
         DateTime ScheduledDateTimeUtc,
+        InterviewTypeDto InterviewType,
         string LocationOrMeetingLink,
         string? Message);
+
+    public sealed record RecruiterRescheduleInterviewRequest(
+        DateTime ScheduledDateTimeUtc,
+        InterviewTypeDto InterviewType,
+        string LocationOrMeetingLink,
+        string? Message);
+
+    public sealed record RecruiterCancelInterviewRequest(string? Reason);
 
     [HttpGet("profile")]
     public async Task<ActionResult<RecruiterProfileResponse>> GetProfile(CancellationToken ct)
@@ -93,6 +102,15 @@ public sealed class RecruiterController(
             ?? throw new UnauthorizedAccessException("Active company context is required.");
         var item = await recruiterService.GetJobAsync(companyId, userId, id, ct);
         return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("jobs/{id:guid}/shortlisted-candidates")]
+    public async Task<ActionResult<IReadOnlyList<ShortlistedCandidateOptionDto>>> GetShortlistedCandidates(Guid id, [FromQuery] string? department = null, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await recruiterService.GetShortlistedCandidatesByJobAsync(companyId, userId, id, department, ct));
     }
 
     [HttpDelete("jobs/{id:guid}")]
@@ -230,6 +248,7 @@ public sealed class RecruiterController(
                 RecruiterId = userId,
                 JobSeekerId = request.JobSeekerId,
                 ScheduledDateTimeUtc = request.ScheduledDateTimeUtc,
+                InterviewType = request.InterviewType,
                 LocationOrMeetingLink = request.LocationOrMeetingLink,
                 Message = request.Message,
             },
@@ -239,12 +258,44 @@ public sealed class RecruiterController(
     }
 
     [HttpPut("interviews/{id:guid}")]
-    public async Task<ActionResult<InterviewDto>> RescheduleInterview(Guid id, [FromBody] RescheduleInterviewRequest request, CancellationToken ct = default)
+    public async Task<ActionResult<InterviewDto>> RescheduleInterview(Guid id, [FromBody] RecruiterRescheduleInterviewRequest request, CancellationToken ct = default)
     {
         var userId = CurrentUserContext.GetUserId(User);
         var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
             ?? throw new UnauthorizedAccessException("Active company context is required.");
-        return Ok(await interviewService.RescheduleInterviewAsync(companyId, userId, id, request, ct));
+        return Ok(await interviewService.RescheduleInterviewAsync(
+            companyId,
+            userId,
+            id,
+            new RescheduleInterviewRequest
+            {
+                ScheduledDateTimeUtc = request.ScheduledDateTimeUtc,
+                InterviewType = request.InterviewType,
+                LocationOrMeetingLink = request.LocationOrMeetingLink,
+                Message = request.Message,
+            },
+            ct));
+    }
+
+    [HttpPost("interviews/{id:guid}/cancel")]
+    public async Task<ActionResult<InterviewDto>> CancelInterview(Guid id, [FromBody] RecruiterCancelInterviewRequest request, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.CancelInterviewAsync(companyId, userId, id, new CancelInterviewRequest
+        {
+            Reason = request.Reason,
+        }, ct));
+    }
+
+    [HttpPost("interviews/{id:guid}/archive")]
+    public async Task<ActionResult<InterviewDto>> ArchiveInterview(Guid id, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.ArchiveInterviewAsync(companyId, userId, id, ct));
     }
 
     [HttpGet("interviews/{id:guid}/ics")]

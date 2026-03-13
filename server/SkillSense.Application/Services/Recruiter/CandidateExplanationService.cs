@@ -48,7 +48,7 @@ public sealed class CandidateExplanationService(
             Id = Guid.NewGuid(),
             ResumeSubmissionId = payload.Submission.Id,
             JobId = payload.Job.Id,
-            ApplicantUserId = payload.Submission.ApplicantUserId,
+            ApplicantUserId = payload.Submission.JobSeekerUserId,
             CreatedAtUtc = DateTime.UtcNow,
         };
 

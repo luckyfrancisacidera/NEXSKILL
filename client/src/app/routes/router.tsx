@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, Outlet, type RouteObject } from "react-r
 import { AppShell } from "@app/layouts/AppShell";
 import { useAuth } from "@app/providers/AuthProvider";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
+import { NotificationsPage } from "@shared/pages/NotificationsPage";
 import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
 import { ScrollToTop } from "@shared/components/ScrollToTop";
 import { PublicOnly, RequireAuth, RequireRole, getDefaultRouteByRole } from "@app/routes/routes.guard";
@@ -401,6 +402,7 @@ export const router = createBrowserRouter([
     element: <AppShellRoute />,
     children: [
       ...sharedRoutes,
+      { path: "notifications", element: <NotificationsPage /> },
       recruiterRoutes,
       adminRoutes,
       { path: "*", element: <Navigate to="/dashboard" replace /> },

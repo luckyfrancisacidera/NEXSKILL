@@ -25,9 +25,11 @@ export const updateCandidateAction = async ({
       status: status || undefined,
     };
 
-    if (intent === "stage" && params.candidateId) {
+    const resumeSubmissionId = params.candidateId;
+
+    if (intent === "stage" && resumeSubmissionId) {
       const result = await recruiterService.updateApplicantStatuses(
-        [params.candidateId],
+        [resumeSubmissionId],
         payload,
       );
       return { result };

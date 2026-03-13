@@ -4,7 +4,7 @@ import type { DashboardLoaderData } from "@features/jobseeker/types";
 
 export const useDashboardData = (initialData: DashboardLoaderData) => {
   const [data, setData] = useState(initialData);
-  const [range, setRange] = useState("this_week");
+  const [range, setRange] = useState(initialData.analytics.range ?? "this_week");
 
   const updateRange = async (value: string) => {
     setRange(value);

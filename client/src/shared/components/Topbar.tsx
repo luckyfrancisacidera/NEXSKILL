@@ -4,13 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, LogOut, Moon, Search, Sun } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
 import { useAuth } from "@app/providers/AuthProvider";
+import { useNotifications } from "@app/providers/NotificationsProvider";
 import { useTheme } from "@app/providers/ThemeProvider";
 import { useCurrentCompany } from "@app/providers/CurrentCompanyProvider";
 import { cn } from "@shared/utils/cn";
-import {
-  notificationEventName,
-  type AppNotificationPayload,
-} from "@shared/utils/notifications";
+import { formatNotificationTimestamp } from "@shared/utils/notifications";
 
 const topbarControlClassName =
   "inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors duration-300 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500";
@@ -20,68 +18,35 @@ const topbarIconButtonClassName = cn(
   "justify-center p-2",
 );
 
-interface AppNotification extends AppNotificationPayload {
-  id: string;
-  createdAt: string;
-  read: boolean;
-}
-
 export const Topbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { currentCompany } = useCurrentCompany();
   const { theme, toggleTheme } = useTheme();
+  const {
+    latestNotifications,
+    unreadCount,
+    notifications,
+    markAllAsRead,
+    markNotificationAsRead,
+    refreshNotifications,
+  } = useNotifications();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const ThemeIcon = theme === "dark" ? Sun : Moon;
   const themeToggleLabel =
     theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
-  const unreadCount = notifications.filter((item) => !item.read).length;
-
-  const persistNotifications = (items: AppNotification[]) => {
-    try {
-      window.localStorage.setItem("app.notifications", JSON.stringify(items));
-    } catch {
-      // ignore storage failures
-    }
-  };
-
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("app.notifications");
-      if (raw) {
-        const parsed = JSON.parse(raw) as AppNotification[];
-        setNotifications(parsed);
-      }
-    } catch {
-      // ignore parse failures
-    }
-
-    const handleNotify = (event: Event) => {
-      const custom = event as CustomEvent<AppNotificationPayload>;
-      const now = new Date().toISOString();
-      const next: AppNotification = {
-        id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
-        title: custom.detail.title,
-        description: custom.detail.description,
-        actor: custom.detail.actor,
-        createdAt: now,
-        read: false,
-      };
-
-      setNotifications((current) => {
-        const updated = [next, ...current].slice(0, 20);
-        persistNotifications(updated);
-        return updated;
-      });
-    };
-
-    const onPointerDown = (event: MouseEvent) => {
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
+      }
+
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
       }
     };
 
@@ -93,16 +58,13 @@ export const Topbar = () => {
     };
 
     window.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("touchstart", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener(notificationEventName, handleNotify as EventListener);
 
     return () => {
       window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("touchstart", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener(
-        notificationEventName,
-        handleNotify as EventListener,
-      );
     };
   }, []);
 
@@ -110,14 +72,12 @@ export const Topbar = () => {
     setIsNotificationsOpen((current) => {
       const next = !current;
       if (next) {
-        setNotifications((items) => {
-          const updated = items.map((item) => ({ ...item, read: true }));
-          persistNotifications(updated);
-          return updated;
-        });
+        void refreshNotifications();
       }
+
       return next;
     });
+    setIsUserMenuOpen(false);
   };
 
   const onLogout = async () => {
@@ -169,20 +129,21 @@ export const Topbar = () => {
       >
         <ThemeIcon className="h-5 w-5" />
       </button>
-      <button
-        type="button"
-        className={cn(topbarIconButtonClassName, "relative")}
-        aria-label="Notifications"
-        onClick={toggleNotifications}
-      >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </button>
-      <div className="relative">
+      <div className="relative" ref={notificationsRef}>
+        <button
+          type="button"
+          className={cn(topbarIconButtonClassName, "relative")}
+          aria-label="Notifications"
+          aria-expanded={isNotificationsOpen}
+          onClick={toggleNotifications}
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
         {isNotificationsOpen && (
           <div className="absolute right-0 top-12 z-20 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-2 flex items-center justify-between px-1">
@@ -192,16 +153,7 @@ export const Topbar = () => {
               {notifications.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setNotifications((items) => {
-                      const updated = items.map((item) => ({
-                        ...item,
-                        read: true,
-                      }));
-                      persistNotifications(updated);
-                      return updated;
-                    });
-                  }}
+                  onClick={markAllAsRead}
                   className="text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
                 >
                   Mark all as read
@@ -214,11 +166,13 @@ export const Topbar = () => {
                   You&apos;re all caught up.
                 </p>
               ) : (
-                notifications.map((item) => (
-                  <div
+                latestNotifications.map((item) => (
+                  <button
                     key={item.id}
+                    type="button"
+                    onClick={() => void markNotificationAsRead(item.id)}
                     className={cn(
-                      "rounded-lg px-3 py-2 text-xs transition-colors",
+                      "block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
                       item.read
                         ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
                         : "bg-violet-50 text-zinc-800 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-zinc-100 dark:ring-violet-900/60",
@@ -235,9 +189,24 @@ export const Topbar = () => {
                           ? "Jobseeker"
                           : "System"}
                     </p>
-                  </div>
+                    <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      {formatNotificationTimestamp(item.createdAt)}
+                    </p>
+                  </button>
                 ))
               )}
+            </div>
+            <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNotificationsOpen(false);
+                  navigate("/notifications");
+                }}
+                className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50 hover:text-violet-700 dark:text-violet-400 dark:hover:bg-violet-950/40 dark:hover:text-violet-300"
+              >
+                View all notifications
+              </button>
             </div>
           </div>
         )}

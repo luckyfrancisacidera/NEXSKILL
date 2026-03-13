@@ -110,6 +110,10 @@ namespace SkillSense.Api.Controllers
                 },
                 ct));
 
+        [HttpPost("interviews/{interviewId:guid}/archive")]
+        public async Task<ActionResult<InterviewDto>> ArchiveInterview(Guid interviewId, CancellationToken ct = default)
+            => Ok(await interviewService.ArchiveInterviewAsync(interviewId, CurrentUserContext.GetUserId(User), ct));
+
         [HttpGet("interviews/{interviewId:guid}/ics")]
         public async Task<IActionResult> DownloadInterviewCalendar(Guid interviewId, CancellationToken ct = default)
         {

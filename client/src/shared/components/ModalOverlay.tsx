@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from "react";
+import type { MouseEvent, PropsWithChildren } from "react";
 
 interface ModalOverlayProps extends PropsWithChildren {
   onClose: () => void;
@@ -12,6 +12,14 @@ export const ModalOverlay = ({ onClose, children }: ModalOverlayProps) => (
       aria-label="Close modal"
       className="absolute inset-0 bg-zinc-950/45 backdrop-blur-[3px]"
     />
-    <div className="relative z-81 w-full max-w-lg">{children}</div>
+    <div
+      className="relative z-81 w-full max-w-lg"
+      onClick={(event: MouseEvent<HTMLDivElement>) => {
+        // Stop propagation so clicks inside the modal never reach parent page handlers.
+        event.stopPropagation();
+      }}
+    >
+      {children}
+    </div>
   </div>
 );

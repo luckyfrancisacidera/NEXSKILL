@@ -2,12 +2,16 @@ import { useMemo, useState } from "react";
 import type { Interview } from "@features/recruiter/types/interview.types";
 import { Card } from "@shared/components/Card";
 import { InterviewCard } from "./InterviewCard";
+import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewStatus";
 
 interface InterviewListProps {
   interviews: Interview[];
   isLoading: boolean;
   error: string | null;
-  onReschedule: (id: string, scheduledDate: string, message?: string) => void;
+  onReschedule: (interview: Interview) => void;
+  onCancel: (interview: Interview) => void;
+  onArchive: (interview: Interview) => void;
+  pendingActionId?: string | null;
 }
 
 type ViewMode = "list" | "calendar";
@@ -19,6 +23,9 @@ export const InterviewList = ({
   isLoading,
   error,
   onReschedule,
+  onCancel,
+  onArchive,
+  pendingActionId = null,
 }: InterviewListProps) => {
   const [view, setView] = useState<ViewMode>("calendar");
 
@@ -112,6 +119,9 @@ export const InterviewList = ({
               key={interview.id}
               interview={interview}
               onReschedule={onReschedule}
+              onCancel={onCancel}
+              onArchive={onArchive}
+              isPending={pendingActionId === interview.id}
             />
           ))}
         </div>
@@ -135,9 +145,14 @@ export const InterviewList = ({
                     key={interview.id}
                     type="button"
                     className="flex flex-col rounded-lg bg-white px-3 py-2 text-left text-xs shadow-sm"
-                    onClick={() =>
-                      onReschedule(interview.id, interview.scheduledDate)
-                    }
+                    onClick={() => {
+                      if (
+                        interview.status !== "Declined" &&
+                        interview.status !== "Cancelled"
+                      ) {
+                        onReschedule(interview);
+                      }
+                    }}
                   >
                     <span className="font-medium text-zinc-900">
                       {interview.candidateName}
@@ -151,7 +166,7 @@ export const InterviewList = ({
                         },
                       )}
                     </span>
-                    <span className="mt-1 inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                    <span className={`mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusCalendarPillClassName[interview.status]}`}>
                       {interview.status}
                     </span>
                   </button>
@@ -164,4 +179,3 @@ export const InterviewList = ({
     </Card>
   );
 };
-

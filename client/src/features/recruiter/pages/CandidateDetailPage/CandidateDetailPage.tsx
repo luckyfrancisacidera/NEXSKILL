@@ -18,6 +18,7 @@ import {
 } from '@features/recruiter/pages/CandidateDetailPage/components/modals/InterviewModal';
 import { ProjectCard } from '@features/recruiter/pages/CandidateDetailPage/components/ProjectCard';
 import { WorkExperienceCard } from '@features/recruiter/pages/CandidateDetailPage/components/WorkExperienceCard';
+import { recruiterInterviewService } from '@features/recruiter/services/interview.service';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 
 import type {
@@ -117,9 +118,12 @@ export const CandidateDetailPage = () => {
   const [candidate, setCandidate] = useState(loaderCandidate);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [interviewForm, setInterviewForm] = useState<InterviewFormValues>({
     date: '',
-    time: '',
+    hour: '9',
+    minute: '00',
+    meridiem: 'AM',
     mode: 'Virtual',
     location: '',
     notes: '',
@@ -137,6 +141,24 @@ export const CandidateDetailPage = () => {
   const revalidator = useRevalidator();
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
+  const resumeSubmissionId = candidate.resume_submission_id;
+  const jobSeekerUserId = candidate.jobseeker_user_id;
+  const jobId = candidate.job_id;
+
+  const closeCandidateModals = () => {
+    setIsInterviewOpen(false);
+    setIsOfferOpen(false);
+  };
+
+  const openInterviewModal = () => {
+    setIsOfferOpen(false);
+    setIsInterviewOpen(true);
+  };
+
+  const openOfferModal = () => {
+    setIsInterviewOpen(false);
+    setIsOfferOpen(true);
+  };
 
   useEffect(() => {
     // recruiterSync removed; always trust loader data from the API
@@ -211,13 +233,13 @@ export const CandidateDetailPage = () => {
   ) => {
     try {
       if (action === 'offer') {
-        const updatedCandidate = await recruiterService.sendOffer(candidate.resume_submission_id);
+        const updatedCandidate = await recruiterService.sendOffer(resumeSubmissionId);
         setCandidate((current) => ({ ...current, ...updatedCandidate }));
       } else if (action === 'hire') {
-        const updatedCandidate = await recruiterService.markHired(candidate.resume_submission_id);
+        const updatedCandidate = await recruiterService.markHired(resumeSubmissionId);
         setCandidate((current) => ({ ...current, ...updatedCandidate }));
       } else {
-        const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], {
+        const result = await recruiterService.updateApplicantStatuses([resumeSubmissionId], {
           action,
           status,
         });
@@ -243,6 +265,39 @@ export const CandidateDetailPage = () => {
 
       showToast({ title: 'Action failed', description, tone: 'error' });
     }
+  };
+
+  const scheduleInterview = async () => {
+    // ResumeSubmission identifies the application record.
+    // Interview scheduling must use the linked jobseeker account, never ResumeSubmissionId.
+    if (!jobSeekerUserId) {
+      throw new Error('This candidate does not have a linked jobseeker account for interview scheduling.');
+    }
+
+    const selectedHour = Number(interviewForm.hour);
+    const selectedMinute = Number(interviewForm.minute);
+
+    let hour24 = selectedHour % 12;
+    if (interviewForm.meridiem === 'PM') {
+      hour24 += 12;
+    }
+
+    const normalizedHour = String(hour24).padStart(2, '0');
+    const normalizedMinute = String(selectedMinute).padStart(2, '0');
+    const scheduledDateTimeUtc = new Date(`${interviewForm.date}T${normalizedHour}:${normalizedMinute}:00`);
+    if (Number.isNaN(scheduledDateTimeUtc.getTime())) {
+      throw new Error('Please provide a valid interview date and time.');
+    }
+
+    await recruiterInterviewService.scheduleInterview({
+      jobId,
+      jobseekerId: jobSeekerUserId,
+      scheduledDate: scheduledDateTimeUtc.toISOString(),
+      interviewType: interviewForm.mode,
+      meetingLink: interviewForm.mode === 'Virtual' ? interviewForm.location : undefined,
+      location: interviewForm.mode === 'Onsite' ? interviewForm.location : undefined,
+      message: interviewForm.notes || undefined,
+    });
   };
 
   return (
@@ -287,9 +342,13 @@ export const CandidateDetailPage = () => {
           {primaryAction ? (
             <button
               type="button"
-              onClick={() => {
+              onClick={(event) => {
+                // Stop propagation so the action only opens one controlled modal.
+                event.stopPropagation();
                 if (candidate.submission_status === 'Shortlisted') {
-                  setIsInterviewOpen(true);
+                  // Interview scheduling is restricted to CandidateDetailPage
+                  // because interview configuration requires detailed candidate context
+                  openInterviewModal();
                 } else if (candidate.submission_status === 'Interview') {
                   if (!canSendOffers) {
                     showToast({
@@ -300,7 +359,7 @@ export const CandidateDetailPage = () => {
                     return;
                   }
 
-                  setIsOfferOpen(true);
+                  openOfferModal();
                 } else {
                   void requestCandidateAction(primaryAction);
                 }
@@ -337,7 +396,7 @@ export const CandidateDetailPage = () => {
         <RecruiterSectionCard title="Resume Information" variant="compact">
           <div className="space-y-2 text-sm">
             <p className="text-zinc-600">
-              Resume ID: <span className="font-semibold text-zinc-800">{candidate.resume_submission_id.slice(0, 8)}</span>
+              Resume ID: <span className="font-semibold text-zinc-800">{resumeSubmissionId.slice(0, 8)}</span>
             </p>
             <p className="text-zinc-600">
               Parsed: <span className="font-semibold text-emerald-600">Successfully</span>
@@ -361,7 +420,9 @@ export const CandidateDetailPage = () => {
                 {candidate.submission_status === 'Interview' ? (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      // Stop propagation so shortlist actions do not bubble into parent page handlers.
+                      event.stopPropagation();
                       void requestCandidateAction({
                         action: 'shortlist',
                         status: 'Shortlisted',
@@ -380,7 +441,9 @@ export const CandidateDetailPage = () => {
                 {candidate.submission_status === 'Shortlisted' ? (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      // Stop propagation so shortlist actions do not bubble into parent page handlers.
+                      event.stopPropagation();
                       void requestCandidateAction({
                         action: 'remove-shortlist',
                         status: 'Applied',
@@ -399,7 +462,9 @@ export const CandidateDetailPage = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(event) => {
+                    // Stop propagation so reject actions do not bubble into parent page handlers.
+                    event.stopPropagation();
                     void requestCandidateAction({
                       action: 'reject',
                       status: 'Rejected',
@@ -526,34 +591,49 @@ export const CandidateDetailPage = () => {
         </RecruiterSectionCard>
       </div>
 
-      <InterviewModal
-        open={isInterviewOpen}
-        form={interviewForm}
-        onClose={() => setIsInterviewOpen(false)}
-        onChange={(field, value) => setInterviewForm((state) => ({ ...state, [field]: value }))}
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await runCandidateAction(
-            'set-interview',
-            'Interview',
-            'Interview scheduled successfully',
-            'Candidate moved to interview stage.',
-          );
-          setIsInterviewOpen(false);
-        }}
-      />
+      {isInterviewOpen ? (
+        <InterviewModal
+          open={isInterviewOpen}
+          form={interviewForm}
+          isSubmitting={isSchedulingInterview}
+          onClose={closeCandidateModals}
+          onChange={(field, value) => setInterviewForm((state) => ({ ...state, [field]: value }))}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              setIsSchedulingInterview(true);
+              await scheduleInterview();
+              setCandidate((current) => ({
+                ...current,
+                submission_status: 'Interview',
+              }));
+              revalidator.revalidate();
+              showToast({
+                title: 'Interview scheduled successfully',
+                description: 'Candidate moved to interview stage.',
+                tone: 'success',
+              });
+              closeCandidateModals();
+            } finally {
+              setIsSchedulingInterview(false);
+            }
+          }}
+        />
+      ) : null}
 
-      <OfferModal
-        open={isOfferOpen}
-        form={offerForm}
-        onClose={() => setIsOfferOpen(false)}
-        onChange={(field, value) => setOfferForm((state) => ({ ...state, [field]: value }))}
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await runCandidateAction('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.');
-          setIsOfferOpen(false);
-        }}
-      />
+      {isOfferOpen ? (
+        <OfferModal
+          open={isOfferOpen}
+          form={offerForm}
+          onClose={closeCandidateModals}
+          onChange={(field, value) => setOfferForm((state) => ({ ...state, [field]: value }))}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await runCandidateAction('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.');
+            closeCandidateModals();
+          }}
+        />
+      ) : null}
     </div>
   );
 };

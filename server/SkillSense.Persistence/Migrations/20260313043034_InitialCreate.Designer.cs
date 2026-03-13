@@ -12,7 +12,7 @@ using SkillSense.Persistence.Data;
 namespace SkillSense.Persistence.Migrations
 {
     [DbContext(typeof(SkillSenseDbContext))]
-    [Migration("20260311174132_InitialCreate")]
+    [Migration("20260313043034_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -372,11 +372,27 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("InterviewType")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
@@ -405,6 +421,8 @@ namespace SkillSense.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("IsArchived");
 
                     b.HasIndex("JobId");
 
@@ -829,9 +847,6 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ApplicantUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("AppliedJobPosition")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -869,6 +884,9 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("JobSeekerUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Location")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -893,9 +911,9 @@ namespace SkillSense.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicantUserId");
-
                     b.HasIndex("JobId");
+
+                    b.HasIndex("JobSeekerUserId");
 
                     b.HasIndex("Status");
 
@@ -1085,6 +1103,16 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.ResumeSubmissionEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "JobSeekerUser")
+                        .WithMany()
+                        .HasForeignKey("JobSeekerUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("JobSeekerUser");
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.SavedJobEntity", b =>

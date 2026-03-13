@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '@shared/components/Button';
 import { ModalOverlay } from '@shared/components/ModalOverlay';
 import type { CreateManagedRecruiterPayload } from '@features/admin/types/admin.type';
+import { AdminPasswordField } from '@features/admin/components/AdminPasswordField';
 
 interface CreateRecruiterModalProps {
   open: boolean;
@@ -24,13 +25,40 @@ export const CreateRecruiterModal = ({
 }: CreateRecruiterModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   if (!open) {
     return null;
   }
 
+  const validatePasswords = () => {
+    if (!password) {
+      setPasswordError('Password is required.');
+      return false;
+    }
+
+    if (!confirmPassword) {
+      setPasswordError('Confirm password is required.');
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Password and confirm password must match.');
+      return false;
+    }
+
+    setPasswordError(null);
+    return true;
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!validatePasswords()) {
+      return;
+    }
 
     try {
       await onSubmit({
@@ -40,6 +68,8 @@ export const CreateRecruiterModal = ({
 
       setEmail('');
       setPassword('');
+      setConfirmPassword('');
+      setPasswordError(null);
     } catch {
       // The parent surfaces the error state for the modal body.
     }
@@ -65,10 +95,39 @@ export const CreateRecruiterModal = ({
             <input type="email" className={inputClassName} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="recruiter@company.com" required />
           </label>
 
-          <label className="block text-sm font-medium text-zinc-700">
-            Temporary password
-            <input type="password" className={inputClassName} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimum 8 characters" required />
-          </label>
+          <AdminPasswordField
+            label="Temporary password"
+            value={password}
+            placeholder="Minimum 8 characters"
+            visible={showPassword}
+            ariaLabel={showPassword ? 'Hide password' : 'Show password'}
+            onChange={(value) => {
+              setPassword(value);
+              if (confirmPassword) {
+                void validatePasswords();
+              }
+            }}
+            onBlur={validatePasswords}
+            onToggleVisibility={() => setShowPassword((current) => !current)}
+            error={passwordError ?? undefined}
+          />
+
+          <AdminPasswordField
+            label="Confirm password"
+            value={confirmPassword}
+            placeholder="Repeat temporary password"
+            visible={showConfirmPassword}
+            ariaLabel={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            onChange={(value) => {
+              setConfirmPassword(value);
+              if (password) {
+                void validatePasswords();
+              }
+            }}
+            onBlur={validatePasswords}
+            onToggleVisibility={() => setShowConfirmPassword((current) => !current)}
+            error={passwordError ?? undefined}
+          />
 
           {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
