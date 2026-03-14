@@ -13,7 +13,7 @@ interface CreateRecruiterModalProps {
   onSubmit: (payload: CreateManagedRecruiterPayload) => Promise<void>;
 }
 
-const inputClassName = 'mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white';
+const inputClassName = 'mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:text-zinc-100';
 
 export const CreateRecruiterModal = ({
   open,
@@ -77,12 +77,12 @@ export const CreateRecruiterModal = ({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-2xl">
+      <div className="rounded-[28px] border border-zinc-200 bg-white dark:bg-zinc-900 border-zinc-800 p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Company Admin</p>
-            <h2 className="mt-2 text-2xl font-semibold text-zinc-950">Create recruiter account</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">
+            <p className="text-sm dark:text-zinc-100 font-semibold uppercase tracking-[0.24em] text-zinc-500">Company Admin</p>
+            <h2 className="mt-2 text-2xl font-semibold dark:text-zinc-100 text-zinc-950">Create recruiter account</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-100">
               Provision a recruiter for {companyName} and share a temporary password for first sign-in.
             </p>
           </div>
@@ -90,12 +90,12 @@ export const CreateRecruiterModal = ({
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium text-zinc-700">
+          <label className="block dark:text-zinc-100 text-sm font-medium text-zinc-700">
             Recruiter email
             <input type="email" className={inputClassName} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="recruiter@company.com" required />
           </label>
 
-          <AdminPasswordField
+          <AdminPasswordField 
             label="Temporary password"
             value={password}
             placeholder="Minimum 8 characters"
