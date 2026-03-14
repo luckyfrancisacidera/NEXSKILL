@@ -30,17 +30,17 @@ export const AdminCompanyAdminsTableCard = ({
   nextHref,
   onPageSizeChange,
 }: AdminCompanyAdminsTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm">
-    <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-950">Company Admin Accounts</h2>
-        <p className="mt-1 text-sm text-zinc-500">Activate or deactivate tenant administrators.</p>
+        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company Admin Accounts</h2>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Activate or deactivate tenant administrators.</p>
       </div>
       <Badge>{companyAdmins.totalCount} total</Badge>
     </div>
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
+      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
           <tr>
             <th className="px-6 py-3">Admin</th>
             <th className="px-6 py-3">Company</th>
@@ -49,12 +49,12 @@ export const AdminCompanyAdminsTableCard = ({
             <th className="px-6 py-3 text-right">Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100">
+        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {companyAdmins.items.map((admin) => (
             <tr key={admin.userId}>
-              <td className="px-6 py-4 font-medium text-zinc-900">{admin.email}</td>
-              <td className="px-6 py-4 text-zinc-700">{admin.companyName}</td>
-              <td className="px-6 py-4 text-zinc-500">{createdAtFormatter.format(new Date(admin.createdAtUtc))}</td>
+              <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{admin.email}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{admin.companyName}</td>
+              <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">{createdAtFormatter.format(new Date(admin.createdAtUtc))}</td>
               <td className="px-6 py-4">
                 <AdminStatusBadge isActive={admin.isActive} />
               </td>
