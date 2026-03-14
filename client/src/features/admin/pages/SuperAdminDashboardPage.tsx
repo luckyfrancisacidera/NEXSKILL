@@ -67,13 +67,13 @@ export const SuperAdminDashboardPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <section className="rounded-[28px] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] p-8 shadow-sm">
+      <div className="space-y-6 ">
+        <section className=" rounded-[28px] border dark:border-[#19191f] border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#19191f,_#09090b)] p-8 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Super Admin</p>
-              <h1 className="mt-3 text-3xl font-semibold text-zinc-950">Platform oversight across every company</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600">
+            <div >
+              <p className="text-sm text-zinc-500 font-semibold dark:text-zinc-400 uppercase tracking-[0.24em] ">Super Admin</p>
+              <h1 className="mt-3 text-3xl font-semibold  text-zinc-950 dark:text-zinc-100">Platform oversight across every company</h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                 Monitor tenant health, provision new company tenants, and jump into dedicated admin account management screens when you need to act.
               </p>
             </div>
@@ -91,7 +91,7 @@ export const SuperAdminDashboardPage = () => {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 ">
           <AdminMetricCard label="Total Companies" value={data.summary.totalCompanies} accent="border-sky-200 bg-sky-50 text-sky-700" />
           <AdminMetricCard label="Active Companies" value={data.summary.activeCompanies} accent="border-emerald-200 bg-emerald-50 text-emerald-700" />
           <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-amber-200 bg-amber-50 text-amber-700" />

@@ -64,8 +64,8 @@ export const Sidebar = () => {
         : "Dashboard";
 
   return (
-    <aside className="fixed z-40 min-h-screen w-64 border-r border-zinc-200 bg-zinc-50/50 p-4">
-      <div className="mb-6 rounded-xl bg-white p-4 text-lg font-semibold text-zinc-900 shadow-sm">
+    <aside className="fixed z-40 min-h-screen w-64 border-r border-zinc-200 bg-zinc-50/50 p-4 dark:text-zinc-100 dark:border-r-zinc-900 dark:bg-zinc-950">
+      <div className="mb-6 rounded-xl bg-white dark:bg-zinc-900 dark:shadow-zinc-900 dark:text-zinc-200 p-4 text-lg font-semibold text-zinc-900 shadow-sm">
         {title}
       </div>
       <nav className="space-y-1">
