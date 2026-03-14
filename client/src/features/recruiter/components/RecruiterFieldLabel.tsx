@@ -9,7 +9,7 @@ export interface RecruiterFieldLabelProps {
  * Feature-shared label used by recruiter form controls.
  */
 export const RecruiterFieldLabel = ({ htmlFor, children }: RecruiterFieldLabelProps) => (
-  <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-700">
+  <label htmlFor={htmlFor} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
     {children}
   </label>
 );

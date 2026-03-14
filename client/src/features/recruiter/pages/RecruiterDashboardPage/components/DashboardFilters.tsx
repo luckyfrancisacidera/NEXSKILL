@@ -40,7 +40,7 @@ export const DashboardFilters = ({
       <div className="min-w-42.5 flex-1">
         <Dropdown label="Job Role" name="jobRole" value={availableJobRoleValue} options={jobRoleOptions} onChange={(event) => onFieldChange('jobRole', event.target.value)} />
       </div>
-      <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50" onClick={onClear}>
+      <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900" onClick={onClear}>
         Clear Filters
       </button>
     </div>

@@ -278,10 +278,10 @@ export const CandidatesPage = () => {
   };
 
   return (
-    <Card>
+    <Card className="dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3">
-        <h2 className="text-xl font-semibold text-zinc-900">Candidates</h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Candidates</h2>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Review applications, filter by hiring stage, and move candidates forward.
         </p>
       </div>
@@ -300,7 +300,7 @@ export const CandidatesPage = () => {
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
         </p>
         <BulkActionsBar

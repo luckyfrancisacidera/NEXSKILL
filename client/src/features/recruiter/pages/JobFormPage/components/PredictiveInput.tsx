@@ -76,13 +76,13 @@ export const PredictiveInput = ({ name, placeholder, options, defaultValue, isRe
       />
 
       {isOpen && suggestions.length > 0 ? (
-        <ul className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl">
+        <ul className="absolute z-20 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-1 shadow-xl">
           {suggestions.map((suggestion, index) => (
             <li key={suggestion}>
               <button
                 type="button"
                 className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
-                  index === activeIndex ? 'bg-violet-100 text-violet-800' : 'text-zinc-700 hover:bg-zinc-100'
+                  index === activeIndex ? 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-400' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800'
                 }`}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => selectSuggestion(suggestion)}
