@@ -30,17 +30,17 @@ export const AdminRecruitersTableCard = ({
   nextHref,
   onPageSizeChange,
 }: AdminRecruitersTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm">
-    <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-950">Recruiter Accounts</h2>
-        <p className="mt-1 text-sm text-zinc-500">Paginated recruiter roster across all companies.</p>
+        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Accounts</h2>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Paginated recruiter roster across all companies.</p>
       </div>
       <Badge>{recruiters.totalCount} total</Badge>
     </div>
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
+      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
           <tr>
             <th className="px-6 py-3">Recruiter</th>
             <th className="px-6 py-3">Company</th>
@@ -51,17 +51,17 @@ export const AdminRecruitersTableCard = ({
             <th className="px-6 py-3 text-right">Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100">
+        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {recruiters.items.map((recruiter) => (
             <tr key={recruiter.userId}>
               <td className="px-6 py-4">
-                <div className="font-medium text-zinc-900">{recruiter.email}</div>
-                <div className="mt-1 text-xs text-zinc-500">Joined {createdAtFormatter.format(new Date(recruiter.createdAtUtc))}</div>
+                <div className="font-medium text-zinc-900 dark:text-zinc-100">{recruiter.email}</div>
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Joined {createdAtFormatter.format(new Date(recruiter.createdAtUtc))}</div>
               </td>
-              <td className="px-6 py-4 text-zinc-700">{recruiter.companyName}</td>
-              <td className="px-6 py-4 text-zinc-700">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
-              <td className="px-6 py-4 text-zinc-700">{recruiter.upcomingInterviews}</td>
-              <td className="px-6 py-4 text-zinc-700">{recruiter.totalHires}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.companyName}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.upcomingInterviews}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.totalHires}</td>
               <td className="px-6 py-4">
                 <AdminStatusBadge isActive={recruiter.isActive} />
               </td>

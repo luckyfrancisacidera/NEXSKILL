@@ -30,17 +30,17 @@ export const AdminCompaniesTableCard = ({
   nextHref,
   onPageSizeChange,
 }: AdminCompaniesTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm">
-    <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-950">Company Directory</h2>
-        <p className="mt-1 text-sm text-zinc-500">Paginated tenant view with account status and quick actions.</p>
+        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company Directory</h2>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Paginated tenant view with account status and quick actions.</p>
       </div>
       <Badge>{companies.totalCount} total</Badge>
     </div>
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 text-sm">
-        <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
+      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
           <tr>
             <th className="px-6 py-3">Company</th>
             <th className="px-6 py-3">Recruiters</th>
@@ -51,20 +51,20 @@ export const AdminCompaniesTableCard = ({
             <th className="px-6 py-3 text-right">Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-100">
+        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {companies.items.map((company) => (
             <tr key={company.companyId} className="align-top">
               <td className="px-6 py-4">
-                <div className="font-medium text-zinc-900">{company.name}</div>
-                <div className="mt-1 text-xs text-zinc-500">{company.primaryEmail ?? 'No primary email'}</div>
+              <div className="font-medium text-zinc-900 dark:text-zinc-100">{company.name}</div>
+                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{company.primaryEmail ?? 'No primary email'}</div>
               </td>
-              <td className="px-6 py-4 text-zinc-700">{company.recruiterCount}</td>
-              <td className="px-6 py-4 text-zinc-700">{company.activeJobs}</td>
-              <td className="px-6 py-4 text-zinc-700">{company.upcomingInterviews}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.recruiterCount}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.activeJobs}</td>
+              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.upcomingInterviews}</td>
               <td className="px-6 py-4">
                 <AdminStatusBadge isActive={company.isActive} />
               </td>
-              <td className="px-6 py-4 text-zinc-500">{updatedAtFormatter.format(new Date(company.updatedAtUtc))}</td>
+              <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">{updatedAtFormatter.format(new Date(company.updatedAtUtc))}</td>
               <td className="px-6 py-4 text-right">
                 <Button
                   type="button"
