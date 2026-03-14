@@ -212,7 +212,7 @@ export const RecruiterDashboardPage = () => {
     <div className="space-y-6">
       <RecruiterHeader />
 
-      <Card className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:p-5">
+      <Card className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-5">
         <DashboardFilters
           selected={selected}
           departmentOptions={departmentOptions}

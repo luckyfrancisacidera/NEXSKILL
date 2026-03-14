@@ -26,10 +26,10 @@ export const InterviewsPage = () => {
   const { interviews, candidates, jobs } = useLoaderData() as InterviewsLoaderData;
 
   return (
-    <Card>
+    <Card className="dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Interviews</h2>
-        <Link className="rounded-lg bg-zinc-900 px-4 py-2 text-white" to="/recruiter/interviews/new">
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Interviews</h2>
+        <Link className="rounded-lg bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 dark:bg-violet-700 dark:hover:bg-violet-600" to="/recruiter/interviews/new">
           Create interview
         </Link>
       </div>

@@ -17,7 +17,7 @@ export const RecruiterSelectField = ({ label, className, id, children, ...props 
   return (
     <div>
       <RecruiterFieldLabel htmlFor={fieldId ?? ''}>{label}</RecruiterFieldLabel>
-      <select id={fieldId} className={`${recruiterInputClassName}${className ? ` ${className}` : ''}`} {...props}>
+      <select id={fieldId} className={`${recruiterInputClassName}${className ? ` ${className}` : ''}`} style={{ colorScheme: 'light dark' }} {...props}>
         {children}
       </select>
     </div>

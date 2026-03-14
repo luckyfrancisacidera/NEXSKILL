@@ -62,13 +62,13 @@ export const InterviewCard = ({
       <div className="flex flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-400">
+            <p className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
               Candidate
             </p>
             <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
               {interview.candidateName}
             </h4>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               {scheduledAt.toLocaleDateString(undefined, {
                 weekday: "short",
                 month: "short",
@@ -81,7 +81,7 @@ export const InterviewCard = ({
               })}
             </p>
             {interview.jobTitle ? (
-              <p className="mt-1 text-xs text-zinc-500">{interview.jobTitle}</p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{interview.jobTitle}</p>
             ) : null}
           </div>
           <span

@@ -15,12 +15,12 @@ export interface CandidatesTableProps {
  * Tabular candidate listing with page-scoped bulk selection.
  */
 export const CandidatesTable = ({ candidates, isAllChecked, selectedSet, onToggleAllRows, onToggleSingleRow }: CandidatesTableProps) => (
-  <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+  <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
     <table className="min-w-full text-sm">
-      <thead className="bg-zinc-100 text-zinc-700">
+      <thead className="bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
         <tr>
           <th className="w-12 px-3 py-3 text-left">
-            <input type="checkbox" aria-label="select all candidates" checked={isAllChecked} onChange={onToggleAllRows} className="h-4 w-4 rounded border-zinc-400" />
+            <input type="checkbox" aria-label="select all candidates" checked={isAllChecked} onChange={onToggleAllRows} className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600" />
           </th>
           {['Name', 'Email', 'Job', 'Status', 'Score', 'Applied', 'Actions'].map((column) => (
             <th key={column} className="px-3 py-3 text-left font-semibold">
@@ -31,24 +31,24 @@ export const CandidatesTable = ({ candidates, isAllChecked, selectedSet, onToggl
       </thead>
       <tbody>
         {candidates.map((candidate, index) => (
-          <tr key={candidate.resume_submission_id} className={`border-t border-zinc-100 ${index % 2 ? 'bg-zinc-50/60' : 'bg-white'}`}>
+          <tr key={candidate.resume_submission_id} className={`border-t border-zinc-100 ${index % 2 ? 'bg-zinc-50/60 dark:bg-zinc-900/40' : 'bg-white dark:bg-zinc-950'} dark:border-zinc-800`}>
             <td className="px-3 py-3">
-              <input type="checkbox" aria-label={`select ${candidate.applicant_name}`} checked={selectedSet.has(candidate.resume_submission_id)} onChange={() => onToggleSingleRow(candidate.resume_submission_id)} className="h-4 w-4 rounded border-zinc-400" />
+              <input type="checkbox" aria-label={`select ${candidate.applicant_name}`} checked={selectedSet.has(candidate.resume_submission_id)} onChange={() => onToggleSingleRow(candidate.resume_submission_id)} className="h-4 w-4 rounded border-zinc-400 dark:border-zinc-600" />
             </td>
-            <td className="px-3 py-3 font-medium text-zinc-900">{candidate.applicant_name}</td>
-            <td className="px-3 py-3 text-zinc-700">{candidate.applicant_email}</td>
-            <td className="px-3 py-3 text-zinc-700">{candidate.job_title}</td>
+            <td className="px-3 py-3 font-medium text-zinc-900 dark:text-zinc-100">{candidate.applicant_name}</td>
+            <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{candidate.applicant_email}</td>
+            <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{candidate.job_title}</td>
             <td className="px-3 py-3">
-              <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700">
+              <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                 {candidate.submission_status}
               </span>
             </td>
-            <td className="px-3 py-3 font-semibold text-zinc-900">{candidate.score}</td>
-            <td className="px-3 py-3 text-zinc-700">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>
+            <td className="px-3 py-3 font-semibold text-zinc-900 dark:text-zinc-100">{candidate.score}</td>
+            <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>
             <td className="px-3 py-3">
               <Link
                 to={`/recruiter/candidates/${candidate.resume_submission_id}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-100"
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
                 title="View candidate"
               >
                 <Eye size={16} />

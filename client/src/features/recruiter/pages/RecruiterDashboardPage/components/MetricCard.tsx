@@ -18,10 +18,10 @@ export const MetricCard = ({ icon: Icon, label, value, comparisonPercent }: Metr
   const positive = comparisonPercent >= 0;
 
   return (
-    <Card className="min-w-55 flex-1 space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <Card className="min-w-55 flex-1 space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex items-center justify-between">
-        <div className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700">
-          <Icon size={16} className="text-zinc-500" />
+        <div className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-400">
+          <Icon size={16} className="text-zinc-500 dark:text-zinc-500" />
           <span>{label}</span>
         </div>
         <p className={`inline-flex items-center gap-1 text-sm font-semibold ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -30,7 +30,7 @@ export const MetricCard = ({ icon: Icon, label, value, comparisonPercent }: Metr
         </p>
       </div>
 
-      <p className="text-2xl font-semibold tracking-tight text-zinc-900">{formatCompactNumber(value)}</p>
+      <p className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{formatCompactNumber(value)}</p>
     </Card>
   );
 };

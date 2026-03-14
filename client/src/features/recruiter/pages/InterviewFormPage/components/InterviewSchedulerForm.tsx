@@ -289,15 +289,15 @@ export const InterviewSchedulerForm = ({
   };
 
   return (
-    <Card className="space-y-4">
+    <Card className="space-y-4 dark:border-zinc-800 dark:bg-zinc-950">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
           Create interview
         </p>
-        <h3 className="text-lg font-semibold text-zinc-900">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           Candidate & schedule
         </h3>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
           Recruiters should schedule interviews from shortlisted candidates
           only, not by typing raw database IDs.
         </p>
@@ -305,7 +305,7 @@ export const InterviewSchedulerForm = ({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-medium text-zinc-700">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
             Department
             <select
               value={department}
@@ -314,7 +314,8 @@ export const InterviewSchedulerForm = ({
                 setDepartment(event.target.value);
                 clearError("department");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
+              style={{ colorScheme: 'light dark' }}
             >
               <option value="">
                 {isLoadingJobs ? "Loading departments..." : "All departments"}
@@ -327,7 +328,7 @@ export const InterviewSchedulerForm = ({
             </select>
           </label>
 
-          <label className="text-xs font-medium text-zinc-700">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
             Job
             <select
               required
@@ -337,7 +338,8 @@ export const InterviewSchedulerForm = ({
                 setJobId(event.target.value);
                 clearError("jobId");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
+              style={{ colorScheme: 'light dark' }}
             >
               <option value="">
                 {isLoadingJobs
@@ -354,11 +356,11 @@ export const InterviewSchedulerForm = ({
               ))}
             </select>
             {errors.jobId ? (
-              <p className="mt-1 text-[11px] text-rose-600">{errors.jobId}</p>
+              <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">{errors.jobId}</p>
             ) : null}
           </label>
 
-          <label className="text-xs font-medium text-zinc-700">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
             Candidate
             <select
               required
@@ -368,7 +370,8 @@ export const InterviewSchedulerForm = ({
                 setJobseekerId(event.target.value);
                 clearError("jobseekerId");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-zinc-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
+              style={{ colorScheme: 'light dark' }}
             >
               <option value="">
                 {!jobId
@@ -389,18 +392,18 @@ export const InterviewSchedulerForm = ({
               ))}
             </select>
             {errors.jobseekerId ? (
-              <p className="mt-1 text-[11px] text-rose-600">
+              <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
                 {errors.jobseekerId}
               </p>
             ) : null}
           </label>
 
-          <label className="text-xs font-medium text-zinc-700 md:col-span-2">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
             Interview date
             <input
               required
               type="date"
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
               value={scheduledDate}
               onChange={(event) => {
                 setScheduledDate(event.target.value);
@@ -408,25 +411,26 @@ export const InterviewSchedulerForm = ({
               }}
             />
             {errors.scheduledDate ? (
-              <p className="mt-1 text-[11px] text-rose-600">
+              <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
                 {errors.scheduledDate}
               </p>
             ) : null}
           </label>
 
-          <label className="text-xs font-medium text-zinc-700 md:col-span-2">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
             Interview time
-            <p className="mt-1 text-[11px] text-zinc-500">
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
               Select the time the interview will begin.
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
               <select
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
                 value={scheduledHour}
                 onChange={(event) => {
                   setScheduledHour(event.target.value);
                   clearError("scheduledTime");
                 }}
+                style={{ colorScheme: 'light dark' }}
               >
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(
                   (hour) => (
@@ -437,12 +441,13 @@ export const InterviewSchedulerForm = ({
                 )}
               </select>
               <select
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
                 value={scheduledMinute}
                 onChange={(event) => {
                   setScheduledMinute(event.target.value);
                   clearError("scheduledTime");
                 }}
+                style={{ colorScheme: 'light dark' }}
               >
                 {["00", "15", "30", "45"].map((minute) => (
                   <option key={minute} value={minute}>
@@ -451,28 +456,29 @@ export const InterviewSchedulerForm = ({
                 ))}
               </select>
               <select
-                className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
                 value={scheduledMeridiem}
                 onChange={(event) => {
                   setScheduledMeridiem(event.target.value as "AM" | "PM");
                   clearError("scheduledTime");
                 }}
+                style={{ colorScheme: 'light dark' }}
               >
                 <option value="AM">AM</option>
                 <option value="PM">PM</option>
               </select>
             </div>
             {errors.scheduledTime ? (
-              <p className="mt-1 text-[11px] text-rose-600">
+              <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
                 {errors.scheduledTime}
               </p>
             ) : null}
           </label>
 
-          <label className="text-xs font-medium text-zinc-700 md:col-span-2">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
             Interview type
             <select
-              className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
               value={interviewType}
               onChange={(event) => {
                 const nextType = event.target.value as InterviewType;
@@ -484,6 +490,7 @@ export const InterviewSchedulerForm = ({
                   setMeetingLink("");
                 }
               }}
+              style={{ colorScheme: 'light dark' }}
             >
               <option value="Virtual">Virtual</option>
               <option value="Onsite">Onsite</option>
@@ -493,12 +500,12 @@ export const InterviewSchedulerForm = ({
 
         <div className="grid gap-3">
           {interviewType === "Virtual" ? (
-            <label className="text-xs font-medium text-zinc-700">
+            <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
               Meeting link
               <input
                 required
                 type="url"
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
                 value={meetingLink}
                 onChange={(event) => {
                   setMeetingLink(event.target.value);
@@ -508,11 +515,11 @@ export const InterviewSchedulerForm = ({
               />
             </label>
           ) : (
-            <label className="text-xs font-medium text-zinc-700">
+            <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
               Location / address
               <input
                 required
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
                 value={location}
                 onChange={(event) => {
                   setLocation(event.target.value);
@@ -523,15 +530,15 @@ export const InterviewSchedulerForm = ({
             </label>
           )}
           {errors.location ? (
-            <p className="text-[11px] text-rose-600">{errors.location}</p>
+            <p className="text-[11px] text-rose-600 dark:text-rose-400">{errors.location}</p>
           ) : null}
         </div>
 
-        <label className="block text-xs font-medium text-zinc-700">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
           Message to candidate
           <textarea
             rows={4}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+            className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder="Share interview agenda, preparation tips, or expectations."
@@ -539,16 +546,16 @@ export const InterviewSchedulerForm = ({
         </label>
 
         {errors.form ? (
-          <p className="text-sm text-rose-600">{errors.form}</p>
+          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.form}</p>
         ) : null}
 
         <div className="flex items-center justify-between pt-1">
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             Calendar sync will be available once connected in settings.
           </p>
           <button
             type="submit"
-            className="rounded-full bg-zinc-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80"
+            className="rounded-full bg-zinc-900 dark:bg-violet-600 dark:hover:bg-violet-700 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80"
             disabled={isSubmitting || isLoadingJobs}
           >
             {isSubmitting ? "Scheduling..." : "Schedule interview"}

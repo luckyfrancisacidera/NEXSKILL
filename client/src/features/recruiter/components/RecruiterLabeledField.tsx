@@ -9,7 +9,7 @@ export interface RecruiterLabeledFieldProps {
  * Feature-shared labeled field shell for simple recruiter forms.
  */
 export const RecruiterLabeledField = ({ label, children }: RecruiterLabeledFieldProps) => (
-  <label className="text-sm">
+  <label className="text-sm text-zinc-700 dark:text-zinc-300">
     {label}
     <div className="mt-1">{children}</div>
   </label>
