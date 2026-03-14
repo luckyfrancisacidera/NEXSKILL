@@ -16,10 +16,10 @@ export interface JobPostsTableProps {
 export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps) => (
   <div className="overflow-x-auto">
     <table className="min-w-full text-sm">
-      <thead className="bg-zinc-100 text-left">
+      <thead className="bg-zinc-100 text-left dark:bg-zinc-900">
         <tr>
           {['Title', 'Department', 'Location', 'Type', 'Status', 'Actions'].map((column) => (
-            <th key={column} className="px-4 py-3 font-medium text-zinc-700">
+            <th key={column} className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-400">
               {column}
             </th>
           ))}
@@ -30,7 +30,7 @@ export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps
           const statusAccent = getJobStatusAccent(job.status);
 
           return (
-            <tr key={job.id} className={index % 2 ? 'bg-zinc-50' : 'bg-white'}>
+            <tr key={job.id} className={index % 2 ? 'bg-zinc-50 dark:bg-zinc-900' : 'bg-white dark:bg-zinc-950'}>
               <td className="px-4 py-3 font-medium">{job.title}</td>
               <td className="px-4 py-3">{job.department ?? '-'}</td>
               <td className="px-4 py-3">{job.location}</td>
@@ -42,11 +42,11 @@ export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  <Link className="rounded border border-zinc-300 px-2 py-1" to={`/recruiter/job-posts/${job.id}`}><Eye size={16} /></Link>
-                  <Link className="rounded border border-zinc-300 px-2 py-1" to={`/recruiter/job-posts/${job.id}/edit`}><Pencil size={16} /></Link>
+                  <Link className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-zinc-700 dark:text-zinc-400" to={`/recruiter/job-posts/${job.id}`}><Eye size={16} /></Link>
+                  <Link className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-zinc-700 dark:text-zinc-400" to={`/recruiter/job-posts/${job.id}/edit`}><Pencil size={16} /></Link>
                   <button
                     type="button"
-                    className="rounded border border-rose-300 px-2 py-1 text-rose-700"
+                    className="rounded border border-rose-300 dark:border-rose-900 px-2 py-1 text-rose-700 dark:text-rose-400"
                     onClick={(event) => {
                       // Stop propagation so delete only opens one controlled verification modal.
                       event.stopPropagation();

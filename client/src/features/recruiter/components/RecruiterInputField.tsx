@@ -18,7 +18,7 @@ export const RecruiterInputField = ({ label, icon: Icon, className, id, ...props
     <div>
       <RecruiterFieldLabel htmlFor={fieldId ?? ''}>{label}</RecruiterFieldLabel>
       <div className="relative mt-1">
-        {Icon ? <Icon className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-zinc-400" /> : null}
+        {Icon ? <Icon className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-zinc-400 dark:text-zinc-600" /> : null}
         <input
           id={fieldId}
           className={`${recruiterInputClassName}${Icon ? ' pl-10' : ''}${className ? ` ${className}` : ''}`}

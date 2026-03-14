@@ -47,10 +47,10 @@ export const InterviewList = ({
     return (
       <Card>
         <div className="space-y-3">
-          <div className="h-5 w-48 animate-pulse rounded bg-zinc-200" />
+          <div className="h-5 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
           <div className="grid gap-2 md:grid-cols-2">
-            <div className="h-24 w-full animate-pulse rounded-xl bg-zinc-100" />
-            <div className="h-24 w-full animate-pulse rounded-xl bg-zinc-100" />
+            <div className="h-24 w-full animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+            <div className="h-24 w-full animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
           </div>
         </div>
       </Card>
@@ -60,7 +60,7 @@ export const InterviewList = ({
   if (error) {
     return (
       <Card>
-        <p className="text-sm text-rose-600">{error}</p>
+        <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
       </Card>
     );
   }
@@ -68,7 +68,7 @@ export const InterviewList = ({
   if (interviews.length === 0) {
     return (
       <Card>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
           No interviews scheduled yet. Start by creating one on the left.
         </p>
       </Card>
@@ -79,21 +79,21 @@ export const InterviewList = ({
     <Card className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
             Schedule overview
           </p>
-          <h3 className="text-lg font-semibold text-zinc-900">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Upcoming interviews
           </h3>
         </div>
-        <div className="inline-flex rounded-full bg-zinc-100 p-1 text-xs font-medium text-zinc-600">
+        <div className="inline-flex rounded-full bg-zinc-100 dark:bg-zinc-800 p-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <button
             type="button"
             onClick={() => setView("list")}
             className={`rounded-full px-3 py-1 transition ${
               view === "list"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-800"
+                ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
             List
@@ -103,8 +103,8 @@ export const InterviewList = ({
             onClick={() => setView("calendar")}
             className={`rounded-full px-3 py-1 transition ${
               view === "calendar"
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-800"
+                ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             }`}
           >
             Calendar
@@ -130,9 +130,9 @@ export const InterviewList = ({
           {groupedByDate.map(([date, items]) => (
             <div
               key={date}
-              className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50/60 p-3"
+              className="flex flex-col rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 p-3"
             >
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 {new Date(date).toLocaleDateString(undefined, {
                   weekday: "short",
                   month: "short",
@@ -144,7 +144,7 @@ export const InterviewList = ({
                   <button
                     key={interview.id}
                     type="button"
-                    className="flex flex-col rounded-lg bg-white px-3 py-2 text-left text-xs shadow-sm"
+                    className="flex flex-col rounded-lg bg-white dark:bg-zinc-800 px-3 py-2 text-left text-xs shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition"
                     onClick={() => {
                       if (
                         interview.status !== "Declined" &&
@@ -154,10 +154,10 @@ export const InterviewList = ({
                       }
                     }}
                   >
-                    <span className="font-medium text-zinc-900">
+                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
                       {interview.candidateName}
                     </span>
-                    <span className="text-[11px] text-zinc-500">
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
                       {new Date(interview.scheduledDate).toLocaleTimeString(
                         undefined,
                         {

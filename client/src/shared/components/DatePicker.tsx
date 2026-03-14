@@ -95,38 +95,38 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      {label ? <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</label> : null}
+      {label ? <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">{label}</label> : null}
 
       <div ref={containerRef} className="relative">
         <button
           type="button"
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
           disabled={disabled}
-          className="flex h-11 w-full items-center justify-between rounded-xl bg-zinc-100 px-3.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400"
+          className="flex h-11 w-full items-center justify-between rounded-xl bg-zinc-100 px-3.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600"
         >
-          <span className={`${!selectedDate ? 'text-zinc-400' : ''}`}>{selectedDate ? displayFormatter.format(selectedDate) : 'Select date'}</span>
+          <span className={`${!selectedDate ? 'text-zinc-400 dark:text-zinc-600' : ''}`}>{selectedDate ? displayFormatter.format(selectedDate) : 'Select date'}</span>
           <svg className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         {isOpen ? (
-          <div className="absolute z-50 mt-2 min-w-72 rounded-xl border border-zinc-200 bg-white p-3 shadow-xl">
-            <div className="mb-3 flex items-center justify-between border-b border-zinc-200 pb-2">
-              <button type="button" onClick={() => changeMonth(-1)} className="rounded p-1 hover:bg-zinc-100">
+          <div className="absolute z-50 mt-2 min-w-72 rounded-xl border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="mb-3 flex items-center justify-between border-b border-zinc-200 pb-2 dark:border-zinc-800">
+              <button type="button" onClick={() => changeMonth(-1)} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <ChevronLeft size={18} />
               </button>
 
-              <span className="text-sm font-semibold text-zinc-900">{currentMonthLabel}</span>
+              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{currentMonthLabel}</span>
 
-              <button type="button" onClick={() => changeMonth(1)} className="rounded p-1 hover:bg-zinc-100">
+              <button type="button" onClick={() => changeMonth(1)} className="rounded p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800">
                 <ChevronRight size={18} />
               </button>
             </div>
 
             <div className="mb-1 grid grid-cols-7 gap-1">
               {weekDays.map((day) => (
-                <span key={day} className="text-center text-xs font-semibold text-zinc-500">
+                <span key={day} className="text-center text-xs font-semibold text-zinc-500 dark:text-zinc-500">
                   {day}
                 </span>
               ))}
@@ -147,7 +147,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
                     key={key}
                     type="button"
                     onClick={() => handleDaySelect(day)}
-                    className={`h-9 rounded-md text-sm transition-colors ${isSelected ? 'bg-black font-medium text-white' : 'text-zinc-700 hover:bg-zinc-100'}`}
+                    className={`h-9 rounded-md text-sm transition-colors ${isSelected ? 'bg-black font-medium text-white dark:bg-violet-600 dark:text-white' : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
                   >
                     {day}
                   </button>

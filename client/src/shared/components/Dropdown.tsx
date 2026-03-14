@@ -76,7 +76,7 @@ export default function Dropdown({
 
   return (
     <div className={className} ref={dropdownRef}>
-      <label className="mb-1.5 block text-xs font-medium text-zinc-600">
+      <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
         {label}
       </label>
 
@@ -86,7 +86,7 @@ export default function Dropdown({
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`flex h-11 w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 ${buttonClassName}`}
+          className={`flex h-11 w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-violet-600 dark:focus:ring-violet-900 ${buttonClassName}`}
         >
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate">{selectedOption?.label}</span>
@@ -95,7 +95,7 @@ export default function Dropdown({
               <span
                 className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${
                   selectedOption.accentClassName ??
-                  "bg-zinc-100 text-zinc-700"
+                  "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 }`}
               >
                 {selectedOption.count}
@@ -104,14 +104,14 @@ export default function Dropdown({
           </div>
 
           <ChevronDown
-            className={`ml-3 h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+            className={`ml-3 h-4 w-4 shrink-0 text-zinc-500 transition-transform dark:text-zinc-500 ${
               open ? "rotate-180" : ""
             }`}
           />
         </button>
 
         {open && (
-          <div className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl">
+          <div className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
             {options.map((option) => {
               const isSelected = option.value === currentValue;
 
@@ -122,8 +122,8 @@ export default function Dropdown({
                   onClick={() => handleSelect(option.value)}
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition ${
                     isSelected
-                      ? "bg-violet-50 text-violet-700"
-                      : "text-zinc-700 hover:bg-zinc-50"
+                      ? "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400"
+                      : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-2">
@@ -132,7 +132,7 @@ export default function Dropdown({
                     {typeof option.count === "number" ? (
                       <span
                         className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${
-                          option.accentClassName ?? "bg-zinc-100 text-zinc-700"
+                          option.accentClassName ?? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                         }`}
                       >
                         {option.count}
