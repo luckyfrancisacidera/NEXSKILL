@@ -13,7 +13,7 @@ interface AdminPasswordFieldProps {
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white";
+  "mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:text-zinc-100";
 
 export const AdminPasswordField = ({
   label,
@@ -29,7 +29,7 @@ export const AdminPasswordField = ({
   const VisibilityIcon = visible ? EyeOff : Eye;
 
   return (
-    <label className="block text-sm font-medium text-zinc-700">
+    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-100">
       {label}
       <div className="relative mt-2">
         <input
