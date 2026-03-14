@@ -59,17 +59,17 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
   return (
     <div className="space-y-6">
-      <Card className="border border-zinc-200 bg-linear-to-br from-white via-violet-50/30 to-white p-0 shadow-sm">
-        <div className="border-b border-zinc-200 px-6 py-5">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-violet-950/20 dark:to-zinc-950 p-0 shadow-sm">
+        <div className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-5">
           <div className="flex items-start gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-400">
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900">
+              <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                 {mode === 'create' ? 'Create Job' : 'Edit Job'}
               </h2>
-              <p className="text-sm text-zinc-600">
+              <p className="text-sm text-zinc-600 dark:text-zinc-100">
                 Use a clean and structured post so candidates can understand your role quickly.
               </p>
             </div>
@@ -78,7 +78,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
         <Form method="post" className="space-y-6 px-6 py-6">
           {actionData?.error ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <p className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
               {actionData.error}
             </p>
           ) : null}
@@ -172,8 +172,8 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
           </RecruiterSectionCard>
 
           <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-            <Link to="/recruiter/job-posts" className="rounded-xl border border-zinc-300 px-4 py-2 text-zinc-700 hover:bg-zinc-100">Cancel</Link>
-            <button className="rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white hover:bg-violet-800 disabled:opacity-70" type="submit" disabled={isSaving}>
+            <Link to="/recruiter/job-posts" className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Link>
+            <button className="rounded-xl bg-violet-700 dark:bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:hover:bg-violet-700 disabled:opacity-70" type="submit" disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
