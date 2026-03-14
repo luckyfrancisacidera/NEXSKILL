@@ -109,12 +109,12 @@ export const CompanyAdminDashboardPage = () => {
   return (
     <>
       <div className="space-y-6">
-        <section className="rounded-[28px] border border-zinc-200 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] p-8 shadow-sm">
+        <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] dark:bg-[linear-gradient(135deg,#09090b,#18181b)] p-8 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Company Admin</p>
-              <h1 className="mt-3 text-3xl font-semibold text-zinc-950">{data.company.name}</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Company Admin</p>
+              <h1 className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.company.name}</h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                 Manage recruiter access, track hiring throughput, and keep your company recruiting team in one place.
               </p>
             </div>
@@ -134,24 +134,24 @@ export const CompanyAdminDashboardPage = () => {
         </section>
 
         {formError ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{formError}</div>
+          <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{formError}</div>
         ) : null}
         {formSuccess ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{formSuccess}</div>
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">{formSuccess}</div>
         ) : null}
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Card className="rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-950">Recruiter Management</h2>
-                <p className="mt-1 text-sm text-zinc-500">Create recruiter accounts and monitor team activity at a glance.</p>
+                <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Management</h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Create recruiter accounts and monitor team activity at a glance.</p>
               </div>
               <Badge>{data.recruiters.totalCount} recruiters</Badge>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 text-sm">
-                <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
+              <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+                <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
                   <tr>
                     <th className="px-6 py-3">Recruiter</th>
                     <th className="px-6 py-3">Jobs</th>
@@ -161,16 +161,16 @@ export const CompanyAdminDashboardPage = () => {
                     <th className="px-6 py-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {data.recruiters.items.map((recruiter) => (
                     <tr key={recruiter.userId}>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-zinc-900">{recruiter.email}</div>
-                        <div className="mt-1 text-xs text-zinc-500">Joined {dateFormatter.format(new Date(recruiter.createdAtUtc))}</div>
+                        <div className="font-medium text-zinc-900 dark:text-zinc-100">{recruiter.email}</div>
+                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Joined {dateFormatter.format(new Date(recruiter.createdAtUtc))}</div>
                       </td>
-                      <td className="px-6 py-4 text-zinc-700">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
-                      <td className="px-6 py-4 text-zinc-700">{recruiter.upcomingInterviews}</td>
-                      <td className="px-6 py-4 text-zinc-700">{recruiter.totalHires}</td>
+                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
+                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.upcomingInterviews}</td>
+                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.totalHires}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(recruiter.isActive)}`}>
                           {recruiter.isActive ? 'Active' : 'Inactive'}
@@ -203,22 +203,22 @@ export const CompanyAdminDashboardPage = () => {
             />
           </Card>
 
-          <Card className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-950">Company status</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500">
+          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company status</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
               Recruiter accounts created here are automatically scoped to {data.company.name}.
             </p>
-            <div className="mt-6 space-y-4 text-sm text-zinc-600">
+            <div className="mt-6 space-y-4 text-sm text-zinc-600 dark:text-zinc-400">
               <div>
-                <div className="font-medium text-zinc-900">Primary email</div>
+                <div className="font-medium text-zinc-900 dark:text-zinc-100">Primary email</div>
                 <div className="mt-1">{data.company.primaryEmail ?? 'No primary email set'}</div>
               </div>
               <div>
-                <div className="font-medium text-zinc-900">Location</div>
+                <div className="font-medium text-zinc-900 dark:text-zinc-100">Location</div>
                 <div className="mt-1">{data.company.location ?? 'Location can be added during setup'}</div>
               </div>
               <div>
-                <div className="font-medium text-zinc-900">Status</div>
+                <div className="font-medium text-zinc-900 dark:text-zinc-100">Status</div>
                 <div className="mt-2">
                   <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(data.company.isActive)}`}>
                     {data.company.isActive ? 'Active' : 'Inactive'}

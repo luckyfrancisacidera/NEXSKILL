@@ -40,10 +40,10 @@ export const SuperAdminRecruitersPage = () => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-zinc-200 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Super Admin</p>
-        <h1 className="mt-3 text-3xl font-semibold text-zinc-950">Recruiter account management</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600">
+      <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#19191f,_#09090b)] p-8 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Super Admin</p>
+        <h1 className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">Recruiter account management</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           Monitor recruiter account status across every company, review hiring activity, and activate or deactivate accounts from a dedicated management surface.
         </p>
       </section>
@@ -51,9 +51,9 @@ export const SuperAdminRecruitersPage = () => {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-amber-200 bg-amber-50 text-amber-700" />
         <AdminMetricCard label="Active Recruiters" value={data.summary.activeRecruiters} accent="border-violet-200 bg-violet-50 text-violet-700" />
-        <Card className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium text-zinc-500">Published Jobs</p>
-          <p className="mt-3 text-3xl font-semibold text-zinc-950">{data.summary.activeJobs}</p>
+        <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Published Jobs</p>
+          <p className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.summary.activeJobs}</p>
         </Card>
       </section>
 
