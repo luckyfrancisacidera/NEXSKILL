@@ -24,6 +24,7 @@ public sealed class RecruiterService(
     ITextEmbeddingService embeddingService,
     IAppCacheService cacheService,
     ICandidateExplanationService candidateExplanationService,
+    IObjectStorageService objectStorageService,
     IMapper mapper,
     ILogger<RecruiterService> logger) : IRecruiterService
 {
@@ -457,6 +458,42 @@ public sealed class RecruiterService(
         detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
         detail.CandidateExplanation = explanation;
         return detail;
+    }
+
+    public async Task<ApplicantResumeAccessResult> GetApplicantResumeAccessAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetApplicantResumeAccessAsync(profile.CompanyId, recruiterId, submissionId, ct);
+    }
+
+    public async Task<ApplicantResumeAccessResult> GetApplicantResumeAccessAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var submission = await recruiterRepository.GetSubmissionByIdForRecruiterAsync(recruiterId, companyId, submissionId, ct)
+            ?? throw new KeyNotFoundException("Candidate not found.");
+
+        if (string.IsNullOrWhiteSpace(submission.BlobObjectKey))
+        {
+            throw new KeyNotFoundException("Resume not found.");
+        }
+
+        if (!await objectStorageService.ExistsAsync(submission.BlobObjectKey, ct))
+        {
+            logger.LogWarning("Resume file missing from storage for submission {SubmissionId}. ObjectKey={ObjectKey}", submissionId, submission.BlobObjectKey);
+            throw new KeyNotFoundException("Resume file not found.");
+        }
+
+        var fileName = string.IsNullOrWhiteSpace(submission.FileName) ? "resume" : submission.FileName;
+        var contentType = string.IsNullOrWhiteSpace(submission.ContentType) ? "application/octet-stream" : submission.ContentType;
+        var downloadUrl = await objectStorageService.GetDownloadUrlAsync(submission.BlobObjectKey, fileName, ct);
+
+        return new ApplicantResumeAccessResult
+        {
+            ObjectKey = submission.BlobObjectKey,
+            FileName = fileName,
+            ContentType = contentType,
+            DownloadUrl = downloadUrl,
+        };
     }
 
     public async Task<IReadOnlyList<ShortlistedCandidateOptionDto>> GetShortlistedCandidatesByJobAsync(Guid companyId, Guid recruiterId, Guid jobId, string? department = null, CancellationToken ct = default)

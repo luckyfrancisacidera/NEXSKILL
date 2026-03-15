@@ -16,6 +16,8 @@ public sealed class ApplicantScoreData
     public string JobTitle { get; init; } = string.Empty;
     public string JobDepartment { get; init; } = "Unassigned";
     public decimal Score { get; init; }
+    public bool HasResume { get; init; }
+    public string? ResumeFileName { get; init; }
 }
 
 public sealed class JobFilterData

@@ -20,6 +20,7 @@ public sealed class RecruiterController(
     IInterviewService interviewService,
     IInterviewRepository interviewRepository,
     IInterviewCalendarService interviewCalendarService,
+    IObjectStorageService objectStorageService,
     ILogger<RecruiterController> logger) : ControllerBase
 {
     public sealed record RecruiterScheduleInterviewRequest(
@@ -170,6 +171,46 @@ public sealed class RecruiterController(
             ?? throw new UnauthorizedAccessException("Active company context is required.");
         var item = await recruiterService.GetApplicantBySubmissionIdAsync(companyId, userId, submissionId, ct);
         return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("applicants/{id:guid}/resume/download")]
+    public async Task<ActionResult<ApplicantResumeDownloadResponse>> GetApplicantResumeDownload(Guid id, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        var result = await recruiterService.GetApplicantResumeAccessAsync(companyId, userId, id, ct);
+        var downloadUrl = result.DownloadUrl;
+
+        if (string.IsNullOrWhiteSpace(downloadUrl))
+        {
+            downloadUrl = Url.ActionLink(nameof(DownloadApplicantResumeFile), values: new { id })
+                ?? $"{Request.Scheme}://{Request.Host}{Request.PathBase}/api/recruiter/applicants/{id}/resume/file";
+        }
+
+        return Ok(new ApplicantResumeDownloadResponse
+        {
+            DownloadUrl = downloadUrl,
+            FileName = result.FileName,
+        });
+    }
+
+    [HttpGet("applicants/{id:guid}/resume/file")]
+    public async Task<IActionResult> DownloadApplicantResumeFile(Guid id, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        var result = await recruiterService.GetApplicantResumeAccessAsync(companyId, userId, id, ct);
+        if (!string.IsNullOrWhiteSpace(result.DownloadUrl))
+        {
+            return Redirect(result.DownloadUrl);
+        }
+
+        var stream = await objectStorageService.DownloadAsync(result.ObjectKey, ct);
+        return File(stream, result.ContentType, result.FileName, enableRangeProcessing: true);
     }
 
     [HttpPut("applicants/scores/{submissionId:guid}/status")]

@@ -24,5 +24,6 @@ public interface IRecruiterRepository
     Task<ApplicantStageContextData?> GetApplicantStageContextAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
     Task<IReadOnlyList<ShortlistedCandidateData>> GetShortlistedCandidatesByJobAsync(Guid jobId, CancellationToken ct = default);
     Task<ResumeSubmissionEntity?> GetSubmissionForInterviewAsync(Guid recruiterId, Guid companyId, Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
+    Task<ResumeSubmissionEntity?> GetSubmissionByIdForRecruiterAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
     Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default);
 }

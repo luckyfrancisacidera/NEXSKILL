@@ -64,6 +64,12 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("created_at_utc")]
         public DateTime CreatedAtUtc { get; set; }
+
+        [JsonPropertyName("has_resume")]
+        public bool HasResume { get; set; }
+
+        [JsonPropertyName("resume_file_name")]
+        public string? ResumeFileName { get; set; }
     }
 
     public sealed class ApplicantDetailResponse : ApplicantScoreItemResponse

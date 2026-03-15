@@ -34,6 +34,8 @@ export interface ApplicantScoreItemDto {
   submission_status: CandidateStage;
   jobseeker_stage: JobSeekerStage;
   created_at_utc: string;
+  has_resume: boolean;
+  resume_file_name?: string;
 }
 
 export interface ParsedResumeProjectDto {
@@ -104,6 +106,11 @@ export interface ParsedResumeJsonDto {
 export interface ApplicantDetailDto extends ApplicantScoreItemDto {
   parsed_resume_json?: ParsedResumeJsonDto;
   candidate_explanation?: CandidateExplanationDto;
+}
+
+export interface ApplicantResumeDownloadDto {
+  download_url: string;
+  file_name: string;
 }
 
 export interface ApplicantJobFilterOption {
