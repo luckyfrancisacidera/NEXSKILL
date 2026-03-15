@@ -146,7 +146,7 @@ export const OffersPage = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white p-0 shadow-sm">
+      <Card className="overflow-hidden rounded-[28px] border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-0 shadow-sm\">
         <div className="bg-[radial-gradient(circle_at_top_right,_rgba(161,161,170,0.18),_transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-6 py-7 text-white md:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl">

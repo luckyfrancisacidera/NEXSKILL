@@ -158,10 +158,10 @@ export const InterviewPage = () => {
     <div className="space-y-4">
       <Card className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold text-zinc-900">
+          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
             My Interviews
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Stay on top of upcoming interviews and respond in one click.
           </p>
         </div>

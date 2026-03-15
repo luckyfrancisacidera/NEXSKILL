@@ -16,11 +16,11 @@ const statusOptions: DropdownOption[] = [
 ];
 
 const badgeClassByStatus: Record<string, string> = {
-  Applied: "bg-blue-50 text-blue-700",
-  Interview: "bg-violet-50 text-violet-700",
-  Hire: "bg-emerald-50 text-emerald-700",
-  Rejected: "bg-rose-50 text-rose-700",
-  Withdrawn: "bg-zinc-100 text-zinc-700",
+  Applied: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
+  Interview: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400",
+  Hire: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+  Rejected: "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400",
+  Withdrawn: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 };
 
 export const ApplicationsPage = () => {
@@ -37,10 +37,10 @@ export const ApplicationsPage = () => {
 
   return (
     <Card className="min-h-screen space-y-4">
-      <h2 className="text-2xl font-semibold">Applications</h2>
+      <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Applications</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-zinc-600">
+          <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
             Search
           </label>
           <SearchField
@@ -59,7 +59,7 @@ export const ApplicationsPage = () => {
         />
       </div>
       {data.items.length === 0 ? (
-        <p className="text-zinc-500">No applications found.</p>
+        <p className="text-zinc-500 dark:text-zinc-400">No applications found.</p>
       ) : (
         <ul className="space-y-3">
           {data.items.map((item) => {
@@ -67,19 +67,19 @@ export const ApplicationsPage = () => {
             const itemStatus = String(item.status);
 
             return (
-              <li key={itemId} className="rounded-lg border border-zinc-200 p-3">
-                <p className="font-medium text-zinc-900">
+              <li key={itemId} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                <p className="font-medium text-zinc-900 dark:text-zinc-100">
                   {String(item.job_title)}
                 </p>
-                <p className="text-sm text-zinc-500">
-                  {String(item.company)} ·{" "}
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  {String(item.company)} ï¿½{" "}
                   {new Date(String(item.created_at_utc)).toLocaleDateString()}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span
                     className={`rounded px-2 py-1 text-xs ${
                       badgeClassByStatus[itemStatus] ??
-                      "bg-zinc-100 text-zinc-700"
+                      "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     }`}
                   >
                     {itemStatus}
@@ -87,7 +87,7 @@ export const ApplicationsPage = () => {
                   <button
                     type="button"
                     disabled={withdrawingId === itemId}
-                    className="rounded border border-zinc-300 px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded border border-zinc-300 px-2 py-1 text-xs transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
                     onClick={() => {
                       void withdraw(itemId);
                     }}

@@ -88,32 +88,32 @@ export const DashboardPage = () => {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="flex items-center justify-between p-5">
           <div>
-            <p className="text-sm text-zinc-500">Total Applications</p>
-            <h3 className="text-3xl font-bold text-zinc-900">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Total Applications</p>
+            <h3 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
               {totalApplications}
             </h3>
-            <p className="mt-1 text-xs text-zinc-400">
+            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
               All application statuses
             </p>
           </div>
 
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
-            <Briefcase className="h-6 w-6 text-indigo-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+            <Briefcase className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
         </Card>
 
         {Object.entries(data.status).map(([label, value]) => (
           <Card key={label} className="flex items-center justify-between p-5">
             <div>
-              <p className="text-sm capitalize text-zinc-500">{label}</p>
-              <h3 className="text-3xl font-bold text-zinc-900">{value}</h3>
+              <p className="text-sm capitalize text-zinc-500 dark:text-zinc-400">{label}</p>
+              <h3 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{value}</h3>
               <div className="mt-2">
                 <Progress value={Math.min(100, Number(value) * 15)} />
               </div>
             </div>
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100">
-              <BarChart3 className="h-6 w-6 text-zinc-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+              <BarChart3 className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
             </div>
           </Card>
         ))}
@@ -121,12 +121,12 @@ export const DashboardPage = () => {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
             Upcoming Interviews
           </h2>
           <Link
             to="/jobseeker/interviews"
-            className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
+            className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
           >
             View all
           </Link>
@@ -134,18 +134,18 @@ export const DashboardPage = () => {
 
         {isLoadingInterviews ? (
           <Card className="grid gap-3 lg:grid-cols-2">
-            <div className="h-24 animate-pulse rounded-xl bg-zinc-100" />
-            <div className="h-24 animate-pulse rounded-xl bg-zinc-100" />
+            <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+            <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
           </Card>
         ) : upcomingInterviews.length === 0 ? (
           <Card className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100">
-              <CalendarClock className="h-6 w-6 text-zinc-500" />
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <CalendarClock className="h-6 w-6 text-zinc-500 dark:text-zinc-400" />
             </div>
-            <h3 className="text-lg font-semibold text-zinc-900">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               No upcoming interviews
             </h3>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               Future active interviews will appear here as soon as recruiters schedule them.
             </p>
           </Card>
@@ -158,13 +158,13 @@ export const DashboardPage = () => {
                 <Card key={interview.id} className="space-y-3 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-zinc-400">
+                      <p className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                         Upcoming interview
                       </p>
-                      <h3 className="text-lg font-semibold text-zinc-900">
+                      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                         {interview.jobTitle || "Interview"}
                       </h3>
-                      <p className="mt-1 text-sm text-zinc-500">
+                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                         {interview.companyName || interview.recruiterName || "Company"}
                       </p>
                     </div>
@@ -173,7 +173,7 @@ export const DashboardPage = () => {
                     </span>
                   </div>
 
-                  <div className="space-y-1 text-sm text-zinc-600">
+                  <div className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                     <p>
                       {scheduledAt.toLocaleDateString(undefined, {
                         weekday: "short",
@@ -192,7 +192,7 @@ export const DashboardPage = () => {
                         href={interview.meetingLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-medium text-violet-600 transition hover:text-violet-700"
+                        className="font-medium text-violet-600 transition hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
                       >
                         Open meeting link
                       </a>
@@ -209,29 +209,29 @@ export const DashboardPage = () => {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900">Saved Jobs</h2>
-          <span className="text-sm text-zinc-500">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Saved Jobs</h2>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">
             {data.saved_jobs.length} jobs
           </span>
         </div>
 
         {data.saved_jobs.length === 0 ? (
           <Card className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
-              <Bookmark className="h-7 w-7 text-zinc-500" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <Bookmark className="h-7 w-7 text-zinc-500 dark:text-zinc-400" />
             </div>
 
-            <h3 className="text-lg font-semibold text-zinc-900">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               No saved jobs yet
             </h3>
 
-            <p className="mb-4 mt-1 text-sm text-zinc-500">
+            <p className="mb-4 mt-1 text-sm text-zinc-500 dark:text-zinc-400">
               Start exploring jobs and save the ones you're interested in.
             </p>
 
             <Link
               to="/jobs"
-              className="flex items-center gap-2 rounded-lg bg-zinc-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+              className="flex items-center gap-2 rounded-lg bg-zinc-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600"
             >
               <Search className="h-4 w-4" />
               Find Jobs
@@ -275,11 +275,11 @@ export const DashboardPage = () => {
         <Card className="h-80 p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-zinc-900">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 Application Analytics
               </h3>
 
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Track your job applications
               </p>
             </div>
@@ -313,7 +313,7 @@ export const DashboardPage = () => {
         </Card>
 
         <Card className="space-y-4 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900">
+          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Recent Applications
           </h3>
 
@@ -321,18 +321,18 @@ export const DashboardPage = () => {
             {data.recent_applications.map((item) => (
               <li
                 key={String(item.id)}
-                className="rounded-lg border border-zinc-200 p-3 transition hover:bg-zinc-50"
+                className="rounded-lg border border-zinc-200 p-3 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
               >
-                <p className="font-semibold text-zinc-900">
+                <p className="font-semibold text-zinc-900 dark:text-zinc-100">
                   {String(item.job_title)}
                 </p>
 
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
                   {String(item.company)} •{" "}
                   {new Date(String(item.applied_at)).toLocaleDateString()}
                 </p>
 
-                <span className="mt-2 inline-block rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-600">
+                <span className="mt-2 inline-block rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                   {String(item.status)}
                 </span>
               </li>
