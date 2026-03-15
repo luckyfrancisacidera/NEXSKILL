@@ -13,7 +13,7 @@ interface CreateRecruiterModalProps {
   onSubmit: (payload: CreateManagedRecruiterPayload) => Promise<void>;
 }
 
-const inputClassName = 'mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:text-zinc-100';
+const inputClassName = 'mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:bg-zinc-800/50';
 
 export const CreateRecruiterModal = ({
   open,
@@ -77,7 +77,7 @@ export const CreateRecruiterModal = ({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div className="rounded-[28px] border border-zinc-200 bg-white dark:bg-zinc-900 border-zinc-800 p-6 shadow-2xl">
+      <div className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm dark:text-zinc-100 font-semibold uppercase tracking-[0.24em] text-zinc-500">Company Admin</p>
@@ -129,7 +129,7 @@ export const CreateRecruiterModal = ({
             error={passwordError ?? undefined}
           />
 
-          {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+          {error ? <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</div> : null}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>

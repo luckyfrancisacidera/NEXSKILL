@@ -92,12 +92,12 @@ export const SuperAdminDashboardPage = () => {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 ">
-          <AdminMetricCard label="Total Companies" value={data.summary.totalCompanies} accent="border-sky-200 bg-sky-50 text-sky-700" />
-          <AdminMetricCard label="Active Companies" value={data.summary.activeCompanies} accent="border-emerald-200 bg-emerald-50 text-emerald-700" />
-          <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-amber-200 bg-amber-50 text-amber-700" />
-          <AdminMetricCard label="Active Recruiters" value={data.summary.activeRecruiters} accent="border-violet-200 bg-violet-50 text-violet-700" />
-          <AdminMetricCard label="All Jobs" value={data.summary.totalJobs} accent="border-rose-200 bg-rose-50 text-rose-700" />
-          <AdminMetricCard label="Published Jobs" value={data.summary.activeJobs} accent="border-cyan-200 bg-cyan-50 text-cyan-700" />
+          <AdminMetricCard label="Total Companies" value={data.summary.totalCompanies} accent="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-400" />
+          <AdminMetricCard label="Active Companies" value={data.summary.activeCompanies} accent="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400" />
+          <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-400" />
+          <AdminMetricCard label="Active Recruiters" value={data.summary.activeRecruiters} accent="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-900/30 dark:text-violet-400" />
+          <AdminMetricCard label="All Jobs" value={data.summary.totalJobs} accent="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-900/30 dark:text-rose-400" />
+          <AdminMetricCard label="Published Jobs" value={data.summary.activeJobs} accent="border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-900/30 dark:text-cyan-400" />
         </section>
 
         <AdminCompaniesTableCard

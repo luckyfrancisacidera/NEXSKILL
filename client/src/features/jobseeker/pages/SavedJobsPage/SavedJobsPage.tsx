@@ -13,10 +13,10 @@ export const SavedJobsPage = () => {
   return (
     <div className="space-y-4">
       <Card className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-2xl font-semibold">Saved Jobs</h2>
+        <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Saved Jobs</h2>
         <SearchField
           ariaLabel="Search saved jobs"
-          className="h-11 w-full max-w-xs rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+          className="h-11 w-full max-w-xs rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-500 dark:focus:ring-violet-900"
           placeholder="Search saved jobs"
           value={search}
           onChange={setSearch}
@@ -24,7 +24,7 @@ export const SavedJobsPage = () => {
       </Card>
       {saved.length === 0 ? (
         <Card>
-          <p className="text-zinc-500">No saved jobs yet.</p>
+          <p className="text-zinc-500 dark:text-zinc-400">No saved jobs yet.</p>
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
