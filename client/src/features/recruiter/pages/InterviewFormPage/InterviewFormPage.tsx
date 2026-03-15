@@ -12,7 +12,7 @@ import { Card } from "@shared/components/Card";
 import {
   InterviewModal,
   type InterviewFormValues,
-} from "@features/recruiter/pages/CandidateDetailPage/components/modals/InterviewModal";
+} from "@features/recruiter/pages/CandidateDetailPage/components/InterviewModal";
 import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
 import { InterviewList } from "./components/InterviewList";
 

@@ -251,6 +251,12 @@ public sealed class InterviewServiceTests
 
         public Task MarkAllAsReadAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
+
+        public Task<int> DeleteNotificationsAsync(Guid userId, IReadOnlyList<Guid> notificationIds, CancellationToken ct = default)
+            => Task.FromResult(0);
+
+        public Task<int> DeleteAllNotificationsAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult(0);
     }
 
     private sealed class InMemoryInterviewRepository : IInterviewRepository
@@ -418,6 +424,14 @@ public sealed class InterviewServiceTests
                     ? Submission
                     : null);
         }
+
+        public Task<ResumeSubmissionEntity?> GetSubmissionByIdForRecruiterAsync(Guid requestedRecruiterId, Guid requestedCompanyId, Guid submissionId, CancellationToken ct = default)
+            => Task.FromResult<ResumeSubmissionEntity?>(
+                requestedRecruiterId == recruiterId
+                && requestedCompanyId == companyId
+                && submissionId == Submission.Id
+                    ? Submission
+                    : null);
 
         public Task<Dictionary<Guid, int>> GetHiredCountsByJobIdsAsync(IReadOnlyCollection<Guid> jobIds, CancellationToken ct = default)
             => throw new NotImplementedException();

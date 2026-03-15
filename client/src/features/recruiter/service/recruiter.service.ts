@@ -2,6 +2,7 @@ export type { JobDto, Paged } from '@features/recruiter/types';
 import { http } from '@shared/api/http';
 import type {
   ApplicantDetailDto,
+  ApplicantResumeDownloadDto,
   ApplicantScoreItemDto,
   ApplicantScoresDto,
   BulkApplicantStageResponseDto,
@@ -123,6 +124,11 @@ export const recruiterService = {
 
   async getApplicantBySubmissionId(submissionId: string): Promise<ApplicantDetailDto> {
     const response = await http.get<ApplicantDetailDto>(`/api/recruiter/applicants/scores/${submissionId}`);
+    return response.data;
+  },
+
+  async getApplicantResumeDownload(submissionId: string): Promise<ApplicantResumeDownloadDto> {
+    const response = await http.get<ApplicantResumeDownloadDto>(`/api/recruiter/applicants/${submissionId}/resume/download`);
     return response.data;
   },
 

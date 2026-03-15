@@ -23,7 +23,7 @@ public static class ApplicationServiceRegistration
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAutoMapper(typeof(ApplicationServiceRegistration).Assembly);
+        services.AddAutoMapper(_ => { }, typeof(ApplicationServiceRegistration).Assembly);
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddScoped<IResumeScoringOrchestrator, ResumeEmbeddingScoringOrchestrator>();
         services.AddScoped<IResumeUploadService, ResumeUploadService>();

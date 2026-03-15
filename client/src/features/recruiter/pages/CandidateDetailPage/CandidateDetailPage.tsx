@@ -11,11 +11,11 @@ import {
 
 import { useToast } from '@app/providers/ToastProvider';
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
-import { OfferModal, type OfferFormValues } from '@features/recruiter/pages/CandidateDetailPage/components/modals/OfferModal';
+import { OfferModal, type OfferFormValues } from '@features/recruiter/pages/CandidateDetailPage/components/OfferModal';
 import {
   InterviewModal,
   type InterviewFormValues,
-} from '@features/recruiter/pages/CandidateDetailPage/components/modals/InterviewModal';
+} from '@features/recruiter/pages/CandidateDetailPage/components/InterviewModal';
 import { ProjectCard } from '@features/recruiter/pages/CandidateDetailPage/components/ProjectCard';
 import { WorkExperienceCard } from '@features/recruiter/pages/CandidateDetailPage/components/WorkExperienceCard';
 import { recruiterInterviewService } from '@features/recruiter/services/interview.service';
@@ -116,9 +116,9 @@ const monthsToText = (months: number | undefined) => {
 export const CandidateDetailPage = () => {
   const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
+  const [isDownloadingResume, setIsDownloadingResume] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
-  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [interviewForm, setInterviewForm] = useState<InterviewFormValues>({
     date: '',
     hour: '9',
@@ -141,9 +141,7 @@ export const CandidateDetailPage = () => {
   const revalidator = useRevalidator();
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
-  const resumeSubmissionId = candidate.resume_submission_id;
-  const jobSeekerUserId = candidate.jobseeker_user_id;
-  const jobId = candidate.job_id;
+  const hasResume = candidate.has_resume;
 
   const closeCandidateModals = () => {
     setIsInterviewOpen(false);
@@ -161,7 +159,6 @@ export const CandidateDetailPage = () => {
   };
 
   useEffect(() => {
-    // recruiterSync removed; always trust loader data from the API
     setCandidate(loaderCandidate);
   }, [loaderCandidate]);
 
@@ -233,13 +230,13 @@ export const CandidateDetailPage = () => {
   ) => {
     try {
       if (action === 'offer') {
-        const updatedCandidate = await recruiterService.sendOffer(resumeSubmissionId);
+        const updatedCandidate = await recruiterService.sendOffer(candidate.resume_submission_id);
         setCandidate((current) => ({ ...current, ...updatedCandidate }));
       } else if (action === 'hire') {
-        const updatedCandidate = await recruiterService.markHired(resumeSubmissionId);
+        const updatedCandidate = await recruiterService.markHired(candidate.resume_submission_id);
         setCandidate((current) => ({ ...current, ...updatedCandidate }));
       } else {
-        const result = await recruiterService.updateApplicantStatuses([resumeSubmissionId], {
+        const result = await recruiterService.updateApplicantStatuses([candidate.resume_submission_id], {
           action,
           status,
         });
@@ -268,9 +265,7 @@ export const CandidateDetailPage = () => {
   };
 
   const scheduleInterview = async () => {
-    // ResumeSubmission identifies the application record.
-    // Interview scheduling must use the linked jobseeker account, never ResumeSubmissionId.
-    if (!jobSeekerUserId) {
+    if (!candidate.applicant_user_id) {
       throw new Error('This candidate does not have a linked jobseeker account for interview scheduling.');
     }
 
@@ -290,14 +285,43 @@ export const CandidateDetailPage = () => {
     }
 
     await recruiterInterviewService.scheduleInterview({
-      jobId,
-      jobseekerId: jobSeekerUserId,
+      jobId: candidate.job_id,
+      jobseekerId: candidate.applicant_user_id,
       scheduledDate: scheduledDateTimeUtc.toISOString(),
       interviewType: interviewForm.mode,
       meetingLink: interviewForm.mode === 'Virtual' ? interviewForm.location : undefined,
       location: interviewForm.mode === 'Onsite' ? interviewForm.location : undefined,
       message: interviewForm.notes || undefined,
     });
+  };
+
+  const downloadResume = async () => {
+    if (!hasResume) {
+      return;
+    }
+
+    setIsDownloadingResume(true);
+    try {
+      const result = await recruiterService.getApplicantResumeDownload(candidate.resume_submission_id);
+      const link = document.createElement('a');
+      link.href = result.download_url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      const description =
+        error instanceof ApiError
+          ? ((error.data as { message?: string } | null)?.message ?? error.message)
+          : error instanceof Error
+            ? error.message
+            : 'Unable to prepare resume download. Please try again.';
+
+      showToast({ title: 'Download failed', description, tone: 'error' });
+    } finally {
+      setIsDownloadingResume(false);
+    }
   };
 
   return (
@@ -396,16 +420,28 @@ export const CandidateDetailPage = () => {
         <RecruiterSectionCard title="Resume Information" variant="compact">
           <div className="space-y-2 text-sm">
             <p className="text-zinc-600">
-              Resume ID: <span className="font-semibold text-zinc-800">{resumeSubmissionId.slice(0, 8)}</span>
+              Resume ID: <span className="font-semibold text-zinc-800">{candidate.resume_submission_id.slice(0, 8)}</span>
             </p>
+            {candidate.resume_file_name ? (
+             <p className="text-zinc-600">
+              File:{' '}
+              <span className="inline-block max-w-2xl truncate align-bottom font-semibold text-zinc-800">
+                {candidate.resume_file_name}
+              </span>
+            </p>
+            ) : null}
             <p className="text-zinc-600">
               Parsed: <span className="font-semibold text-emerald-600">Successfully</span>
             </p>
             <button
               type="button"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600"
+              onClick={() => {
+                void downloadResume();
+              }}
+              disabled={!hasResume || isDownloadingResume}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Download className="h-4 w-4" /> Download Resume
+              <Download className="h-4 w-4" /> {isDownloadingResume ? 'Preparing...' : 'Download Resume'}
             </button>
           </div>
         </RecruiterSectionCard>
@@ -595,28 +631,20 @@ export const CandidateDetailPage = () => {
         <InterviewModal
           open={isInterviewOpen}
           form={interviewForm}
-          isSubmitting={isSchedulingInterview}
           onClose={closeCandidateModals}
           onChange={(field, value) => setInterviewForm((state) => ({ ...state, [field]: value }))}
           onSubmit={async (event) => {
             event.preventDefault();
-            try {
-              setIsSchedulingInterview(true);
-              await scheduleInterview();
-              setCandidate((current) => ({
-                ...current,
-                submission_status: 'Interview',
-              }));
-              revalidator.revalidate();
-              showToast({
-                title: 'Interview scheduled successfully',
-                description: 'Candidate moved to interview stage.',
-                tone: 'success',
-              });
-              closeCandidateModals();
-            } finally {
-              setIsSchedulingInterview(false);
-            }
+            // Interview scheduling is restricted to CandidateDetailPage
+            // because interview configuration requires detailed candidate context
+            await scheduleInterview();
+            await runCandidateAction(
+              'set-interview',
+              'Interview',
+              'Interview scheduled successfully',
+              'Candidate moved to interview stage.',
+            );
+            closeCandidateModals();
           }}
         />
       ) : null}

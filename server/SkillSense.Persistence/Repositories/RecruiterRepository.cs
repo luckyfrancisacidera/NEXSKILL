@@ -272,6 +272,15 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
             .ThenByDescending(submission => submission.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
 
+    public Task<ResumeSubmissionEntity?> GetSubmissionByIdForRecruiterAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(submission => submission.Id == submissionId)
+            .Where(submission => dbContext.Jobs.Any(job =>
+                job.Id == submission.JobId
+                && job.RecruiterId == recruiterId
+                && job.CompanyId == companyId))
+            .FirstOrDefaultAsync(ct);
+
     public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
         => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
 
@@ -301,5 +310,7 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
                     ApplicantEmail = x.submission.Email,
                     PostalCode = x.submission.PostalCode,
                     MatchSummary = score != null ? score.ScoreBreakdownJson : null,
+                    HasResume = !string.IsNullOrWhiteSpace(x.submission.BlobObjectKey),
+                    ResumeFileName = x.submission.FileName,
                 });
 }
