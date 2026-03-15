@@ -13,7 +13,7 @@ interface AdminPasswordFieldProps {
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:text-zinc-100";
+  "mt-2 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white dark:bg-transparent dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:bg-zinc-800/50";
 
 export const AdminPasswordField = ({
   label,
@@ -45,12 +45,12 @@ export const AdminPasswordField = ({
           type="button"
           aria-label={ariaLabel}
           onClick={onToggleVisibility}
-          className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+          className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
         >
           <VisibilityIcon className="h-4 w-4" />
         </button>
       </div>
-      {error ? <p className="mt-1 text-xs text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p> : null}
     </label>
   );
 };
