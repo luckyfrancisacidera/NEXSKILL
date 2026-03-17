@@ -32,3 +32,213 @@ html.dark body {
   from { width: 100%; }
   to { width: 0%; }
 }
+
+.interview-calendar .fc {
+  --fc-border-color: rgba(228, 228, 231, 0.78);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgb(250 250 250);
+  --fc-list-event-hover-bg-color: rgb(249 250 251);
+  --fc-today-bg-color: rgba(24, 24, 27, 0.05);
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  font-family: var(--font-inter);
+}
+
+.interview-calendar .fc .fc-scrollgrid,
+.interview-calendar .fc .fc-list {
+  border: 0;
+}
+
+.interview-calendar .fc .fc-col-header-cell {
+  padding: 0.7rem 0;
+  background: rgb(255 255 255);
+  border-top: 0;
+}
+
+.interview-calendar .fc .fc-col-header-cell-cushion,
+.interview-calendar .fc .fc-daygrid-day-number,
+.interview-calendar .fc .fc-timegrid-axis-cushion,
+.interview-calendar .fc .fc-timegrid-slot-label-cushion {
+  color: rgb(82 82 91);
+}
+
+.interview-calendar .fc .fc-daygrid-day-number,
+.interview-calendar .fc .fc-col-header-cell-cushion {
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.interview-calendar .fc .fc-daygrid-day-top {
+  padding: 0.65rem 0.75rem 0;
+}
+
+.interview-calendar .fc .fc-daygrid-day-frame {
+  min-height: 9.8rem;
+}
+
+.interview-calendar .fc .fc-daygrid-day-events {
+  margin: 0.3rem 0.55rem 0.75rem;
+}
+
+.interview-calendar .fc .fc-daygrid-day.fc-day-today {
+  background: rgba(24, 24, 27, 0.035);
+}
+
+.interview-calendar .fc .fc-daygrid-more-link {
+  color: rgb(82 82 91);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.interview-calendar .fc .fc-timegrid-slot {
+  height: 3rem;
+}
+
+.interview-calendar .fc .fc-timegrid-slot-label-cushion,
+.interview-calendar .fc .fc-timegrid-axis-cushion {
+  font-size: 0.76rem;
+}
+
+.interview-calendar .fc .recruiter-interview-event {
+  border-radius: 0.65rem;
+  border: 0;
+  box-shadow: none;
+  padding: 0.2rem 0.3rem;
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-pending {
+  background: rgb(241 245 249);
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-accepted {
+  background: rgb(236 253 245);
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-declined {
+  background: rgb(255 241 242);
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-reschedule-requested,
+.interview-calendar .fc .recruiter-interview-event.status-rescheduled {
+  background: rgb(255 247 237);
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-cancelled {
+  background: rgb(244 244 245);
+}
+
+.interview-calendar .fc .fc-list {
+  border-top: 0;
+}
+
+.interview-calendar .fc .fc-list-day-cushion {
+  background: rgb(249 250 251);
+  padding: 0.9rem 1rem;
+}
+
+.interview-calendar .fc .fc-list-day-text,
+.interview-calendar .fc .fc-list-day-side-text {
+  color: rgb(63 63 70);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.interview-calendar .fc .fc-list-event-title,
+.interview-calendar .fc .fc-list-event-time {
+  color: rgb(39 39 42);
+}
+
+.interview-calendar .fc .fc-list-event-time {
+  white-space: nowrap;
+  font-size: 0.92rem;
+  color: rgb(82 82 91);
+}
+
+.interview-calendar .fc .fc-list-event-title {
+  padding: 0;
+}
+
+.interview-calendar .fc .fc-list-event-dot {
+  border-width: 5px;
+  border-radius: 999px;
+}
+
+.interview-calendar .fc .fc-list-event:hover td {
+  background: rgb(250 250 250);
+}
+
+.interview-calendar .fc .fc-list-event.status-pending .fc-list-event-dot {
+  border-color: rgb(100 116 139);
+}
+
+.interview-calendar .fc .fc-list-event.status-accepted .fc-list-event-dot {
+  border-color: rgb(16 185 129);
+}
+
+.interview-calendar .fc .fc-list-event.status-declined .fc-list-event-dot {
+  border-color: rgb(244 63 94);
+}
+
+.interview-calendar .fc .fc-list-event.status-reschedule-requested .fc-list-event-dot,
+.interview-calendar .fc .fc-list-event.status-rescheduled .fc-list-event-dot {
+  border-color: rgb(245 158 11);
+}
+
+.interview-calendar .fc .fc-list-event.status-cancelled .fc-list-event-dot {
+  border-color: rgb(113 113 122);
+}
+
+html.dark .interview-calendar .fc {
+  --fc-border-color: rgba(63, 63, 70, 0.55);
+  --fc-neutral-bg-color: rgba(24, 24, 27, 0.88);
+  --fc-list-event-hover-bg-color: rgba(39, 39, 42, 0.72);
+  --fc-today-bg-color: rgba(255, 255, 255, 0.045);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event {
+  box-shadow: none;
+}
+
+html.dark .interview-calendar .fc .fc-col-header-cell {
+  background: rgb(9 9 11);
+}
+
+html.dark .interview-calendar .fc .fc-col-header-cell-cushion,
+html.dark .interview-calendar .fc .fc-daygrid-day-number,
+html.dark .interview-calendar .fc .fc-timegrid-axis-cushion,
+html.dark .interview-calendar .fc .fc-timegrid-slot-label-cushion,
+html.dark .interview-calendar .fc .fc-list-event-title,
+html.dark .interview-calendar .fc .fc-list-event-time,
+html.dark .interview-calendar .fc .fc-list-day-text,
+html.dark .interview-calendar .fc .fc-list-day-side-text {
+  color: rgb(212 212 216);
+}
+
+html.dark .interview-calendar .fc .fc-daygrid-day.fc-day-today {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-pending {
+  background: rgba(51, 65, 85, 0.58);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-accepted {
+  background: rgba(6, 95, 70, 0.42);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-declined {
+  background: rgba(159, 18, 57, 0.34);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-reschedule-requested,
+html.dark .interview-calendar .fc .recruiter-interview-event.status-rescheduled {
+  background: rgba(146, 64, 14, 0.35);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-cancelled {
+  background: rgba(63, 63, 70, 0.52);
+}
+
+html.dark .interview-calendar .fc .fc-list-day-cushion {
+  background: rgba(24, 24, 27, 0.94);
+}

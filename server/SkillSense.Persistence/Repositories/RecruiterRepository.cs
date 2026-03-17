@@ -9,6 +9,16 @@ namespace SkillSense.Persistence.Repositories;
 
 public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecruiterRepository
 {
+    private static readonly ResumeSubmissionStatus[] RecruiterVisibleApplicantStatuses =
+    [
+        ResumeSubmissionStatus.Completed,
+        ResumeSubmissionStatus.Shortlisted,
+        ResumeSubmissionStatus.Interview,
+        ResumeSubmissionStatus.Offer,
+        ResumeSubmissionStatus.Hire,
+        ResumeSubmissionStatus.Rejected
+    ];
+
     public Task<RecruiterProfileEntity?> GetProfileByUserIdAsync(Guid recruiterId, CancellationToken ct = default)
         => dbContext.RecruiterProfiles
             .Include(x => x.Company)
@@ -288,7 +298,9 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
         => dbContext.ResumeSubmissions
             .AsNoTracking()
             .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
-            .Where(x => x.job.RecruiterId == recruiterId && x.job.CompanyId == companyId)
+            .Where(x => x.job.RecruiterId == recruiterId
+                && x.job.CompanyId == companyId
+                && RecruiterVisibleApplicantStatuses.Contains(x.submission.Status))
             .GroupJoin(
                 dbContext.ResumeScores.AsNoTracking(),
                 x => x.submission.Id,

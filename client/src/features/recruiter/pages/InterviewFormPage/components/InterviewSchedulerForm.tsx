@@ -7,10 +7,15 @@ import type {
 import type { JobDto } from "@features/recruiter/types";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
-import { Card } from "@shared/components/Card";
 
 interface InterviewSchedulerFormProps {
   onSchedule: (input: ScheduleInterviewInput) => Promise<void> | void;
+  defaultDate?: string;
+  onCancel?: () => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  showHeader?: boolean;
 }
 
 type FormErrors = Partial<
@@ -28,6 +33,12 @@ type FormErrors = Partial<
 
 export const InterviewSchedulerForm = ({
   onSchedule,
+  defaultDate,
+  onCancel,
+  title = "Create interview",
+  description = "Recruiters should schedule interviews from shortlisted candidates only, not by typing raw database IDs.",
+  submitLabel = "Schedule interview",
+  showHeader = true,
 }: InterviewSchedulerFormProps) => {
   const [jobs, setJobs] = useState<JobDto[]>([]);
   const [candidates, setCandidates] = useState<ShortlistedCandidateOption[]>([]);
@@ -67,6 +78,13 @@ export const InterviewSchedulerForm = ({
       (job) => (job.department?.trim() ? job.department.trim() : "Unassigned") === department,
     );
   }, [department, jobs]);
+
+  useEffect(() => {
+    if (defaultDate) {
+      setScheduledDate(defaultDate);
+      clearError("scheduledDate");
+    }
+  }, [defaultDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,19 +307,20 @@ export const InterviewSchedulerForm = ({
   };
 
   return (
-    <Card className="space-y-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <header>
+    <div className="space-y-4">
+      {showHeader ? (
+        <header>
         <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-          Create interview
+          {title}
         </p>
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           Candidate & schedule
         </h3>
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Recruiters should schedule interviews from shortlisted candidates
-          only, not by typing raw database IDs.
+          {description}
         </p>
       </header>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
@@ -553,15 +572,27 @@ export const InterviewSchedulerForm = ({
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             Calendar sync will be available once connected in settings.
           </p>
-          <button
-            type="submit"
-            className="rounded-full bg-zinc-900 dark:bg-violet-600 dark:hover:bg-violet-700 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80"
-            disabled={isSubmitting || isLoadingJobs}
-          >
-            {isSubmitting ? "Scheduling..." : "Schedule interview"}
-          </button>
+          <div className="flex items-center gap-2">
+            {onCancel ? (
+              <button
+                type="button"
+                className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                onClick={onCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+            ) : null}
+            <button
+              type="submit"
+              className="rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              disabled={isSubmitting || isLoadingJobs}
+            >
+              {isSubmitting ? "Scheduling..." : submitLabel}
+            </button>
+          </div>
         </div>
       </form>
-    </Card>
+    </div>
   );
 };
