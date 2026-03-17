@@ -14,6 +14,7 @@ import type {
   PublicJobsQueryParams,
   SavedJobDto,
 } from "@features/jobseeker/types";
+import { sanitizeRichText } from "@shared/utils/richText";
 
 const cache = new Map<string, { expiresAt: number; value: unknown }>();
 
@@ -117,9 +118,14 @@ export const jobseekerService = {
   async updateProfile(
     payload: JobseekerProfileUpdatePayload,
   ): Promise<JobseekerProfileDto> {
+    const safePayload: JobseekerProfileUpdatePayload = {
+      ...payload,
+      bio: sanitizeRichText(payload.bio) || undefined,
+      experience_summary: sanitizeRichText(payload.experience_summary) || undefined,
+    };
     const response = await http.put<JobseekerProfileDto>(
       "/api/jobseeker/profile",
-      payload,
+      safePayload,
     );
     return response.data;
   },

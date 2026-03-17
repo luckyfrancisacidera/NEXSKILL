@@ -3,6 +3,7 @@ import { useActionData, useLoaderData, useNavigation } from "react-router-dom";
 import { Bookmark, Check, Loader2 } from "lucide-react";
 import { Card } from "@shared/components/Card";
 import { DetailBlock } from "@shared/components/DetailBlock";
+import { RichTextContent } from "@shared/components/RichTextContent";
 import { formatCurrencyAmount } from "@shared/data/currency";
 import { splitToBullets, toList } from "@shared/utils/formatText";
 import { ApplyModalWizard } from "@features/jobseeker/pages/JobDetailPage/components/ApplyModalWizard";
@@ -70,9 +71,10 @@ export const JobDetailPage = () => {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="space-y-4">
               <DetailBlock title="About the Role">
-                <p className="whitespace-pre-wrap leading-7 text-zinc-700">
-                  {job.description}
-                </p>
+                <RichTextContent
+                  html={job.description}
+                  emptyFallback="No description provided."
+                />
               </DetailBlock>
 
               <DetailBlock title="Responsibilities">

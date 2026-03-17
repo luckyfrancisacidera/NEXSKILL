@@ -1,5 +1,6 @@
 import { http } from "@shared/api/http";
 import type { JobseekerInterview } from "@features/jobseeker/types/interview.types";
+import { sanitizeRichText } from "@shared/utils/richText";
 
 interface JobseekerInterviewDto {
   id: string;
@@ -67,7 +68,7 @@ export const jobseekerInterviewService = {
     attachment?: File,
   ): Promise<JobseekerInterview> {
     const formData = new FormData();
-    formData.append("message", message);
+    formData.append("message", sanitizeRichText(message));
     if (attachment) {
       formData.append("attachment", attachment);
     }

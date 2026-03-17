@@ -242,3 +242,112 @@ html.dark .interview-calendar .fc .recruiter-interview-event.status-cancelled {
 html.dark .interview-calendar .fc .fc-list-day-cushion {
   background: rgba(24, 24, 27, 0.94);
 }
+
+.rich-text-toolbar {
+  border-color: rgb(212 212 216);
+  border-radius: 1rem 1rem 0 0;
+  background: rgb(250 250 250);
+}
+
+.rich-text-editor-content {
+  border-color: rgb(212 212 216);
+  border-radius: 0 0 1rem 1rem;
+  background: rgb(255 255 255);
+}
+
+.rich-text-editor-content.is-invalid {
+  border-color: rgb(244 63 94);
+}
+
+.rich-text-editor-content .tiptap {
+  min-height: 10rem;
+  color: rgb(39 39 42);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  padding: 0.9rem 1rem 1rem;
+}
+
+.rich-text-editor-content .tiptap:focus {
+  outline: none;
+}
+
+.rich-text-editor-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: rgb(161 161 170);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-text-editor-content .tiptap ul,
+.rich-text-content ul {
+  list-style: disc;
+  margin: 0.6rem 0;
+  padding-left: 1.4rem;
+}
+
+.rich-text-editor-content .tiptap ol,
+.rich-text-content ol {
+  list-style: decimal;
+  margin: 0.6rem 0;
+  padding-left: 1.4rem;
+}
+
+.rich-text-editor-content .tiptap p,
+.rich-text-content p {
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-editor-content .tiptap ul p,
+.rich-text-editor-content .tiptap ol p,
+.rich-text-content ul p,
+.rich-text-content ol p {
+  margin-bottom: 0;
+}
+
+.rich-text-editor-content .tiptap strong,
+.rich-text-content strong {
+  font-weight: 600;
+}
+
+.rich-text-editor-content .tiptap em,
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-content a,
+.rich-text-editor-content .tiptap a {
+  color: rgb(24 24 27);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html.dark .rich-text-content a,
+html.dark .rich-text-editor-content .tiptap a {
+  color: rgb(244 244 245);
+}
+
+html.dark .rich-text-toolbar,
+html.dark .rich-text-editor-content {
+  border-color: rgb(63 63 70);
+}
+
+html.dark .rich-text-toolbar {
+  background: rgb(24 24 27);
+}
+
+html.dark .rich-text-editor-content {
+  background: rgb(9 9 11);
+}
+
+html.dark .rich-text-editor-content .tiptap {
+  color: rgb(228 228 231);
+}
+
+html.dark .rich-text-editor-content .tiptap p.is-editor-empty:first-child::before {
+  color: rgb(113 113 122);
+}
