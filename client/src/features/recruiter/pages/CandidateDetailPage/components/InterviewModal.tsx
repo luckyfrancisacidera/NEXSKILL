@@ -1,6 +1,6 @@
 import type { FormEvent, MouseEvent } from 'react';
 
-import { ModalOverlay } from '@shared/components/ModalOverlay';
+import { SideDrawer } from '@shared/components/SideDrawer';
 
 export interface InterviewFormValues {
   date: string;
@@ -16,11 +16,14 @@ export interface InterviewModalProps {
   open: boolean;
   form: InterviewFormValues;
   isSubmitting?: boolean;
+  isCanceling?: boolean;
   title?: string;
   submitLabel?: string;
   errors?: Partial<Record<keyof InterviewFormValues | 'form', string>>;
+  showCancelInterviewAction?: boolean;
   onClose: () => void;
   onChange: (field: keyof InterviewFormValues, value: string) => void;
+  onCancelInterview?: () => void | Promise<void>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
 }
 
@@ -31,11 +34,14 @@ export const InterviewModal = ({
   open,
   form,
   isSubmitting = false,
+  isCanceling = false,
   title = 'Set Interview',
   submitLabel = 'Confirm Interview',
   errors,
+  showCancelInterviewAction = false,
   onClose,
   onChange,
+  onCancelInterview,
   onSubmit,
 }: InterviewModalProps) => {
   if (!open) {
@@ -46,20 +52,26 @@ export const InterviewModal = ({
   const minuteOptions = ['00', '15', '30', '45'];
 
   return (
-    <ModalOverlay onClose={onClose}>
+    <SideDrawer
+      open={open}
+      title={title}
+      description="Update the interview schedule and candidate-facing details."
+      onClose={onClose}
+      widthClassName="sm:max-w-[460px]"
+      contentClassName="px-5 py-5"
+    >
       <form
-        className="space-y-3 rounded-2xl bg-white dark:bg-zinc-950 p-5 shadow-2xl ring-1 ring-violet-200 dark:ring-zinc-800"
+        className="space-y-3"
         onClick={(event: MouseEvent<HTMLFormElement>) => {
           // Stop propagation so interactions inside the modal do not re-trigger page handlers.
           event.stopPropagation();
         }}
         onSubmit={onSubmit}
       >
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
         {errors?.form ? <p className="text-sm text-rose-600 dark:text-rose-400">{errors.form}</p> : null}
         <div className="grid grid-cols-1 gap-2">
           <div className="space-y-1">
-            <input required type="date" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-violet-100 dark:focus:ring-violet-900" style={{ colorScheme: 'light dark' }} value={form.date} onChange={(event) => onChange('date', event.target.value)} />
+            <input required type="date" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-zinc-200 dark:focus:ring-zinc-800" style={{ colorScheme: 'light dark' }} value={form.date} onChange={(event) => onChange('date', event.target.value)} />
             {errors?.date ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.date}</p> : null}
           </div>
           <div className="space-y-1">
@@ -68,7 +80,7 @@ export const InterviewModal = ({
             <div className="grid grid-cols-3 gap-2">
               <select
                 required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
                 style={{ colorScheme: 'light dark' }}
                 value={form.hour}
                 onChange={(event) => onChange('hour', event.target.value)}
@@ -81,7 +93,7 @@ export const InterviewModal = ({
               </select>
               <select
                 required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
                 style={{ colorScheme: 'light dark' }}
                 value={form.minute}
                 onChange={(event) => onChange('minute', event.target.value)}
@@ -94,7 +106,7 @@ export const InterviewModal = ({
               </select>
               <select
                 required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
                 style={{ colorScheme: 'light dark' }}
                 value={form.meridiem}
                 onChange={(event) => onChange('meridiem', event.target.value as InterviewFormValues['meridiem'])}
@@ -110,7 +122,7 @@ export const InterviewModal = ({
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Interview type
             <select
-              className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+              className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
               style={{ colorScheme: 'light dark' }}
               value={form.mode}
               onChange={(event) => {
@@ -129,7 +141,7 @@ export const InterviewModal = ({
           <input
             required
             type={form.mode === 'Virtual' ? 'url' : 'text'}
-            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
             placeholder={form.mode === 'Virtual' ? 'Meeting link' : 'Location / Address'}
             value={form.location}
             onChange={(event) => onChange('location', event.target.value)}
@@ -137,31 +149,49 @@ export const InterviewModal = ({
           {errors?.location ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.location}</p> : null}
         </div>
         <div className="space-y-1">
-          <textarea className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900" rows={3} placeholder="Notes (optional)" value={form.notes} onChange={(event) => onChange('notes', event.target.value)} />
+          <textarea className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800" rows={3} placeholder="Notes (optional)" value={form.notes} onChange={(event) => onChange('notes', event.target.value)} />
           {errors?.notes ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.notes}</p> : null}
         </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            onClick={(event) => {
-              // Stop propagation so cancel only closes the active modal.
-              event.stopPropagation();
-              onClose();
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-zinc-800 dark:bg-violet-600 dark:hover:bg-violet-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSubmitting ? 'Saving...' : submitLabel}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div>
+            {showCancelInterviewAction && onCancelInterview ? (
+              <button
+                type="button"
+                disabled={isSubmitting || isCanceling}
+                className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void onCancelInterview();
+                }}
+              >
+                {isCanceling ? 'Cancelling...' : 'Cancel Interview'}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              onClick={(event) => {
+                // Stop propagation so cancel only closes the active modal.
+                event.stopPropagation();
+                onClose();
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            >
+              {isSubmitting ? 'Saving...' : submitLabel}
+            </button>
+          </div>
         </div>
       </form>
-    </ModalOverlay>
+    </SideDrawer>
   );
 };

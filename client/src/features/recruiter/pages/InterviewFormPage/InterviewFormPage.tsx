@@ -13,8 +13,9 @@ import {
   InterviewModal,
   type InterviewFormValues,
 } from "@features/recruiter/pages/CandidateDetailPage/components/InterviewModal";
+import { SideDrawer } from "@shared/components/SideDrawer";
+import { InterviewCalendar } from "./components/InterviewCalendar";
 import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
-import { InterviewList } from "./components/InterviewList";
 
 interface InterviewFormLoaderData {
   interviews: Interview[];
@@ -24,6 +25,8 @@ export const InterviewFormPage = () => {
   const loaderData = useLoaderData() as InterviewFormLoaderData;
   const [interviews, setInterviews] = useState<Interview[]>(loaderData.interviews);
   const [error, setError] = useState<string | null>(null);
+  const [isScheduleDrawerOpen, setIsScheduleDrawerOpen] = useState(false);
+  const [scheduleDrawerDate, setScheduleDrawerDate] = useState("");
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -63,6 +66,8 @@ export const InterviewFormPage = () => {
       const scheduled = await recruiterInterviewService.scheduleInterview(input);
       addInterview(scheduled);
       setError(null);
+      setIsScheduleDrawerOpen(false);
+      setScheduleDrawerDate("");
       revalidator.revalidate();
       showToast({
         title: "Interview scheduled",
@@ -83,6 +88,11 @@ export const InterviewFormPage = () => {
     setIsRescheduleOpen(false);
     setSelectedInterview(null);
     setRescheduleErrors({});
+  };
+
+  const openScheduleDrawer = (date?: string) => {
+    setScheduleDrawerDate(date ?? "");
+    setIsScheduleDrawerOpen(true);
   };
 
   const handleRescheduleChange = (field: keyof InterviewFormValues, value: string) => {
@@ -248,7 +258,7 @@ export const InterviewFormPage = () => {
       accent: "red",
     });
     if (!confirmed) {
-      return;
+      return false;
     }
 
     setPendingActionId(interview.id);
@@ -262,6 +272,7 @@ export const InterviewFormPage = () => {
         description: `${updated.candidateName} has been notified.`,
         tone: "success",
       });
+      return true;
     } catch (err) {
       const description =
         err instanceof Error
@@ -273,45 +284,7 @@ export const InterviewFormPage = () => {
         description,
         tone: "error",
       });
-    } finally {
-      setPendingActionId(null);
-    }
-  };
-
-  const handleArchive = async (interview: Interview) => {
-    const confirmed = await confirm({
-      title: "Archive interview",
-      message:
-        "Archive this declined or cancelled interview? It will be removed from active recruiter views.",
-      confirmLabel: "Archive",
-      accent: "violet",
-    });
-    if (!confirmed) {
-      return;
-    }
-
-    setPendingActionId(interview.id);
-    try {
-      const updated = await recruiterInterviewService.archiveInterview(interview.id);
-      updateInterview(updated);
-      setError(null);
-      revalidator.revalidate();
-      showToast({
-        title: "Interview archived",
-        description: `${interview.candidateName} was removed from the active schedule.`,
-        tone: "success",
-      });
-    } catch (err) {
-      const description =
-        err instanceof Error
-          ? err.message
-          : "Unable to archive the interview. Please try again.";
-      setError(description);
-      showToast({
-        title: "Archive failed",
-        description,
-        tone: "error",
-      });
+      return false;
     } finally {
       setPendingActionId(null);
     }
@@ -319,30 +292,48 @@ export const InterviewFormPage = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-zinc-900">
-            Schedule interviews
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Pick a time, personalize the invite, and track responses in a
-            Sneat-style dashboard.
-          </p>
-        </div>
+      <Card className="border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+          Interview Page
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          Manage interview schedules, review upcoming sessions, and update candidate meetings from one calendar view.
+        </p>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <InterviewSchedulerForm onSchedule={handleSchedule} />
-        <InterviewList
-          interviews={interviews}
-          isLoading={false}
-          error={error}
-          onReschedule={openRescheduleModal}
-          onCancel={handleCancel}
-          onArchive={handleArchive}
-          pendingActionId={pendingActionId}
+      {error ? (
+        <Card className="border border-rose-200 bg-rose-50/80 py-3 shadow-none dark:border-rose-900/70 dark:bg-rose-950/30">
+          <p className="text-sm text-rose-700 dark:text-rose-300">{error}</p>
+        </Card>
+      ) : null}
+
+      <InterviewCalendar
+        interviews={interviews}
+        onAddInterview={openScheduleDrawer}
+        onEditInterview={openRescheduleModal}
+      />
+
+      <SideDrawer
+        open={isScheduleDrawerOpen}
+        title="Add interview"
+        description="Select a job, choose a shortlisted candidate, and send a polished interview invite."
+        onClose={() => {
+          setIsScheduleDrawerOpen(false);
+          setScheduleDrawerDate("");
+        }}
+        widthClassName="sm:max-w-[500px]"
+      >
+        <InterviewSchedulerForm
+          onSchedule={handleSchedule}
+          defaultDate={scheduleDrawerDate}
+          onCancel={() => {
+            setIsScheduleDrawerOpen(false);
+            setScheduleDrawerDate("");
+          }}
+          showHeader={false}
+          submitLabel="Schedule interview"
         />
-      </div>
+      </SideDrawer>
 
       <InterviewModal
         open={isRescheduleOpen}
@@ -351,6 +342,22 @@ export const InterviewFormPage = () => {
         title={selectedInterview ? `Reschedule ${selectedInterview.candidateName}` : "Reschedule interview"}
         submitLabel="Save reschedule"
         errors={rescheduleErrors}
+        showCancelInterviewAction={
+          Boolean(selectedInterview) &&
+          selectedInterview?.status !== "Cancelled" &&
+          selectedInterview?.status !== "Declined"
+        }
+        isCanceling={pendingActionId === selectedInterview?.id}
+        onCancelInterview={async () => {
+          if (!selectedInterview) {
+            return;
+          }
+
+          const didCancel = await handleCancel(selectedInterview);
+          if (didCancel) {
+            closeRescheduleModal();
+          }
+        }}
         onClose={closeRescheduleModal}
         onChange={handleRescheduleChange}
         onSubmit={async (event) => {

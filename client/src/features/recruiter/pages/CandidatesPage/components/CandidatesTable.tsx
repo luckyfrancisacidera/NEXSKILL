@@ -2,6 +2,7 @@ import { Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { ApplicantScoreItemDto } from '@features/recruiter/types';
+import { StatusBadge } from '@shared/components/StatusBadge';
 
 export interface CandidatesTableProps {
   candidates: ApplicantScoreItemDto[];
@@ -39,9 +40,7 @@ export const CandidatesTable = ({ candidates, isAllChecked, selectedSet, onToggl
             <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{candidate.applicant_email}</td>
             <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{candidate.job_title}</td>
             <td className="px-3 py-3">
-              <span className="rounded-full bg-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                {candidate.submission_status}
-              </span>
+              <StatusBadge status={candidate.submission_status} />
             </td>
             <td className="px-3 py-3 font-semibold text-zinc-900 dark:text-zinc-100">{candidate.score}</td>
             <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{new Date(candidate.created_at_utc).toLocaleDateString()}</td>

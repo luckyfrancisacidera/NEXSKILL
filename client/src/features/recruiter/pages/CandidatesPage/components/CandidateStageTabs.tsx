@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
 
 import type { CandidateFilters } from '@features/recruiter/types';
+import { getApplicationStatusAppearance } from '@shared/utils/applicationStatus';
 
 const stageTabs = [
-  { key: 'all', label: 'All Applicants', badge: 'bg-slate-100 text-slate-700' },
-  { key: 'Recommended', label: 'Recommended', badge: 'bg-violet-100 text-violet-700' },
-  { key: 'Shortlisted', label: 'Shortlisted', badge: 'bg-sky-100 text-sky-700' },
-  { key: 'Interview', label: 'Interview', badge: 'bg-amber-100 text-amber-700' },
-  { key: 'Offer', label: 'Offer', badge: 'bg-emerald-100 text-emerald-700' },
-  { key: 'Hire', label: 'Hire', badge: 'bg-fuchsia-100 text-fuchsia-700' },
+  { key: 'all', label: 'All Applicants' },
+  { key: 'Recommended', label: 'Recommended' },
+  { key: 'Shortlisted', label: 'Shortlisted' },
+  { key: 'Interview', label: 'Interview' },
+  { key: 'Offer', label: 'Offer' },
+  { key: 'Hire', label: 'Hire' },
 ] as const;
 
 export interface CandidateStageTabsProps {
@@ -24,6 +25,10 @@ export const CandidateStageTabs = ({ countByStage, filters }: CandidateStageTabs
     <div className="flex min-w-max gap-2 overflow-x-auto overflow-y-hidden pt-2">
       {stageTabs.map((tab) => {
         const isActive = filters.stage === tab.key;
+        const appearance =
+          tab.key === 'all'
+            ? null
+            : getApplicationStatusAppearance(tab.key);
 
         return (
           <Link
@@ -36,7 +41,13 @@ export const CandidateStageTabs = ({ countByStage, filters }: CandidateStageTabs
             }`}
           >
             <span>{tab.label}</span>
-            <span className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${isActive ? tab.badge : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+            <span
+              className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold ${
+                isActive
+                  ? appearance?.accentClassName ?? 'bg-slate-100 text-slate-700 dark:bg-slate-900/60 dark:text-slate-300'
+                  : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+              }`}
+            >
               {countByStage[tab.key] ?? 0}
             </span>
           </Link>

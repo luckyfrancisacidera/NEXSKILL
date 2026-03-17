@@ -2,18 +2,9 @@ import { BriefcaseBusiness, Building2, Mail, Sparkles, UserRound } from "lucide-
 
 import type { JobseekerApplicationStage } from "@features/jobseeker/types";
 import { Card } from "@shared/components/Card";
+import { StatusBadge } from "@shared/components/StatusBadge";
 
 import { OfferStageTimeline } from "./OfferStageTimeline";
-
-const badgeClassByStatus: Record<string, string> = {
-  Applied: "border-sky-200 bg-sky-50 text-sky-700",
-  Shortlisted: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  Interview: "border-violet-200 bg-violet-50 text-violet-700",
-  Offer: "border-amber-200 bg-amber-50 text-amber-700",
-  Hire: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  Rejected: "border-rose-200 bg-rose-50 text-rose-700",
-  Withdrawn: "border-zinc-200 bg-zinc-100 text-zinc-700",
-};
 
 export interface OfferPipelineCardData {
   id: string;
@@ -64,20 +55,12 @@ export const OfferPipelineCard = ({ item }: { item: OfferPipelineCardData }) => 
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <span
-            className={`rounded-full border px-3 py-1 text-xs font-semibold ${badgeClassByStatus[item.currentStage] ?? badgeClassByStatus.Applied}`}
-          >
-            {item.currentStage}
-          </span>
+          <StatusBadge status={item.currentStage} />
           {item.hasOffer ? (
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-              Offer Active
-            </span>
+            <StatusBadge status="Offer" label="Offer Active" />
           ) : null}
           {item.isHired ? (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              Hired
-            </span>
+            <StatusBadge status="Hire" label="Hired" />
           ) : null}
         </div>
         <div>

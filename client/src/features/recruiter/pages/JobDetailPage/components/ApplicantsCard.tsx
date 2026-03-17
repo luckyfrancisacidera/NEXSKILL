@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import type { JobApplicantListItem } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
+import { StatusBadge } from '@shared/components/StatusBadge';
 
 export interface ApplicantsCardProps {
   applicants: JobApplicantListItem[];
@@ -17,7 +18,7 @@ export const ApplicantsCard = ({ applicants }: ApplicantsCardProps) => (
       {applicants.map((candidate) => (
         <li key={candidate.id} className="flex items-center justify-between rounded border border-zinc-200 p-2 text-sm">
           <Link to={`/recruiter/candidates/${candidate.id}`}>{candidate.name}</Link>
-          <span className="rounded bg-zinc-200 px-2 py-1 text-xs">{candidate.stage}</span>
+          <StatusBadge status={candidate.stage} />
         </li>
       ))}
     </ul>
