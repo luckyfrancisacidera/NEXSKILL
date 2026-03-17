@@ -7,6 +7,8 @@ import type {
 import type { JobDto } from "@features/recruiter/types";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
+import { RichTextField } from "@shared/components/RichTextField";
+import { sanitizeRichText } from "@shared/utils/richText";
 
 interface InterviewSchedulerFormProps {
   onSchedule: (input: ScheduleInterviewInput) => Promise<void> | void;
@@ -286,7 +288,7 @@ export const InterviewSchedulerForm = ({
       interviewType,
       meetingLink: interviewType === "Virtual" ? detailValue : undefined,
       location: interviewType === "Onsite" ? detailValue : undefined,
-      message: message.trim() || undefined,
+      message: sanitizeRichText(message) || undefined,
     };
   };
 
@@ -553,16 +555,14 @@ export const InterviewSchedulerForm = ({
           ) : null}
         </div>
 
-        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-          Message to candidate
-          <textarea
-            rows={4}
-            className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder="Share interview agenda, preparation tips, or expectations."
-          />
-        </label>
+        <RichTextField
+          label="Message to candidate"
+          value={message}
+          onChange={setMessage}
+          placeholder="Share interview agenda, preparation tips, or expectations."
+          helperText="Keep the invite polished with agenda details, prep notes, or joining instructions."
+          minHeightClassName="min-h-[170px]"
+        />
 
         {errors.form ? (
           <p className="text-sm text-rose-600 dark:text-rose-400">{errors.form}</p>
