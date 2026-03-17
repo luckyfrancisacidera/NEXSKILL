@@ -89,6 +89,8 @@ export const OffersPage = () => {
   const initialData = useLoaderData() as ApplicationsLoaderData;
   const { data } = useApplications({
     initialData,
+    pageNumber: initialData.pageNumber,
+    pageSize: initialData.pageSize,
     search: "",
     status: "",
   });

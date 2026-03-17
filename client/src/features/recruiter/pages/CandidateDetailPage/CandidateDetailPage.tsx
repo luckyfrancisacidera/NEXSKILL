@@ -28,21 +28,10 @@ import type {
 } from '@features/recruiter/types';
 import { ApiError } from '@shared/api/http';
 import { Card } from '@shared/components/Card';
+import { StatusBadge } from '@shared/components/StatusBadge';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
 
-const stageBadgeClass: Record<CandidateStage, string> = {
-  Applied: 'border-zinc-200 bg-zinc-100 text-zinc-700',
-  Recommended: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-  Shortlisted: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  Interview: 'border-violet-200 bg-violet-50 text-violet-700',
-  Offer: 'border-amber-200 bg-amber-50 text-amber-700',
-  Hire: 'border-teal-200 bg-teal-50 text-teal-700',
-  Rejected: 'border-rose-200 bg-rose-50 text-rose-700',
-};
-
-// Previously, the primary action map skipped "Applied", so the Shortlist button never rendered
-// for Applied candidates even though the action was valid. We now include Applied explicitly.
 const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
   Applied: {
     action: 'shortlist',
@@ -264,8 +253,9 @@ export const CandidateDetailPage = () => {
     }
   };
 
+
   const scheduleInterview = async () => {
-    if (!candidate.applicant_user_id) {
+    if (!candidate.jobseeker_user_id) {
       throw new Error('This candidate does not have a linked jobseeker account for interview scheduling.');
     }
 
@@ -286,7 +276,7 @@ export const CandidateDetailPage = () => {
 
     await recruiterInterviewService.scheduleInterview({
       jobId: candidate.job_id,
-      jobseekerId: candidate.applicant_user_id,
+      jobseekerId: candidate.jobseeker_user_id,
       scheduledDate: scheduledDateTimeUtc.toISOString(),
       interviewType: interviewForm.mode,
       meetingLink: interviewForm.mode === 'Virtual' ? interviewForm.location : undefined,
@@ -406,9 +396,7 @@ export const CandidateDetailPage = () => {
             </li>
             <li className="flex items-center justify-between">
               <span className="text-zinc-500">Stage:</span>
-              <span className={`rounded-md border px-2 py-0.5 text-xs font-semibold ${stageBadgeClass[candidate.submission_status]}`}>
-                {candidate.submission_status}
-              </span>
+              <StatusBadge status={candidate.submission_status} />
             </li>
             <li className="flex items-center justify-between">
               <span className="text-zinc-500">ATS Score:</span>
@@ -516,9 +504,11 @@ export const CandidateDetailPage = () => {
                 </button>
               </>
             ) : (
-              <p className={`rounded-md border px-2 py-1 text-sm font-semibold ${stageBadgeClass[candidate.submission_status]}`}>
-                Candidate rejected
-              </p>
+              <StatusBadge
+                status={candidate.submission_status}
+                label="Candidate rejected"
+                size="md"
+              />
             )}
           </div>
         </RecruiterSectionCard>
@@ -665,8 +655,6 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
-
-
 
 
 

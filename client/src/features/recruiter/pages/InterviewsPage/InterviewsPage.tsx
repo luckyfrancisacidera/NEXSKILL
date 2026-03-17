@@ -1,13 +1,3 @@
-/**
- * Recruiter interview listing page.
- *
- * Main exports:
- * - `InterviewsPage`: Route component for listing and managing scheduled interviews.
- *
- * Usage notes:
- * - The route expects related candidate and job collections so labels can be resolved client-side.
- * - Cancel actions intentionally remain regular form submissions to preserve current behavior.
- */
 import { Link, useLoaderData } from 'react-router-dom';
 
 import { InterviewsTable, type InterviewListItem } from '@features/recruiter/pages/InterviewsPage/components/InterviewsTable';

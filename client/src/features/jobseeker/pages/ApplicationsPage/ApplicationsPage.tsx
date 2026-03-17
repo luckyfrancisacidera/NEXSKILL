@@ -1,105 +1,159 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLoaderData } from "react-router-dom";
+import { Search } from "lucide-react";
 import { Card } from "@shared/components/Card";
-import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
 import { SearchField } from "@features/jobseeker/components";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
+import { ApplicationsEmptyState } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsEmptyState";
+import { ApplicationsPagination } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsPagination";
+import { ApplicationsTable } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTable";
+import { ApplicationsTableSkeleton } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTableSkeleton";
 
-const statusOptions: DropdownOption[] = [
+const statusOptions = [
   { value: "", label: "All statuses" },
   { value: "Applied", label: "Applied" },
+  { value: "Shortlisted", label: "Shortlisted" },
   { value: "Interview", label: "Interview" },
+  { value: "Offer", label: "Offer" },
   { value: "Hire", label: "Hire" },
   { value: "Rejected", label: "Rejected" },
   { value: "Withdrawn", label: "Withdrawn" },
 ];
 
-const badgeClassByStatus: Record<string, string> = {
-  Applied: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
-  Interview: "bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400",
-  Hire: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
-  Rejected: "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400",
-  Withdrawn: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-};
-
 export const ApplicationsPage = () => {
   const initialData = useLoaderData() as ApplicationsLoaderData;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const { data, withdrawingId, withdraw } = useApplications({
+  const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
+  const [pageSize, setPageSize] = useState(initialData.pageSize);
+  const { data, error, isLoading, withdrawingId, withdraw } = useApplications({
     initialData,
+    pageNumber,
+    pageSize,
     search,
     status,
   });
 
   const currentStatusOptions = useMemo(() => statusOptions, []);
+  const hasFilters = search.trim().length > 0 || status.length > 0;
+
+  useEffect(() => {
+    setPageNumber(data.pageNumber);
+  }, [data.pageNumber]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPageNumber(1);
+  };
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    setPageNumber(1);
+  };
+
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    setPageNumber(1);
+  };
 
   return (
-    <Card className="min-h-screen space-y-4">
-      <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Applications</h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Search
-          </label>
-          <SearchField
-            ariaLabel="Search applications"
-            placeholder="Search job/company"
-            value={search}
-            onChange={setSearch}
-          />
+    <Card className="min-h-screen rounded-none border-0 bg-transparent p-0 shadow-none">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+            Applications
+          </h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Track your submitted applications, monitor status changes, and jump
+            back into the jobs that matter.
+          </p>
         </div>
-        <Dropdown
-          label="Status"
-          name="status"
-          value={status}
-          options={currentStatusOptions}
-          onChange={(event) => setStatus(event.target.value)}
-        />
-      </div>
-      {data.items.length === 0 ? (
-        <p className="text-zinc-500 dark:text-zinc-400">No applications found.</p>
-      ) : (
-        <ul className="space-y-3">
-          {data.items.map((item) => {
-            const itemId = String(item.id);
-            const itemStatus = String(item.status);
 
-            return (
-              <li key={itemId} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                  {String(item.job_title)}
-                </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {String(item.company)} �{" "}
-                  {new Date(String(item.created_at_utc)).toLocaleDateString()}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span
-                    className={`rounded px-2 py-1 text-xs ${
-                      badgeClassByStatus[itemStatus] ??
-                      "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    }`}
-                  >
-                    {itemStatus}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={withdrawingId === itemId}
-                    className="rounded border border-zinc-300 px-2 py-1 text-xs transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    onClick={() => {
-                      void withdraw(itemId);
-                    }}
-                  >
-                    {withdrawingId === itemId ? "Withdrawing..." : "Withdraw"}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+              Search
+            </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+              <SearchField
+                ariaLabel="Search applications"
+                placeholder="Search job title or company"
+                value={search}
+                onChange={handleSearchChange}
+                className="h-11 w-full border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
+              Status
+            </label>
+            <select
+              name="status"
+              value={status}
+              className="h-11 w-full border border-zinc-200 bg-white px-3.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-zinc-500"
+              onChange={(event) => handleStatusChange(event.target.value)}
+            >
+              {currentStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
+            <div>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Application history
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {data.totalCount} total applications
+              </p>
+            </div>
+            {isLoading ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Updating results...
+              </p>
+            ) : null}
+          </div>
+
+          {error ? (
+            <div className="border-b border-zinc-200 px-4 py-3 text-sm text-rose-600 dark:border-zinc-800 dark:text-rose-400">
+              {error}
+            </div>
+          ) : null}
+
+          {isLoading && data.items.length === 0 ? (
+            <ApplicationsTableSkeleton />
+          ) : data.items.length === 0 ? (
+            <ApplicationsEmptyState hasFilters={hasFilters} />
+          ) : (
+            <>
+              <ApplicationsTable
+                items={data.items}
+                withdrawingId={withdrawingId}
+                onWithdraw={(applicationId) => {
+                  void withdraw(applicationId);
+                }}
+              />
+              <ApplicationsPagination
+                pageNumber={data.pageNumber}
+                pageSize={data.pageSize}
+                totalCount={data.totalCount}
+                totalPages={data.totalPages}
+                onPageChange={setPageNumber}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </>
+          )}
+        </section>
+      </div>
     </Card>
   );
 };
