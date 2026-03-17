@@ -5,6 +5,7 @@ import type { Job, JobType } from "@shared/types";
 import { SearchField } from "@features/jobseeker/components";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import type { JobsLoaderData } from "@features/jobseeker/types";
+import { stripRichText } from "@shared/utils/richText";
 
 const toJobType = (employmentType?: string): JobType => {
   if (!employmentType) return "Contract";
@@ -42,7 +43,7 @@ export const JobsPage = () => {
             currency: job.currency,
             location: job.location,
             type: toJobType(job.employment_type),
-            snippet: job.description,
+            snippet: stripRichText(job.description),
           };
 
           return (

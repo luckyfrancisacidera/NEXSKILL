@@ -9,6 +9,7 @@ import {
   getApiErrorMessage,
   getString,
 } from "@features/recruiter/actions/utils";
+import { sanitizeRichText } from "@shared/utils/richText";
 
 /**
  * automationRuleAction
@@ -51,7 +52,7 @@ export const automationRuleAction = async ({
         fromStage: getString(formData, "fromStage") as CandidateStage,
         toStage: getString(formData, "toStage") as CandidateStage,
         subject: getString(formData, "subject"),
-        body: getString(formData, "body"),
+        body: sanitizeRichText(getString(formData, "body")),
         lastRunAt: existing?.lastRunAt,
       };
 

@@ -1,5 +1,6 @@
 import { Card } from "@shared/components/Card";
 import { useProfileForm } from "@features/jobseeker/hooks";
+import { RichTextEditor } from "@shared/components/RichTextEditor";
 
 const fields = [
   "full_name",
@@ -33,13 +34,28 @@ export const ProfilePage = () => {
             <span className="mb-1 block text-sm capitalize text-zinc-600">
               {field.replaceAll("_", " ")}
             </span>
-            <input
-              value={form[field] ?? ""}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, [field]: event.target.value }))
-              }
-              className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-            />
+            {field === "bio" || field === "experience_summary" ? (
+              <RichTextEditor
+                value={form[field] ?? ""}
+                onChange={(value) =>
+                  setForm((prev) => ({ ...prev, [field]: value }))
+                }
+                placeholder={
+                  field === "bio"
+                    ? "Share a short professional bio."
+                    : "Summarize your experience and major strengths."
+                }
+                minHeightClassName="min-h-[160px]"
+              />
+            ) : (
+              <input
+                value={form[field] ?? ""}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, [field]: event.target.value }))
+                }
+                className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+              />
+            )}
           </label>
         ))}
         <div className="flex flex-wrap items-center gap-2 sm:col-span-2">

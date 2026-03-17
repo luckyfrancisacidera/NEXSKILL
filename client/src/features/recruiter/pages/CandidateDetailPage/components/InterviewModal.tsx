@@ -1,6 +1,7 @@
 import type { FormEvent, MouseEvent } from 'react';
 
 import { SideDrawer } from '@shared/components/SideDrawer';
+import { RichTextField } from '@shared/components/RichTextField';
 
 export interface InterviewFormValues {
   date: string;
@@ -148,10 +149,14 @@ export const InterviewModal = ({
           />
           {errors?.location ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.location}</p> : null}
         </div>
-        <div className="space-y-1">
-          <textarea className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800" rows={3} placeholder="Notes (optional)" value={form.notes} onChange={(event) => onChange('notes', event.target.value)} />
-          {errors?.notes ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.notes}</p> : null}
-        </div>
+        <RichTextField
+          label="Notes"
+          value={form.notes}
+          onChange={(value) => onChange('notes', value)}
+          placeholder="Share interview notes, expectations, or context."
+          error={errors?.notes}
+          minHeightClassName="min-h-[160px]"
+        />
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           <div>
             {showCancelInterviewAction && onCancelInterview ? (

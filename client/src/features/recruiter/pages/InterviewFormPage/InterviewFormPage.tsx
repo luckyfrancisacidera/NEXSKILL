@@ -14,6 +14,7 @@ import {
   type InterviewFormValues,
 } from "@features/recruiter/pages/CandidateDetailPage/components/InterviewModal";
 import { SideDrawer } from "@shared/components/SideDrawer";
+import { sanitizeRichText } from "@shared/utils/richText";
 import { InterviewCalendar } from "./components/InterviewCalendar";
 import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
 
@@ -193,7 +194,7 @@ export const InterviewFormPage = () => {
         interviewType: rescheduleForm.mode,
         meetingLink: rescheduleForm.mode === "Virtual" ? rescheduleForm.location.trim() : undefined,
         location: rescheduleForm.mode === "Onsite" ? rescheduleForm.location.trim() : undefined,
-        message: rescheduleForm.notes.trim() || undefined,
+        message: sanitizeRichText(rescheduleForm.notes) || undefined,
       },
     };
   };

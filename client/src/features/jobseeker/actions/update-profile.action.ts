@@ -8,6 +8,7 @@ import {
   getApiErrorMessage,
   getString,
 } from "@features/jobseeker/actions/action.utils";
+import { sanitizeRichText } from "@shared/utils/richText";
 
 export const updateProfileAction = async ({
   request,
@@ -25,9 +26,9 @@ export const updateProfileAction = async ({
       professional_title:
         getString(formData, "professional_title") || undefined,
       skills: getString(formData, "skills") || undefined,
-      bio: getString(formData, "bio") || undefined,
+      bio: sanitizeRichText(getString(formData, "bio")) || undefined,
       experience_summary:
-        getString(formData, "experience_summary") || undefined,
+        sanitizeRichText(getString(formData, "experience_summary")) || undefined,
       resume_url: getString(formData, "resume_url") || undefined,
       avatar_url: getString(formData, "avatar_url") || undefined,
     };

@@ -31,6 +31,7 @@ import { Card } from '@shared/components/Card';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
+import { sanitizeRichText } from '@shared/utils/richText';
 
 const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
   Applied: {
@@ -281,7 +282,7 @@ export const CandidateDetailPage = () => {
       interviewType: interviewForm.mode,
       meetingLink: interviewForm.mode === 'Virtual' ? interviewForm.location : undefined,
       location: interviewForm.mode === 'Onsite' ? interviewForm.location : undefined,
-      message: interviewForm.notes || undefined,
+      message: sanitizeRichText(interviewForm.notes) || undefined,
     });
   };
 
@@ -655,7 +656,6 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
-
 
 
 

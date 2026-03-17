@@ -32,7 +32,7 @@ export interface JobDto {
   id: string;
   title: string;
   department?: string;
-  benefits?: string;
+  benefits?: string | string[];
   salary_min_per_annum?: number;
   salary_max_per_annum?: number;
   currency: string;
@@ -44,7 +44,7 @@ export interface JobDto {
   company_name?: string;
   company_email?: string;
   description: string;
-  responsibilities: string;
+  responsibilities: string | string[];
   required_skills: string[];
   preferred_skills: string[];
   experience_level?: string;

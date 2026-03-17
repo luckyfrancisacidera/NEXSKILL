@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from "react";
+import { RichTextField } from "@shared/components/RichTextField";
+import { sanitizeRichText, stripRichText } from "@shared/utils/richText";
 
 interface RescheduleRequestFormProps {
   onSubmit: (message: string, attachment?: File) => Promise<void> | void;
@@ -14,14 +16,21 @@ export const RescheduleRequestForm = ({
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState<File | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!stripRichText(message)) {
+      setError("Please add a message for the recruiter.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await onSubmit(message, attachment);
+      await onSubmit(sanitizeRichText(message), attachment);
       setMessage("");
       setAttachment(undefined);
+      setError("");
     } finally {
       setIsSubmitting(false);
     }
@@ -30,17 +39,19 @@ export const RescheduleRequestForm = ({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
-        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-          Message
-          <textarea
-            required
-            rows={4}
-            className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 shadow-sm outline-none transition focus:border-zinc-700 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-300 dark:focus:ring-zinc-800"
-            placeholder="Suggest an alternative time and share any context."
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-          />
-        </label>
+        <RichTextField
+          label="Message"
+          value={message}
+          onChange={(value) => {
+            setMessage(value);
+            setError("");
+          }}
+          placeholder="Suggest an alternative time and share any context."
+          helperText="Include your preferred reschedule window and any context the recruiter should know."
+          required
+          minHeightClassName="min-h-[170px]"
+          error={error}
+        />
         <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
           Attachment (optional)
           <input
