@@ -1,6 +1,7 @@
 import type { FormEvent, MouseEvent } from 'react';
 
 import { ModalOverlay } from '@shared/components/ModalOverlay';
+import { RichTextField } from '@shared/components/RichTextField';
 
 export interface OfferFormValues {
   role: string;
@@ -39,7 +40,14 @@ export const OfferModal = ({ open, form, onClose, onChange, onSubmit }: OfferMod
         <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Role/title" value={form.role} onChange={(event) => onChange('role', event.target.value)} />
         <input required className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" placeholder="Compensation/package summary" value={form.packageSummary} onChange={(event) => onChange('packageSummary', event.target.value)} />
         <input required type="date" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" value={form.startDate} onChange={(event) => onChange('startDate', event.target.value)} />
-        <textarea className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" rows={3} placeholder="Message (optional)" value={form.message} onChange={(event) => onChange('message', event.target.value)} />
+        <RichTextField
+          label="Message"
+          value={form.message}
+          onChange={(value) => onChange('message', value)}
+          placeholder="Message (optional)"
+          helperText="Add a polished note to frame the offer or next steps."
+          minHeightClassName="min-h-[150px]"
+        />
         <div className="flex justify-end gap-2">
           <button
             type="button"

@@ -3,6 +3,7 @@ import { RescheduleRequestModal } from "./RescheduleRequestModal";
 import { useState } from "react";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
+import { RichTextContent } from "@shared/components/RichTextContent";
 import {
   interviewStatusChipClassName,
   isTerminalInterviewStatus,
@@ -104,9 +105,10 @@ export const JobseekerInterviewCard = ({
           </span>
         </div>
         {interview.message ? (
-          <p className="rounded-lg bg-zinc-50 p-2 text-xs text-zinc-600 dark:bg-zinc-950/60 dark:text-zinc-300">
-            {interview.message}
-          </p>
+          <RichTextContent
+            html={interview.message}
+            className="rounded-lg bg-zinc-50 p-2 text-xs dark:bg-zinc-950/60"
+          />
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-2">
           {interview.meetingLink ? (

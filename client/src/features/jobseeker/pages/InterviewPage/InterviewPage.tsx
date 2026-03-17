@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { Card } from "@shared/components/Card";
+import { RichTextContent } from "@shared/components/RichTextContent";
 import { SideDrawer } from "@shared/components/SideDrawer";
 import type { JobseekerInterview } from "@features/jobseeker/types";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
@@ -336,9 +337,10 @@ export const InterviewPage = () => {
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                   Recruiter note
                 </p>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                  {selectedInterview.message}
-                </p>
+                <RichTextContent
+                  html={selectedInterview.message}
+                  className="mt-2"
+                />
               </div>
             ) : null}
 

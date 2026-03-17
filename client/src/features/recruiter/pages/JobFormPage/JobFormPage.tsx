@@ -9,6 +9,7 @@
  * - Field names are intentionally aligned with the existing action payload contract.
  * - Predictive inputs keep their own local state so the browser submits the visible value.
  */
+import { useEffect, useState } from 'react';
 import { Form, Link, useActionData, useLoaderData, useNavigation } from 'react-router-dom';
 import {
   BriefcaseBusiness,
@@ -23,9 +24,10 @@ import { RecruiterInputField } from '@features/recruiter/components/RecruiterInp
 import { PredictiveInput } from '@features/recruiter/pages/JobFormPage/components/PredictiveInput';
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
-import { RecruiterTextareaField } from '@features/recruiter/components/RecruiterTextareaField';
 import type { JobDto } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
+import { RichTextField } from '@shared/components/RichTextField';
+import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
 
 const departments = ['Engineering', 'Product', 'Design', 'Marketing', 'Operations', 'Sales'];
 const titles = ['Software Engineer', 'Frontend Engineer', 'Backend Engineer', 'Full Stack Engineer', 'Product Manager'];
@@ -47,6 +49,14 @@ interface JobFormLoaderData {
   job?: Partial<JobDto>;
 }
 
+const getEditorValue = (value?: string | string[] | null, asList = false) => {
+  if (asList || Array.isArray(value)) {
+    return arrayToRichTextList(value);
+  }
+
+  return plainTextToRichText(typeof value === 'string' ? value : '');
+};
+
 /**
  * Route component for the recruiter job form.
  */
@@ -56,6 +66,17 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   const job = loaderData.job;
   const navigation = useNavigation();
   const isSaving = navigation.state === 'submitting';
+  const [description, setDescription] = useState(getEditorValue(job?.description));
+  const [responsibilities, setResponsibilities] = useState(getEditorValue(job?.responsibilities, true));
+  const [benefits, setBenefits] = useState(getEditorValue(job?.benefits));
+  const [editorErrors, setEditorErrors] = useState<{ description?: string; responsibilities?: string }>({});
+
+  useEffect(() => {
+    setDescription(getEditorValue(job?.description));
+    setResponsibilities(getEditorValue(job?.responsibilities, true));
+    setBenefits(getEditorValue(job?.benefits));
+    setEditorErrors({});
+  }, [job?.benefits, job?.description, job?.responsibilities]);
 
   return (
     <div className="space-y-6">
@@ -76,7 +97,26 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
           </div>
         </div>
 
-        <Form method="post" className="space-y-6 px-6 py-6">
+        <Form
+          method="post"
+          className="space-y-6 px-6 py-6"
+          onSubmit={(event) => {
+            const nextErrors: { description?: string; responsibilities?: string } = {};
+
+            if (!stripRichText(description)) {
+              nextErrors.description = 'Description is required.';
+            }
+
+            if (!stripRichText(responsibilities)) {
+              nextErrors.responsibilities = 'Responsibilities are required.';
+            }
+
+            setEditorErrors(nextErrors);
+            if (Object.keys(nextErrors).length > 0) {
+              event.preventDefault();
+            }
+          }}
+        >
           {actionData?.error ? (
             <p className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
               {actionData.error}
@@ -131,8 +171,33 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
           <RecruiterSectionCard title="Role Details" description="Describe the work clearly so applicants can self-select accurately.">
             <div className="space-y-4">
-              <RecruiterTextareaField id="description" required name="description" rows={5} maxLength={2000} defaultValue={String(job?.description ?? '')} placeholder="Describe the role, team, and impact." label="Description" />
-              <RecruiterTextareaField id="responsibilities" required name="responsibilities" rows={4} defaultValue={String(job?.responsibilities ?? '')} placeholder="List role responsibilities" label="Responsibilities" />
+              <RichTextField
+                label="Description"
+                name="description"
+                required
+                value={description}
+                onChange={(value) => {
+                  setDescription(value);
+                  setEditorErrors((current) => ({ ...current, description: undefined }));
+                }}
+                placeholder="Describe the role, team, and impact."
+                helperText="Use a concise role overview with simple emphasis, lists, and links where helpful."
+                error={editorErrors.description}
+              />
+              <RichTextField
+                label="Responsibilities"
+                name="responsibilities"
+                required
+                value={responsibilities}
+                onChange={(value) => {
+                  setResponsibilities(value);
+                  setEditorErrors((current) => ({ ...current, responsibilities: undefined }));
+                }}
+                placeholder="List role responsibilities"
+                helperText="Structured lists work best here for daily ownership and expected outcomes."
+                minHeightClassName="min-h-[160px]"
+                error={editorErrors.responsibilities}
+              />
             </div>
           </RecruiterSectionCard>
 
@@ -162,7 +227,15 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
           <RecruiterSectionCard title="Benefits & Status" description="These fields influence how the posting appears and behaves in the recruiter workspace." icon={Building2}>
             <div className="grid gap-4 md:grid-cols-2">
-              <RecruiterTextareaField id="benefits" name="benefits" rows={3} defaultValue={String(job?.benefits ?? '')} placeholder="Healthcare, flexible hours, leave credits" label="Benefits" />
+              <RichTextField
+                label="Benefits"
+                name="benefits"
+                value={benefits}
+                onChange={setBenefits}
+                placeholder="Healthcare, flexible hours, leave credits"
+                helperText="Add a short list of benefits or perks candidates should notice quickly."
+                minHeightClassName="min-h-[150px]"
+              />
               <RecruiterSelectField id="status" name="status" defaultValue={String(job?.status ?? 'Draft')} label="Job Status">
                 <option value="Draft">Draft</option>
                 <option value="Published">Published</option>
@@ -182,5 +255,3 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
     </div>
   );
 };
-
-

@@ -13,6 +13,7 @@ import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/t
 import { Card } from '@shared/components/Card';
 import { DetailBlock } from '@shared/components/DetailBlock';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
+import { RichTextContent } from '@shared/components/RichTextContent';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { splitToBullets, toList } from '@shared/utils/formatText';
@@ -168,9 +169,10 @@ export const JobDetailPage = () => {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="space-y-4">
               <DetailBlock title="About the Role">
-                <p className="whitespace-pre-wrap leading-7 text-zinc-700">
-                  {job.description || 'No description provided.'}
-                </p>
+                <RichTextContent
+                  html={job.description}
+                  emptyFallback="No description provided."
+                />
               </DetailBlock>
 
               <DetailBlock title="Responsibilities">
@@ -300,5 +302,4 @@ export const JobDetailPage = () => {
     </div>
   );
 };
-
 
