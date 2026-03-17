@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Bell, ChevronDown, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Moon, Sun } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useNotifications } from "@app/providers/NotificationsProvider";
 import { useTheme } from "@app/providers/ThemeProvider";
 import { useCurrentCompany } from "@app/providers/CurrentCompanyProvider";
+import { GlobalSearchBar } from "@shared/components/GlobalSearchBar";
 import { cn } from "@shared/utils/cn";
 import { formatNotificationTimestamp } from "@shared/utils/notifications";
 
@@ -107,14 +108,7 @@ export const Topbar = () => {
             </span>
           )}
         </div>
-        <label className="flex flex-1 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950">
-        <Search className="h-4 w-4" />
-        <input
-          aria-label="Search jobs"
-          className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors duration-300 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-          placeholder="Search job title or keywords"
-        />
-        </label>
+        <GlobalSearchBar />
       </div>
       <button type="button" className={topbarControlClassName}>
         Remote
