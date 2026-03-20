@@ -2,12 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SkillSense.Application.Contracts.Auth;
 
-public sealed class ResetPasswordRequest
+public sealed class ChangePasswordRequest
 {
-    [Required, EmailAddress]
-    public string Email { get; set; } = string.Empty;
     [Required]
-    public string Token { get; set; } = string.Empty;
+    public string CurrentPassword { get; set; } = string.Empty;
+
     [Required, MinLength(8)]
     public string NewPassword { get; set; } = string.Empty;
 }
