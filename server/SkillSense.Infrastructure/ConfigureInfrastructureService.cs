@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
+using Microsoft.Extensions.Options;
 using SkillSense.Infrastructure.Auth;
 using SkillSense.Infrastructure.BackgroundJobs;
 using SkillSense.Infrastructure.Options;
@@ -28,6 +29,7 @@ public static class ConfigureInfrastructureService
 
         services.Configure<SbertOptions>(configuration.GetSection(SbertOptions.SectionName));
         services.AddSingleton<ITextEmbeddingService, SbertOnnxEmbeddingService>();
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(BuildGmailSmtpOptions(configuration)));
 
         services.Configure<GroqOptions>(configuration.GetSection(GroqOptions.SectionName));
         services.AddHttpClient<IGenerativeExplanationProvider, GroqExplanationProvider>(http =>
@@ -52,8 +54,8 @@ public static class ConfigureInfrastructureService
 
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IInterviewCalendarService, InterviewCalendarService>();
-        services.AddHttpClient<IInterviewInviteEmailSender, MyMailInterviewInviteEmailSender>();
-        services.AddHttpClient<IResetPinEmailSender, MyMailResetPinEmailSender>();
+        services.AddScoped<IEmailService, GmailSmtpEmailService>();
+        services.AddScoped<IInterviewInviteEmailSender, InterviewInviteEmailSender>();
 
         services
             .AddOptions<ResumeProcessingWorkerOptions>()
@@ -110,6 +112,22 @@ public static class ConfigureInfrastructureService
             SecretAccessKey = GetSetting(configuration, "CloudflareR2:SecretAccessKey", "CLOUDFLARE_R2_SECRET_ACCESS_KEY") ?? string.Empty,
             BucketName = GetSetting(configuration, "CloudflareR2:BucketName", "CLOUDFLARE_R2_BUCKET_NAME") ?? string.Empty,
             PublicBaseUrl = GetSetting(configuration, "CloudflareR2:PublicBaseUrl", "CLOUDFLARE_R2_PUBLIC_BASE_URL") ?? string.Empty,
+        };
+
+    private static GmailSmtpOptions BuildGmailSmtpOptions(IConfiguration configuration)
+        => new()
+        {
+            Host = GetSetting(configuration, "GmailSmtp:Host", "GMAIL_SMTP_HOST") ?? "smtp.gmail.com",
+            Port = int.TryParse(GetSetting(configuration, "GmailSmtp:Port", "GMAIL_SMTP_PORT"), out var port)
+                ? port
+                : 587,
+            Email = GetSetting(configuration, "GmailSmtp:Email", "GMAIL_SMTP_EMAIL") ?? string.Empty,
+            AppPassword = GetSetting(configuration, "GmailSmtp:AppPassword", "GMAIL_SMTP_APP_PASSWORD") ?? string.Empty,
+            FromEmail = GetSetting(configuration, "GmailSmtp:FromEmail", "GMAIL_SMTP_FROM_EMAIL") ?? string.Empty,
+            FromName = GetSetting(configuration, "GmailSmtp:FromName", "GMAIL_SMTP_FROM_NAME") ?? string.Empty,
+            EnableSsl = bool.TryParse(GetSetting(configuration, "GmailSmtp:EnableSsl", "GMAIL_SMTP_ENABLE_SSL"), out var enableSsl)
+                ? enableSsl
+                : true,
         };
 
     private static bool IsCloudflareConfigured(CloudflareR2Options options)

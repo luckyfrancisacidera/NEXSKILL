@@ -2,10 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SkillSense.Application.Contracts.Auth;
 
-public sealed class VerifyResetPinRequest
+public sealed class ValidatePasswordResetTokenRequest
 {
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
-    [Required, RegularExpression("^\\d{6}$")]
-    public string Pin { get; set; } = string.Empty;
+
+    [Required]
+    public string Token { get; set; } = string.Empty;
 }

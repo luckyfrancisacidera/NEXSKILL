@@ -32,6 +32,17 @@ public static class ConfigurePersistenceServices
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+        var passwordResetTokenLifetimeMinutes = int.TryParse(
+            configuration["PasswordReset:TokenLifespanMinutes"],
+            out var parsedTokenLifetimeMinutes)
+            ? Math.Clamp(parsedTokenLifetimeMinutes, 5, 1440)
+            : 60;
+
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
+        {
+            options.TokenLifespan = TimeSpan.FromMinutes(passwordResetTokenLifetimeMinutes);
+        });
+
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAdminManagementRepository, AdminManagementRepository>();
         services.AddScoped<ICandidateExplanationRepository, CandidateExplanationRepository>();
