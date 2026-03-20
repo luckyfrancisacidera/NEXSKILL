@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SkillSense.Application.Options;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Admin;
 using SkillSense.Application.Interfaces.Auth;
@@ -24,6 +25,7 @@ public static class ApplicationServiceRegistration
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAutoMapper(_ => { }, typeof(ApplicationServiceRegistration).Assembly);
+        services.Configure<PasswordResetOptions>(configuration.GetSection(PasswordResetOptions.SectionName));
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddScoped<IResumeScoringOrchestrator, ResumeEmbeddingScoringOrchestrator>();
         services.AddScoped<IResumeUploadService, ResumeUploadService>();

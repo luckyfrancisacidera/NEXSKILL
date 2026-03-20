@@ -26,20 +26,5 @@ export interface JobseekerProfileUpdatePayload {
   avatar_url?: string;
 }
 
-export interface PasswordResetRequestPayload {
-  email: string;
-}
-
-export interface PasswordResetPinVerificationPayload {
-  email: string;
-  pin: string;
-}
-
-export interface PasswordResetPayload {
-  email: string;
-  pin: string;
-  newPassword: string;
-}
-
 export type ProfileLoaderData = JobseekerProfileDto;
 export type SavedJobsLoaderData = SavedJobDto[];

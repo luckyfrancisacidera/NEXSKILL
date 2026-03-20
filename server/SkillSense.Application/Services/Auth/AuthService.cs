@@ -1,9 +1,16 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Contracts.Email;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
+using SkillSense.Application.Options;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
+using System.Text;
+using System.Net;
 
 namespace SkillSense.Application.Services.Auth;
 
@@ -12,7 +19,7 @@ namespace SkillSense.Application.Services.Auth;
 /// </summary>
 /// <remarks>
 /// This service preserves the existing identity workflow while delegating persistence concerns to repositories.
-/// It is responsible for sanitizing user input, creating identity users, issuing tokens, and managing reset PIN lifecycle state.
+/// It is responsible for sanitizing user input, creating identity users, issuing tokens, and managing password recovery state.
 /// </remarks>
 public sealed class AuthService(
     UserManager<AppUser> userManager,
@@ -21,7 +28,9 @@ public sealed class AuthService(
     IInputSanitizer sanitizer,
     IAuthRepository authRepository,
     IDateTimeProvider dateTimeProvider,
-    IResetPinEmailSender resetPinEmailSender) : IAuthService
+    IEmailService emailService,
+    IOptions<PasswordResetOptions> passwordResetOptions,
+    ILogger<AuthService> logger) : IAuthService
 {
     private const string AuthenticationFailedMessage = "Authentication failed.";
     private const string InvalidCredentialsError = "Invalid email or password.";
@@ -34,7 +43,9 @@ public sealed class AuthService(
     private readonly IInputSanitizer _sanitizer = sanitizer;
     private readonly IAuthRepository _authRepository = authRepository;
     private readonly IDateTimeProvider _dateTimeProvider = dateTimeProvider;
-    private readonly IResetPinEmailSender _resetPinEmailSender = resetPinEmailSender;
+    private readonly IEmailService _emailService = emailService;
+    private readonly PasswordResetOptions _passwordResetOptions = passwordResetOptions.Value;
+    private readonly ILogger<AuthService> _logger = logger;
 
     /// <summary>
     /// Registers a new job seeker account and returns the generated authentication tokens.
@@ -168,69 +179,133 @@ public sealed class AuthService(
     }
 
     /// <summary>
-    /// Generates a one-time reset PIN, invalidates previously unused PINs, and dispatches the email notification.
+    /// Generates a password reset token and dispatches the email notification.
     /// </summary>
     public async Task RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null) return;
-
-        var pin = Random.Shared.Next(0, 1_000_000).ToString("D6");
-        var now = _dateTimeProvider.UtcNow;
-
-        var existingPins = await _authRepository.GetUnusedPasswordResetPinsAsync(user.Id, cancellationToken);
-        foreach (var existing in existingPins) existing.Used = true;
-
-        await _authRepository.AddPasswordResetPinAsync(new PasswordResetPinEntity
+        if (user is null)
         {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            Pin = pin,
-            ExpiresAtUtc = now.AddMinutes(15),
-            Used = false,
-            CreatedAtUtc = now,
-        }, cancellationToken);
-
-        if (existingPins.Count > 0)
-        {
-            await _authRepository.SaveChangesAsync(cancellationToken);
+            return;
         }
 
-        await _resetPinEmailSender.SendResetPinAsync(email, pin, cancellationToken);
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var resetLink = BuildPasswordResetLink(_passwordResetOptions.FrontendBaseUrl, email, encodedToken);
+
+        try
+        {
+            await _emailService.SendEmailAsync(new EmailMessage
+            {
+                ToEmail = email,
+                Subject = "Reset your Nexskill password",
+                Html = BuildPasswordResetEmailHtml(resetLink),
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email for user {UserId}.", user.Id);
+        }
     }
 
     /// <summary>
-    /// Validates whether the latest reset PIN for the supplied user is still active and matches the request.
+    /// Validates whether a password reset token is still active and valid for the supplied user.
     /// </summary>
-    public async Task<bool> VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken)
+    public async Task<bool> ValidatePasswordResetTokenAsync(ValidatePasswordResetTokenRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null) return false;
+        if (user is null)
+        {
+            return false;
+        }
 
-        var pin = await _authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
-        return pin is not null && !pin.Used && pin.Pin == request.Pin && pin.ExpiresAtUtc >= _dateTimeProvider.UtcNow;
+        var decodedToken = DecodePasswordResetToken(request.Token);
+        if (decodedToken is null)
+        {
+            return false;
+        }
+
+        var tokenProvider = _userManager.Options.Tokens.PasswordResetTokenProvider;
+        return await _userManager.VerifyUserTokenAsync(
+            user,
+            tokenProvider,
+            UserManager<AppUser>.ResetPasswordTokenPurpose,
+            decodedToken);
     }
 
     /// <summary>
-    /// Resets the user's password after verifying the latest PIN and marks the PIN as consumed.
+    /// Resets the user's password after verifying the supplied token.
     /// </summary>
     public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
-        var user = await _userManager.FindByEmailAsync(email) ?? throw new InvalidOperationException("Invalid reset request.");
+        var user = await _userManager.FindByEmailAsync(email)
+            ?? throw new ArgumentException("The password reset link is invalid or has expired.");
 
-        var pin = await _authRepository.GetLatestPasswordResetPinAsync(user.Id, cancellationToken);
-        if (pin is null || pin.Used || pin.Pin != request.Pin || pin.ExpiresAtUtc < _dateTimeProvider.UtcNow)
-            throw new InvalidOperationException("Invalid or expired reset PIN.");
+        var decodedToken = DecodePasswordResetToken(request.Token)
+            ?? throw new ArgumentException("The password reset link is invalid or has expired.");
 
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
-        if (!result.Succeeded) throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
+        var tokenProvider = _userManager.Options.Tokens.PasswordResetTokenProvider;
+        var isValidToken = await _userManager.VerifyUserTokenAsync(
+            user,
+            tokenProvider,
+            UserManager<AppUser>.ResetPasswordTokenPurpose,
+            decodedToken);
 
-        pin.Used = true;
-        await _authRepository.SaveChangesAsync(cancellationToken);
+        if (!isValidToken)
+        {
+            throw new ArgumentException("The password reset link is invalid or has expired.");
+        }
+
+        var passwordValidation = await ValidatePasswordAsync(user, request.NewPassword);
+        if (passwordValidation.Count > 0)
+        {
+            throw new ArgumentException(passwordValidation[0]);
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            var invalidTokenError = result.Errors.FirstOrDefault(error =>
+                string.Equals(error.Code, "InvalidToken", StringComparison.OrdinalIgnoreCase));
+
+            if (invalidTokenError is not null)
+            {
+                throw new ArgumentException("The password reset link is invalid or has expired.");
+            }
+
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
+        }
+    }
+
+    /// <summary>
+    /// Changes the password for an authenticated user after validating the current credentials.
+    /// </summary>
+    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString())
+            ?? throw new ArgumentException("Unable to find the current account.");
+
+        var currentPassword = _sanitizer.Sanitize(request.CurrentPassword);
+        var newPassword = _sanitizer.Sanitize(request.NewPassword);
+
+        var passwordValidation = await ValidatePasswordAsync(user, newPassword);
+        if (passwordValidation.Count > 0)
+        {
+            throw new ArgumentException(passwordValidation[0]);
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not change password.");
+        }
     }
 
     private async Task<AuthResult> CreateSuccessAuthResultAsync(AppUser user, string message, CancellationToken cancellationToken)
@@ -279,5 +354,56 @@ public sealed class AuthService(
     private async Task EnsureRoleExistsAsync(string role)
     {
         if (!await _roleManager.RoleExistsAsync(role)) await _roleManager.CreateAsync(new IdentityRole<Guid>(role));
+    }
+
+    private static string? DecodePasswordResetToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
+        try
+        {
+            var bytes = WebEncoders.Base64UrlDecode(token.Trim());
+            return Encoding.UTF8.GetString(bytes);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    private static string BuildPasswordResetLink(string frontendBaseUrl, string email, string encodedToken)
+    {
+        var query = new Dictionary<string, string?>
+        {
+            ["email"] = email,
+            ["token"] = encodedToken,
+        };
+
+        var normalizedBaseUrl = NormalizeFrontendBaseUrl(frontendBaseUrl);
+        return QueryHelpers.AddQueryString($"{normalizedBaseUrl}/reset-password", query);
+    }
+
+    private static string BuildPasswordResetEmailHtml(string resetLink)
+    {
+        var encodedLink = WebUtility.HtmlEncode(resetLink);
+
+        return $"""
+            <p>We received a request to reset your Nexskill password.</p>
+            <p><a href="{encodedLink}">Reset your password</a></p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+            """;
+    }
+
+    private static string NormalizeFrontendBaseUrl(string frontendBaseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(frontendBaseUrl))
+        {
+            return "http://localhost:5173";
+        }
+
+        return frontendBaseUrl.Trim().TrimEnd('/');
     }
 }

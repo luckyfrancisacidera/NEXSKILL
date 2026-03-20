@@ -154,7 +154,7 @@ const LoginPage = () => {
                   
                 >
                   <img src={GoogleLogo} className="w-4" alt="" />
-                  Gmail
+                  Google
                 </button>
 
                 <button

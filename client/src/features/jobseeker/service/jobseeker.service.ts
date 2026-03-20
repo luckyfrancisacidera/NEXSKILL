@@ -7,9 +7,6 @@ import type {
   JobseekerApplicationsResponse,
   JobseekerProfileDto,
   JobseekerProfileUpdatePayload,
-  PasswordResetPayload,
-  PasswordResetPinVerificationPayload,
-  PasswordResetRequestPayload,
   Paged,
   PublicJobsQueryParams,
   SavedJobDto,
@@ -127,39 +124,6 @@ export const jobseekerService = {
       "/api/jobseeker/profile",
       safePayload,
     );
-    return response.data;
-  },
-
-  async requestPasswordReset(
-    payload: PasswordResetRequestPayload | string,
-  ): Promise<unknown> {
-    const body = typeof payload === "string" ? { email: payload } : payload;
-    const response = await http.post("/api/auth/request-password-reset", body);
-    return response.data;
-  },
-
-  async verifyResetPin(
-    payload: PasswordResetPinVerificationPayload | string,
-    pin?: string,
-  ): Promise<unknown> {
-    const body =
-      typeof payload === "string"
-        ? { email: payload, pin: pin ?? "" }
-        : payload;
-    const response = await http.post("/api/auth/verify-reset-pin", body);
-    return response.data;
-  },
-
-  async resetPassword(
-    payload: PasswordResetPayload | string,
-    pin?: string,
-    newPassword?: string,
-  ): Promise<unknown> {
-    const body =
-      typeof payload === "string"
-        ? { email: payload, pin: pin ?? "", newPassword: newPassword ?? "" }
-        : payload;
-    const response = await http.post("/api/auth/reset-password", body);
     return response.data;
   },
 };
