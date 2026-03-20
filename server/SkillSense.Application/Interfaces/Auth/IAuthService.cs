@@ -38,12 +38,17 @@ public interface IAuthService
     Task RequestPasswordResetAsync(RequestPasswordResetRequest request, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Verifies the latest password reset PIN for a user.
+    /// Validates a password reset token for a user.
     /// </summary>
-    Task<bool> VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken);
+    Task<bool> ValidatePasswordResetTokenAsync(ValidatePasswordResetTokenRequest request, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Completes a password reset using a validated PIN.
+    /// Completes a password reset using a validated token.
     /// </summary>
     Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Changes the password for an authenticated user.
+    /// </summary>
+    Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken);
 }

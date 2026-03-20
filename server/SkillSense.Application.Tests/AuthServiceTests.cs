@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Contracts.Email;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
+using SkillSense.Application.Options;
 using SkillSense.Application.Services.Auth;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
@@ -164,7 +166,9 @@ public sealed class AuthServiceTests
             new PassThroughSanitizer(),
             authRepository ?? new TestAuthRepository(),
             new FixedDateTimeProvider(),
-            new NoOpResetPinEmailSender());
+            new NoOpEmailService(),
+            Microsoft.Extensions.Options.Options.Create(new PasswordResetOptions()),
+            NullLogger<AuthService>.Instance);
     }
 
     private static TestUserManager CreateUserManager(params (AppUser user, bool passwordValid, string[] roles)[] users)
@@ -271,17 +275,6 @@ public sealed class AuthServiceTests
         public Task<AuthUserCompanyAccessData?> GetUserCompanyAccessAsync(Guid userId, CancellationToken ct = default)
             => Task.FromResult(CompanyAccessByUserId.TryGetValue(userId, out var access) ? access : null);
 
-        public Task<List<PasswordResetPinEntity>> GetUnusedPasswordResetPinsAsync(Guid userId, CancellationToken ct = default)
-            => Task.FromResult(new List<PasswordResetPinEntity>());
-
-        public Task<PasswordResetPinEntity?> GetLatestPasswordResetPinAsync(Guid userId, CancellationToken ct = default)
-            => Task.FromResult<PasswordResetPinEntity?>(null);
-
-        public Task AddPasswordResetPinAsync(PasswordResetPinEntity entity, CancellationToken ct = default)
-            => Task.CompletedTask;
-
-        public Task SaveChangesAsync(CancellationToken ct = default)
-            => Task.CompletedTask;
     }
 
     private sealed class PassThroughSanitizer : IInputSanitizer
@@ -295,9 +288,9 @@ public sealed class AuthServiceTests
         public DateTime UtcNow { get; } = new(2026, 3, 13, 0, 0, 0, DateTimeKind.Utc);
     }
 
-    private sealed class NoOpResetPinEmailSender : IResetPinEmailSender
+    private sealed class NoOpEmailService : IEmailService
     {
-        public Task SendResetPinAsync(string toEmail, string pin, CancellationToken ct = default)
+        public Task SendEmailAsync(EmailMessage message, CancellationToken ct = default)
             => Task.CompletedTask;
     }
 
@@ -339,4 +332,3 @@ public sealed class AuthServiceTests
         public Task<IdentityRole<Guid>?> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken) => Task.FromResult<IdentityRole<Guid>?>(null);
     }
 }
-

@@ -74,16 +74,20 @@ public sealed class AuthController(
     public async Task<IActionResult> RequestPasswordReset([FromBody] RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
         await _authService.RequestPasswordResetAsync(request, cancellationToken);
-        return Ok(new { message = "Reset PIN sent to your email" });
+        return Ok(new { message = "If an account exists for that email, a reset link has been sent." });
     }
 
-    [HttpPost("verify-reset-pin")]
+    [HttpPost("validate-password-reset-token")]
     [AllowAnonymous]
-    public async Task<IActionResult> VerifyResetPin([FromBody] VerifyResetPinRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ValidatePasswordResetToken([FromBody] ValidatePasswordResetTokenRequest request, CancellationToken cancellationToken)
     {
-        var valid = await _authService.VerifyResetPinAsync(request, cancellationToken);
-        if (!valid) return BadRequest(new { message = "Invalid or expired PIN." });
-        return Ok(new { message = "PIN verified." });
+        var valid = await _authService.ValidatePasswordResetTokenAsync(request, cancellationToken);
+        if (!valid)
+        {
+            return BadRequest(new { message = "This password reset link is invalid or has expired." });
+        }
+
+        return Ok(new { message = "Password reset link is valid." });
     }
 
     [HttpPost("reset-password")]
@@ -92,6 +96,14 @@ public sealed class AuthController(
     {
         await _authService.ResetPasswordAsync(request, cancellationToken);
         return Ok(new { message = "Password reset successful." });
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ChangePasswordAsync(CurrentUserContext.GetUserId(User), request, cancellationToken);
+        return Ok(new { message = "Password updated successfully." });
     }
 
     [HttpPost("logout")]

@@ -68,6 +68,7 @@ import {
 } from "@features/admin";
 import { RegisterAccount, LoginAccount } from "@features/auth";
 import { ForgotPasswordPage } from "@features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@features/auth/pages/ResetPasswordPage";
 
 type AppRoute = RouteObject;
 
@@ -396,6 +397,7 @@ export const router = createBrowserRouter([
     </PublicOnly>,
   ),
   publicRoute("/forgot-password", <ForgotPasswordPage />),
+  publicRoute("/reset-password", <ResetPasswordPage />),
   {
     path: "/",
     errorElement: <RouteErrorPage />,
@@ -410,4 +412,3 @@ export const router = createBrowserRouter([
   },
   { path: "*", element: <Navigate to="/login" replace /> },
 ]);
-

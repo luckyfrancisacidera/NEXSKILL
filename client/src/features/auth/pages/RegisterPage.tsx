@@ -185,7 +185,7 @@ const RegisterPage = () => {
                   className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
                 >
                   <img src={GoogleLogo} className="w-4" alt="" />
-                  Gmail
+                  Google
                 </button>
 
                 <button
