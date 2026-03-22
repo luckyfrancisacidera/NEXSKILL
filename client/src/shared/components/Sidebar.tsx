@@ -3,10 +3,9 @@ import {
   CalendarClock,
   FileCheck2,
   LayoutDashboard,
-  Settings,
   Users,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@shared/utils/cn";
 import { usePermissions } from "@shared/hooks/usePermissions";
 
@@ -23,7 +22,6 @@ const recruiterItems = [
   { label: "Job Posts", to: "/recruiter/job-posts", icon: BriefcaseBusiness },
   { label: "Candidates", to: "/recruiter/candidates", icon: Users },
   { label: "Interviews", to: "/recruiter/interviews", icon: CalendarClock },
-  { label: "Settings", to: "/recruiter/settings", icon: Settings },
 ];
 
 const superAdminItems = [
@@ -38,6 +36,7 @@ const companyAdminItems = [
 
 export const Sidebar = () => {
   const { isSuperAdmin, isCompanyAdmin, isRecruiter } = usePermissions();
+  const location = useLocation();
 
   const section = isSuperAdmin
     ? "superAdmin"
@@ -64,23 +63,33 @@ export const Sidebar = () => {
         : "Dashboard";
 
   return (
-    <aside className="fixed z-40 min-h-screen w-64 border-r border-zinc-200 bg-zinc-50/50 p-4 dark:text-zinc-100 dark:border-r-zinc-900 dark:bg-zinc-950">
+    <aside className="w-full border-b border-zinc-200 bg-white p-4 dark:border-zinc-900 dark:bg-zinc-950 lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:border-b-0 lg:border-r ">
       <div className="mb-6 rounded-xl bg-white dark:bg-zinc-900 dark:shadow-zinc-900 dark:text-zinc-200 p-4 text-lg font-semibold text-zinc-900 shadow-sm">
         {title}
       </div>
-      <nav className="space-y-1">
+      <nav className="flex gap-1 overflow-x-auto pb-1 lg:block lg:space-y-1 lg:overflow-visible lg:pb-0">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            className={({ isActive }) =>
+            end={item.to === "/dashboard" || item.to === "/admin/company" || item.to === "/admin/super"}
+            className={({ isActive }) => {
+              const isNestedActive =
+                !isActive &&
+                item.to !== "/dashboard" &&
+                item.to !== "/admin/company" &&
+                item.to !== "/admin/super" &&
+                location.pathname.startsWith(`${item.to}/`);
+
+              return (
               cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
-                isActive
-                  ? "bg-zinc-900 text-white hover:bg-zinc-800"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+                "shrink-0 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition lg:w-full",
+                isActive || isNestedActive
+                  ? "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
               )
-            }
+            );
+            }}
           >
             <item.icon className="h-4 w-4" />
             {item.label}

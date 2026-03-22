@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SkillSense.Api.Security;
@@ -77,6 +78,55 @@ public sealed class AuthController(
         return Ok(new { message = "If an account exists for that email, a reset link has been sent." });
     }
 
+    [HttpPost("request-password-reset-pin")]
+    [AllowAnonymous]
+    [EnableRateLimiting("password-reset-request")]
+    public async Task<IActionResult> RequestPasswordResetPin([FromBody] RequestPasswordResetPinRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.RequestPasswordResetPinAsync(request, cancellationToken);
+        return Ok(new { message = "If an account with that email exists, a PIN has been sent." });
+    }
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
+    {
+        var profile = await _authService.GetProfileAsync(CurrentUserContext.GetUserId(User), cancellationToken);
+        return Ok(profile);
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateAccountProfileRequest request, CancellationToken cancellationToken)
+    {
+        var profile = await _authService.UpdateProfileAsync(CurrentUserContext.GetUserId(User), request, cancellationToken);
+        return Ok(profile);
+    }
+
+    [HttpPost("request-email-change-pin")]
+    [Authorize]
+    public async Task<IActionResult> RequestEmailChangePin([FromBody] RequestEmailChangePinRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.RequestEmailChangePinAsync(CurrentUserContext.GetUserId(User), request, cancellationToken);
+        return Ok(new { message = "Verification PIN sent to the new email address." });
+    }
+
+    [HttpPost("verify-email-change-pin")]
+    [Authorize]
+    public async Task<IActionResult> VerifyEmailChangePin([FromBody] VerifyEmailChangePinRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.VerifyEmailChangePinAsync(CurrentUserContext.GetUserId(User), request, cancellationToken);
+        return Ok(new { message = "Verification PIN confirmed." });
+    }
+
+    [HttpPost("finalize-email-change")]
+    [Authorize]
+    public async Task<IActionResult> FinalizeEmailChange([FromBody] FinalizeEmailChangeRequest request, CancellationToken cancellationToken)
+    {
+        var profile = await _authService.FinalizeEmailChangeAsync(CurrentUserContext.GetUserId(User), request, cancellationToken);
+        return Ok(profile);
+    }
+
     [HttpPost("validate-password-reset-token")]
     [AllowAnonymous]
     public async Task<IActionResult> ValidatePasswordResetToken([FromBody] ValidatePasswordResetTokenRequest request, CancellationToken cancellationToken)
@@ -95,6 +145,15 @@ public sealed class AuthController(
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         await _authService.ResetPasswordAsync(request, cancellationToken);
+        return Ok(new { message = "Password reset successful." });
+    }
+
+    [HttpPost("verify-reset-pin")]
+    [AllowAnonymous]
+    [EnableRateLimiting("password-reset-verify")]
+    public async Task<IActionResult> VerifyResetPin([FromBody] VerifyResetPinRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.VerifyResetPinAsync(request, cancellationToken);
         return Ok(new { message = "Password reset successful." });
     }
 
@@ -117,56 +176,43 @@ public sealed class AuthController(
 
     [HttpGet("me")]
     [AllowAnonymous]
-    public IActionResult Me()
+    public async Task<ActionResult<CurrentUserResponse>> Me(CancellationToken cancellationToken)
     {
         if (User.Identity?.IsAuthenticated != true)
         {
-            return Ok(new
-            {
-                isAuthenticated = false,
-                userId = (string?)null,
-                email = (string?)null,
-                role = (string?)null,
-                roles = Array.Empty<string>(),
-                activeCompanyId = (Guid?)null,
-                activeRecruiterProfileId = (Guid?)null,
-                companyIds = Array.Empty<Guid>(),
-                recruiterProfileIds = Array.Empty<Guid>(),
-            });
+            return Ok(CurrentUserResponse.Unauthenticated());
         }
 
-        var roles = User.Claims
-            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-            .Select(c => c.Value)
-            .Distinct()
+        var currentUser = await _authService.GetCurrentUserAsync(CurrentUserContext.GetUserId(User), cancellationToken);
+        var companyIds = User.Claims
+            .Where(claim => claim.Type == SkillSenseClaimTypes.CompanyIds)
+            .Select(claim => claim.Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var recruiterProfileIds = User.Claims
+            .Where(claim => claim.Type == SkillSenseClaimTypes.RecruiterProfileIds)
+            .Select(claim => claim.Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        var companyIds = User.FindAll(SkillSenseClaimTypes.CompanyIds)
-            .Select(claim => Guid.TryParse(claim.Value, out var companyId) ? companyId : (Guid?)null)
-            .Where(value => value.HasValue)
-            .Select(value => value!.Value)
-            .Distinct()
-            .ToArray();
-
-        var recruiterProfileIds = User.FindAll(SkillSenseClaimTypes.RecruiterProfileIds)
-            .Select(claim => Guid.TryParse(claim.Value, out var recruiterProfileId) ? recruiterProfileId : (Guid?)null)
-            .Where(value => value.HasValue)
-            .Select(value => value!.Value)
-            .Distinct()
-            .ToArray();
-
-        return Ok(new
+        currentUser = new CurrentUserResponse
         {
-            isAuthenticated = true,
-            userId = User.FindFirst(SkillSenseClaimTypes.UserId)?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
-            email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value,
-            role = CurrentUserContext.GetRole(User),
-            roles,
-            activeCompanyId = CurrentUserContext.GetActiveCompanyId(HttpContext),
-            activeRecruiterProfileId = CurrentUserContext.GetActiveRecruiterProfileId(HttpContext),
-            companyIds,
-            recruiterProfileIds,
-        });
+            IsAuthenticated = currentUser.IsAuthenticated,
+            UserId = currentUser.UserId,
+            Email = currentUser.Email,
+            FirstName = currentUser.FirstName,
+            LastName = currentUser.LastName,
+            Role = currentUser.Role,
+            Roles = currentUser.Roles,
+            ActiveCompanyId = User.FindFirst(SkillSenseClaimTypes.ActiveCompanyId)?.Value,
+            ActiveRecruiterProfileId = User.FindFirst(SkillSenseClaimTypes.ActiveRecruiterProfileId)?.Value,
+            CompanyIds = companyIds,
+            RecruiterProfileIds = recruiterProfileIds,
+        };
+
+        return Ok(currentUser);
     }
 
     private void WriteAccessCookie(string token)

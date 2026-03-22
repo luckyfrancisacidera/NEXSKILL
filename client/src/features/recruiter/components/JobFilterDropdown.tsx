@@ -50,7 +50,7 @@ export default function JobFilterDropdown({ jobs, filters, counts, onChange }: J
       value={filters.jobId}
       options={options}
       onChange={onChange}
-      className="min-w-70"
+      className="w-full min-w-0"
     />
   );
 }

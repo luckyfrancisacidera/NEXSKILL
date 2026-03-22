@@ -7,12 +7,16 @@ import {
   useState,
 } from "react";
 import type { PropsWithChildren } from "react";
+import type { AuthMeResponse } from "@features/auth/types/auth.types";
 import type { Role } from "@shared/types";
 import { ApiError, http } from "@shared/api/http";
 
 interface AuthUser {
   userId: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  role?: string | null;
 }
 
 interface AuthContextValue {
@@ -67,15 +71,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const refreshMe = useCallback(async (): Promise<Role[]> => {
     try {
-      const response = await http.get<{
-        isAuthenticated?: boolean;
-        userId?: string;
-        email?: string;
-        roles?: string[];
-      }>("/api/auth/me");
+      const response = await http.get<AuthMeResponse>("/api/auth/me");
       if (
-        !response.data.isAuthenticated ||
-        !response.data.userId ||
+        !response.data.is_authenticated ||
+        !response.data.user_id ||
         !response.data.email
       ) {
         setUser(null);
@@ -83,7 +82,13 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return [];
       }
 
-      setUser({ userId: response.data.userId, email: response.data.email });
+      setUser({
+        userId: response.data.user_id,
+        email: response.data.email,
+        firstName: response.data.first_name,
+        lastName: response.data.last_name,
+        role: response.data.role,
+      });
       const parsedRoles = normalizeRoles(response.data.roles ?? []);
       setRoles(parsedRoles);
       return parsedRoles;

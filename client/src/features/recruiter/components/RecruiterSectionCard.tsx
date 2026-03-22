@@ -22,7 +22,7 @@ export const RecruiterSectionCard = ({
 }: RecruiterSectionCardProps) => {
   if (variant === 'compact') {
     return (
-      <Card className="p-4 sm:p-5">
+      <Card className="w-full min-w-0 p-4 sm:p-5">
         <h3 className="border-b border-zinc-200 dark:border-zinc-800 pb-2 text-[1.05rem] font-semibold text-zinc-800 dark:text-zinc-200">{title}</h3>
         <div className="pt-3">{children}</div>
       </Card>
@@ -30,10 +30,10 @@ export const RecruiterSectionCard = ({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-sm">
+    <section className="w-full min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3 flex items-start gap-2">
         {Icon ? <Icon className="mt-0.5 h-4 w-4 text-violet-700" /> : null}
-        <div>
+        <div className="min-w-0">
           <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
           {description ? <p className="mt-1 text-sm text-zinc-500">{description}</p> : null}
         </div>
@@ -42,4 +42,3 @@ export const RecruiterSectionCard = ({
     </section>
   );
 };
-
