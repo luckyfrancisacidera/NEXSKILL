@@ -4,6 +4,9 @@ namespace SkillSense.Domain.Entities;
 
 public sealed class AppUser : IdentityUser<Guid>
 {
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Location { get; set; }
     public JobSeekerProfileEntity? JobSeekerProfile { get; set; }
     public RecruiterProfileEntity? RecruiterProfile { get; set; }
     public AdminProfileEntity? AdminProfile { get; set; }

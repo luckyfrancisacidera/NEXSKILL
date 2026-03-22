@@ -357,7 +357,7 @@ export const InterviewCalendar = ({
                   key={option.key}
                   type="button"
                   className={cn(
-                    "min-w-[78px] rounded-lg px-4 py-2.5 text-sm font-medium transition",
+                    "min-w-19.5 rounded-lg px-4 py-2.5 text-sm font-medium transition",
                     currentView === option.key
                       ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
                       : "bg-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white",
@@ -370,7 +370,7 @@ export const InterviewCalendar = ({
             </div>
           </div>
 
-          <div className="px-0 py-0">
+          <div className="pl-0 pr-5 py-0">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}

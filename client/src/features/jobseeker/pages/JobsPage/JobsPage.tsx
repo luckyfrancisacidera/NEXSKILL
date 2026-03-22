@@ -22,11 +22,11 @@ export const JobsPage = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <form className="flex items-center justify-between gap-2">
+        <form className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Find Jobs</h2>
           <SearchField
             ariaLabel="Filter jobs"
-            className="h-11 w-full max-w-xs rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-500 dark:focus:ring-violet-900"
+            className="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 md:max-w-xs dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-500 dark:focus:ring-violet-900"
             defaultValue={params.get("search") ?? ""}
             placeholder="Search"
           />

@@ -44,22 +44,22 @@ export const OfferStageTimeline = ({
                   className={[
                     "flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold transition",
                     isComplete
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-white text-zinc-400",
-                    isCurrent ? "ring-4 ring-zinc-200" : "",
+                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
+                      : "border-zinc-200 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500",
+                    isCurrent ? "ring-4 ring-zinc-200 dark:ring-zinc-700/70" : "",
                   ].join(" ")}
                 >
                   {isComplete ? <CircleCheck className="h-4 w-4" /> : index + 1}
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
                     Step {index + 1}
                   </p>
                   <p
                     className={
                       isComplete
-                        ? "text-sm font-semibold text-zinc-900"
-                        : "text-sm font-medium text-zinc-500"
+                        ? "text-sm font-semibold text-zinc-900 dark:text-zinc-100"
+                        : "text-sm font-medium text-zinc-500 dark:text-zinc-400"
                     }
                   >
                     {stage}
@@ -69,7 +69,9 @@ export const OfferStageTimeline = ({
               {index < timelineStages.length - 1 ? (
                 <div
                   className={
-                    isComplete ? "h-px flex-1 bg-zinc-900" : "h-px flex-1 bg-zinc-200"
+                    isComplete
+                      ? "h-px flex-1 bg-zinc-900 dark:bg-zinc-100"
+                      : "h-px flex-1 bg-zinc-200 dark:bg-zinc-700"
                   }
                 />
               ) : null}

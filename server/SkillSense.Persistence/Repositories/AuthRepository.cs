@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
 using SkillSense.Persistence.Models;
@@ -40,4 +41,20 @@ public sealed class AuthRepository(SkillSenseDbContext dbContext) : IAuthReposit
             })
             .FirstOrDefaultAsync(ct);
     }
+
+    public Task SaveChangesAsync(CancellationToken ct = default)
+        => dbContext.SaveChangesAsync(ct);
+
+    public Task<List<PasswordResetPinEntity>> GetActivePinsAsync(Guid userId, VerificationPinPurpose purpose, DateTime nowUtc, CancellationToken ct = default)
+        => dbContext.PasswordResetPins
+            .Where(pin =>
+                pin.UserId == userId &&
+                pin.Purpose == purpose &&
+                !pin.Used &&
+                pin.ExpiresAtUtc > nowUtc)
+            .OrderByDescending(pin => pin.CreatedAtUtc)
+            .ToListAsync(ct);
+
+    public Task AddPasswordResetPinAsync(PasswordResetPinEntity pin, CancellationToken ct = default)
+        => dbContext.PasswordResetPins.AddAsync(pin, ct).AsTask();
 }

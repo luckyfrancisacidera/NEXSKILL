@@ -21,8 +21,8 @@ export interface CandidatesFiltersProps {
  * Query-backed candidate filter form.
  */
 export const CandidatesFilters = ({ filters, jobs, departments, counts, isRecommendationFilterVisible, recommendedCutoffOptions, formRef, onSubmitFilters }: CandidatesFiltersProps) => (
-  <Form method="get" ref={formRef} onChange={() => onSubmitFilters()} className="mb-5 mt-4 flex flex-wrap items-end gap-3">
-    <SearchField label="Search" name="search" defaultValue={filters.search} placeholder="Search name or email" className="min-w-65 flex-1" />
+  <Form method="get" ref={formRef} onChange={() => onSubmitFilters()} className="mb-5 mt-4 grid w-full grid-cols-5 gap-3">
+    <SearchField label="Search" name="search" defaultValue={filters.search} placeholder="Search name or email" className="w-full min-w-0" />
 
     <Dropdown
       label="Department"
@@ -36,14 +36,14 @@ export const CandidatesFilters = ({ filters, jobs, departments, counts, isRecomm
           accentClassName: 'bg-zinc-100 text-zinc-700',
         })),
       ]}
-      className="min-w-60"
+      className="w-full min-w-0"
       onChange={onSubmitFilters}
     />
 
     <JobFilterDropdown jobs={jobs} filters={filters} counts={counts} onChange={onSubmitFilters} />
 
     {isRecommendationFilterVisible ? (
-      <Dropdown label="Recommended Cutoff" name="recommendedTopPercent" value={filters.recommendedTopPercent} options={recommendedCutoffOptions} className="min-w-6" buttonClassName="min-w-[240px]" onChange={onSubmitFilters} />
+      <Dropdown label="Recommended Cutoff" name="recommendedTopPercent" value={filters.recommendedTopPercent} options={recommendedCutoffOptions} className="w-full min-w-0" onChange={onSubmitFilters} />
     ) : (
       <input type="hidden" name="recommendedTopPercent" value={filters.recommendedTopPercent} />
     )}
@@ -60,7 +60,7 @@ export const CandidatesFilters = ({ filters, jobs, departments, counts, isRecomm
         label: `${value} per page`,
         accentClassName: 'bg-zinc-100 text-zinc-700',
       }))}
-      className="min-w-44"
+      className="w-full min-w-0"
       onChange={onSubmitFilters}
     />
   </Form>

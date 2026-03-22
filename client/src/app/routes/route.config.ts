@@ -8,13 +8,11 @@ export type AppRouteKey =
   | "messages"
   | "saved"
   | "profile"
-  | "settings"
   | "recruiterDashboard"
   | "recruiterJobs"
   | "recruiterCandidates"
   | "recruiterInterviews"
   | "recruiterAutomations"
-  | "recruiterSettings"
   | "superAdminDashboard"
   | "superAdminCompanyAdmins"
   | "superAdminRecruiters"
@@ -27,14 +25,12 @@ export const routeAccess: Record<AppRouteKey, Role[]> = {
   offers: ["jobseeker"],
   messages: ["jobseeker"],
   saved: ["jobseeker"],
-  profile: ["jobseeker"],
-  settings: ["jobseeker", "recruiter"],
+  profile: ["jobseeker", "recruiter", "companyAdmin", "superAdmin", "admin"],
   recruiterDashboard: ["recruiter"],
   recruiterJobs: ["recruiter"],
   recruiterCandidates: ["recruiter"],
   recruiterInterviews: ["recruiter"],
   recruiterAutomations: ["recruiter"],
-  recruiterSettings: ["recruiter"],
   superAdminDashboard: ["admin", "superAdmin"],
   superAdminCompanyAdmins: ["admin", "superAdmin"],
   superAdminRecruiters: ["admin", "superAdmin"],

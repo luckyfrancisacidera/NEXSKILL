@@ -70,7 +70,7 @@ export const ApplicationsPage = () => {
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
               Search
@@ -82,12 +82,12 @@ export const ApplicationsPage = () => {
                 placeholder="Search job title or company"
                 value={search}
                 onChange={handleSearchChange}
-                className="h-11 w-full border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500"
+                className="h-11 w-full min-w-0 border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 xl:col-span-4"
               />
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0 xl:col-span-1">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
               Status
             </label>
