@@ -157,7 +157,7 @@ export const JobPostsPage = () => {
   return (
     <div className="space-y-6">
       <RecruiterHeader />
-      <Card className="dark:border-zinc-800 dark:bg-zinc-950">
+      <Card className="dark:border-zinc-800 dark:bg-zinc-950 bg-white">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Job Posts</h2>
         </div>

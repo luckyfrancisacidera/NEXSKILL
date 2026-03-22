@@ -94,7 +94,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
   };
 
   return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
+    <div className={`flex min-w-0 flex-col gap-1.5 ${className}`}>
       {label ? <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">{label}</label> : null}
 
       <div ref={containerRef} className="relative">
@@ -104,7 +104,7 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
           disabled={disabled}
           className="flex h-11 w-full items-center justify-between rounded-xl bg-zinc-100 px-3.5 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600"
         >
-          <span className={`${!selectedDate ? 'text-zinc-400 dark:text-zinc-600' : ''}`}>{selectedDate ? displayFormatter.format(selectedDate) : 'Select date'}</span>
+          <span className={`truncate ${!selectedDate ? 'text-zinc-400 dark:text-zinc-600' : ''}`}>{selectedDate ? displayFormatter.format(selectedDate) : 'Select date'}</span>
           <svg className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>

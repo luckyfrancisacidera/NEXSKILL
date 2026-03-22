@@ -154,7 +154,6 @@ export const CandidatesPage = () => {
       });
     }
 
-    // With recruiterSync removed, revalidate the loader to pull fresh counts and stages.
     revalidator.revalidate();
   }, [fetcher.data, fetcher.state, revalidator, showToast]);
 
@@ -250,8 +249,6 @@ export const CandidatesPage = () => {
     }
 
     formData.set('selectedIds', eligibleIds.join(','));
-    // When submitting to an index route in React Router data routes, include "?index"
-    // to disambiguate the nested route and ensure the correct action is invoked.
     console.log('[CandidatesPage] submitting bulk action', action.action, eligibleIds);
     fetcher.submit(formData, {
       method: 'post',
@@ -278,7 +275,7 @@ export const CandidatesPage = () => {
   };
 
   return (
-    <Card className="dark:border-zinc-800 dark:bg-zinc-950">
+    <Card className="dark:border-zinc-800 dark:bg-zinc-950 bg-white">
       <div className="mb-3">
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Candidates</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">

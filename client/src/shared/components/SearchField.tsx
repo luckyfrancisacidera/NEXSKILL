@@ -14,7 +14,7 @@ export default function SearchField({
   className = "",
 }: SearchFieldProps) {
   return (
-    <div className={className}>
+    <div className={`w-full min-w-0 ${className}`}>
       <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
         {label}
       </label>

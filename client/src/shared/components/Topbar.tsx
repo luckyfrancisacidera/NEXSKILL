@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Bell, ChevronDown, LogOut, Moon, Sun } from "lucide-react";
+import { Bell, LogOut, Moon, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useNotifications } from "@app/providers/NotificationsProvider";
@@ -87,154 +87,192 @@ export const Topbar = () => {
     navigate("/login", { replace: true });
   };
 
+  const displayName =
+    [user?.firstName?.trim(), user?.lastName?.trim()].filter(Boolean).join(" ") ||
+    (user?.email?.split("@")[0]?.replace(/[._-]+/g, " ") ?? "User");
+  const roleLabel = user?.role ?? "Member";
+
   return (
-    <header className="fixed left-64 right-0 top-0 z-30 flex items-center justify-between gap-4 border-b border-zinc-200/80 bg-white/75 px-6 py-4 shadow-[0_1px_0_rgba(255,255,255,0.7),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-md transition-colors duration-300 supports-backdrop-filter:bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-950/75 dark:shadow-[0_1px_0_rgba(24,24,27,0.85),0_10px_30px_rgba(0,0,0,0.3)] dark:supports-backdrop-filter:bg-zinc-950/70">
-      <div className="flex flex-1 items-center gap-3">
-        <div className="hidden min-w-0 flex-1 flex-col text-left text-xs text-zinc-500 dark:text-zinc-400 sm:flex">
-          {currentCompany ? (
-            <>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                {currentCompany.name}
-              </span>
-              {currentCompany.primaryEmail && (
-                <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                  {currentCompany.primaryEmail}
+    <>
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 bg-white/75 px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.7),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-md transition-colors duration-300 supports-backdrop-filter:bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-950/75 dark:shadow-[0_1px_0_rgba(24,24,27,0.85),0_10px_30px_rgba(0,0,0,0.3)] dark:supports-backdrop-filter:bg-zinc-950/70 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="hidden min-w-0 flex-1 flex-col text-left text-xs text-zinc-500 dark:text-zinc-400 xl:flex">
+            {currentCompany ? (
+              <>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                  {currentCompany.name}
                 </span>
-              )}
-            </>
-          ) : (
-            <span className="font-medium text-zinc-600 dark:text-zinc-300">
-              SkillSense ATS
-            </span>
-          )}
+                {currentCompany.primaryEmail && (
+                  <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {currentCompany.primaryEmail}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="font-medium text-zinc-600 dark:text-zinc-300">
+                SkillSense ATS
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <GlobalSearchBar />
+          </div>
         </div>
-        <GlobalSearchBar />
-      </div>
-      <button type="button" className={topbarControlClassName}>
-        Remote
-        <ChevronDown className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        className={topbarIconButtonClassName}
-        aria-label={themeToggleLabel}
-        title={themeToggleLabel}
-        onClick={toggleTheme}
-      >
-        <ThemeIcon className="h-5 w-5" />
-      </button>
-      <div className="relative" ref={notificationsRef}>
         <button
           type="button"
-          className={cn(topbarIconButtonClassName, "relative")}
-          aria-label="Notifications"
-          aria-expanded={isNotificationsOpen}
-          onClick={toggleNotifications}
+          className={topbarIconButtonClassName}
+          aria-label={themeToggleLabel}
+          title={themeToggleLabel}
+          onClick={toggleTheme}
         >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
+          <ThemeIcon className="h-5 w-5" />
         </button>
-        {isNotificationsOpen && (
-          <div className="absolute right-0 top-12 z-20 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                Notifications
-              </p>
-              {notifications.length > 0 && (
+        <div className="relative" ref={notificationsRef}>
+          <button
+            type="button"
+            className={cn(topbarIconButtonClassName, "relative")}
+            aria-label="Notifications"
+            aria-expanded={isNotificationsOpen}
+            onClick={toggleNotifications}
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+          {isNotificationsOpen && (
+            <div className="absolute right-0 top-12 z-20 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="mb-2 flex items-center justify-between px-1">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                  Notifications
+                </p>
+                {notifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllAsRead}
+                    className="text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                  >
+                    Mark all as read
+                  </button>
+                )}
+              </div>
+              <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+                {notifications.length === 0 ? (
+                  <p className="px-1 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                    You&apos;re all caught up.
+                  </p>
+                ) : (
+                  latestNotifications.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => void markNotificationAsRead(item.id)}
+                      className={cn(
+                        "block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                        item.read
+                          ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                          : "bg-violet-50 text-zinc-800 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-zinc-100 dark:ring-violet-900/60",
+                      )}
+                    >
+                      <p className="font-semibold">{item.title}</p>
+                      {item.description ? (
+                        <p className="mt-0.5 line-clamp-2">{item.description}</p>
+                      ) : null}
+                      <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-400">
+                        {item.actor === "recruiter"
+                          ? "Recruiter"
+                          : item.actor === "jobseeker"
+                            ? "Jobseeker"
+                            : "System"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+                        {formatNotificationTimestamp(item.createdAt)}
+                      </p>
+                    </button>
+                  ))
+                )}
+              </div>
+              <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={markAllAsRead}
-                  className="text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                  onClick={() => {
+                    setIsNotificationsOpen(false);
+                    navigate("/notifications");
+                  }}
+                  className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50 hover:text-violet-700 dark:text-violet-400 dark:hover:bg-violet-950/40 dark:hover:text-violet-300"
                 >
-                  Mark all as read
+                  View all notifications
                 </button>
-              )}
+              </div>
             </div>
-            <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
-              {notifications.length === 0 ? (
-                <p className="px-1 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                  You&apos;re all caught up.
-                </p>
-              ) : (
-                latestNotifications.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => void markNotificationAsRead(item.id)}
-                    className={cn(
-                      "block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
-                      item.read
-                        ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
-                        : "bg-violet-50 text-zinc-800 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-zinc-100 dark:ring-violet-900/60",
-                    )}
-                  >
-                    <p className="font-semibold">{item.title}</p>
-                    {item.description ? (
-                      <p className="mt-0.5 line-clamp-2">{item.description}</p>
-                    ) : null}
-                    <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-400">
-                      {item.actor === "recruiter"
-                        ? "Recruiter"
-                        : item.actor === "jobseeker"
-                          ? "Jobseeker"
-                          : "System"}
-                    </p>
-                    <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
-                      {formatNotificationTimestamp(item.createdAt)}
-                    </p>
-                  </button>
-                ))
-              )}
-            </div>
-            <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNotificationsOpen(false);
-                  navigate("/notifications");
-                }}
-                className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50 hover:text-violet-700 dark:text-violet-400 dark:hover:bg-violet-950/40 dark:hover:text-violet-300"
-              >
-                View all notifications
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="relative" ref={menuRef}>
-        <button
-          type="button"
-          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-500"
-          aria-haspopup="menu"
-          aria-expanded={isUserMenuOpen}
-          aria-label="Open user menu"
-          onClick={() => setIsUserMenuOpen((current) => !current)}
-        >
-          <Avatar name={user?.email ?? "User"} />
-        </button>
-
-        {isUserMenuOpen && (
-          <div
-            className="absolute right-0 top-12 z-20 min-w-44 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-900"
-            role="menu"
-            aria-label="User menu"
+          )}
+        </div>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-500"
+            aria-haspopup="menu"
+            aria-expanded={isUserMenuOpen}
+            aria-label="Open user menu"
+            onClick={() => setIsUserMenuOpen((current) => !current)}
           >
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-left text-sm font-medium text-red-700 transition-colors duration-300 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70 dark:focus-visible:ring-red-900"
-              role="menuitem"
-              onClick={onLogout}
+            <Avatar name={user?.email ?? "User"} />
+          </button>
+
+          {isUserMenuOpen && (
+            <div
+              className="absolute right-0 top-12 z-20 w-[280px] overflow-hidden rounded-[26px] border border-zinc-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)] transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-900"
+              role="menu"
+              aria-label="User menu"
             >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
-          </div>
-        )}
-      </div>
-    </header>
+              <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
+                <Avatar
+                  name={user?.email ?? "User"}
+                  className="h-12 w-12 border-zinc-200 bg-violet-50 dark:border-zinc-700 dark:bg-zinc-800"
+                  iconClassName="h-6 w-6"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    {displayName}
+                  </p>
+                  <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+                    {roleLabel}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-2">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[15px] font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    navigate("/profile");
+                  }}
+                >
+                  <UserRound className="h-4 w-4" />
+                  My Profile
+                </button>
+              </div>
+
+              <div className="border-t border-zinc-200 p-2 dark:border-zinc-800">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[15px] font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
+                  role="menuitem"
+                  onClick={onLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log Out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+    </>
   );
 };

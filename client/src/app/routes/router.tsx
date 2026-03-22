@@ -16,7 +16,6 @@ import {
   MessagesPage,
   ProfilePage,
   SavedJobsPage,
-  SettingsPage,
   applicationsLoader,
   dashboardLoader,
   jobsLoader,
@@ -35,7 +34,6 @@ import {
   JobFormPage,
   JobPostsPage,
   RecruiterDashboardPage,
-  RecruiterSettingsPage,
   automationRuleAction,
   cancelInterviewAction,
   deleteJobAction,
@@ -47,12 +45,10 @@ import {
   recruiterInterviewsLoader,
   recruiterJobDetailLoader,
   recruiterJobsLoader,
-  recruiterSettingsLoader,
   runOfferAutomationAction,
   candidatesAction,
   updateCandidateAction,
   updateJobStatusAction,
-  updateRecruiterSettingsAction,
   upsertInterviewAction,
   upsertJobAction,
 } from "@features/recruiter";
@@ -191,11 +187,10 @@ const sharedRoutes: AppRoute[] = [
     access: "profile",
     element: <ProfilePage />,
   }),
-  protectedRoute({
+  {
     path: "settings",
-    access: "settings",
-    element: <SettingsPage />,
-  }),
+    element: <Navigate to="/profile" replace />,
+  },
   protectedRoute({
     path: "jobseeker/interviews",
     access: "applications",
@@ -339,13 +334,10 @@ const recruiterRoutes: AppRoute = {
         }),
       ],
     },
-    protectedRoute({
+    {
       path: "settings",
-      access: "recruiterSettings",
-      loader: recruiterSettingsLoader,
-      action: updateRecruiterSettingsAction,
-      element: <RecruiterSettingsPage />,
-    }),
+      element: <Navigate to="/profile" replace />,
+    },
   ],
 };
 

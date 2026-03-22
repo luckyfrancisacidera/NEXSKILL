@@ -7,8 +7,8 @@ export const RecruiterHeader = () => (
       <p className="text-sm text-zinc-500">Manage hiring, candidates, interviews, and automations.</p>
     </div>
     <div className="flex gap-2 text-sm">
-      <Link className="rounded-lg border border-zinc-300 px-3 py-2 hover:bg-zinc-100" to="/recruiter/job-posts/new">Add Job</Link>
-      <Link className="rounded-lg border border-zinc-300 px-3 py-2 hover:bg-zinc-100" to="/recruiter/interviews/new">Schedule Interview</Link>
+      <Link className="rounded-lg border border-zinc-300 px-3 py-2 hover:bg-zinc-200 bg-white dark:bg-black" to="/recruiter/job-posts/new">Add Job</Link>
+      <Link className="rounded-lg border border-zinc-300 px-3 py-2 hover:bg-zinc-100 bg-white dark:bg-black" to="/recruiter/interviews/new">Schedule Interview</Link>
     </div>
   </div>
 );

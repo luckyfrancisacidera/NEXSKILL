@@ -64,7 +64,7 @@ export const GlobalSearchBar = () => {
   const showDropdown = isOpen && document.activeElement === inputRef.current;
 
   return (
-    <div className="relative flex-1" ref={containerRef}>
+    <div className="relative min-w-0 flex-1" ref={containerRef}>
       <label className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950">
         <Search className="h-4 w-4 shrink-0" />
         <input

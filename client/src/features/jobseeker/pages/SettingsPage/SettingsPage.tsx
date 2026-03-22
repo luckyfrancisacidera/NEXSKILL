@@ -4,6 +4,7 @@ import { KeyRound, LifeBuoy, ShieldCheck } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { useToast } from "@app/providers/ToastProvider";
+import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { authService } from "@features/auth/services/auth.service";
 import { ApiError } from "@shared/api/http";
 import { Button } from "@shared/components/Button";
@@ -19,6 +20,7 @@ export const SettingsPage = () => {
   const [changePasswordError, setChangePasswordError] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isSendingRecoveryLink, setIsSendingRecoveryLink] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
 
   const email = useMemo(() => user?.email?.trim() ?? "", [user?.email]);
   const isChangePasswordDisabled =
@@ -283,6 +285,16 @@ export const SettingsPage = () => {
                 : "Email me a reset link"}
             </Button>
 
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!email}
+              className="h-11 w-full justify-center rounded-xl"
+              onClick={() => setIsResetPasswordModalOpen(true)}
+            >
+              Reset with email PIN
+            </Button>
+
             <Link
               to={
                 email
@@ -296,6 +308,12 @@ export const SettingsPage = () => {
           </div>
         </Card>
       </div>
+
+      <ResetPasswordPinModal
+        open={isResetPasswordModalOpen}
+        initialEmail={email}
+        onClose={() => setIsResetPasswordModalOpen(false)}
+      />
     </div>
   );
 };

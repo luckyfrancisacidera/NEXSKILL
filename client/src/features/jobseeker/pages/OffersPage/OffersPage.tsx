@@ -148,7 +148,7 @@ export const OffersPage = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden rounded-[28px] border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-0 shadow-sm\">
+      <Card className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <div className="bg-[radial-gradient(circle_at_top_right,_rgba(161,161,170,0.18),_transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-6 py-7 text-white md:px-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl">
@@ -171,18 +171,18 @@ export const OffersPage = () => {
       </Card>
 
       {requiresLegacyFallback && interviewError ? (
-        <Card className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 shadow-sm">
+        <Card className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
           Some legacy applications are still missing recruiter or company fields, and fallback interview enrichment is temporarily unavailable.
         </Card>
       ) : null}
 
       {offerCards.length === 0 ? (
-        <Card className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
+        <Card className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-300">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-zinc-900">No active offer pipelines yet</h2>
-          <p className="mt-2 text-sm text-zinc-500">
+          <h2 className="mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">No active offer pipelines yet</h2>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             Your active applications will appear here once they move through the hiring process.
           </p>
         </Card>

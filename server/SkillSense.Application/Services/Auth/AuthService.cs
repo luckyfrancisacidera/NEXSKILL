@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SkillSense.Application.Contracts.Auth;
@@ -11,6 +12,8 @@ using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
 using System.Text;
 using System.Net;
+using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 
 namespace SkillSense.Application.Services.Auth;
 
@@ -68,7 +71,7 @@ public sealed class AuthService(
         await EnsureRoleExistsAsync("JobSeeker");
         await _userManager.AddToRoleAsync(user, "JobSeeker");
 
-        user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id, FullName = email.Split('@')[0] };
+        user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id };
         await _userManager.UpdateAsync(user);
 
         return await CreateSuccessAuthResultAsync(user, "Registration successful.", cancellationToken);
@@ -213,6 +216,259 @@ public sealed class AuthService(
         }
     }
 
+    public async Task RequestPasswordResetPinAsync(RequestPasswordResetPinRequest request, CancellationToken cancellationToken)
+    {
+        var email = _sanitizer.SanitizeEmail(request.Email);
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return;
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            return;
+        }
+
+        var nowUtc = _dateTimeProvider.UtcNow;
+        var activePins = await _authRepository.GetActivePinsAsync(
+            user.Id,
+            VerificationPinPurpose.PasswordReset,
+            nowUtc,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Preparing password reset PIN for user {UserId}. Active unused PIN count: {PinCount}.",
+            user.Id,
+            activePins.Count);
+
+        if (activePins.Count > 0)
+        {
+            foreach (var existingPin in activePins)
+            {
+                existingPin.Used = true;
+            }
+
+            try
+            {
+                await _authRepository.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Concurrency issue while invalidating existing password reset PINs for user {UserId}.",
+                    user.Id);
+                throw new InvalidOperationException("Could not prepare a new password reset PIN right now.");
+            }
+        }
+
+        const int pinExpiryMinutes = 10;
+        var rawPin = GeneratePin();
+        var pin = CreateVerificationPin(
+            user.Id,
+            VerificationPinPurpose.PasswordReset,
+            pendingEmail: null,
+            rawPin,
+            nowUtc.AddMinutes(pinExpiryMinutes));
+
+        await _authRepository.AddPasswordResetPinAsync(pin, cancellationToken);
+
+        try
+        {
+            await _authRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Concurrency issue while inserting a new password reset PIN for user {UserId}. New PIN id: {PinId}.",
+                user.Id,
+                pin.Id);
+            throw new InvalidOperationException("Could not create a password reset PIN right now.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not persist password reset PIN for user {UserId}.", user.Id);
+            return;
+        }
+
+        try
+        {
+            await _emailService.SendEmailAsync(new EmailMessage
+            {
+                ToEmail = email,
+                Subject = "Password Reset PIN",
+                Html = BuildPasswordResetPinHtml(rawPin, pinExpiryMinutes),
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset PIN email for user {UserId}.", user.Id);
+        }
+    }
+
+    public async Task<CurrentUserResponse> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        await EnsureStoredNamePartsAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        return AuthUserProfileMapper.ToCurrentUserResponse(user, roles);
+    }
+
+    public async Task<AccountProfileResponse> GetProfileAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        await EnsureStoredNamePartsAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        return AuthUserProfileMapper.ToAccountProfileResponse(user, roles);
+    }
+
+    public async Task<AccountProfileResponse> UpdateProfileAsync(Guid userId, UpdateAccountProfileRequest request, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        var roles = await _userManager.GetRolesAsync(user);
+
+        user.FirstName = NullIfEmpty(_sanitizer.Sanitize(request.FirstName));
+        user.LastName = NullIfEmpty(_sanitizer.Sanitize(request.LastName));
+
+        SyncJobSeekerProfile(user, roles);
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not update your profile.");
+        }
+
+        return AuthUserProfileMapper.ToAccountProfileResponse(user, roles);
+    }
+
+    public async Task RequestEmailChangePinAsync(Guid userId, RequestEmailChangePinRequest request, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        var newEmail = _sanitizer.SanitizeEmail(request.NewEmail);
+        var confirmEmail = _sanitizer.SanitizeEmail(request.ConfirmEmail);
+
+        ValidateRequestedEmailChange(user, newEmail, confirmEmail);
+        await EnsureEmailAvailableAsync(newEmail, userId);
+
+        InvalidateActivePins(user, VerificationPinPurpose.EmailChange);
+
+        var rawPin = GeneratePin();
+        var pin = CreateVerificationPin(user.Id, VerificationPinPurpose.EmailChange, newEmail, rawPin, _dateTimeProvider.UtcNow.AddMinutes(10));
+
+        user.PasswordResetPins.Add(pin);
+
+        try
+        {
+            await _authRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not persist email change PIN for user {UserId}.", user.Id);
+            throw new ArgumentException("Could not start the email change flow.");
+        }
+
+        try
+        {
+            await _emailService.SendEmailAsync(new EmailMessage
+            {
+                ToEmail = newEmail,
+                Subject = "Verify your Nexskill email change",
+                Html = BuildEmailChangePinHtml(rawPin),
+            }, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email change PIN for user {UserId}.", user.Id);
+            throw new InvalidOperationException("Could not send a verification PIN right now.");
+        }
+    }
+
+    public async Task VerifyEmailChangePinAsync(Guid userId, VerifyEmailChangePinRequest request, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        var email = _sanitizer.SanitizeEmail(request.NewEmail);
+        var pinValue = _sanitizer.Sanitize(request.Pin);
+
+        var pin = FindLatestMatchingPin(user, VerificationPinPurpose.EmailChange, email, pinValue);
+        if (pin is null || pin.Used)
+        {
+            throw new ArgumentException("The verification PIN is invalid.");
+        }
+
+        if (pin.ExpiresAtUtc <= _dateTimeProvider.UtcNow)
+        {
+            throw new ArgumentException("The verification PIN has expired. Please request a new code.");
+        }
+
+        await EnsureEmailAvailableAsync(email, userId);
+
+        if (!pin.VerifiedAtUtc.HasValue)
+        {
+            pin.VerifiedAtUtc = _dateTimeProvider.UtcNow;
+            try
+            {
+                await _authRepository.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not persist email PIN verification for user {UserId}.", user.Id);
+                throw new ArgumentException("Could not verify the email PIN.");
+            }
+        }
+    }
+
+    public async Task<AccountProfileResponse> FinalizeEmailChangeAsync(Guid userId, FinalizeEmailChangeRequest request, CancellationToken cancellationToken)
+    {
+        var user = await LoadUserForProfileAsync(userId, cancellationToken);
+        var roles = await _userManager.GetRolesAsync(user);
+        var email = _sanitizer.SanitizeEmail(request.NewEmail);
+        var pinValue = _sanitizer.Sanitize(request.Pin);
+
+        var pin = FindLatestMatchingPin(user, VerificationPinPurpose.EmailChange, email, pinValue);
+        if (pin is null || pin.Used)
+        {
+            throw new ArgumentException("The verification PIN is invalid.");
+        }
+
+        if (pin.ExpiresAtUtc <= _dateTimeProvider.UtcNow)
+        {
+            throw new ArgumentException("The verification PIN has expired. Please request a new code.");
+        }
+
+        if (!pin.VerifiedAtUtc.HasValue)
+        {
+            throw new ArgumentException("Verify the PIN before updating your email.");
+        }
+
+        await EnsureEmailAvailableAsync(email, userId);
+
+        user.Email = email;
+        user.UserName = email;
+        user.NormalizedEmail = email.ToUpperInvariant();
+        user.NormalizedUserName = email.ToUpperInvariant();
+        user.EmailConfirmed = true;
+
+        pin.Used = true;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not update your email address.");
+        }
+
+        return AuthUserProfileMapper.ToAccountProfileResponse(user, roles);
+    }
+
     /// <summary>
     /// Validates whether a password reset token is still active and valid for the supplied user.
     /// </summary>
@@ -284,6 +540,72 @@ public sealed class AuthService(
         }
     }
 
+    public async Task VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken)
+    {
+        var email = _sanitizer.SanitizeEmail(request.Email);
+        var pinValue = _sanitizer.Sanitize(request.Pin);
+        var newPassword = _sanitizer.Sanitize(request.NewPassword);
+        var confirmPassword = _sanitizer.Sanitize(request.ConfirmPassword);
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentException("Enter a valid email address.");
+        }
+
+        if (string.IsNullOrWhiteSpace(pinValue))
+        {
+            throw new ArgumentException("Enter the PIN sent to your email.");
+        }
+
+        if (!string.Equals(newPassword, confirmPassword, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Your password confirmation does not match.");
+        }
+
+        var user = await LoadUserByEmailWithPinsAsync(email, cancellationToken)
+            ?? throw new ArgumentException("The PIN is invalid or has expired.");
+
+        var pin = FindLatestMatchingPin(user, VerificationPinPurpose.PasswordReset, pendingEmail: null, pinValue);
+        if (pin is null || pin.Used || pin.ExpiresAtUtc <= _dateTimeProvider.UtcNow)
+        {
+            throw new ArgumentException("The PIN is invalid or has expired.");
+        }
+
+        var passwordValidation = await ValidatePasswordAsync(user, newPassword);
+        if (passwordValidation.Count > 0)
+        {
+            throw new ArgumentException(passwordValidation[0]);
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not reset password.");
+        }
+
+        pin.Used = true;
+        pin.VerifiedAtUtc = _dateTimeProvider.UtcNow;
+
+        foreach (var existingPin in user.PasswordResetPins.Where(existingPin =>
+                     existingPin.Id != pin.Id &&
+                     existingPin.Purpose == VerificationPinPurpose.PasswordReset &&
+                     !existingPin.Used))
+        {
+            existingPin.Used = true;
+        }
+
+        try
+        {
+            await _authRepository.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not finalize password reset PIN state for user {UserId}.", user.Id);
+            throw new ArgumentException("Could not finalize password reset.");
+        }
+    }
+
     /// <summary>
     /// Changes the password for an authenticated user after validating the current credentials.
     /// </summary>
@@ -295,6 +617,16 @@ public sealed class AuthService(
         var currentPassword = _sanitizer.Sanitize(request.CurrentPassword);
         var newPassword = _sanitizer.Sanitize(request.NewPassword);
 
+        if (string.IsNullOrWhiteSpace(currentPassword))
+        {
+            throw new ArgumentException("Current password is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            throw new ArgumentException("New password is required.");
+        }
+
         var passwordValidation = await ValidatePasswordAsync(user, newPassword);
         if (passwordValidation.Count > 0)
         {
@@ -304,7 +636,7 @@ public sealed class AuthService(
         var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!result.Succeeded)
         {
-            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not change password.");
+            throw new ArgumentException(MapChangePasswordError(result));
         }
     }
 
@@ -405,5 +737,253 @@ public sealed class AuthService(
         }
 
         return frontendBaseUrl.Trim().TrimEnd('/');
+    }
+
+    private async Task<AppUser> LoadUserForProfileAsync(Guid userId, CancellationToken cancellationToken)
+        => await _userManager.Users
+            .Include(user => user.JobSeekerProfile)
+            .Include(user => user.PasswordResetPins)
+            .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken)
+           ?? throw new ArgumentException("Unable to find the current account.");
+
+    private Task<AppUser?> LoadUserByEmailWithPinsAsync(string email, CancellationToken cancellationToken)
+        => _userManager.Users
+            .Include(user => user.PasswordResetPins)
+            .FirstOrDefaultAsync(
+                user => user.NormalizedEmail == email.ToUpperInvariant(),
+                cancellationToken);
+
+    private static string? NullIfEmpty(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static void ValidateRequestedEmailChange(AppUser user, string newEmail, string confirmEmail)
+    {
+        if (string.IsNullOrWhiteSpace(newEmail))
+        {
+            throw new ArgumentException("Enter a valid new email address.");
+        }
+
+        if (!new EmailAddressAttribute().IsValid(newEmail))
+        {
+            throw new ArgumentException("Enter a valid new email address.");
+        }
+
+        if (!string.Equals(newEmail, confirmEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Email confirmation does not match.");
+        }
+
+        if (string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Use a different email address from your current one.");
+        }
+    }
+
+    private async Task EnsureEmailAvailableAsync(string email, Guid currentUserId)
+    {
+        var existing = await _userManager.FindByEmailAsync(email);
+        if (existing is not null && existing.Id != currentUserId)
+        {
+            throw new ArgumentException("That email address is already in use.");
+        }
+    }
+
+    private static PasswordResetPinEntity CreateVerificationPin(
+        Guid userId,
+        VerificationPinPurpose purpose,
+        string? pendingEmail,
+        string rawPin,
+        DateTime expiresAtUtc)
+    {
+        var saltBytes = RandomNumberGenerator.GetBytes(32);
+
+        return new PasswordResetPinEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PinHash = HashPin(rawPin, saltBytes),
+            PinSalt = Convert.ToBase64String(saltBytes),
+            PendingEmail = pendingEmail,
+            Purpose = purpose,
+            ExpiresAtUtc = expiresAtUtc,
+            Used = false,
+        };
+    }
+
+    private static void InvalidateActivePins(AppUser user, VerificationPinPurpose purpose)
+    {
+        foreach (var existingPin in user.PasswordResetPins.Where(pin => !pin.Used && pin.Purpose == purpose))
+        {
+            existingPin.Used = true;
+        }
+    }
+
+    private static string GeneratePin()
+        => RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+
+    private static PasswordResetPinEntity? FindLatestMatchingPin(
+        AppUser user,
+        VerificationPinPurpose purpose,
+        string? pendingEmail,
+        string pin)
+        => user.PasswordResetPins
+            .Where(existingPin =>
+                existingPin.Purpose == purpose &&
+                (pendingEmail is null || string.Equals(existingPin.PendingEmail, pendingEmail, StringComparison.OrdinalIgnoreCase)) &&
+                VerifyPin(existingPin, pin))
+            .OrderByDescending(existingPin => existingPin.CreatedAtUtc)
+            .FirstOrDefault();
+
+    private static bool VerifyPin(PasswordResetPinEntity storedPin, string candidatePin)
+    {
+        if (string.IsNullOrWhiteSpace(candidatePin) || string.IsNullOrWhiteSpace(storedPin.PinHash) || string.IsNullOrWhiteSpace(storedPin.PinSalt))
+        {
+            return false;
+        }
+
+        byte[] saltBytes;
+        try
+        {
+            saltBytes = Convert.FromBase64String(storedPin.PinSalt);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        var candidateHash = HashPin(candidatePin, saltBytes);
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(candidateHash),
+            Encoding.UTF8.GetBytes(storedPin.PinHash));
+    }
+
+    private static string HashPin(string pin, byte[] saltBytes)
+    {
+        var hashBytes = Rfc2898DeriveBytes.Pbkdf2(pin, saltBytes, 10_000, HashAlgorithmName.SHA256, 32);
+        return Convert.ToBase64String(hashBytes);
+    }
+
+    private static string? CombineName(string? firstName, string? lastName)
+    {
+        var parts = new[] { NullIfEmpty(firstName), NullIfEmpty(lastName) }
+            .Where(part => !string.IsNullOrWhiteSpace(part));
+
+        var combined = string.Join(' ', parts);
+        return string.IsNullOrWhiteSpace(combined) ? null : combined;
+    }
+
+    private static string BuildEmailChangePinHtml(string pin)
+        => $"""
+            <p>We received a request to update your Nexskill email address.</p>
+            <p>Your verification PIN is <strong>{WebUtility.HtmlEncode(pin)}</strong>.</p>
+            <p>This PIN expires in 10 minutes. If you did not request this change, you can ignore this email.</p>
+            """;
+
+    private static string BuildPasswordResetPinHtml(string pin, int expiresInMinutes)
+        => $"""
+            <p>We received a request to reset your Nexskill password.</p>
+            <p>Your password reset PIN is <strong>{WebUtility.HtmlEncode(pin)}</strong>.</p>
+            <p>This PIN expires in {expiresInMinutes} minutes. If you did not request this change, you can ignore this email.</p>
+            """;
+
+    private static void SyncJobSeekerProfile(AppUser user, IEnumerable<string> roles)
+    {
+        var isJobSeeker = roles.Any(role => role.Equals("JobSeeker", StringComparison.OrdinalIgnoreCase));
+        if (!isJobSeeker)
+        {
+            return;
+        }
+
+        user.JobSeekerProfile ??= new JobSeekerProfileEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+        };
+
+        user.JobSeekerProfile.FullName = CombineName(user.FirstName, user.LastName);
+        user.JobSeekerProfile.Location = user.Location;
+        user.JobSeekerProfile.UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    private async Task EnsureStoredNamePartsAsync(AppUser user)
+    {
+        var profileFullName = NullIfEmpty(user.JobSeekerProfile?.FullName);
+        if (profileFullName is null)
+        {
+            return;
+        }
+
+        var storedFirstName = NullIfEmpty(user.FirstName);
+        var storedLastName = NullIfEmpty(user.LastName);
+        if (storedFirstName is not null && storedLastName is not null)
+        {
+            return;
+        }
+
+        var (profileFirstName, profileLastName) = SplitFullName(profileFullName);
+        var nextFirstName = storedFirstName ?? profileFirstName;
+        var nextLastName = storedLastName ?? profileLastName;
+
+        if (nextFirstName == storedFirstName && nextLastName == storedLastName)
+        {
+            return;
+        }
+
+        user.FirstName = nextFirstName;
+        user.LastName = nextLastName;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            throw new ArgumentException(result.Errors.FirstOrDefault()?.Description ?? "Could not sync your profile name.");
+        }
+    }
+
+    private static (string? FirstName, string? LastName) SplitFullName(string? fullName)
+    {
+        var normalizedFullName = NullIfEmpty(fullName);
+        if (normalizedFullName is null)
+        {
+            return (null, null);
+        }
+
+        var parts = normalizedFullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (parts.Length == 0)
+        {
+            return (null, null);
+        }
+
+        if (parts.Length == 1)
+        {
+            return (parts[0], null);
+        }
+
+        return (parts[0], string.Join(' ', parts.Skip(1)));
+    }
+
+    private static string MapChangePasswordError(IdentityResult result)
+    {
+        var invalidCurrentPasswordError = result.Errors.FirstOrDefault(error =>
+            string.Equals(error.Code, "PasswordMismatch", StringComparison.OrdinalIgnoreCase));
+        if (invalidCurrentPasswordError is not null)
+        {
+            return "Your current password is incorrect.";
+        }
+
+        var validationError = result.Errors.FirstOrDefault(error =>
+            string.Equals(error.Code, "PasswordTooShort", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(error.Code, "PasswordRequiresNonAlphanumeric", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(error.Code, "PasswordRequiresDigit", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(error.Code, "PasswordRequiresLower", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(error.Code, "PasswordRequiresUpper", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(error.Code, "PasswordRequiresUniqueChars", StringComparison.OrdinalIgnoreCase));
+        if (validationError is not null)
+        {
+            return validationError.Description;
+        }
+
+        return result.Errors.FirstOrDefault()?.Description ?? "Could not change password.";
     }
 }

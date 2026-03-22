@@ -13,6 +13,7 @@ import {
 } from "@shared/api/http";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useSetup } from "@app/providers/SetupProvider";
+import type { AuthMeResponse } from "@features/auth/types/auth.types";
 import {
   CURRENT_RECRUITER_PROFILE_STORAGE_KEY,
 } from "@app/providers/contextStorage";
@@ -31,12 +32,6 @@ interface CurrentRecruiterContextValue {
   isLoading: boolean;
   setCurrentProfile: (profileId: string) => void;
   refresh: () => Promise<void>;
-}
-
-interface AuthMeResponse {
-  isAuthenticated?: boolean;
-  activeRecruiterProfileId?: string | null;
-  recruiterProfileIds?: string[];
 }
 
 interface RecruiterProfileResponse {
@@ -76,7 +71,7 @@ export const CurrentRecruiterProvider = ({
 
     try {
       const meResponse = await http.get<AuthMeResponse>("/api/auth/me");
-      const profileIds = (meResponse.data.recruiterProfileIds ?? []).filter(Boolean);
+      const profileIds = (meResponse.data.recruiter_profile_ids ?? []).filter(Boolean);
 
       if (profileIds.length === 0) {
         setProfiles([]);
@@ -112,7 +107,7 @@ export const CurrentRecruiterProvider = ({
       const resolvedProfileId =
         storedProfileId && availableProfiles.some((profile) => profile.id === storedProfileId)
           ? storedProfileId
-          : meResponse.data.activeRecruiterProfileId ||
+          : meResponse.data.active_recruiter_profile_id ||
             availableProfiles[0]?.id ||
             null;
 

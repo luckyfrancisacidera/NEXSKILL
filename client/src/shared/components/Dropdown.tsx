@@ -75,7 +75,7 @@ export default function Dropdown({
   };
 
   return (
-    <div className={className} ref={dropdownRef}>
+    <div className={`w-full min-w-0 ${className}`} ref={dropdownRef}>
       <label className="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
         {label}
       </label>

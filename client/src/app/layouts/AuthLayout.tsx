@@ -1,6 +1,6 @@
 const AuthLayout = () => {
     return (
-        <div>
+        <div className="font-inter">
             
         </div>
     );

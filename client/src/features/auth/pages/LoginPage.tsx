@@ -10,6 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
+import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { ApiError } from "@shared/api/http";
 
 const LoginPage = () => {
@@ -20,6 +21,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -49,20 +51,20 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="grid md:grid-cols-[60%_40%] bg-zinc-800 w-full min-h-screen text-white font-inter">
+    <div className="grid min-h-screen w-full bg-zinc-800 text-white font-inter md:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
       {/* Left panel */}
-      <div className="p-4 sm:p-8 hidden md:block">
+      <div className="hidden p-4 sm:p-8 md:block">
         <div
           className="bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]"
           style={{ backgroundImage: `url(${BuildingImage})` }}
         >
           <div className="grid grid-rows-[30%_70%] w-full h-full">
             <div className="w-full h-full">
-              <img src={LightLogo} alt="LightLogo.png" className="w-15" />
+              <img src={LightLogo} alt="LightLogo.png" className="w-[3.75rem]" />
             </div>
 
             <div className="flex w-full h-full items-start justify-start flex-col gap-5 p-7">
-              <h2 className="text-5xl text-center font-extrabold tracking-widest leading-15">
+              <h2 className="text-5xl text-center font-extrabold tracking-widest leading-[3.75rem]">
                 Welcome back!
               </h2>
               <p className="text-sm tracking-wider">
@@ -74,7 +76,7 @@ const LoginPage = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex justify-center items-center bg-zinc-800 p-8">
+      <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
         <div className="w-full max-w-md">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-wider text-white">
@@ -135,7 +137,13 @@ const LoginPage = () => {
                 </Link>
               </span>
 
-              <Link to="/forgot-password" className="text-xs text-zinc-400 hover:text-zinc-200">Forgot password?</Link>
+              <button
+                type="button"
+                className="text-left text-xs text-zinc-400 hover:text-zinc-200"
+                onClick={() => setIsResetPasswordModalOpen(true)}
+              >
+                Forgot password?
+              </button>
 
               {/* Divider */}
               <div className="flex items-center gap-4 my-2 w-full">
@@ -147,7 +155,7 @@ const LoginPage = () => {
               </div>
 
               {/* Social Login */}
-              <div className="grid grid-cols-2 w-full gap-4">
+              <div className="grid w-full gap-4 sm:grid-cols-2">
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
@@ -169,6 +177,12 @@ const LoginPage = () => {
           </form>
         </div>
       </div>
+
+      <ResetPasswordPinModal
+        open={isResetPasswordModalOpen}
+        initialEmail={email}
+        onClose={() => setIsResetPasswordModalOpen(false)}
+      />
     </div>
   );
 };

@@ -5,7 +5,7 @@ interface ModalOverlayProps extends PropsWithChildren {
 }
 
 export const ModalOverlay = ({ onClose, children }: ModalOverlayProps) => (
-  <div className="fixed inset-0 z-80 flex items-center justify-center p-4">
+  <div className="fixed inset-0 z-80 flex items-center justify-center p-4 fony-inter">
     <button
       type="button"
       onClick={onClose}
@@ -15,7 +15,6 @@ export const ModalOverlay = ({ onClose, children }: ModalOverlayProps) => (
     <div
       className="relative z-81 w-full max-w-lg"
       onClick={(event: MouseEvent<HTMLDivElement>) => {
-        // Stop propagation so clicks inside the modal never reach parent page handlers.
         event.stopPropagation();
       }}
     >
