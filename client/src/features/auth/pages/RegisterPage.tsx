@@ -52,20 +52,20 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="grid grid-cols-2 bg-zinc-800 w-full h-screen text-white font-inter">
+    <div className="grid min-h-screen w-full bg-zinc-800 text-white font-inter md:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
       {/* Left panel */}
-      <div className="p-8">
+      <div className="hidden p-4 sm:p-8 md:block">
         <div
           className="bg-cover p-4 rounded-xl bg-center h-full w-full [-webkit-mask-image:linear-gradient(to_right,black_60%,transparent_100%)]"
           style={{ backgroundImage: `url(${BuildingImage})` }}
         >
           <div className="grid grid-rows-2 w-full h-full">
             <div className="w-full h-full">
-              <img src={LightLogo} alt="LightLogo.png" className="w-15" />
+              <img src={LightLogo} alt="LightLogo.png" className="w-[3.75rem]" />
             </div>
 
             <div className="flex w-full h-full p-12 items-end justify-center">
-              <h2 className="text-5xl text-center font-bold tracking-widest leading-15">
+              <h2 className="text-5xl text-center font-bold tracking-widest leading-[3.75rem]">
                 Hire Smarter. Match Faster.
               </h2>
             </div>
@@ -74,7 +74,7 @@ const RegisterPage = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex justify-center items-center bg-zinc-800 p-8">
+      <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
         <div className="w-full max-w-md">
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight text-white">
@@ -87,7 +87,7 @@ const RegisterPage = () => {
 
           <form className="flex flex-col gap-4" onSubmit={onSubmit}>
             {/* Name fields */}
-            <div className="flex flex-row gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="w-full">
                 <input
                   type="text"
@@ -179,7 +179,7 @@ const RegisterPage = () => {
               </div>
 
               {/* Social Login */}
-              <div className="grid grid-cols-2 w-full gap-4">
+              <div className="grid w-full gap-4 sm:grid-cols-2">
                 <button
                   type="button"
                   className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"

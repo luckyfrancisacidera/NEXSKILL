@@ -9,6 +9,9 @@ internal sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
     public void Configure(EntityTypeBuilder<AppUser> builder)
     {
         builder.ToTable("users");
+        builder.Property(x => x.FirstName).HasMaxLength(120);
+        builder.Property(x => x.LastName).HasMaxLength(120);
+        builder.Property(x => x.Location).HasMaxLength(200);
 
         builder.HasOne(x => x.JobSeekerProfile)
             .WithOne(x => x.User)

@@ -10,6 +10,7 @@ import type { PropsWithChildren } from "react";
 import { http, setActiveCompanyHeader } from "@shared/api/http";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useSetup } from "@app/providers/SetupProvider";
+import type { AuthMeResponse } from "@features/auth/types/auth.types";
 import {
   CURRENT_COMPANY_STORAGE_KEY,
 } from "@app/providers/contextStorage";
@@ -27,12 +28,6 @@ interface CurrentCompanyContextValue {
   isLoading: boolean;
   setCurrentCompany: (companyId: string) => void;
   refresh: () => Promise<void>;
-}
-
-interface AuthMeResponse {
-  isAuthenticated?: boolean;
-  activeCompanyId?: string | null;
-  companyIds?: string[];
 }
 
 interface SetupStatusResponse {
@@ -79,7 +74,7 @@ export const CurrentCompanyProvider = ({ children }: PropsWithChildren) => {
       ]);
 
       const discoveredCompanyIds = new Set<string>(
-        (meResponse.data.companyIds ?? []).filter(Boolean),
+        (meResponse.data.company_ids ?? []).filter(Boolean),
       );
 
       if (setupStatusResponse.data.activeCompanyId) {
@@ -114,7 +109,7 @@ export const CurrentCompanyProvider = ({ children }: PropsWithChildren) => {
       const resolvedCompanyId =
         storedCompanyId && companies.some((company) => company.id === storedCompanyId)
           ? storedCompanyId
-          : meResponse.data.activeCompanyId ||
+          : meResponse.data.active_company_id ||
             setupStatusResponse.data.activeCompanyId ||
             companies[0]?.id ||
             null;

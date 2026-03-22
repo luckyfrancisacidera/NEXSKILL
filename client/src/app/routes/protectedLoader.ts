@@ -4,6 +4,7 @@ import {
   setActiveCompanyHeader,
   setActiveRecruiterProfileHeader,
 } from "@shared/api/http";
+import type { AuthMeResponse } from "@features/auth/types/auth.types";
 import { readStorage } from "@shared/utils/storage";
 import {
   getDefaultRouteForRoles,
@@ -14,15 +15,6 @@ import {
   CURRENT_COMPANY_STORAGE_KEY,
   CURRENT_RECRUITER_PROFILE_STORAGE_KEY,
 } from "@app/providers/contextStorage";
-
-interface AuthMeResponse {
-  isAuthenticated?: boolean;
-  roles?: string[];
-  activeCompanyId?: string | null;
-  activeRecruiterProfileId?: string | null;
-  companyIds?: string[];
-  recruiterProfileIds?: string[];
-}
 
 interface SetupStatusResponse {
   requiresSetup?: boolean;
@@ -92,7 +84,7 @@ export const guardProtectedLoader = async <T>({
   const meResponse = await http.get<AuthMeResponse>("/api/auth/me");
   const me = meResponse.data;
 
-  if (!me.isAuthenticated) {
+  if (!me.is_authenticated) {
     throw redirect("/login");
   }
 
@@ -112,7 +104,7 @@ export const guardProtectedLoader = async <T>({
     return { shouldLoad: false, data: fallback() };
   }
 
-  const companyIds = new Set<string>((me.companyIds ?? []).filter(Boolean));
+  const companyIds = new Set<string>((me.company_ids ?? []).filter(Boolean));
   if (setup.activeCompanyId) {
     companyIds.add(setup.activeCompanyId);
   }
@@ -122,7 +114,7 @@ export const guardProtectedLoader = async <T>({
 
   const resolvedCompanyId = resolvePreferredId(
     readStorage<string | null>(CURRENT_COMPANY_STORAGE_KEY, null),
-    me.activeCompanyId,
+    me.active_company_id,
     Array.from(companyIds),
   );
 
@@ -139,8 +131,8 @@ export const guardProtectedLoader = async <T>({
 
   const resolvedRecruiterProfileId = resolvePreferredId(
     readStorage<string | null>(CURRENT_RECRUITER_PROFILE_STORAGE_KEY, null),
-    me.activeRecruiterProfileId,
-    (me.recruiterProfileIds ?? []).filter(Boolean),
+    me.active_recruiter_profile_id,
+    (me.recruiter_profile_ids ?? []).filter(Boolean),
   );
 
   if (requireRecruiter) {

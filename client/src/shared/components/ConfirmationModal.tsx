@@ -69,7 +69,7 @@ export const ConfirmationModal = ({
     <ModalOverlay onClose={onClose}>
       <div className={`rounded-2xl bg-white p-5 shadow-2xl ring-1 ${style.ring}`} role="dialog" aria-modal="true">
         <div className="flex items-start gap-3">
-          <span className={`mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl ${style.iconWrap}`}>{style.icon}</span>
+          <span className={`mt-0.5 inline-flex h-10 w-15 items-center justify-center rounded-xl ${style.iconWrap}`}>{style.icon}</span>
           <div>
             <h3 className="text-lg font-semibold text-zinc-900">{title}</h3>
             <p className="mt-1 text-sm leading-6 text-zinc-600">{message}</p>

@@ -5,6 +5,5 @@ export * from "@features/jobseeker/pages/JobsPage/JobsPage";
 export * from "@features/jobseeker/pages/MessagesPage/MessagesPage";
 export * from "@features/jobseeker/pages/ProfilePage/ProfilePage";
 export * from "@features/jobseeker/pages/SavedJobsPage/SavedJobsPage";
-export * from "@features/jobseeker/pages/SettingsPage/SettingsPage";
 export * from "@features/jobseeker/pages/InterviewPage/InterviewPage";
 export * from "@features/jobseeker/pages/OffersPage/OffersPage";

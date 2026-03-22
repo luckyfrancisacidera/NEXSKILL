@@ -30,17 +30,49 @@ export const DashboardFilters = ({
   onDepartmentChange,
   onClear,
 }: DashboardFiltersProps) => (
-  <form>
-    <div className="flex min-w-0 flex-nowrap items-end gap-3 pb-1">
-      <DatePicker label="Start Date" value={selected.startDate} onChange={(value) => onFieldChange('startDate', value)} className="min-w-42.5 flex-1" />
-      <DatePicker label="End Date" value={selected.endDate} onChange={(value) => onFieldChange('endDate', value)} className="min-w-42.5 flex-1" />
-      <div className="min-w-42.5 flex-1">
-        <Dropdown label="Department" name="department" value={selected.department} options={departmentOptions} onChange={(event) => onDepartmentChange(event.target.value)} />
+  <form className="w-full min-w-0">
+    <div className="grid grid-cols-5 gap-3">
+      <DatePicker
+        label="Start Date"
+        value={selected.startDate}
+        onChange={(value) => onFieldChange('startDate', value)}
+        className="w-full min-w-0"
+      />
+
+      <DatePicker
+        label="End Date"
+        value={selected.endDate}
+        onChange={(value) => onFieldChange('endDate', value)}
+        className="w-full min-w-0"
+      />
+
+      <div className="min-w-0">
+        <Dropdown
+          label="Department"
+          name="department"
+          value={selected.department}
+          options={departmentOptions}
+          className="w-full min-w-0"
+          onChange={(event) => onDepartmentChange(event.target.value)}
+        />
       </div>
-      <div className="min-w-42.5 flex-1">
-        <Dropdown label="Job Role" name="jobRole" value={availableJobRoleValue} options={jobRoleOptions} onChange={(event) => onFieldChange('jobRole', event.target.value)} />
+
+      <div className="min-w-0">
+        <Dropdown
+          label="Job Role"
+          name="jobRole"
+          value={availableJobRoleValue}
+          options={jobRoleOptions}
+          className="w-full min-w-0"
+          onChange={(event) => onFieldChange('jobRole', event.target.value)}
+        />
       </div>
-      <button type="button" className="h-11 whitespace-nowrap rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900" onClick={onClear}>
+
+      <button
+        type="button"
+        className="h-11 w-full self-end whitespace-nowrap rounded-xl border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900"
+        onClick={onClear}
+      >
         Clear Filters
       </button>
     </div>

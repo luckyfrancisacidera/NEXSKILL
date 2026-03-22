@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLoaderData, useNavigate, useRevalidator, useSearchParams } from 'react-router-dom';
+import { BadgeCheck, BriefcaseBusiness, Building2, Trophy, Users } from 'lucide-react';
+
 import { ApiError } from '@shared/api/http';
+import { Avatar } from '@shared/components/Avatar';
 import { Badge } from '@shared/components/Badge';
 import { Button } from '@shared/components/Button';
 import { Card } from '@shared/components/Card';
+import { DashboardGreeting } from '@shared/components/DashboardGreeting';
+import {
+  DashboardEmptyState,
+  DashboardPageHeader,
+  DashboardRankItem,
+  DashboardSectionCard,
+  DashboardStatCard,
+} from '@shared/components/DashboardPrimitives';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
-import { AdminMetricCard } from '@features/admin/components/AdminMetricCard';
 import { AdminTablePagination } from '@features/admin/components/AdminTablePagination';
 import { CreateRecruiterModal } from '@features/admin/components/CreateRecruiterModal';
 import { adminService } from '@features/admin/service/admin.service';
@@ -25,6 +35,9 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 const getStatusClassName = (isActive: boolean) =>
   isActive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400';
 
+const getRecruiterScore = (recruiter: AdminRecruiterOverviewDto) =>
+  recruiter.totalHires * 100 + recruiter.activeJobs * 10 + recruiter.upcomingInterviews;
+
 export const CompanyAdminDashboardPage = () => {
   const data = useLoaderData() as CompanyAdminDashboardDto;
   const [searchParams] = useSearchParams();
@@ -37,6 +50,11 @@ export const CompanyAdminDashboardPage = () => {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+
+  const topRecruiters = useMemo(
+    () => [...data.recruiters.items].sort((left, right) => getRecruiterScore(right) - getRecruiterScore(left)).slice(0, 5),
+    [data.recruiters.items],
+  );
 
   const buildQuery = (updates: Record<string, string>) => {
     const next = new URLSearchParams(searchParams);
@@ -109,49 +127,121 @@ export const CompanyAdminDashboardPage = () => {
   return (
     <>
       <div className="space-y-6">
-        <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[linear-gradient(135deg,#ffffff,#f8fafc)] dark:bg-[linear-gradient(135deg,#09090b,#18181b)] p-8 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Company Admin</p>
-              <h1 className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.company.name}</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                Manage recruiter access, track hiring throughput, and keep your company recruiting team in one place.
-              </p>
-            </div>
+        <DashboardPageHeader
+          eyebrow="Company Admin"
+          title={data.company.name}
+          description="Monitor recruiter health, hiring throughput, and team performance from a cleaner company-wide dashboard."
+          actions={
             <Button type="button" onClick={() => setIsCreateModalOpen(true)} disabled={!canManageRecruiters}>
               Create recruiter
             </Button>
-          </div>
-        </section>
+          }
+        />
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-400" />
-          <AdminMetricCard label="Active Recruiters" value={data.summary.activeRecruiters} accent="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400" />
-          <AdminMetricCard label="Published Jobs" value={data.summary.activeJobs} accent="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-400" />
-          <AdminMetricCard label="Upcoming Interviews" value={data.summary.upcomingInterviews} accent="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-900/30 dark:text-violet-400" />
-          <AdminMetricCard label="Offers" value={data.summary.totalOffers} accent="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-900/30 dark:text-rose-400" />
-          <AdminMetricCard label="Hires" value={data.summary.totalHires} accent="border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-900/30 dark:text-cyan-400" />
+        <DashboardGreeting
+          badge="Company snapshot"
+          subtitle={`Here's what's happening today across ${data.company.name}, from recruiter activity to hiring momentum.`}
+          stats={[
+            { label: 'Recruiters', value: data.summary.totalRecruiters },
+            { label: 'Hires', value: data.summary.totalHires },
+          ]}
+        />
+
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <DashboardStatCard
+            label="Recruiters"
+            value={data.summary.totalRecruiters}
+            helper="All recruiter accounts in this company"
+            icon={Users}
+            iconClassName="bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300"
+          />
+          <DashboardStatCard
+            label="Active Recruiters"
+            value={data.summary.activeRecruiters}
+            helper="Recruiters currently active and able to work"
+            icon={BadgeCheck}
+            iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+          />
+          <DashboardStatCard
+            label="Published Jobs"
+            value={data.summary.activeJobs}
+            helper="Open jobs contributing to company visibility"
+            icon={BriefcaseBusiness}
+            iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+          />
+          <DashboardStatCard
+            label="Hires"
+            value={data.summary.totalHires}
+            helper="Confirmed hires attributed to your recruiters"
+            icon={Trophy}
+            iconClassName="bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300"
+          />
         </section>
 
         {formError ? (
-          <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{formError}</div>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">{formError}</div>
         ) : null}
         {formSuccess ? (
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">{formSuccess}</div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">{formSuccess}</div>
         ) : null}
 
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <DashboardSectionCard
+            title="Top Recruiters"
+            description="Ranked from the current dashboard payload using hires, active jobs, and upcoming interviews."
+          >
+            {topRecruiters.length > 0 ? (
+              <div className="space-y-3">
+                {topRecruiters.map((recruiter, index) => (
+                  <DashboardRankItem
+                    key={recruiter.userId}
+                    rank={index + 1}
+                    avatar={<Avatar name={recruiter.email} />}
+                    title={recruiter.email}
+                    subtitle={`Joined ${dateFormatter.format(new Date(recruiter.createdAtUtc))}`}
+                    meta={[
+                      `${recruiter.totalHires} hires`,
+                      `${recruiter.activeJobs}/${recruiter.totalJobs} jobs`,
+                      `${recruiter.upcomingInterviews} interviews`,
+                    ]}
+                  />
+                ))}
+              </div>
+            ) : (
+              <DashboardEmptyState
+                compact
+                icon={Users}
+                title="No recruiter activity yet"
+                description="Recruiter rankings will appear here once the company has recruiter records and hiring activity."
+              />
+            )}
+          </DashboardSectionCard>
+
+          <DashboardSectionCard
+            title="Top Recruited Job Posts"
+            description="Performance insights for the company admin."
+          >
+            <DashboardEmptyState
+              compact
+              icon={Building2}
+              title="No top job posts yet"
+              description="The current company admin dashboard response does not expose job-post ranking data yet, so this section stays gracefully empty until that feed is available."
+            />
+          </DashboardSectionCard>
+        </section>
+
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
-            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
+          <Card className="rounded-3xl border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Management</h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Create recruiter accounts and monitor team activity at a glance.</p>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Create recruiter accounts and monitor team activity at a glance.</p>
               </div>
               <Badge>{data.recruiters.totalCount} recruiters</Badge>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-                <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
+              <table className="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
+                <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-200">
                   <tr>
                     <th className="px-6 py-3">Recruiter</th>
                     <th className="px-6 py-3">Jobs</th>
@@ -203,12 +293,8 @@ export const CompanyAdminDashboardPage = () => {
             />
           </Card>
 
-          <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company status</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-              Recruiter accounts created here are automatically scoped to {data.company.name}.
-            </p>
-            <div className="mt-6 space-y-4 text-sm text-zinc-600 dark:text-zinc-400">
+          <DashboardSectionCard title="Company Status" description="Core company setup details for the current admin context.">
+            <div className="space-y-4 text-sm text-zinc-600 dark:text-zinc-400">
               <div>
                 <div className="font-medium text-zinc-900 dark:text-zinc-100">Primary email</div>
                 <div className="mt-1">{data.company.primaryEmail ?? 'No primary email set'}</div>
@@ -225,8 +311,12 @@ export const CompanyAdminDashboardPage = () => {
                   </span>
                 </div>
               </div>
+              <div>
+                <div className="font-medium text-zinc-900 dark:text-zinc-100">Offers in progress</div>
+                <div className="mt-1">{data.summary.totalOffers}</div>
+              </div>
             </div>
-          </Card>
+          </DashboardSectionCard>
         </section>
       </div>
 

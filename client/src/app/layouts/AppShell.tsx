@@ -3,12 +3,12 @@ import { Sidebar } from '@shared/components/Sidebar';
 import { Topbar } from '@shared/components/Topbar';
 
 export const AppShell = () => (
-  <div className="min-h-screen bg-zinc-100 text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100 font-inter">
-    <div className="mx-auto flex min-h-[90vh] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.08)] transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+  <div className="min-h-screen bg-white/80 text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100 font-inter">
+    <div className="min-h-screen lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <Sidebar />
-      <div className="flex flex-1 flex-col pl-63">
+      <div className="min-w-0 flex min-h-screen flex-col">
         <Topbar />
-        <main className="mt-17 min-h-screen flex-1 overflow-y-auto p-6 transition-colors duration-300">
+        <main className="min-w-0 flex-1 p-4 transition-colors duration-300 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

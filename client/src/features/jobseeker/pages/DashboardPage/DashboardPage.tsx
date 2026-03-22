@@ -5,19 +5,28 @@ import {
   Bookmark,
   Briefcase,
   CalendarClock,
+  FileClock,
   Search,
+  Sparkles,
 } from "lucide-react";
-import { Card } from "@shared/components/Card";
+
 import { DashboardAreaChart } from "@shared/components/DashboardAreaChart";
+import { DashboardGreeting } from "@shared/components/DashboardGreeting";
+import { useAuth } from "@app/providers/AuthProvider";
+import {
+  DashboardEmptyState,
+  DashboardListLink,
+  DashboardSectionCard,
+  DashboardStatCard,
+} from "@shared/components/DashboardPrimitives";
 import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
 import { JobCard } from "@shared/components/JobCard";
-import { Progress } from "@shared/components/Progress";
+import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
 import type { Job } from "@shared/types";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { useDashboardData } from "@features/jobseeker/hooks";
 import type { DashboardLoaderData, JobseekerInterview } from "@features/jobseeker/types";
-import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
 
 const ranges: DropdownOption[] = [
   { label: "This Week", value: "this_week" },
@@ -29,10 +38,13 @@ const ranges: DropdownOption[] = [
 ];
 
 export const DashboardPage = () => {
+  const { user } = useAuth();
   const initialData = useLoaderData() as DashboardLoaderData;
   const { data, range, updateRange } = useDashboardData(initialData);
   const [interviews, setInterviews] = useState<JobseekerInterview[]>([]);
   const [isLoadingInterviews, setIsLoadingInterviews] = useState(true);
+
+  const firstName = user?.firstName?.trim() || "there";
 
   const totalApplications = Object.values(data.status).reduce(
     (sum, value) => sum + Number(value),
@@ -83,263 +95,266 @@ export const DashboardPage = () => {
       .slice(0, 4);
   }, [interviews]);
 
+  const hasAnalytics = data.analytics.labels.length > 0 && data.analytics.counts.length > 0;
+  const hasSavedJobs = data.saved_jobs.length > 0;
+  const hasRecentApplications = data.recent_applications.length > 0;
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="flex items-center justify-between p-5">
-          <div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Total Applications</p>
-            <h3 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-              {totalApplications}
-            </h3>
-            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-              All application statuses
-            </p>
-          </div>
-
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-            <Briefcase className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-          </div>
-        </Card>
-
-        {Object.entries(data.status).map(([label, value]) => (
-          <Card key={label} className="flex items-center justify-between p-5">
-            <div>
-              <p className="text-sm capitalize text-zinc-500 dark:text-zinc-400">{label}</p>
-              <h3 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{value}</h3>
-              <div className="mt-2">
-                <Progress value={Math.min(100, Number(value) * 15)} />
-              </div>
-            </div>
-
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
-              <BarChart3 className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Upcoming Interviews
-          </h2>
-          <Link
-            to="/jobseeker/interviews"
-            className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-          >
-            View all
-          </Link>
-        </div>
-
-        {isLoadingInterviews ? (
-          <Card className="grid gap-3 lg:grid-cols-2">
-            <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-            <div className="h-24 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-          </Card>
-        ) : upcomingInterviews.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <CalendarClock className="h-6 w-6 text-zinc-500 dark:text-zinc-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              No upcoming interviews
-            </h3>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Future active interviews will appear here as soon as recruiters schedule them.
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {upcomingInterviews.map((interview) => {
-              const scheduledAt = new Date(interview.scheduledDate);
-
-              return (
-                <Card key={interview.id} className="space-y-3 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                        Upcoming interview
-                      </p>
-                      <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                        {interview.jobTitle || "Interview"}
-                      </h3>
-                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                        {interview.companyName || interview.recruiterName || "Company"}
-                      </p>
-                    </div>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}>
-                      {interview.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    <p>
-                      {scheduledAt.toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}{" "}
-                      at{" "}
-                      {scheduledAt.toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p>Type: {interview.meetingLink ? "Virtual" : "Onsite"}</p>
-                    {interview.meetingLink ? (
-                      <a
-                        href={interview.meetingLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium text-violet-600 transition hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
-                      >
-                        Open meeting link
-                      </a>
-                    ) : interview.location ? (
-                      <p>Location: {interview.location}</p>
-                    ) : null}
-                  </div>
-                </Card>
-              );
-            })}
+      <DashboardGreeting
+        badge="Job search pulse"
+        title={(
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-zinc-400" />
+            <span>Hi, {firstName} ! </span>
           </div>
         )}
+        subtitle="Here’s what’s happening with your job search today — track applications, interviews, and new opportunities."
+        stats={[
+          { label: "Applications", value: totalApplications },
+          { label: "Upcoming interviews", value: upcomingInterviews.length },
+        ]}
+      />
+
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <DashboardStatCard
+          label="Total Applications"
+          value={totalApplications}
+          helper="All application stages in your pipeline"
+          icon={Briefcase}
+          iconClassName="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300"
+        />
+        <DashboardStatCard
+          label="Applied"
+          value={data.status.applied}
+          helper="Fresh submissions waiting for updates"
+          icon={FileClock}
+          iconClassName="bg-sky-100 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300"
+        />
+        <DashboardStatCard
+          label="Interviews"
+          value={data.status.interview}
+          helper="Active interview conversations"
+          icon={CalendarClock}
+          iconClassName="bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300"
+        />
+        <DashboardStatCard
+          label="Offers"
+          value={data.status.offer}
+          helper="Offer-stage applications so far"
+          icon={Sparkles}
+          iconClassName="bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"
+        />
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Saved Jobs</h2>
-          <span className="text-sm text-zinc-500 dark:text-zinc-400">
-            {data.saved_jobs.length} jobs
-          </span>
-        </div>
-
-        {data.saved_jobs.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <Bookmark className="h-7 w-7 text-zinc-500 dark:text-zinc-400" />
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
+        <DashboardSectionCard
+          title="Application Analytics"
+          description="Track your applications over time with a compact timeline view."
+          action={
+            <div className="min-w-44">
+              <Dropdown
+                label=""
+                name="range"
+                value={range}
+                options={ranges}
+                className="min-w-44"
+                buttonClassName="h-10 rounded-xl"
+                onChange={(event) => {
+                  void updateRange(event.target.value);
+                }}
+              />
             </div>
-
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              No saved jobs yet
-            </h3>
-
-            <p className="mb-4 mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Start exploring jobs and save the ones you're interested in.
-            </p>
-
-            <Link
-              to="/jobs"
-              className="flex items-center gap-2 rounded-lg bg-zinc-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600"
-            >
-              <Search className="h-4 w-4" />
-              Find Jobs
-            </Link>
-          </Card>
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {data.saved_jobs.map((item) => {
-              const job: Job = {
-                id: String(item.id),
-                title: String(item.title),
-                company: String(item.company),
-                location: String(item.location),
-                salaryMin: Number(item.salary_min ?? 0),
-                salaryMax: Number(item.salary_max ?? 0),
-                currency: String(item.currency ?? "PHP"),
-                type: "Full-time",
-                snippet: String(item.job_type ?? ""),
-              };
-
-              return (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  isSaved
-                  onToggleSave={(jobId, nextSavedState) =>
-                    nextSavedState
-                      ? jobseekerService.saveJob(jobId)
-                      : jobseekerService
-                          .removeSavedJob(jobId)
-                          .then(() => updateRange(range))
-                  }
-                />
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <Card className="h-80 p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                Application Analytics
-              </h3>
-
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Track your job applications
-              </p>
-            </div>
-
-            <Dropdown
-              label=""
-              name="range"
-              value={range}
-              options={ranges}
-              className="min-w-44"
-              buttonClassName="h-10"
-              onChange={(event) => {
-                void updateRange(event.target.value);
-              }}
-            />
-          </div>
-
-          <div className="h-[85%]">
+          }
+          contentClassName="h-[360px] p-6"
+        >
+          {hasAnalytics ? (
             <DashboardAreaChart
               labels={data.analytics.labels}
               datasets={[
                 {
                   label: "Applications",
                   data: data.analytics.counts,
-                  border_color: "#696cff",
-                  background_color: "rgba(105,108,255,0.18)",
+                  border_color: "#6366f1",
+                  background_color: "rgba(99,102,241,0.18)",
                 },
               ]}
             />
-          </div>
-        </Card>
+          ) : (
+            <DashboardEmptyState
+              compact
+              icon={BarChart3}
+              title="No application activity yet"
+              description="Application analytics will appear here once you start applying for roles."
+            />
+          )}
+        </DashboardSectionCard>
 
-        <Card className="space-y-4 p-6">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Recent Applications
-          </h3>
+        <DashboardSectionCard
+          title="Upcoming Interviews"
+          description="Your nearest interview schedule and next actions."
+          action={<DashboardListLink to="/jobseeker/interviews">View all</DashboardListLink>}
+        >
+          {isLoadingInterviews ? (
+            <div className="space-y-3">
+              <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
+              <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
+            </div>
+          ) : upcomingInterviews.length === 0 ? (
+            <DashboardEmptyState
+              compact
+              icon={CalendarClock}
+              title="No interview activity yet"
+              description="Future active interviews will appear here as soon as recruiters schedule them."
+            />
+          ) : (
+            <div className="space-y-3">
+              {upcomingInterviews.map((interview) => {
+                const scheduledAt = new Date(interview.scheduledDate);
 
-          <ul className="space-y-3">
-            {data.recent_applications.map((item) => (
-              <li
-                key={String(item.id)}
-                className="rounded-lg border border-zinc-200 p-3 transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {String(item.job_title)}
-                </p>
+                return (
+                  <div
+                    key={interview.id}
+                    className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+                          Upcoming interview
+                        </p>
+                        <h3 className="mt-1 text-base font-semibold text-zinc-950 dark:text-zinc-100">
+                          {interview.jobTitle || "Interview"}
+                        </h3>
+                        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                          {interview.companyName || interview.recruiterName || "Company"}
+                        </p>
+                      </div>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}>
+                        {interview.status}
+                      </span>
+                    </div>
 
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {String(item.company)} •{" "}
-                  {new Date(String(item.applied_at)).toLocaleDateString()}
-                </p>
+                    <div className="mt-4 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                      <p>
+                        {scheduledAt.toLocaleDateString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}{" "}
+                        at{" "}
+                        {scheduledAt.toLocaleTimeString(undefined, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p>Type: {interview.meetingLink ? "Virtual" : "Onsite"}</p>
+                      {interview.meetingLink ? (
+                        <a
+                          href={interview.meetingLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-violet-600 transition hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                        >
+                          Open meeting link
+                        </a>
+                      ) : interview.location ? (
+                        <p>Location: {interview.location}</p>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DashboardSectionCard>
+      </section>
 
-                <span className="mt-2 inline-block rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                  {String(item.status)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <DashboardSectionCard
+          title="Saved Jobs"
+          description="Quick access to roles you want to revisit."
+          action={<span className="text-sm text-zinc-500 dark:text-zinc-400">{data.saved_jobs.length} jobs</span>}
+        >
+          {hasSavedJobs ? (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {data.saved_jobs.map((item) => {
+                const job: Job = {
+                  id: String(item.id),
+                  title: String(item.title),
+                  company: String(item.company),
+                  location: String(item.location),
+                  salaryMin: Number(item.salary_min ?? 0),
+                  salaryMax: Number(item.salary_max ?? 0),
+                  currency: String(item.currency ?? "PHP"),
+                  type: "Full-time",
+                  snippet: String(item.job_type ?? ""),
+                };
+
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isSaved
+                    onToggleSave={(jobId, nextSavedState) =>
+                      nextSavedState
+                        ? jobseekerService.saveJob(jobId)
+                        : jobseekerService
+                            .removeSavedJob(jobId)
+                            .then(() => updateRange(range))
+                    }
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <DashboardEmptyState
+              icon={Bookmark}
+              title="No saved jobs yet"
+              description="Start exploring jobs and save the ones you want to compare later."
+              action={
+                <Link
+                  to="/jobs"
+                  className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                >
+                  <Search className="h-4 w-4" />
+                  Find Jobs
+                </Link>
+              }
+            />
+          )}
+        </DashboardSectionCard>
+
+        <DashboardSectionCard title="Recent Applications" description="Your latest job activity in one place.">
+          {hasRecentApplications ? (
+            <div className="space-y-3">
+              {data.recent_applications.slice(0, 5).map((item) => (
+                <div
+                  key={String(item.id)}
+                  className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                >
+                  <p className="font-semibold text-zinc-950 dark:text-zinc-100">
+                    {String(item.job_title)}
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    {String(item.company)} •{" "}
+                    {new Date(String(item.applied_at)).toLocaleDateString()}
+                  </p>
+                  <span className="mt-3 inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                    {String(item.status)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DashboardEmptyState
+              compact
+              icon={Briefcase}
+              title="No recent applications yet"
+              description="Once you apply for jobs, your latest submissions will appear here."
+            />
+          )}
+        </DashboardSectionCard>
+      </section>
     </div>
   );
 };
