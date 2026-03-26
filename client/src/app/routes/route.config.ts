@@ -5,7 +5,6 @@ export type AppRouteKey =
   | "jobs"
   | "applications"
   | "offers"
-  | "messages"
   | "saved"
   | "profile"
   | "recruiterDashboard"
@@ -22,7 +21,6 @@ export const routeAccess: Record<AppRouteKey, Role[]> = {
   jobs: ["jobseeker"],
   applications: ["jobseeker"],
   offers: ["jobseeker"],
-  messages: ["jobseeker"],
   saved: ["jobseeker"],
   profile: ["jobseeker", "recruiter", "companyAdmin", "superAdmin", "admin"],
   recruiterDashboard: ["recruiter"],
