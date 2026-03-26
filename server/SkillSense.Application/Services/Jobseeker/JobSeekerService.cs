@@ -131,6 +131,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 title = x.Title,
                 company = x.Company,
                 location = x.Location,
+                description = x.Description,
                 salary_min = x.SalaryMin,
                 salary_max = x.SalaryMax,
                 currency = x.Currency,
