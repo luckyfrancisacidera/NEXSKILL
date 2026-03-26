@@ -3,12 +3,11 @@ import { Link } from "react-router-dom";
 
 import type { JobseekerApplicationStage, JobseekerOfferDto } from "@features/jobseeker/types";
 import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
+import { ActionButton, actionButtonClassName } from "@shared/components/ActionButton";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
-import { IconActionButton, iconActionButtonClassName } from "@shared/components/IconActionButton";
 import { StatusBadge } from "@shared/components/StatusBadge";
-import { cn } from "@shared/utils/cn";
 
 import { OfferStageTimeline } from "./OfferStageTimeline";
 
@@ -219,17 +218,18 @@ export const OfferPipelineCard = ({
               to={`/jobs/${item.jobId}`}
               title="View job"
               aria-label="View job"
-              className={cn(iconActionButtonClassName(), "no-underline")}
+              className={actionButtonClassName({ iconOnly: true })}
             >
               <Eye className="h-4 w-4" />
               <span className="sr-only">View job</span>
             </Link>
           ) : null}
           {actions.includes("delete_history") ? (
-            <IconActionButton
+            <ActionButton
               icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               label="Delete history"
-              variant="danger"
+              destructive
+              iconOnly
               disabled={isDeletingHistory || isActing}
               onClick={() => onDeleteHistory(item.id)}
             />

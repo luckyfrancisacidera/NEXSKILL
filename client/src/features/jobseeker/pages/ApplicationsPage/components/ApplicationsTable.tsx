@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import type { JobseekerApplicationDto } from "@features/jobseeker/types";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
 import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
-import { IconActionButton} from "@shared/components/IconActionButton";
-import { getJobActionButtonClassName } from "@shared/utils/jobActionButtonStyles";
+import { ActionButton, actionButtonClassName } from "@shared/components/ActionButton";
 
 type ApplicationsTableProps = {
   items: JobseekerApplicationDto[];
@@ -88,29 +87,31 @@ export const ApplicationsTable = ({
                       to={`/jobs/${String(item.job_id)}`}
                       title="View job"
                       aria-label="View job"
-                      className={getJobActionButtonClassName({ iconOnly: true })}
+                      className={actionButtonClassName({ iconOnly: true })}
                     >
                       <Eye className="h-4 w-4" />
                       <span className="sr-only">View job</span>
                     </Link>
                   ) : null}
                   {actions.includes("withdraw") ? (
-                    <IconActionButton
+                    <ActionButton
                       icon={isWithdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
                       label={
                         isWithdrawing
                           ? "Withdrawing application"
                           : "Withdraw application"
                       }
+                      iconOnly
                       disabled={isWithdrawing || isDeletingHistory}
                       onClick={() => onWithdraw(itemId)}
                     />
                   ) : null}
                   {actions.includes("delete_history") ? (
-                    <IconActionButton
+                    <ActionButton
                       icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       label="Delete history"
-                      variant="danger"
+                      destructive
+                      iconOnly
                       disabled={isDeletingHistory || isWithdrawing}
                       onClick={() => onDeleteHistory(itemId)}
                     />

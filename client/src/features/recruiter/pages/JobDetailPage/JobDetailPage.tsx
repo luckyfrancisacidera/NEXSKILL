@@ -12,6 +12,7 @@ import { recruiterService } from '@features/recruiter/service/recruiter.service'
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/types';
 import { publishRecruiterJobMutation, toJobListItem } from '@features/recruiter/utils/jobMutationSync';
+import { ActionButton, actionButtonClassName } from '@shared/components/ActionButton';
 import { Card } from '@shared/components/Card';
 import { DetailBlock } from '@shared/components/DetailBlock';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
@@ -20,7 +21,6 @@ import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { splitToBullets, toList } from '@shared/utils/formatText';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
-import { getJobActionButtonClassName } from '@shared/utils/jobActionButtonStyles';
 import { formatJobLabel } from '@shared/utils/jobLabels';
 
 const isPublishedJob = (job: JobDto) => job.status?.toLowerCase() === 'published';
@@ -266,54 +266,50 @@ export const JobDetailPage = () => {
             <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
               <Link
                 to={`/recruiter/job-posts/${job.id}/edit`}
-                className={getJobActionButtonClassName({ fullWidth: true })}
+                className={actionButtonClassName({ fullWidth: true })}
               >
                 Edit Job
               </Link>
-              <button
-                type="button"
+              <ActionButton
                 onClick={() => void duplicateJob()}
                 disabled={isDuplicating || isDeleting || isUpdatingStatus}
                 title="Create a copy of this job with all details pre-filled"
-                className={getJobActionButtonClassName({ fullWidth: true })}
+                icon={<Copy className="h-4 w-4" />}
+                fullWidth
               >
-                <Copy className="h-4 w-4" />
                 Duplicate Job
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={() => void updateStatus('Draft')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Draft'}
-                className={getJobActionButtonClassName({ fullWidth: true })}
+                fullWidth
               >
                 Move to Draft
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={() => void updateStatus('Published')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Published'}
-                className={getJobActionButtonClassName({ fullWidth: true })}
+                fullWidth
               >
                 Publish Job
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={() => void updateStatus('Closed')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Closed'}
-                className={getJobActionButtonClassName({ fullWidth: true })}
+                fullWidth
               >
                 Close Job
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
                 onClick={(event) => {
                   event.stopPropagation();
                   void openDeleteFlow();
                 }}
-                className={getJobActionButtonClassName({ destructive: true, fullWidth: true })}
+                destructive
+                fullWidth
               >
                 Delete Job
-              </button>
+              </ActionButton>
             </aside>
           </div>
         </div>

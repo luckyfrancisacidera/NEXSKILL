@@ -2,8 +2,8 @@ import { Copy, Eye, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { JobListItem } from '@features/recruiter/types';
+import { ActionButton, actionButtonClassName } from '@shared/components/ActionButton';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
-import { getJobActionButtonClassName } from '@shared/utils/jobActionButtonStyles';
 import { formatJobLabel } from '@shared/utils/jobLabels';
 
 export interface JobPostsTableProps {
@@ -46,37 +46,38 @@ export const JobPostsTable = ({ jobs, isDeleting, isDuplicating, onDelete, onDup
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  <Link className={getJobActionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}`} aria-label={`View ${job.title}`}>
+                  <Link className={actionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}`} aria-label={`View ${job.title}`} title={`View ${job.title}`}>
                     <Eye size={16} />
+                    <span className="sr-only">{`View ${job.title}`}</span>
                   </Link>
-                  <Link className={getJobActionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}/edit`} aria-label={`Edit ${job.title}`}>
+                  <Link className={actionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}/edit`} aria-label={`Edit ${job.title}`} title={`Edit ${job.title}`}>
                     <Pencil size={16} />
+                    <span className="sr-only">{`Edit ${job.title}`}</span>
                   </Link>
-                  <button
-                    type="button"
-                    className={getJobActionButtonClassName({ iconOnly: true })}
+                  <ActionButton
                     onClick={(event) => {
                       event.stopPropagation();
                       onDuplicate(job);
                     }}
                     disabled={isDeleting || isDuplicating}
                     title="Create a copy of this job with all details pre-filled"
-                    aria-label={`Duplicate ${job.title}`}
+                    label={`Duplicate ${job.title}`}
+                    icon={<Copy size={16} />}
+                    iconOnly
                   >
-                    <Copy size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={getJobActionButtonClassName({ destructive: true, iconOnly: true })}
+                  </ActionButton>
+                  <ActionButton
                     onClick={(event) => {
                       event.stopPropagation();
                       onDelete(job);
                     }}
                     disabled={isDeleting || isDuplicating}
-                    aria-label={`Delete ${job.title}`}
+                    label={`Delete ${job.title}`}
+                    icon={<Trash2 size={16} />}
+                    iconOnly
+                    destructive
                   >
-                    <Trash2 size={16} />
-                  </button>
+                  </ActionButton>
                 </div>
               </td>
             </tr>

@@ -80,10 +80,10 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
   return (
     <div className="space-y-6">
-      <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-violet-950/20 dark:to-zinc-950 p-0 shadow-sm">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-zinc-950/20 dark:to-zinc-950 p-0 shadow-sm">
         <div className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-5">
           <div className="flex items-start gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950 text-violet-700 dark:text-violet-400">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-400">
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
