@@ -1,10 +1,13 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using SkillSense.Application.Common.Jobs;
 using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Text;
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Notifications;
+using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
@@ -25,9 +28,13 @@ public sealed class RecruiterService(
     IAppCacheService cacheService,
     ICandidateExplanationService candidateExplanationService,
     IObjectStorageService objectStorageService,
+    INotificationService notificationService,
+    IDateTimeProvider dateTimeProvider,
     IMapper mapper,
     ILogger<RecruiterService> logger) : IRecruiterService
 {
+    private static readonly Regex LeadingBulletPattern = new(@"^[\s\u2022\-\*\u00B7]+", RegexOptions.Compiled);
+
     public async Task<RecruiterProfileResponse> GetProfileAsync(Guid recruiterId, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
@@ -86,9 +93,52 @@ public sealed class RecruiterService(
         job.NumberOfVacancies = request.NumberOfVacancies;
 
         await jobRepository.AddAsync(job, ct);
-        InvalidateRecruiterCaches(recruiterId);
-        cacheService.RemoveByPrefix("jobs:public:list:");
+        InvalidateAfterJobMutation(recruiterId, job.Id);
         return MapJob(job, job.NumberOfVacancies);
+    }
+
+    public async Task<JobListItemResponse> DuplicateJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await DuplicateJobAsync(profile.CompanyId, recruiterId, jobId, ct);
+    }
+
+    public async Task<JobListItemResponse> DuplicateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var original = await jobRepository.GetByIdForCompanyAsync(jobId, companyId, ct);
+        if (original is null || original.RecruiterId != recruiterId)
+        {
+            logger.LogWarning("Recruiter {RecruiterId} requested duplication for missing job {JobId}", recruiterId, jobId);
+            throw new KeyNotFoundException("Job not found.");
+        }
+
+        logger.LogInformation("Recruiter {RecruiterId} duplicating job {JobId}", recruiterId, jobId);
+
+        var duplicateRequest = BuildDuplicateJobRequest(original);
+        var embedding = await embeddingService.EmbedAsync(duplicateRequest.Description, ct);
+        var duplicate = mapper.Map<JobEntity>(duplicateRequest);
+
+        duplicate.Id = Guid.NewGuid();
+        duplicate.CompanyId = companyId;
+        duplicate.RecruiterId = recruiterId;
+        duplicate.DescriptionEmbeddingJson = JsonSerializer.Serialize(embedding);
+        duplicate.RequiredSkillsJson = JsonSerializer.Serialize(duplicateRequest.RequiredSkills);
+        duplicate.PreferredSkillsJson = JsonSerializer.Serialize(duplicateRequest.PreferredSkills);
+        duplicate.Currency = string.IsNullOrWhiteSpace(duplicateRequest.Currency) ? "PHP" : duplicateRequest.Currency;
+        duplicate.Status = JobStatus.Draft;
+        duplicate.CreatedAtUtc = dateTimeProvider.UtcNow;
+        duplicate.PostedDateUtc = null;
+        duplicate.CompanyNameSnapshot = profile.Company.Name;
+        duplicate.CompanyEmailSnapshot = profile.Company.PrimaryEmail;
+        duplicate.JobDescriptionStructuredJson = JsonSerializer.Serialize(NormalizedJobDescriptionFactory.Create(duplicateRequest));
+        duplicate.NumberOfVacancies = duplicateRequest.NumberOfVacancies;
+
+        await jobRepository.AddAsync(duplicate, ct);
+        InvalidateAfterJobMutation(recruiterId, duplicate.Id);
+
+        logger.LogInformation("Recruiter {RecruiterId} duplicated job {OriginalJobId} into {DuplicateJobId}", recruiterId, jobId, duplicate.Id);
+        return MapJob(duplicate, duplicate.NumberOfVacancies);
     }
 
     public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
@@ -457,6 +507,7 @@ public sealed class RecruiterService(
         var detail = mapper.Map<ApplicantDetailResponse>(baseItem);
         detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
         detail.CandidateExplanation = explanation;
+        detail.Offer = await GetOfferAsync(companyId, recruiterId, submissionId, ct);
         return detail;
     }
 
@@ -538,14 +589,79 @@ public sealed class RecruiterService(
         return await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, nextStatus, ct);
     }
 
-    public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
-        return await CreateOfferAsync(profile.CompanyId, recruiterId, submissionId, ct);
+        return await CreateOfferAsync(profile.CompanyId, recruiterId, submissionId, request, ct);
     }
 
-    public Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
-        => ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Offer, ct);
+    public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        ValidateOfferRequest(request);
+
+        var now = dateTimeProvider.UtcNow;
+        await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
+        var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+        var latestOffer = await EnsureOfferExpirationStateAsync(context.LatestOffer, ct);
+
+        if (!CanSendOffer(context.Submission.Status, latestOffer))
+        {
+            throw new InvalidOperationException("An offer can only be sent after interview stage, or after a previous offer has expired, been declined, or been cancelled.");
+        }
+
+        if (latestOffer?.Status == JobOfferStatus.Pending)
+        {
+            throw new InvalidOperationException("A pending offer already exists for this application.");
+        }
+
+        var offer = new JobOfferEntity
+        {
+            Id = Guid.NewGuid(),
+            ApplicationId = submissionId,
+            SentByUserId = recruiterId,
+            Title = request.Title.Trim(),
+            Message = request.Message.Trim(),
+            SalaryText = request.SalaryText.Trim(),
+            EmploymentType = request.EmploymentType.Trim(),
+            StartDate = request.StartDate,
+            ExpirationDate = request.ExpirationDate,
+            Status = JobOfferStatus.Pending,
+            SentAtUtc = now,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
+        };
+
+        context.Submission.Status = ResumeSubmissionStatus.Offer;
+        context.Submission.UpdatedAtUtc = now;
+
+        await recruiterRepository.AddOfferAsync(offer, ct);
+        await recruiterRepository.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        await NotifyOfferSentAsync(context.Submission, context.Job.Title, offer, ct);
+
+        cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
+        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct)
+            ?? throw new KeyNotFoundException("Submission not found after offer creation.");
+        updated.Offer = MapOffer(offer);
+        return updated;
+    }
+
+    public async Task<OfferResponse?> GetOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetOfferAsync(profile.CompanyId, recruiterId, submissionId, ct);
+    }
+
+    public async Task<OfferResponse?> GetOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        _ = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+        var latestOffer = await recruiterRepository.GetLatestOfferByApplicationIdAsync(submissionId, ct);
+        latestOffer = await EnsureOfferExpirationStateAsync(latestOffer, ct);
+        return latestOffer is null ? null : MapOffer(latestOffer);
+    }
 
     public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
@@ -553,8 +669,14 @@ public sealed class RecruiterService(
         return await MarkHiredAsync(profile.CompanyId, recruiterId, submissionId, ct);
     }
 
-    public Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
-        => ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hire, ct);
+    public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
+    {
+        var updated = await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hire, ct);
+        var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+        await NotifyCandidateHiredAsync(context.Submission, context.Job.Title, ct);
+        updated.Offer = await GetOfferAsync(companyId, recruiterId, submissionId, ct);
+        return updated;
+    }
 
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
@@ -773,9 +895,20 @@ public sealed class RecruiterService(
 
         await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
         var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
+        var latestOffer = await EnsureOfferExpirationStateAsync(context.LatestOffer, ct);
+
+        if (nextStatus == ResumeSubmissionStatus.Offer)
+        {
+            throw new InvalidOperationException("Use the send offer workflow to move an application into offer stage.");
+        }
 
         if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
         {
+            if (latestOffer is null || latestOffer.Status != JobOfferStatus.Accepted)
+            {
+                throw new InvalidOperationException("An applicant can only be marked as hired after accepting an offer.");
+            }
+
             var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(context.Job.Id, ct);
             if (hiredCount >= context.Job.NumberOfVacancies)
             {
@@ -785,15 +918,141 @@ public sealed class RecruiterService(
         }
 
         context.Submission.Status = nextStatus;
-        context.Submission.UpdatedAtUtc = DateTime.UtcNow;
+        context.Submission.UpdatedAtUtc = dateTimeProvider.UtcNow;
         await recruiterRepository.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
         var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct)
             ?? throw new KeyNotFoundException("Submission not found after update.");
+        updated.Offer = latestOffer is null ? null : MapOffer(latestOffer);
 
         return updated;
+    }
+
+    private void ValidateOfferRequest(SendOfferRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            throw new ArgumentException("Offer title is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.SalaryText))
+        {
+            throw new ArgumentException("Compensation is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.EmploymentType))
+        {
+            throw new ArgumentException("Employment type is required.");
+        }
+
+        if (request.ExpirationDate.HasValue && request.StartDate.HasValue && request.ExpirationDate.Value < request.StartDate.Value)
+        {
+            throw new ArgumentException("Expiration date cannot be earlier than the start date.");
+        }
+    }
+
+    private bool CanSendOffer(ResumeSubmissionStatus submissionStatus, JobOfferEntity? latestOffer)
+    {
+        if (submissionStatus == ResumeSubmissionStatus.Interview)
+        {
+            return true;
+        }
+
+        return submissionStatus == ResumeSubmissionStatus.Offer
+            && latestOffer is not null
+            && latestOffer.Status is JobOfferStatus.Declined or JobOfferStatus.Expired or JobOfferStatus.Cancelled;
+    }
+
+    private async Task<JobOfferEntity?> EnsureOfferExpirationStateAsync(JobOfferEntity? offer, CancellationToken ct)
+    {
+        if (offer is null || offer.Status != JobOfferStatus.Pending || !offer.ExpirationDate.HasValue)
+        {
+            return offer;
+        }
+
+        var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
+        if (offer.ExpirationDate.Value >= today)
+        {
+            return offer;
+        }
+
+        offer.Status = JobOfferStatus.Expired;
+        offer.UpdatedAtUtc = dateTimeProvider.UtcNow;
+        await recruiterRepository.SaveChangesAsync(ct);
+        return offer;
+    }
+
+    private OfferResponse MapOffer(JobOfferEntity offer)
+    {
+        var effectiveStatus = ResolveOfferStatus(offer);
+        var canRespond = effectiveStatus == JobOfferStatus.Pending;
+
+        return new OfferResponse
+        {
+            Id = offer.Id,
+            ApplicationId = offer.ApplicationId,
+            SentByUserId = offer.SentByUserId,
+            Title = offer.Title,
+            Message = offer.Message,
+            SalaryText = offer.SalaryText,
+            EmploymentType = offer.EmploymentType,
+            StartDate = offer.StartDate,
+            ExpirationDate = offer.ExpirationDate,
+            Status = effectiveStatus.ToString(),
+            SentAtUtc = offer.SentAtUtc,
+            RespondedAtUtc = offer.RespondedAtUtc,
+            CreatedAtUtc = offer.CreatedAtUtc,
+            UpdatedAtUtc = offer.UpdatedAtUtc,
+            CanAccept = canRespond,
+            CanDecline = canRespond,
+            CanMarkHired = effectiveStatus == JobOfferStatus.Accepted,
+        };
+    }
+
+    private JobOfferStatus ResolveOfferStatus(JobOfferEntity offer)
+    {
+        if (offer.Status == JobOfferStatus.Pending && offer.ExpirationDate.HasValue && offer.ExpirationDate.Value < DateOnly.FromDateTime(dateTimeProvider.UtcNow))
+        {
+            return JobOfferStatus.Expired;
+        }
+
+        return offer.Status;
+    }
+
+    private async Task NotifyOfferSentAsync(ResumeSubmissionEntity submission, string jobTitle, JobOfferEntity offer, CancellationToken ct)
+    {
+        if (!submission.JobSeekerUserId.HasValue)
+        {
+            return;
+        }
+
+        await notificationService.CreateNotificationAsync(new CreateNotificationRequest
+        {
+            UserId = submission.JobSeekerUserId.Value,
+            Title = "New job offer received",
+            Message = $"You received an offer for {jobTitle}.",
+            Type = NotificationType.Success,
+            RelatedEntityId = offer.ApplicationId,
+        }, ct);
+    }
+
+    private async Task NotifyCandidateHiredAsync(ResumeSubmissionEntity submission, string jobTitle, CancellationToken ct)
+    {
+        if (!submission.JobSeekerUserId.HasValue)
+        {
+            return;
+        }
+
+        await notificationService.CreateNotificationAsync(new CreateNotificationRequest
+        {
+            UserId = submission.JobSeekerUserId.Value,
+            Title = "You have been marked as hired",
+            Message = $"Your application for {jobTitle} has been moved to hired.",
+            Type = NotificationType.Success,
+            RelatedEntityId = submission.Id,
+        }, ct);
     }
 
     private static bool HasDashboardCompanyContext(RecruiterProfileEntity? profile)
@@ -826,6 +1085,64 @@ public sealed class RecruiterService(
         }
 
         return profile;
+    }
+
+    private static CreateJobRequest BuildDuplicateJobRequest(JobEntity original)
+    {
+        var requiredSkills = JsonSerializer.Deserialize<List<string>>(original.RequiredSkillsJson) ?? [];
+        var preferredSkills = JsonSerializer.Deserialize<List<string>>(original.PreferredSkillsJson) ?? [];
+
+        return new CreateJobRequest
+        {
+            Title = BuildDuplicateTitle(original.Title),
+            Description = original.Description,
+            Responsibilities = NormalizeBullets(original.ResponsibilitiesText) ?? string.Empty,
+            RequiredSkills = requiredSkills,
+            PreferredSkills = preferredSkills,
+            ExperienceLevel = original.ExperienceLevel,
+            MinYears = original.MinYears,
+            Education = original.Education,
+            MinEducation = original.Education,
+            Department = original.Department,
+            Benefits = NormalizeBullets(original.Benefits),
+            SalaryMinPerAnnum = original.SalaryMinPerAnnum,
+            SalaryMaxPerAnnum = original.SalaryMaxPerAnnum,
+            Currency = original.Currency,
+            Location = original.Location,
+            Schedule = original.Schedule,
+            WorkSetup = (int)original.WorkSetup,
+            EmploymentType = (int)original.EmploymentType,
+            NumberOfVacancies = original.NumberOfVacancies,
+            Status = JobStatus.Draft.ToString()
+        };
+    }
+
+    private static string BuildDuplicateTitle(string title)
+    {
+        var trimmedTitle = title.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedTitle))
+        {
+            return "Copy of Untitled Job";
+        }
+
+        return $"Copy of {trimmedTitle}";
+    }
+
+    private static string? NormalizeBullets(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        var lines = text
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => LeadingBulletPattern.Replace(line.Trim(), string.Empty).Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .Select(line => $"• {line}");
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static JobStatus ParseStatusOrDefault(string? status)
@@ -882,8 +1199,11 @@ public sealed class RecruiterService(
         }
 
         recommendedIds ??= BuildRecommendedIds(await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct), 10);
-
-        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds);
+        var item = mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds);
+        var latestOffer = await recruiterRepository.GetLatestOfferByApplicationIdAsync(submissionId, ct);
+        latestOffer = await EnsureOfferExpirationStateAsync(latestOffer, ct);
+        item.Offer = latestOffer is null ? null : MapOffer(latestOffer);
+        return item;
     }
 
     private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct)
@@ -924,17 +1244,12 @@ public sealed class RecruiterService(
 
     private void InvalidateAfterJobMutation(Guid recruiterId, Guid jobId)
     {
+        logger.LogDebug("Invalidating recruiter job caches for recruiter {RecruiterId} after job mutation {JobId}", recruiterId, jobId);
         InvalidateRecruiterCaches(recruiterId);
         cacheService.Remove($"jobs:public:detail:{jobId}");
         cacheService.RemoveByPrefix("jobs:public:list:");
     }
 }
-
-
-
-
-
-
 
 
 

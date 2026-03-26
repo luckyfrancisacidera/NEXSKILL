@@ -9,6 +9,28 @@ export type CandidateStage =
 
 export type JobSeekerStage = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
 
+export type OfferStatus = 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Cancelled';
+
+export interface OfferDto {
+  id: string;
+  application_id: string;
+  sent_by_user_id: string;
+  title: string;
+  message: string;
+  salary_text: string;
+  employment_type: string;
+  start_date?: string | null;
+  expiration_date?: string | null;
+  status: OfferStatus;
+  sent_at_utc: string;
+  responded_at_utc?: string | null;
+  created_at_utc: string;
+  updated_at_utc: string;
+  can_accept: boolean;
+  can_decline: boolean;
+  can_mark_hired: boolean;
+}
+
 export interface RecruiterCandidate {
   id: string;
   name: string;
@@ -34,6 +56,7 @@ export interface ApplicantScoreItemDto {
   created_at_utc: string;
   has_resume: boolean;
   resume_file_name?: string;
+  offer?: OfferDto | null;
 }
 
 export interface ParsedResumeProjectDto {

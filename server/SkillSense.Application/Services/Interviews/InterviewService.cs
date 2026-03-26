@@ -28,6 +28,7 @@ public sealed class InterviewService(
         var now = dateTimeProvider.UtcNow;
         var scopedCompanyId = await ResolveCompanyIdAsync(companyId, request.RecruiterId, request.JobId, ct);
         var interviewType = MapInterviewType(request.InterviewType);
+        ValidateScheduledDate(request.ScheduledDateTimeUtc, now);
         ValidateInterviewDetails(interviewType, request.LocationOrMeetingLink);
         await EnsureCandidateIsShortlistedAsync(request.JobId, request.JobSeekerId, ct);
 
@@ -53,14 +54,29 @@ public sealed class InterviewService(
         var scheduledInterview = await interviewRepository.GetByIdForRecruiterAsync(entity.Id, request.RecruiterId, scopedCompanyId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
 
-        await CreateCalendarInvite(scheduledInterview, ct);
-        await CreateJobSeekerNotificationAsync(
-            scheduledInterview,
-            NotificationType.Info,
-            "Interview scheduled",
-            BuildScheduleNotificationMessage(scheduledInterview),
-            ct);
-        return await MapAsync(scheduledInterview, ct);
+        var warnings = new List<string>();
+
+        await TryRunSideEffectAsync(
+            warnings,
+            "Calendar invites could not be delivered automatically.",
+            () => CreateCalendarInvite(scheduledInterview, ct));
+        await TryRunSideEffectAsync(
+            warnings,
+            "The candidate notification could not be delivered automatically.",
+            () => CreateJobSeekerNotificationAsync(
+                scheduledInterview,
+                NotificationType.Info,
+                "Interview scheduled",
+                BuildScheduleNotificationMessage(scheduledInterview),
+                ct));
+
+        var response = await MapAsync(scheduledInterview, ct);
+        if (warnings.Count > 0)
+        {
+            response.WarningMessage = string.Join(" ", warnings.Distinct());
+        }
+
+        return response;
     }
 
     public async Task<InterviewDto> GetRecruiterInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
@@ -403,12 +419,29 @@ public sealed class InterviewService(
                 CompanyName = recruiterContext?.CompanyName,
                 JobTitle = entity.Job?.Title,
                 JobSeekerName = string.IsNullOrWhiteSpace(jobSeekerName) ? "Candidate" : jobSeekerName,
+                WarningMessage = null,
             };
         }).ToList();
     }
 
     private async Task<InterviewDto> MapAsync(InterviewEntity entity, CancellationToken ct)
         => (await MapAsync(new[] { entity }, ct)).Single();
+
+    private async Task TryRunSideEffectAsync(
+        List<string> warnings,
+        string warningMessage,
+        Func<Task> sideEffect)
+    {
+        try
+        {
+            await sideEffect();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Interview side effect failed: {WarningMessage}", warningMessage);
+            warnings.Add(warningMessage);
+        }
+    }
 
     private async Task<Dictionary<Guid, RecruiterContext>> BuildRecruiterLookupAsync(IReadOnlyCollection<Guid> recruiterIds, CancellationToken ct)
     {

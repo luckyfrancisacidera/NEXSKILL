@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLoaderData, useNavigate, useNavigation, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLoaderData, useNavigate, useNavigation, useRevalidator, useSearchParams } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader';
@@ -9,6 +9,15 @@ import { JobPostsTable } from '@features/recruiter/pages/JobPostsPage/components
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import type { JobListItem, RecruiterJobsLoaderData } from '@features/recruiter/types';
+import {
+  applyRecruiterJobMutation,
+  jobMatchesCurrentFilters,
+  publishRecruiterJobMutation,
+  readLatestRecruiterJobMutation,
+  subscribeRecruiterJobMutations,
+  toJobListItem,
+  type RecruiterJobMutationPayload,
+} from '@features/recruiter/utils/jobMutationSync';
 import { Card } from '@shared/components/Card';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
@@ -30,18 +39,51 @@ export const JobPostsPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const navigation = useNavigation();
+  const revalidator = useRevalidator();
   const { showToast } = useToast();
   const confirm = useConfirmation();
+  const handledMutationIdsRef = useRef<Set<string>>(new Set());
 
   const [jobs, setJobs] = useState(loaderData.jobs);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [selectedJob, setSelectedJob] = useState<JobListItem | null>(null);
 
   useEffect(() => {
     setJobs(loaderData.jobs);
   }, [loaderData.jobs]);
+
+  const applyMutationSync = useCallback((mutation: RecruiterJobMutationPayload, showHiddenFeedback: boolean) => {
+    if (!mutation || handledMutationIdsRef.current.has(mutation.mutationId)) {
+      return;
+    }
+
+    handledMutationIdsRef.current.add(mutation.mutationId);
+    console.info('[JobPostsPage] Applying recruiter job mutation', mutation);
+
+    setJobs((current) => applyRecruiterJobMutation(current, mutation, loaderData.filters));
+
+    if (showHiddenFeedback && mutation.job && !jobMatchesCurrentFilters(mutation.job, loaderData.filters)) {
+      showToast({
+        title: 'Job updated',
+        description: `${mutation.job.title} changed successfully, but it may be hidden by your current filters.`,
+        tone: 'info',
+      });
+    }
+
+    revalidator.revalidate();
+  }, [loaderData.filters, revalidator, showToast]);
+
+  useEffect(() => {
+    const latestMutation = readLatestRecruiterJobMutation();
+    if (latestMutation) {
+      applyMutationSync(latestMutation, false);
+    }
+
+    return subscribeRecruiterJobMutations((mutation) => applyMutationSync(mutation, true));
+  }, [applyMutationSync]);
 
 
 
@@ -79,7 +121,7 @@ export const JobPostsPage = () => {
   });
 
   const openDeleteFlow = async (job: JobListItem) => {
-    if (isDeleting) {
+    if (isDeleting || isDuplicating) {
       return;
     }
 
@@ -111,7 +153,7 @@ export const JobPostsPage = () => {
   };
 
   const closeDeleteFlow = () => {
-    if (isDeleting) {
+    if (isDeleting || isDuplicating) {
       return;
     }
 
@@ -121,7 +163,7 @@ export const JobPostsPage = () => {
   };
 
   const runDelete = async (jobToDelete: JobListItem = selectedJob as JobListItem) => {
-    if (!jobToDelete || isDeleting) {
+    if (!jobToDelete || isDeleting || isDuplicating) {
       return;
     }
 
@@ -132,6 +174,7 @@ export const JobPostsPage = () => {
       setDeleteError(undefined);
       setJobs((current) => current.filter((job) => job.id !== jobToDelete.id));
       await recruiterService.deleteJob(jobToDelete.id);
+      publishRecruiterJobMutation({ type: 'deleted', jobId: jobToDelete.id });
       showToast({ title: 'Job deleted', description: `${jobToDelete.title} has been removed.`, tone: 'success' });
       setIsVerificationOpen(false);
       setSelectedJob(null);
@@ -144,6 +187,43 @@ export const JobPostsPage = () => {
       showToast({ title: 'Delete failed', description: 'Please try again.', tone: 'error' });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const openDuplicateFlow = async (job: JobListItem) => {
+    if (isDeleting || isDuplicating) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Duplicate this job posting?',
+      message: 'A new draft job will be created with all current details pre-filled so you can edit and publish it separately.',
+      confirmLabel: 'Duplicate Job',
+      accent: 'violet',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDuplicating(true);
+      const duplicated = await recruiterService.duplicateJob(job.id);
+      publishRecruiterJobMutation({ type: 'duplicated', jobId: duplicated.id, job: toJobListItem(duplicated) });
+      showToast({
+        title: 'Job duplicated successfully',
+        description: `${duplicated.title} is ready to edit as a draft.`,
+        tone: 'success',
+      });
+      navigate(`/recruiter/job-posts/${duplicated.id}/edit`);
+    } catch {
+      showToast({
+        title: 'Unable to duplicate job',
+        description: 'Please try again.',
+        tone: 'error',
+      });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -178,7 +258,13 @@ export const JobPostsPage = () => {
           }}
         />
 
-        <JobPostsTable jobs={jobs} isDeleting={isDeleting} onDelete={openDeleteFlow} />
+        <JobPostsTable
+          jobs={jobs}
+          isDeleting={isDeleting}
+          isDuplicating={isDuplicating}
+          onDelete={openDeleteFlow}
+          onDuplicate={openDuplicateFlow}
+        />
 
         <JobPostsPagination
           page={loaderData.page}
@@ -209,5 +295,3 @@ export const JobPostsPage = () => {
     </div>
   );
 };
-
-

@@ -2,6 +2,7 @@ export type { JobDto, Paged } from '@features/recruiter/types';
 import { http } from '@shared/api/http';
 import type {
   ApplicantDetailDto,
+  OfferDto,
   ApplicantResumeDownloadDto,
   ApplicantScoreItemDto,
   ApplicantScoresDto,
@@ -43,6 +44,15 @@ export interface UpdateApplicantStatusesPayload {
   status?: string;
 }
 
+export interface SendOfferPayload {
+  title: string;
+  message: string;
+  salary_text: string;
+  employment_type: string;
+  start_date?: string | null;
+  expiration_date?: string | null;
+}
+
 export interface DashboardStatsQueryParams {
   startDate?: string;
   endDate?: string;
@@ -76,6 +86,11 @@ export const recruiterService = {
 
   async updateJob(id: string, payload: RecruiterJobPayload): Promise<JobDto> {
     const response = await http.put<JobDto>(`/api/recruiter/jobs/${id}`, payload);
+    return response.data;
+  },
+
+  async duplicateJob(id: string): Promise<JobDto> {
+    const response = await http.post<JobDto>(`/api/jobs/${id}/duplicate`);
     return response.data;
   },
 
@@ -146,9 +161,15 @@ export const recruiterService = {
     return response.data;
   },
 
-  async sendOffer(submissionId: string): Promise<ApplicantScoreItemDto> {
+  async getOffer(submissionId: string): Promise<OfferDto | null> {
+    const response = await http.get<OfferDto>(`/api/recruiter/applicants/${submissionId}/offer`);
+    return response.data;
+  },
+
+  async sendOffer(submissionId: string, payload: SendOfferPayload): Promise<ApplicantScoreItemDto> {
     const response = await http.post<ApplicantScoreItemDto>(
       `/api/recruiter/applicants/${submissionId}/offer`,
+      payload,
     );
     return response.data;
   },

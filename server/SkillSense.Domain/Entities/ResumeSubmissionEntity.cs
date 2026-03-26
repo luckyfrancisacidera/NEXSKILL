@@ -22,6 +22,7 @@ public sealed class ResumeSubmissionEntity
     public DateTime UpdatedAtUtc { get; set; }
 
     public AppUser? JobSeekerUser { get; set; }
+    public ICollection<JobOfferEntity> Offers { get; set; } = [];
 }
 
 public enum ResumeSubmissionStatus

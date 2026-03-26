@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { Form } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApplyWizardStepper } from "@features/jobseeker/pages/JobDetailPage/components/ApplyWizardStepper";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 
@@ -13,9 +12,11 @@ type WizardValues = {
 };
 
 type ApplyModalWizardProps = {
-  actionData?: { error?: string };
+  errorMessage?: string | null;
   isSubmitting: boolean;
+  submissionHint?: string;
   onClose: () => void;
+  onSubmit: (formData: FormData) => Promise<void>;
 };
 
 const isEmailValid = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -26,7 +27,13 @@ const formatBytes = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyModalWizardProps) => {
+export const ApplyModalWizard = ({
+  errorMessage,
+  isSubmitting,
+  submissionHint,
+  onClose,
+  onSubmit,
+}: ApplyModalWizardProps) => {
   const [step, setStep] = useState<Step>(1);
   const [values, setValues] = useState<WizardValues>({
     full_name: "",
@@ -76,6 +83,10 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
   }, [resumePreviewUrl]);
 
   const handleClose = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (isDirty) {
       const shouldClose = await confirm({
         title: "Discard application progress?",
@@ -90,7 +101,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
     }
 
     onClose();
-  }, [confirm, isDirty, onClose]);
+  }, [confirm, isDirty, isSubmitting, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -172,17 +183,17 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
 
         <ApplyWizardStepper step={step} />
 
-        <Form
-          method="post"
-          encType="multipart/form-data"
+        <form
           className="mt-5 space-y-4"
-          onSubmit={(event) => {
+          onSubmit={async (event: FormEvent<HTMLFormElement>) => {
             if (step !== 3 || !allowSubmitRef.current) {
               event.preventDefault();
               return;
             }
 
             allowSubmitRef.current = false;
+            event.preventDefault();
+            await onSubmit(new FormData(event.currentTarget));
           }}
           onKeyDown={(event) => {
             if (event.key !== "Enter" || step === 3) return;
@@ -201,8 +212,11 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
             setStep((prev) => (prev === 1 ? 2 : 3));
           }}
         >
-          {actionData?.error ? (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{actionData.error}</p>
+          {errorMessage ? (
+            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>
+          ) : null}
+          {submissionHint ? (
+            <p className="rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">{submissionHint}</p>
           ) : null}
 
           <div className={step === 1 ? "space-y-3" : "hidden"}>
@@ -307,7 +321,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
 
           <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-4">
             {step > 1 ? (
-              <button type="button" onClick={goBack} className="rounded border border-zinc-300 px-4 py-2 text-zinc-700">
+              <button type="button" disabled={isSubmitting} onClick={goBack} className="rounded border border-zinc-300 px-4 py-2 text-zinc-700 disabled:opacity-60">
                 Back
               </button>
             ) : null}
@@ -315,7 +329,7 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
             {step < 3 ? (
               <button
                 type="button"
-                disabled={(step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
+                disabled={isSubmitting || (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
                 onClick={goNext}
                 className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-60"
               >
@@ -330,11 +344,11 @@ export const ApplyModalWizard = ({ actionData, isSubmitting, onClose }: ApplyMod
                 }}
                 className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-60"
               >
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {isSubmitting ? "Uploading Resume..." : "Submit"}
               </button>
             )}
           </div>
-        </Form>
+        </form>
       </div>
     </div>
   );

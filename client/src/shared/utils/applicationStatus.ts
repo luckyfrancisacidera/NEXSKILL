@@ -1,5 +1,6 @@
 export type ApplicationStatusKey =
   | "applied"
+  | "under_review"
   | "recommended"
   | "shortlisted"
   | "interview"
@@ -8,6 +9,9 @@ export type ApplicationStatusKey =
   | "rejected"
   | "withdrawn"
   | "pending"
+  | "accepted"
+  | "declined"
+  | "expired"
   | "scheduled"
   | "completed"
   | "cancelled"
@@ -29,6 +33,13 @@ const applicationStatusConfig: Record<
       "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300",
     accentClassName:
       "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300",
+  },
+  under_review: {
+    label: "Under Review",
+    badgeClassName:
+      "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300",
+    accentClassName:
+      "bg-slate-100 text-slate-700 dark:bg-slate-900/60 dark:text-slate-300",
   },
   recommended: {
     label: "Recommended",
@@ -59,7 +70,7 @@ const applicationStatusConfig: Record<
       "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
   },
   hire: {
-    label: "Hire",
+    label: "Hired",
     badgeClassName:
       "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-300",
     accentClassName:
@@ -85,6 +96,27 @@ const applicationStatusConfig: Record<
       "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300",
     accentClassName:
       "bg-slate-200 text-slate-700 dark:bg-slate-900/60 dark:text-slate-300",
+  },
+  accepted: {
+    label: "Accepted",
+    badgeClassName:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300",
+    accentClassName:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  },
+  declined: {
+    label: "Declined",
+    badgeClassName:
+      "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300",
+    accentClassName:
+      "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
+  },
+  expired: {
+    label: "Expired",
+    badgeClassName:
+      "border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+    accentClassName:
+      "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
   },
   scheduled: {
     label: "Scheduled",
@@ -119,6 +151,9 @@ const fallbackStatusAppearance: ApplicationStatusAppearance = {
 
 const statusAliases: Record<string, ApplicationStatusKey> = {
   applied: "applied",
+  "under review": "under_review",
+  underreview: "under_review",
+  review: "under_review",
   recommended: "recommended",
   shortlisted: "shortlisted",
   interview: "interview",
@@ -129,6 +164,9 @@ const statusAliases: Record<string, ApplicationStatusKey> = {
   withdrawn: "withdrawn",
   failed: "withdrawn",
   pending: "pending",
+  accepted: "accepted",
+  declined: "declined",
+  expired: "expired",
   processing: "pending",
   scheduled: "scheduled",
   completed: "completed",

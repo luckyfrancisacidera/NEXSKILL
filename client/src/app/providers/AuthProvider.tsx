@@ -7,7 +7,11 @@ import {
   useState,
 } from "react";
 import type { PropsWithChildren } from "react";
-import type { AuthMeResponse } from "@features/auth/types/auth.types";
+import type {
+  AuthMeResponse,
+  AuthMutationResponse,
+  RegisterPayload,
+} from "@features/auth/types/auth.types";
 import type { Role } from "@shared/types";
 import { ApiError, http } from "@shared/api/http";
 
@@ -24,21 +28,13 @@ interface AuthContextValue {
   user: AuthUser | null;
   roles: Role[];
   login: (email: string, password: string) => Promise<Role[]>;
-  register: (email: string, password: string) => Promise<Role[]>;
+  register: (payload: RegisterPayload) => Promise<Role[]>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<Role[]>;
   isHydrating: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-interface AuthResponsePayload {
-  user?: {
-    userId?: string;
-    email?: string;
-    roles?: string[];
-  };
-}
 
 const normalizeRole = (role: string): Role | null => {
   const normalized = role.trim().toLowerCase();
@@ -101,17 +97,19 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const response = await http.post<AuthResponsePayload>("/api/auth/login", {
+      const response = await http.post<AuthMutationResponse>("/api/auth/login", {
         email,
         password,
       });
 
       const userId = response.data.user?.userId;
       const userEmail = response.data.user?.email;
+      const firstName = response.data.user?.first_name;
+      const lastName = response.data.user?.last_name;
       const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
 
       if (userId && userEmail) {
-        setUser({ userId, email: userEmail });
+        setUser({ userId, email: userEmail, firstName, lastName });
         setRoles(parsedRoles);
         return parsedRoles;
       }
@@ -122,18 +120,20 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   );
 
   const register = useCallback(
-    async (email: string, password: string) => {
-      const response = await http.post<AuthResponsePayload>(
+    async (payload: RegisterPayload) => {
+      const response = await http.post<AuthMutationResponse>(
         "/api/auth/register",
-        { email, password },
+        payload,
       );
 
       const userId = response.data.user?.userId;
       const userEmail = response.data.user?.email;
+      const firstName = response.data.user?.first_name;
+      const lastName = response.data.user?.last_name;
       const parsedRoles = normalizeRoles(response.data.user?.roles ?? []);
 
       if (userId && userEmail) {
-        setUser({ userId, email: userEmail });
+        setUser({ userId, email: userEmail, firstName, lastName });
         setRoles(parsedRoles);
         return parsedRoles;
       }

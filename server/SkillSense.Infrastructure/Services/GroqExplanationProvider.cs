@@ -44,6 +44,9 @@ public sealed class GroqExplanationProvider(HttpClient httpClient, IOptions<Groq
         - Use only the provided structured facts.
         - Do not invent facts, infer unsupported claims, or guess missing details.
         - If evidence is insufficient for a point, omit that point.
+        - Treat match states as authoritative.
+        - Never convert related evidence into an exact-skill claim.
+        - Never call something missing unless its match_state is NOT_FOUND.
         - Do not repeat the same evidence across summary, strengths, and gaps.
         - Each strength or gap should reflect a distinct evidence point.
         - Prefer concrete role-fit evidence over generic praise.
@@ -72,22 +75,34 @@ public sealed class GroqExplanationProvider(HttpClient httpClient, IOptions<Groq
         6) possible gaps last
 
         Evidence interpretation:
+        - Each detailed match item includes jd_item, match_state, match_type, final_match_confidence, best_resume_evidence, evidence_source_path, and match_reason.
         - Treat `jd_item` as the job requirement, responsibility, or JD expectation being evaluated.
         - Treat `best_resume_evidence` as the strongest candidate proof supporting that specific requirement.
+        - Treat `match_state` as the explanation-safe classification to use.
         - Reason from requirement to evidence.
         - Prefer structured evidence pairs over generic summary language when available.
         - Do not collapse requirement and evidence into one ambiguous statement before reasoning.
         - Do not overstate alignment if the evidence appears partial or limited.
 
+        Match-state wording rules:
+        - EXACT_EVIDENCE -> phrase as "clear evidence" or "strong evidence".
+        - RELATED_EVIDENCE -> phrase as "related experience" or "adjacent experience".
+        - PARTIAL_EVIDENCE -> phrase as "partial evidence" or "good alignment with some gaps".
+        - LIMITED_EVIDENCE -> phrase as "limited direct evidence".
+        - NOT_FOUND -> phrase as "not evident" or "not found".
+        - Never say a skill is missing when the state is EXACT_EVIDENCE, RELATED_EVIDENCE, PARTIAL_EVIDENCE, or LIMITED_EVIDENCE.
+        - Never claim exact expertise for a jd_item when the state is RELATED_EVIDENCE, PARTIAL_EVIDENCE, LIMITED_EVIDENCE, or NOT_FOUND.
+
         Strength rules:
         - strengths must be job-fit specific, not generic candidate praise.
-        - Prefer strengths grounded in matched required skills, matched responsibilities, strong description alignment, or role-relevant work experience evidence.
+        - Prefer strengths grounded in required_skill_details, responsibility_details, description_details, or role-relevant work experience evidence.
         - Preferred skills should only be used as supporting context, not as the main basis of fit.
 
         Gap rules:
         - gaps must represent real, evidence-supported missing alignment or unmet requirements.
-        - Prefer missing required skills or missing responsibilities over vague uncertainty.
-        - Do not create a gap when the evidence shows the requirement is met.
+        - Prefer NOT_FOUND or LIMITED_EVIDENCE items over vague uncertainty.
+        - RELATED_EVIDENCE may be phrased as a nuanced direct-gap, but not as total absence.
+        - Do not create a gap when the evidence shows strong or partial alignment.
         - If there are no meaningful evidence-supported gaps, return an empty array.
 
         Hard requirement rules:

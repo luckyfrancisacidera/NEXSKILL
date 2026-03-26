@@ -433,6 +433,12 @@ public sealed class InterviewServiceTests
                     ? Submission
                     : null);
 
+        public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid applicationId, CancellationToken ct = default)
+            => Task.FromResult<JobOfferEntity?>(null);
+
+        public Task AddOfferAsync(JobOfferEntity offer, CancellationToken ct = default)
+            => Task.CompletedTask;
+
         public Task<Dictionary<Guid, int>> GetHiredCountsByJobIdsAsync(IReadOnlyCollection<Guid> jobIds, CancellationToken ct = default)
             => throw new NotImplementedException();
 

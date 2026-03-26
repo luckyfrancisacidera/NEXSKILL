@@ -4,6 +4,6 @@ namespace SkillSense.Persistence.Interfaces
 {
     public interface IResumeScoreRepository
     {
-        Task AddAsync(ResumeScoreEntity score, CancellationToken ct = default);
+        Task AddAsync(ResumeScoreEntity score, bool saveChanges = true, CancellationToken ct = default);
     }
 }

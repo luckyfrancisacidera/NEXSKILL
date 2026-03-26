@@ -12,5 +12,8 @@ namespace SkillSense.Application.Contracts.Response
 
         [JsonPropertyName("status")]
         public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = string.Empty;
     }
 }

@@ -4,6 +4,7 @@ using SkillSense.Api.Security;
 using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Jobseeker.Request;
 using SkillSense.Application.Contracts.Jobseeker.Response;
+using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Jobseeker;
@@ -26,7 +27,7 @@ namespace SkillSense.Api.Controllers
         public async Task<ActionResult<ResumeUploadResponse>> Apply(Guid jobId, [FromForm] string full_name, [FromForm] string email, [FromForm] string postal_code, [FromForm] string location, [FromForm] IFormFile resume_file, CancellationToken ct)
         {
             var (isValid, error) = ResumeFileValidator.Validate(resume_file?.FileName ?? "", resume_file?.ContentType ?? "", resume_file?.Length ?? 0);
-            if (!isValid) return BadRequest(error);
+            if (!isValid) return BadRequest(new { message = error });
             var userId = CurrentUserContext.GetUserId(User);
 
             await using var stream = resume_file!.OpenReadStream();
@@ -52,6 +53,18 @@ namespace SkillSense.Api.Controllers
         [HttpGet("applications/{applicationId:guid}")]
         public async Task<IActionResult> GetApplication(Guid applicationId, CancellationToken ct = default)
             => Ok(await jobSeekerService.GetApplicationDetailAsync(CurrentUserContext.GetUserId(User), applicationId, ct));
+
+        [HttpGet("applications/{applicationId:guid}/offer")]
+        public async Task<ActionResult<OfferResponse>> GetOffer(Guid applicationId, CancellationToken ct = default)
+            => Ok(await jobSeekerService.GetOfferAsync(CurrentUserContext.GetUserId(User), applicationId, ct));
+
+        [HttpPost("applications/{applicationId:guid}/offer/accept")]
+        public async Task<ActionResult<OfferResponse>> AcceptOffer(Guid applicationId, CancellationToken ct = default)
+            => Ok(await jobSeekerService.AcceptOfferAsync(CurrentUserContext.GetUserId(User), applicationId, ct));
+
+        [HttpPost("applications/{applicationId:guid}/offer/decline")]
+        public async Task<ActionResult<OfferResponse>> DeclineOffer(Guid applicationId, CancellationToken ct = default)
+            => Ok(await jobSeekerService.DeclineOfferAsync(CurrentUserContext.GetUserId(User), applicationId, ct));
 
         [HttpPatch("applications/{applicationId:guid}/withdraw")]
         public async Task<IActionResult> Withdraw(Guid applicationId, CancellationToken ct = default)

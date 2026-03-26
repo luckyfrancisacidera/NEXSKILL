@@ -2,6 +2,7 @@ import { redirect, type ActionFunctionArgs } from "react-router-dom";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { ApiError } from "@shared/api/http";
 import { getApiErrorMessage } from "@features/recruiter/actions/utils";
+import { publishRecruiterJobMutation } from "@features/recruiter/utils/jobMutationSync";
 
 /**
  * deleteJobAction
@@ -16,6 +17,7 @@ export const deleteJobAction = async ({ params }: ActionFunctionArgs) => {
 
   try {
     await recruiterService.deleteJob(params.jobId);
+    publishRecruiterJobMutation({ type: "deleted", jobId: params.jobId });
     return redirect("/recruiter/job-posts");
   } catch (error) {
     console.error("[Recruiter] Delete failed", error);

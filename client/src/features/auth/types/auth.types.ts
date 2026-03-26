@@ -36,6 +36,25 @@ export interface AccountProfile {
   role: string;
 }
 
+export interface RegisterPayload {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthMutationUser {
+  userId?: string;
+  email?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  roles?: string[];
+}
+
+export interface AuthMutationResponse {
+  user?: AuthMutationUser;
+}
+
 export interface UpdateAccountProfilePayload {
   first_name?: string;
   last_name?: string;

@@ -45,6 +45,50 @@ interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 let refreshPromise: Promise<void> | null = null;
 
+const extractApiErrorMessage = (data: unknown) => {
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const payload = data as {
+    message?: string;
+    title?: string;
+    error?: string;
+    errors?: string[] | Record<string, string[]>;
+  };
+
+  if (payload.message?.trim()) {
+    return payload.message;
+  }
+
+  if (payload.title?.trim()) {
+    return payload.title;
+  }
+
+  if (payload.error?.trim()) {
+    return payload.error;
+  }
+
+  if (Array.isArray(payload.errors) && payload.errors.length > 0) {
+    return payload.errors.filter(Boolean).join(" ");
+  }
+
+  if (payload.errors && typeof payload.errors === "object") {
+    const messages = Object.values(payload.errors)
+      .flatMap((value) => value)
+      .filter(Boolean);
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  return null;
+};
+
 const shouldSkipRefresh = (config?: AxiosRequestConfig) => {
   const url = config?.url ?? "";
   return url.includes("/api/auth/login") || url.includes("/api/auth/register") || url.includes("/api/auth/refresh");
@@ -99,11 +143,8 @@ http.interceptors.response.use(
       }
     }
 
-    const responseData = error.response?.data as
-      | { message?: string }
-      | undefined;
     const apiError = new ApiError(
-      responseData?.message ?? "Request failed",
+      extractApiErrorMessage(error.response?.data) ?? error.message ?? "Request failed",
       error.response?.status,
       error.response?.data,
     );

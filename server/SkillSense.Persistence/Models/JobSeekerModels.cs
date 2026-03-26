@@ -15,6 +15,16 @@ public sealed class ApplicationListItemData
     public ResumeSubmissionStatus Status { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+    public Guid? OfferId { get; set; }
+    public string? OfferTitle { get; set; }
+    public string? OfferMessage { get; set; }
+    public string? OfferSalaryText { get; set; }
+    public string? OfferEmploymentType { get; set; }
+    public DateOnly? OfferStartDate { get; set; }
+    public DateOnly? OfferExpirationDate { get; set; }
+    public JobOfferStatus? OfferStatus { get; set; }
+    public DateTime? OfferSentAtUtc { get; set; }
+    public DateTime? OfferRespondedAtUtc { get; set; }
 }
 
 public sealed class SavedJobData

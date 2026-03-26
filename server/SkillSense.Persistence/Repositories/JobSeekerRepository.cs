@@ -88,6 +88,12 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     public Task<ResumeSubmissionEntity?> GetApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.ResumeSubmissions.FirstOrDefaultAsync(x => x.JobSeekerUserId == userId && x.Id == applicationId, ct);
 
+    public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => dbContext.JobOffers
+            .Where(offer => offer.ApplicationId == applicationId && offer.Application.JobSeekerUserId == userId)
+            .OrderByDescending(offer => offer.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default) => dbContext.SaveChangesAsync(ct);
 
     public async Task<List<SavedJobData>> GetSavedJobsAsync(Guid userId, string? search, CancellationToken ct = default)
@@ -232,6 +238,56 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
                Status = submission.Status,
                CreatedAtUtc = submission.CreatedAtUtc,
                UpdatedAtUtc = submission.UpdatedAtUtc,
+               OfferId = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => (Guid?)offer.Id)
+                   .FirstOrDefault(),
+               OfferTitle = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.Title)
+                   .FirstOrDefault(),
+               OfferMessage = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.Message)
+                   .FirstOrDefault(),
+               OfferSalaryText = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.SalaryText)
+                   .FirstOrDefault(),
+               OfferEmploymentType = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.EmploymentType)
+                   .FirstOrDefault(),
+               OfferStartDate = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.StartDate)
+                   .FirstOrDefault(),
+               OfferExpirationDate = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.ExpirationDate)
+                   .FirstOrDefault(),
+               OfferStatus = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => (JobOfferStatus?)offer.Status)
+                   .FirstOrDefault(),
+               OfferSentAtUtc = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => (DateTime?)offer.SentAtUtc)
+                   .FirstOrDefault(),
+               OfferRespondedAtUtc = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.RespondedAtUtc)
+                   .FirstOrDefault(),
            };
 
     private static IReadOnlyCollection<ResumeSubmissionStatus> ResolveStatusFilter(string? status)
@@ -244,12 +300,14 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
 
         return normalizedStatus switch
         {
-            "applied" or "submitted" or "recommended" =>
+            "applied" or "submitted" =>
             [
                 ResumeSubmissionStatus.Pending,
-                ResumeSubmissionStatus.Processing,
+                ResumeSubmissionStatus.Processing
+            ],
+            "recommended" or "under review" or "under-review" or "review" =>
+            [
                 ResumeSubmissionStatus.Completed,
-                ResumeSubmissionStatus.Shortlisted
             ],
             "shortlist" or "shortlisted" => [ResumeSubmissionStatus.Shortlisted],
             "interview" => [ResumeSubmissionStatus.Interview],
