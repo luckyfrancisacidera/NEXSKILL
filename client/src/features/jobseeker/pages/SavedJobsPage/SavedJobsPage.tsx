@@ -1,33 +1,42 @@
 import { useState } from "react";
-import { Card } from "@shared/components/Card";
-import { JobCard } from "@shared/components/JobCard";
-import type { Job } from "@shared/types";
+
 import { SearchField } from "@features/jobseeker/components";
 import { useSavedJobs } from "@features/jobseeker/hooks";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { Card } from "@shared/components/Card";
+import { JobCard } from "@shared/components/JobCard";
+import type { Job } from "@shared/types";
 
 export const SavedJobsPage = () => {
   const [search, setSearch] = useState("");
   const { load, saved } = useSavedJobs(search);
 
   return (
-    <div className="space-y-4">
-      <Card className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Saved Jobs</h2>
-        <SearchField
-          ariaLabel="Search saved jobs"
-          className="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 md:max-w-xs dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-500 dark:focus:ring-violet-900"
-          placeholder="Search saved jobs"
-          value={search}
-          onChange={setSearch}
-        />
+    <div className="space-y-6">
+      <Card className="bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Saved Jobs</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Revisit bookmarked roles and jump back into applications quickly.
+            </p>
+          </div>
+          <SearchField
+            ariaLabel="Search saved jobs"
+            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-500 hover:border-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 md:max-w-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+            placeholder="Search saved jobs"
+            value={search}
+            onChange={setSearch}
+          />
+        </div>
       </Card>
+
       {saved.length === 0 ? (
-        <Card>
+        <Card className="bg-white dark:border-zinc-800 dark:bg-zinc-950">
           <p className="text-zinc-500 dark:text-zinc-400">No saved jobs yet.</p>
         </Card>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {saved.map((item) => {
             const job: Job = {
               id: String(item.id),
@@ -37,8 +46,8 @@ export const SavedJobsPage = () => {
               salaryMin: Number(item.salary_min ?? 0),
               salaryMax: Number(item.salary_max ?? 0),
               currency: String(item.currency ?? "PHP"),
-              type: "Full-time",
-              snippet: String(item.job_type ?? ""),
+              type: String(item.job_type ?? "Full-time") as Job["type"],
+              snippet: String(item.description ?? "").trim(),
             };
 
             return (

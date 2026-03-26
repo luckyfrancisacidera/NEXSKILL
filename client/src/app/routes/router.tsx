@@ -13,7 +13,6 @@ import {
   ApplicationsPage,
   DashboardPage,
   JobsPage,
-  MessagesPage,
   ProfilePage,
   SavedJobsPage,
   applicationsLoader,
@@ -172,11 +171,6 @@ const sharedRoutes: AppRoute[] = [
     access: "offers",
     loader: applicationsLoader,
     element: <OffersPage />,
-  }),
-  protectedRoute({
-    path: "messages",
-    access: "messages",
-    element: <MessagesPage />,
   }),
   protectedRoute({
     path: "saved",

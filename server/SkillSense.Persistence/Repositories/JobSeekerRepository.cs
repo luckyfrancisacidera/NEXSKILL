@@ -126,6 +126,7 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
                     ? x.company.Name
                     : x.j.CompanyNameSnapshot ?? "Company",
                 Location = x.j.Location,
+                Description = x.j.Description,
                 SalaryMin = x.j.SalaryMinPerAnnum,
                 SalaryMax = x.j.SalaryMaxPerAnnum,
                 Currency = x.j.Currency,
