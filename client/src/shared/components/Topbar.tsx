@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Bell, LogOut, Moon, Sun, UserRound } from "lucide-react";
+import { Bell, LogOut, Menu, Moon, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useNotifications } from "@app/providers/NotificationsProvider";
@@ -19,7 +19,12 @@ const topbarIconButtonClassName = cn(
   "justify-center p-2",
 );
 
-export const Topbar = () => {
+interface TopbarProps {
+  onMenuToggle?: () => void;
+  pageTitle?: string;
+}
+
+export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { currentCompany } = useCurrentCompany();
@@ -94,8 +99,21 @@ export const Topbar = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/80 bg-white/75 px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.7),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-md transition-colors duration-300 supports-backdrop-filter:bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-950/75 dark:shadow-[0_1px_0_rgba(24,24,27,0.85),0_10px_30px_rgba(0,0,0,0.3)] dark:supports-backdrop-filter:bg-zinc-950/70 sm:px-6">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white/90 px-4 py-4 backdrop-blur-md transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
+          <button
+            type="button"
+            className={cn(topbarIconButtonClassName, "lg:hidden")}
+            aria-label="Open sidebar"
+            onClick={onMenuToggle}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 lg:hidden">
+            <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {pageTitle ?? "SkillSense ATS"}
+            </p>
+          </div>
           <div className="hidden min-w-0 flex-1 flex-col text-left text-xs text-zinc-500 dark:text-zinc-400 xl:flex">
             {currentCompany ? (
               <>
@@ -114,7 +132,7 @@ export const Topbar = () => {
               </span>
             )}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 hidden flex-1 md:block">
             <GlobalSearchBar />
           </div>
         </div>
@@ -152,7 +170,7 @@ export const Topbar = () => {
                   <button
                     type="button"
                     onClick={markAllAsRead}
-                    className="text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
+                    className="text-xs font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                   >
                     Mark all as read
                   </button>
@@ -173,7 +191,7 @@ export const Topbar = () => {
                         "block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
                         item.read
                           ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
-                          : "bg-violet-50 text-zinc-800 ring-1 ring-violet-100 dark:bg-violet-950/40 dark:text-zinc-100 dark:ring-violet-900/60",
+                          : "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700",
                       )}
                     >
                       <p className="font-semibold">{item.title}</p>
@@ -201,7 +219,7 @@ export const Topbar = () => {
                     setIsNotificationsOpen(false);
                     navigate("/notifications");
                   }}
-                  className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50 hover:text-violet-700 dark:text-violet-400 dark:hover:bg-violet-950/40 dark:hover:text-violet-300"
+                  className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                 >
                   View all notifications
                 </button>
@@ -230,7 +248,7 @@ export const Topbar = () => {
               <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
                 <Avatar
                   name={user?.email ?? "User"}
-                  className="h-12 w-12 border-zinc-200 bg-violet-50 dark:border-zinc-700 dark:bg-zinc-800"
+                  className="h-12 w-12 border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
                   iconClassName="h-6 w-6"
                 />
                 <div className="min-w-0">

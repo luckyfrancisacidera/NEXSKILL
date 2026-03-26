@@ -224,16 +224,6 @@ export const searchableRoutes: SearchableRouteItem[] = [
     icon: CalendarClock,
   },
   {
-    id: "recruiter-automations",
-    label: "Automations",
-    description: "Configure recruiter workflow automations and offer triggers.",
-    path: "/recruiter/automations",
-    section: "Recruiter",
-    roles: ["recruiter"],
-    keywords: ["automation", "workflows", "rules", "offer automation", "triggers"],
-    icon: Sparkles,
-  },
-  {
     id: "super-admin-dashboard",
     label: "Platform Overview",
     description: "Super admin dashboard for tenant health and platform oversight.",

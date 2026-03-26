@@ -9,5 +9,4 @@ export * from "@features/recruiter/pages/CandidatesPage/CandidatesPage";
 export * from "@features/recruiter/pages/CandidateDetailPage/CandidateDetailPage";
 export * from "@features/recruiter/pages/InterviewsPage/InterviewsPage";
 export * from "@features/recruiter/pages/InterviewFormPage/InterviewFormPage";
-export * from "@features/recruiter/pages/AutomationsPage/AutomationsPage";
 export * from "@features/recruiter/pages/RecruiterSettingsPage/RecruiterSettingsPage";
