@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import LightLogo from "@shared/assets/Lightbrand_logo.png";
 import BuildingImage from "@shared/assets/BuildingImage.jpg";
-import GoogleLogo from "@shared/assets/GoogleLogo.svg";
-import AppleLogo from "@shared/assets/AppleLogo.svg";
 
 import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
+import { AuthCheckbox } from "@features/auth/components/AuthCheckbox";
+import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ApiError } from "@shared/api/http";
+import { runViewTransition } from "@shared/utils/viewTransition";
 import { hasAnyAllowedRole } from "@shared/utils/permissions";
 
 const RegisterPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -20,12 +22,21 @@ const RegisterPage = () => {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [error, setError] = useState("");
+
+  const openLogin = () => {
+    runViewTransition(() => {
+      navigate("/login", { state: { from: "/register" } });
+    });
+  };
+
+  const legalRouteState = {
+    from: location.pathname,
+  };
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -44,8 +55,10 @@ const RegisterPage = () => {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (!agreedToTerms) {
+      setError(
+        "You must agree to the Terms of Service and Privacy Policy before creating an account.",
+      );
       return;
     }
 
@@ -95,148 +108,171 @@ const RegisterPage = () => {
 
       {/* Right panel */}
       <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              Create an account
-            </h1>
-            <p className="text-sm text-zinc-400 mt-2">
-              Enter your details to get started.
-            </p>
+        <AuthRouteTransition className="w-full max-w-md">
+          <div className="min-h-[35rem]">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold tracking-tight text-white">
+                Create an account
+              </h1>
+              <p className="mt-2 text-sm text-zinc-400">
+                Enter your details to get started.
+              </p>
+            </div>
+
+            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 w-full">
+                  <label
+                    htmlFor="register-first-name"
+                    className="block text-sm font-medium text-zinc-200"
+                  >
+                    First Name
+                  </label>
+                  <input
+                    id="register-first-name"
+                    type="text"
+                    name="firstName"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                    placeholder="John"
+                    autoComplete="given-name"
+                    maxLength={120}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2 w-full">
+                  <label
+                    htmlFor="register-last-name"
+                    className="block text-sm font-medium text-zinc-200"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    id="register-last-name"
+                    type="text"
+                    name="lastName"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                    placeholder="Doe"
+                    autoComplete="family-name"
+                    maxLength={120}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="register-email"
+                  className="block text-sm font-medium text-zinc-200"
+                >
+                  Email address
+                </label>
+                <input
+                  id="register-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                  placeholder="john@example.com"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="register-password"
+                  className="block text-sm font-medium text-zinc-200"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="register-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                    placeholder="Enter your password"
+                    autoComplete="new-password"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <AuthCheckbox
+                id="register-agree-terms"
+                checked={agreedToTerms}
+                onChange={(event) => setAgreedToTerms(event.target.checked)}
+                required
+                labelClickable={false}
+                label={
+                  <span>
+                    I agree to the{" "}
+                    <Link
+                      to="/terms"
+                      state={legalRouteState}
+                      className="font-medium text-white underline decoration-zinc-500 underline-offset-4 transition hover:text-zinc-200 hover:decoration-zinc-300"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      to="/privacy"
+                      state={legalRouteState}
+                      className="font-medium text-white underline decoration-zinc-500 underline-offset-4 transition hover:text-zinc-200 hover:decoration-zinc-300"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
+                      Privacy Policy
+                    </Link>
+                  </span>
+                }
+              />
+
+              {error && <p className="text-xs text-red-400">{error}</p>}
+
+              <div className="flex flex-col gap-4 w-full pt-1">
+                <button className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
+                  Create account
+                </button>
+
+                <div className="flex items-center gap-4 py-1 w-full">
+                  <div className="flex-1 bg-zinc-700 h-px"></div>
+                  <p className="text-sm text-zinc-400">
+                    Already have an account?
+                  </p>
+                  <div className="flex-1 bg-zinc-700 h-px"></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openLogin}
+                  className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-zinc-500 bg-transparent px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700/30 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-800"
+                >
+                  Sign in instead
+                </button>
+              </div>
+            </form>
           </div>
-
-          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-            {/* Name fields */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="w-full">
-                <input
-                  type="text"
-                  name="firstName"
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                  placeholder="First Name"
-                  autoComplete="given-name"
-                  maxLength={120}
-                  required
-                />
-              </div>
-
-              <div className="w-full">
-                <input
-                  type="text"
-                  name="lastName"
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                  placeholder="Last Name"
-                  autoComplete="family-name"
-                  maxLength={120}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                placeholder="Email Address"
-                autoComplete="email"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 pr-10 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                placeholder="Password"
-                autoComplete="new-password"
-                required
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-            {/* Confirm Password */}
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 pr-10 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                placeholder="Confirm Password"
-                autoComplete="new-password"
-                required
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-            {error && <p className="text-xs text-red-400">{error}</p>}
-
-            {/* Buttons */}
-            <div className="flex flex-col gap-4 w-full mt-4">
-              <button className="w-full h-11 bg-white text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
-                Create account
-              </button>
-
-              <span className="text-[0.8em] text-zinc-300">
-                Already have an account?{" "}
-                <Link to="/login" className="hover:text-zinc-300 text-zinc-400">
-                  Sign in.
-                </Link>
-              </span>
-
-              {/* Divider */}
-              <div className="flex items-center gap-4 my-2 w-full">
-                <div className="flex-1 bg-zinc-700 h-px"></div>
-                <p className="text-xs text-zinc-500 tracking-wider font-medium uppercase">
-                  Or register with
-                </p>
-                <div className="flex-1 bg-zinc-700 h-px"></div>
-              </div>
-
-              {/* Social Login */}
-              <div className="grid w-full gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
-                >
-                  <img src={GoogleLogo} className="w-4" alt="" />
-                  Google
-                </button>
-
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
-                >
-                  <img src={AppleLogo} className="w-4" alt="" />
-                  Apple
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+        </AuthRouteTransition>
       </div>
     </div>
   );

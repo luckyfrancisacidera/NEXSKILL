@@ -88,6 +88,11 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     public Task<ResumeSubmissionEntity?> GetApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.ResumeSubmissions.FirstOrDefaultAsync(x => x.JobSeekerUserId == userId && x.Id == applicationId, ct);
 
+    public Task<ResumeSubmissionEntity?> GetVisibleApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions.FirstOrDefaultAsync(
+            x => x.JobSeekerUserId == userId && x.Id == applicationId && !x.IsHiddenFromJobSeekerHistory,
+            ct);
+
     public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.JobOffers
             .Where(offer => offer.ApplicationId == applicationId && offer.Application.JobSeekerUserId == userId)
@@ -165,6 +170,7 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
         var baseQuery = dbContext.ResumeSubmissions
             .AsNoTracking()
             .Where(x => x.JobSeekerUserId == userId &&
+                        !x.IsHiddenFromJobSeekerHistory &&
                         x.CreatedAtUtc >= start &&
                         x.CreatedAtUtc <= end);
 
@@ -218,6 +224,7 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     private IQueryable<ApplicationListItemData> BuildApplicationsQuery(Guid userId)
         => from submission in dbContext.ResumeSubmissions.AsNoTracking()
            where submission.JobSeekerUserId == userId
+              && !submission.IsHiddenFromJobSeekerHistory
            join job in dbContext.Jobs.AsNoTracking() on submission.JobId equals job.Id
            join recruiterUser in dbContext.Users.AsNoTracking() on job.RecruiterId equals recruiterUser.Id into recruiterUsers
            from recruiterUser in recruiterUsers.DefaultIfEmpty()

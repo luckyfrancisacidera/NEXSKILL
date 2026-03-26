@@ -23,7 +23,8 @@ public sealed class ApplicantsMappingProfile : Profile
 
         CreateMap<CandidateExplanationEntity, CandidateExplanationResponse>()
             .ForMember(dest => dest.Strengths, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.StrengthsJson)))
-            .ForMember(dest => dest.Gaps, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)));
+            .ForMember(dest => dest.Gaps, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)))
+            .ForMember(dest => dest.Recommendation, opt => opt.MapFrom(src => src.Summary ?? src.ExplanationText));
     }
 }
 

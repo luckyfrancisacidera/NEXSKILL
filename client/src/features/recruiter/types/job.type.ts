@@ -51,6 +51,7 @@ export interface JobDto {
   min_years?: number;
   education?: string;
   min_education?: string;
+  posted_date_utc?: string | null;
   number_of_vacancies?: number;
   remaining_vacancies?: number;
 }

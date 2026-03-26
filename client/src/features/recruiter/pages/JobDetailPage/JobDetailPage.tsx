@@ -11,7 +11,6 @@ import { SkillList } from '@features/recruiter/pages/JobDetailPage/components/Sk
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/types';
-import { getJobActionButtonClassName } from '@features/recruiter/utils/jobActionButtonStyles';
 import { publishRecruiterJobMutation, toJobListItem } from '@features/recruiter/utils/jobMutationSync';
 import { Card } from '@shared/components/Card';
 import { DetailBlock } from '@shared/components/DetailBlock';
@@ -21,6 +20,8 @@ import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { splitToBullets, toList } from '@shared/utils/formatText';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
+import { getJobActionButtonClassName } from '@shared/utils/jobActionButtonStyles';
+import { formatJobLabel } from '@shared/utils/jobLabels';
 
 const isPublishedJob = (job: JobDto) => job.status?.toLowerCase() === 'published';
 
@@ -196,7 +197,7 @@ export const JobDetailPage = () => {
               </span>
               <MetadataBadge>{job.department ?? 'General'}</MetadataBadge>
               <MetadataBadge>{job.location || 'Location not specified'}</MetadataBadge>
-              <MetadataBadge>{job.employment_type || 'Employment type not specified'}</MetadataBadge>
+              <MetadataBadge>{formatJobLabel(job.employment_type, 'Employment type not specified')}</MetadataBadge>
               <MetadataBadge>{job.experience_level || 'Experience level not specified'}</MetadataBadge>
               <MetadataBadge className="font-medium text-zinc-800">
                 {formatCurrencyAmount(job.salary_min_per_annum, job.currency)} -{' '}

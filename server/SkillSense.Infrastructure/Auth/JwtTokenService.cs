@@ -126,7 +126,7 @@ public sealed class JwtTokenService(
         return claims;
     }
 
-    public Task<string> CreateRefreshTokenAsync(AppUser user, CancellationToken cancellationToken)
+    public Task<string> CreateRefreshTokenAsync(AppUser user, bool isPersistent, CancellationToken cancellationToken)
     {
         var key = _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Missing Jwt:Key");
@@ -141,6 +141,7 @@ public sealed class JwtTokenService(
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new("token_type", "refresh"),
+            new("is_persistent", isPersistent ? "true" : "false"),
         };
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
@@ -160,7 +161,7 @@ public sealed class JwtTokenService(
         return Task.FromResult(token);
     }
 
-    public async Task<Guid?> ValidateRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
+    public async Task<RefreshTokenValidationResult?> ValidateRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
         var key = _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException("Missing Jwt:Key");
@@ -197,6 +198,9 @@ public sealed class JwtTokenService(
             return null;
         }
 
-        return userId;
+        var isPersistentClaim = validationResult.ClaimsIdentity.FindFirst("is_persistent")?.Value;
+        var isPersistent = string.Equals(isPersistentClaim, "true", StringComparison.OrdinalIgnoreCase);
+
+        return new RefreshTokenValidationResult(userId, isPersistent);
     }
 }

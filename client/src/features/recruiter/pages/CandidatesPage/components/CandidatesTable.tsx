@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import type { ApplicantScoreItemDto } from '@features/recruiter/types';
 import { StatusBadge } from '@shared/components/StatusBadge';
+import { getJobActionButtonClassName } from '@shared/utils/jobActionButtonStyles';
 
 export interface CandidatesTableProps {
   candidates: ApplicantScoreItemDto[];
@@ -47,11 +48,10 @@ export const CandidatesTable = ({ candidates, isAllChecked, selectedSet, onToggl
             <td className="px-3 py-3">
               <Link
                 to={`/recruiter/candidates/${candidate.resume_submission_id}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                className={getJobActionButtonClassName({ iconOnly: true })}
                 title="View candidate"
               >
                 <Eye size={16} />
-                <span>View Candidate</span>
               </Link>
             </td>
           </tr>

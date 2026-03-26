@@ -107,6 +107,7 @@ public sealed class AuthServiceTests
         Assert.Equal("Login successful.", result.Message);
         Assert.Equal("access-token", result.Token);
         Assert.Equal("refresh-token", result.RefreshToken);
+        Assert.False(result.IsPersistent);
     }
 
     [Fact]
@@ -345,6 +346,7 @@ public sealed class AuthServiceTests
         public int CreateTokenCalls { get; private set; }
         public int CreateRefreshTokenCalls { get; private set; }
         public Guid? ValidatedUserId { get; set; }
+        public bool ValidatedIsPersistent { get; set; }
 
         public Task<string> CreateTokenAsync(AppUser user, CancellationToken cancellationToken)
         {
@@ -352,14 +354,17 @@ public sealed class AuthServiceTests
             return Task.FromResult("access-token");
         }
 
-        public Task<string> CreateRefreshTokenAsync(AppUser user, CancellationToken cancellationToken)
+        public Task<string> CreateRefreshTokenAsync(AppUser user, bool isPersistent, CancellationToken cancellationToken)
         {
             CreateRefreshTokenCalls++;
             return Task.FromResult("refresh-token");
         }
 
-        public Task<Guid?> ValidateRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
-            => Task.FromResult(ValidatedUserId);
+        public Task<RefreshTokenValidationResult?> ValidateRefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
+            => Task.FromResult(
+                ValidatedUserId.HasValue
+                    ? new RefreshTokenValidationResult(ValidatedUserId.Value, ValidatedIsPersistent)
+                    : null);
     }
 
     private sealed class TestAuthRepository : IAuthRepository

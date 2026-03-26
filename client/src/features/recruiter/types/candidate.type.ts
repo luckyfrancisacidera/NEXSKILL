@@ -98,6 +98,8 @@ export interface CandidateExplanationDto {
   summary?: string;
   strengths: string[];
   gaps: string[];
+  risks?: string[];
+  recommendation?: string;
   explanation_text: string;
   generated_at_utc?: string;
 }

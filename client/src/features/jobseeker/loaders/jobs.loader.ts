@@ -15,11 +15,24 @@ export const jobsLoader = async ({
     const pageSize = getPositiveNumber(url.searchParams.get("pageSize"), 10);
     const search = url.searchParams.get("search") ?? undefined;
 
-    return await jobseekerService.getPublicJobs({
-      pageNumber,
-      pageSize,
-      search,
-    });
+    const [jobs, savedJobs] = await Promise.all([
+      jobseekerService.getPublicJobs({
+        pageNumber,
+        pageSize,
+        search,
+      }),
+      jobseekerService.getSavedJobs(),
+    ]);
+
+    const savedJobIds = new Set(savedJobs.map((job) => String(job.id)));
+
+    return {
+      ...jobs,
+      items: jobs.items.map((job) => ({
+        ...job,
+        is_saved: savedJobIds.has(String(job.id)),
+      })),
+    } satisfies JobsLoaderData;
   } catch (error) {
     return rethrowAsRouteError(error, "Unable to load jobs.");
   }
