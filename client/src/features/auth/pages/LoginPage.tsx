@@ -68,11 +68,11 @@ const LoginPage = () => {
         >
           <div className="grid grid-rows-[30%_70%] w-full h-full">
             <div className="w-full h-full">
-              <img src={LightLogo} alt="LightLogo.png" className="w-[3.75rem]" />
+              <img src={LightLogo} alt="LightLogo.png" className="w-15" />
             </div>
 
             <div className="flex w-full h-full items-start justify-start flex-col gap-5 p-7">
-              <h2 className="text-5xl text-center font-extrabold tracking-widest leading-[3.75rem]">
+              <h2 className="text-5xl text-center font-extrabold tracking-widest leading-15">
                 Welcome back!
               </h2>
               <p className="text-sm tracking-wider">
@@ -86,7 +86,7 @@ const LoginPage = () => {
       {/* Right panel */}
       <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
         <AuthRouteTransition className="w-full max-w-md">
-          <div className="min-h-[31rem]">
+          <div className="min-h-124">
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-wider text-white">
                 Welcome back

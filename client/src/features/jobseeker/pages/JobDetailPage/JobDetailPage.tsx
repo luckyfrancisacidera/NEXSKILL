@@ -185,7 +185,7 @@ export const JobDetailPage = () => {
               </DetailBlock>
 
               <DetailBlock title="Responsibilities">
-                <ul className="list-disc space-y-2 pl-5 text-zinc-700">
+                <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                   {responsibilities.length > 0 ? (
                     responsibilities.map((item) => <li key={item}>{item}</li>)
                   ) : (
@@ -201,13 +201,13 @@ export const JobDetailPage = () => {
                       requiredSkills.map((skill) => (
                         <span
                           key={skill}
-                          className="rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700"
+                          className="rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                         >
                           {skill}
                         </span>
                       ))
                     ) : (
-                      <p className="text-sm text-zinc-500">
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         No required skills listed.
                       </p>
                     )}
@@ -220,13 +220,13 @@ export const JobDetailPage = () => {
                       preferredSkills.map((skill) => (
                         <span
                           key={skill}
-                          className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm text-zinc-700"
+                          className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                         >
                           {skill}
                         </span>
                       ))
                     ) : (
-                      <p className="text-sm text-zinc-500">
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         No preferred skills listed.
                       </p>
                     )}
@@ -236,7 +236,7 @@ export const JobDetailPage = () => {
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <DetailBlock title="Qualifications">
-                  <ul className="list-disc space-y-2 pl-5 text-zinc-700">
+                  <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                     <li>
                       {job.min_years
                         ? `${job.min_years}+ years of experience`
@@ -252,27 +252,27 @@ export const JobDetailPage = () => {
                 </DetailBlock>
 
                 <DetailBlock title="Work Details">
-                  <ul className="space-y-2 text-zinc-700">
+                  <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
                     <li>
-                      <span className="font-medium text-zinc-900">
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">
                         Schedule:
                       </span>{" "}
                       {job.schedule || "Not specified"}
                     </li>
                     <li>
-                      <span className="font-medium text-zinc-900">
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">
                         Work Setup:
                       </span>{" "}
                       {job.work_setup || "Not specified"}
                     </li>
                     <li>
-                      <span className="font-medium text-zinc-900">
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">
                         Location:
                       </span>{" "}
                       {job.location || "Not specified"}
                     </li>
                     <li>
-                      <span className="font-medium text-zinc-900">Posted:</span>{" "}
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">Posted:</span>{" "}
                       {postedDateLabel}
                     </li>
                   </ul>
@@ -285,7 +285,7 @@ export const JobDetailPage = () => {
                     ? benefits.map((benefit) => (
                         <span
                           key={benefit}
-                          className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm"
+                          className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
                         >
                           {benefit}
                         </span>
@@ -333,8 +333,8 @@ export const JobDetailPage = () => {
                 }}
                 className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   isSaved
-                    ? "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50"
+                    ? "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                    : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 {isSavingJob ? (

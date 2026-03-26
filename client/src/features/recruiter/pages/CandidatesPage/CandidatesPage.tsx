@@ -14,6 +14,7 @@ import type {
   CandidateFilters,
   CandidatesLoaderData,
 } from '@features/recruiter/types';
+import { canShortlistCandidate, getShortlistWarningMessage } from '@features/recruiter/utils/candidateStageRules';
 import { Card } from '@shared/components/Card';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import type { DropdownOption } from '@shared/components/Dropdown';
@@ -21,8 +22,11 @@ import type { DropdownOption } from '@shared/components/Dropdown';
 const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
 
 const isActionAllowed = (action: string, submissionStatus: string) => {
+  if (action === 'shortlist') {
+    return canShortlistCandidate(submissionStatus);
+  }
+
   const allowedByAction: Record<string, string[]> = {
-    shortlist: ['Applied', 'Recommended', 'Shortlisted', 'Interview'],
     'remove-shortlist': ['Shortlisted', 'Interview'],
   };
 
@@ -33,7 +37,11 @@ const isActionAllowed = (action: string, submissionStatus: string) => {
 const buildCandidateQuery = (filters: CandidateFilters, page: number) =>
   `?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&recommendedTopPercent=${encodeURIComponent(filters.recommendedTopPercent)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=${page}&stage=${encodeURIComponent(filters.stage)}`;
 
-const getBulkActionsForStage = (stage: string, selectedCount: number): CandidateBulkAction[] => {
+const getBulkActionsForStage = (
+  stage: string,
+  selectedCount: number,
+  selectedValidShortlistCount: number,
+): CandidateBulkAction[] => {
   const countLabel = `${selectedCount} selected candidate(s)`;
 
   if (stage === 'all' || stage === 'Recommended') {
@@ -45,6 +53,7 @@ const getBulkActionsForStage = (stage: string, selectedCount: number): Candidate
         title: 'Shortlist candidates',
         message: `Move ${countLabel} to Shortlisted stage?`,
         accent: 'green',
+        disabled: selectedValidShortlistCount === 0,
       },
     ];
   }
@@ -57,19 +66,6 @@ const getBulkActionsForStage = (stage: string, selectedCount: number): Candidate
         label: 'Remove from Shortlist',
         title: 'Remove from shortlist',
         message: `Remove shortlist status for ${countLabel}?`,
-        accent: 'violet',
-      },
-    ];
-  }
-
-  if (stage === 'Interview') {
-    return [
-      {
-        action: 'shortlist',
-        status: 'Shortlisted',
-        label: 'Shortlist',
-        title: 'Shortlist interview candidates',
-        message: `Move ${countLabel} back to Shortlisted stage?`,
         accent: 'violet',
       },
     ];
@@ -166,14 +162,26 @@ export const CandidatesPage = () => {
     () => new Map(candidates.map((candidate) => [candidate.resume_submission_id, candidate])),
     [candidates],
   );
+  const selectedCandidatesOnPage = useMemo(
+    () =>
+      selectedIdsOnPage
+        .map((id) => candidateById.get(id))
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate)),
+    [candidateById, selectedIdsOnPage],
+  );
+  const selectedValidShortlistCount = useMemo(
+    () =>
+      selectedCandidatesOnPage.filter((candidate) => canShortlistCandidate(candidate.submission_status)).length,
+    [selectedCandidatesOnPage],
+  );
 
   const isAllChecked = candidates.length > 0 && candidates.every((candidate) => selectedSet.has(candidate.resume_submission_id));
   const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(normalizedFilters.stage);
   const isSubmittingAction = fetcher.state !== 'idle';
   // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const bulkActions = useMemo(
-    () => getBulkActionsForStage(normalizedFilters.stage, selectedIdsOnPage.length),
-    [normalizedFilters.stage, selectedIdsOnPage.length],
+    () => getBulkActionsForStage(normalizedFilters.stage, selectedIdsOnPage.length, selectedValidShortlistCount),
+    [normalizedFilters.stage, selectedIdsOnPage.length, selectedValidShortlistCount],
   );
 
   const recommendedCutoffOptions: DropdownOption[] = [5, 10, 15, 20, 25, 30].map((value) => ({
@@ -198,7 +206,7 @@ export const CandidatesPage = () => {
   };
 
   const queueBulkAction = async (action: CandidateBulkAction) => {
-    if (selectedIdsOnPage.length === 0 || isSubmittingAction) {
+    if (selectedIdsOnPage.length === 0 || isSubmittingAction || action.disabled) {
       return;
     }
 
@@ -207,6 +215,15 @@ export const CandidatesPage = () => {
       return candidate ? isActionAllowed(action.action, candidate.submission_status) : false;
     });
     const skippedCount = selectedIdsOnPage.length - eligibleIds.length;
+
+    if (action.action === 'shortlist' && skippedCount > 0) {
+      showToast({
+        title: 'Shortlist unavailable',
+        description: getShortlistWarningMessage(skippedCount, eligibleIds.length === 0),
+        tone: 'warning',
+      });
+      return;
+    }
 
     if (eligibleIds.length === 0) {
       showToast({
@@ -329,8 +346,6 @@ export const CandidatesPage = () => {
     </Card>
   );
 };
-
-
 
 
 
