@@ -2,7 +2,6 @@ export * from "@features/jobseeker/pages/ApplicationsPage/ApplicationsPage";
 export * from "@features/jobseeker/pages/DashboardPage/DashboardPage";
 export * from "@features/jobseeker/pages/JobDetailPage/JobDetailPage";
 export * from "@features/jobseeker/pages/JobsPage/JobsPage";
-export * from "@features/jobseeker/pages/MessagesPage/MessagesPage";
 export * from "@features/jobseeker/pages/ProfilePage/ProfilePage";
 export * from "@features/jobseeker/pages/SavedJobsPage/SavedJobsPage";
 export * from "@features/jobseeker/pages/InterviewPage/InterviewPage";

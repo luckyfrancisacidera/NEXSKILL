@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Bookmark, BookmarkCheck, Loader2, MapPin } from "lucide-react";
+import {
+  ArrowRight,
+  Bookmark,
+  BookmarkCheck,
+  BriefcaseBusiness,
+  Loader2,
+  MapPin,
+  Wallet,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import type { Job } from "@shared/types";
+
 import { ActionButton } from "@shared/components/ActionButton";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
 import { formatCurrencyAmount } from "@shared/data/currency";
+import type { Job } from "@shared/types";
 
 interface JobCardProps {
   job: Job;
@@ -15,7 +24,7 @@ interface JobCardProps {
   applyLabel?: string;
 }
 
-export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Apply' }: JobCardProps) => {
+export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = "Apply" }: JobCardProps) => {
   const [saved, setSaved] = useState(isSaved);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -33,6 +42,7 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
 
   const handleToggleSave = async () => {
     if (!onToggleSave || isSaving) return;
+
     const nextSavedState = !saved;
     setSaved(nextSavedState);
     setIsSaving(true);
@@ -47,24 +57,24 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
   };
 
   return (
-    <Card className="rounded-[22px] border border-zinc-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
-      <div className="space-y-3">
+    <Card className="h-full bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-start gap-2">
               <h3
-                className="max-w-full truncate text-base font-semibold text-zinc-900 dark:text-zinc-100 md:text-lg"
+                className="max-w-full truncate text-lg font-semibold text-zinc-900 dark:text-zinc-100"
                 title={job.title}
               >
                 {job.title}
               </h3>
               <Badge>{job.type}</Badge>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-zinc-500 dark:text-zinc-400">
               <span className="truncate font-medium text-zinc-700 dark:text-zinc-300" title={companyLabel}>
                 {companyLabel}
               </span>
-              <span className="hidden text-zinc-300 dark:text-zinc-700 sm:inline">•</span>
+              <span className="hidden text-zinc-300 dark:text-zinc-700 sm:inline">&bull;</span>
               <span className="inline-flex items-center gap-1 truncate">
                 <MapPin className="h-3.5 w-3.5" />
                 {locationLabel}
@@ -82,13 +92,7 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
                   <Bookmark className="h-4 w-4" />
                 )
               }
-              label={
-                isSaving
-                  ? "Updating saved job"
-                  : saved
-                  ? "Saved job"
-                  : "Save job"
-              }
+              label={isSaving ? "Updating saved job" : saved ? "Saved job" : "Save job"}
               iconOnly
               disabled={isSaving}
               className="shrink-0"
@@ -100,15 +104,28 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{salaryLabel}</Badge>
-          <Badge>{locationLabel}</Badge>
+          <Badge>
+            <span className="inline-flex items-center gap-1.5">
+              <Wallet className="h-3.5 w-3.5" />
+              {salaryLabel}
+            </span>
+          </Badge>
+          <Badge>
+            <span className="inline-flex items-center gap-1.5">
+              <BriefcaseBusiness className="h-3.5 w-3.5" />
+              {job.type}
+            </span>
+          </Badge>
         </div>
 
-        <p className="line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        <p className="line-clamp-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           {snippet}
         </p>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="mt-auto flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+            Saved role
+          </p>
           <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
             <Button type="button" className="inline-flex w-full items-center justify-center gap-2 px-3.5 py-2 text-sm">
               {applyLabel}

@@ -33,6 +33,7 @@ public sealed class SavedJobData
     public string Title { get; set; } = string.Empty;
     public string Company { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public decimal? SalaryMin { get; set; }
     public decimal? SalaryMax { get; set; }
     public string Currency { get; set; } = "PHP";

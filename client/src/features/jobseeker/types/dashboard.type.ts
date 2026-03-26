@@ -18,6 +18,7 @@ export interface SavedJobDto {
   title: string;
   company: string;
   location: string;
+  description?: string;
   salary_min?: number;
   salary_max?: number;
   currency?: string;
