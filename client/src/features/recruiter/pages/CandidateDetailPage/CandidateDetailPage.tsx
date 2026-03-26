@@ -387,39 +387,39 @@ export const CandidateDetailPage = () => {
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[350px_minmax(0,1fr)]">
+    <div className="grid gap-4 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 xl:grid-cols-[350px_minmax(0,1fr)]">
       <Card className="h-fit overflow-hidden p-0">
-        <div className="bg-linear-to-b from-slate-50 to-white px-5 py-6">
+        <div className="bg-linear-to-b from-slate-50 to-white px-5 py-6 dark:from-zinc-900 dark:to-zinc-950">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">
             {getInitials(candidate.applicant_name)}
           </div>
-          <h2 className="mt-4 text-center text-md font-bold text-zinc-900">{candidate.applicant_name}</h2>
-          <p className="text-center text-sm text-zinc-500">{personalInfo?.job_target || candidate.job_title}</p>
+          <h2 className="mt-4 text-center text-md font-bold text-zinc-900 dark:text-zinc-100">{candidate.applicant_name}</h2>
+          <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">{personalInfo?.job_target || candidate.job_title}</p>
 
-          <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-sm text-zinc-700">
+          <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
             <p className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-zinc-400" /> {candidate.applicant_email}
+              <Mail className="h-4 w-4 text-zinc-400 dark:text-zinc-500" /> {candidate.applicant_email}
             </p>
             <p className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-zinc-400" /> {personalInfo?.phone || 'Not available'}
+              <Phone className="h-4 w-4 text-zinc-400 dark:text-zinc-500" /> {personalInfo?.phone || 'Not available'}
             </p>
             <p className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-zinc-400" /> {personalInfo?.location || 'Location not provided'}
+              <MapPin className="h-4 w-4 text-zinc-400 dark:text-zinc-500" /> {personalInfo?.location || 'Location not provided'}
             </p>
           </div>
 
-          <div className="mt-4 space-y-3 border-t border-zinc-200 pt-4">
+          <div className="mt-4 space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">ATS Score</span>
-              <span className="font-semibold text-zinc-800">{candidate.score}%</span>
+              <span className="text-zinc-500 dark:text-zinc-400">ATS Score</span>
+              <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.score}%</span>
             </div>
-            <div className="h-2 rounded-full bg-zinc-200">
+            <div className="h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
               <div
-                className="h-2 rounded-full bg-linear-to-r from-zinc-800 to-gray-700"
+                className="h-2 rounded-full bg-linear-to-r from-zinc-800 to-gray-700 dark:from-zinc-200 dark:to-zinc-400"
                 style={{ width: `${Math.max(10, Math.min(100, candidate.score))}%` }}
               />
             </div>
-            <p className="text-xs text-zinc-500 capitalize">
+            <p className="text-xs text-zinc-500 capitalize dark:text-zinc-400">
               {parsedResume?.derived?.education_max_level || 'Education level unknown'} -{' '}
               {monthsToText(parsedResume?.derived?.total_experience_months)} experience
             </p>
@@ -455,13 +455,13 @@ export const CandidateDetailPage = () => {
                 || (candidate.submission_status === 'Offer'
                   && (!canHireCandidates || !candidate.offer?.can_mark_hired))
               }
-              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
             >
               {primaryAction.label}
             </button>
           ) : null}
           {candidate.submission_status === 'Offer' && !candidate.offer?.can_mark_hired ? (
-            <p className="mt-3 text-center text-xs text-zinc-500">
+            <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
               Hire is available only after the candidate accepts the latest offer.
             </p>
           ) : null}
@@ -470,18 +470,18 @@ export const CandidateDetailPage = () => {
         <RecruiterSectionCard title="Application Info" variant="compact">
           <ul className="space-y-2 text-sm">
             <li className="flex items-center justify-between">
-              <span className="text-zinc-500">Applied:</span>
-              <span className="font-semibold text-zinc-800">
+              <span className="text-zinc-500 dark:text-zinc-400">Applied:</span>
+              <span className="font-semibold text-zinc-800 dark:text-zinc-100">
                 {new Date(candidate.created_at_utc).toLocaleDateString()}
               </span>
             </li>
             <li className="flex items-center justify-between">
-              <span className="text-zinc-500">Stage:</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Stage:</span>
               <StatusBadge status={candidate.submission_status} />
             </li>
             <li className="flex items-center justify-between">
-              <span className="text-zinc-500">ATS Score:</span>
-              <span className="font-semibold text-zinc-800">{candidate.score}</span>
+              <span className="text-zinc-500 dark:text-zinc-400">ATS Score:</span>
+              <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.score}</span>
             </li>
           </ul>
         </RecruiterSectionCard>
@@ -490,32 +490,32 @@ export const CandidateDetailPage = () => {
           {candidate.offer ? (
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Current offer</span>
+                <span className="text-zinc-500 dark:text-zinc-400">Current offer</span>
                 <StatusBadge status={candidate.offer.status} />
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="font-semibold text-zinc-900">{candidate.offer.title}</p>
-                <p className="mt-1 text-zinc-600">{candidate.offer.salary_text}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-500">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/70">
+                <p className="font-semibold text-zinc-900 dark:text-zinc-100">{candidate.offer.title}</p>
+                <p className="mt-1 text-zinc-600 dark:text-zinc-400">{candidate.offer.salary_text}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
                   {formatJobLabel(candidate.offer.employment_type)}
                 </p>
               </div>
-              <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3">
-                <p className="flex items-center gap-2 text-zinc-600">
-                  <CalendarDays className="h-4 w-4 text-zinc-400" />
-                  Start date: <span className="font-semibold text-zinc-800">{formatDateLabel(candidate.offer.start_date)}</span>
+              <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                <p className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                  <CalendarDays className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                  Start date: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.start_date)}</span>
                 </p>
-                <p className="flex items-center gap-2 text-zinc-600">
-                  <ReceiptText className="h-4 w-4 text-zinc-400" />
-                  Expires: <span className="font-semibold text-zinc-800">{formatDateLabel(candidate.offer.expiration_date)}</span>
+                <p className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                  <ReceiptText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                  Expires: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.expiration_date)}</span>
                 </p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Sent {new Date(candidate.offer.sent_at_utc).toLocaleString()}
                   {candidate.offer.responded_at_utc ? ` • Responded ${new Date(candidate.offer.responded_at_utc).toLocaleString()}` : ''}
                 </p>
               </div>
               {candidate.offer.message ? (
-                <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-zinc-600">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                   {candidate.offer.message}
                 </div>
               ) : null}
@@ -523,14 +523,14 @@ export const CandidateDetailPage = () => {
                 <button
                   type="button"
                   onClick={openOfferModal}
-                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
                 >
                   Send new offer
                 </button>
               ) : null}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-500">
+            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-400">
               No offer has been sent yet. Once the candidate is ready, send an offer from this page.
             </div>
           )}
@@ -538,19 +538,19 @@ export const CandidateDetailPage = () => {
 
         <RecruiterSectionCard title="Resume Information" variant="compact">
           <div className="space-y-2 text-sm">
-            <p className="text-zinc-600">
-              Resume ID: <span className="font-semibold text-zinc-800">{candidate.resume_submission_id.slice(0, 8)}</span>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Resume ID: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.resume_submission_id.slice(0, 8)}</span>
             </p>
             {candidate.resume_file_name ? (
-             <p className="text-zinc-600">
+             <p className="text-zinc-600 dark:text-zinc-400">
               File:{' '}
-              <span className="inline-block max-w-2xl truncate align-bottom font-semibold text-zinc-800">
+              <span className="inline-block max-w-2xl truncate align-bottom font-semibold text-zinc-800 dark:text-zinc-100">
                 {candidate.resume_file_name}
               </span>
             </p>
             ) : null}
-            <p className="text-zinc-600">
-              Parsed: <span className="font-semibold text-emerald-600">Successfully</span>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Parsed: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Successfully</span>
             </p>
             <button
               type="button"
@@ -558,7 +558,7 @@ export const CandidateDetailPage = () => {
                 void downloadResume();
               }}
               disabled={!hasResume || isDownloadingResume}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
             >
               <Download className="h-4 w-4" /> {isDownloadingResume ? 'Preparing...' : 'Download Resume'}
             </button>
@@ -567,8 +567,8 @@ export const CandidateDetailPage = () => {
 
         <RecruiterSectionCard title="Recruiter Actions" variant="compact">
           <div className="space-y-2">
-            <p className="flex items-center gap-2 text-sm text-zinc-600">
-              <BriefcaseBusiness className="h-4 w-4" /> {candidate.job_title}
+            <p className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <BriefcaseBusiness className="h-4 w-4 dark:text-zinc-500" /> {candidate.job_title}
             </p>
             {candidate.submission_status !== 'Rejected' ? (
               <>
@@ -600,7 +600,7 @@ export const CandidateDetailPage = () => {
                     className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                       shortlistDisabled
                         ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
-                        : 'border-violet-300 bg-white text-violet-700 hover:bg-violet-50 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800'
+                        : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
                     Shortlist
@@ -623,7 +623,7 @@ export const CandidateDetailPage = () => {
                         accent: 'violet',
                       });
                     }}
-                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     Remove from Shortlist
                   </button>
@@ -643,7 +643,7 @@ export const CandidateDetailPage = () => {
                       accent: 'red',
                     });
                   }}
-                  className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50"
+                  className="w-full rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 dark:border-rose-900/60 dark:bg-zinc-900 dark:text-rose-300 dark:hover:bg-rose-500/10"
                 >
                   Reject Candidate
                 </button>
@@ -662,18 +662,18 @@ export const CandidateDetailPage = () => {
           {parsedResume?.education?.length ? (
             <div className="space-y-2 text-sm">
               {parsedResume.education.map((item, index) => (
-                <div key={`${item.degree}-${index}`} className="rounded-lg border border-zinc-200 p-3">
-                  <p className="flex items-center gap-2 font-semibold text-zinc-800">
-                    <GraduationCap className="h-4 w-4" /> {item.degree || 'Education'}
+                <div key={`${item.degree}-${index}`} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 dark:bg-zinc-900/60">
+                  <p className="flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-100">
+                    <GraduationCap className="h-4 w-4 dark:text-zinc-500" /> {item.degree || 'Education'}
                   </p>
-                  <p className="mt-1 text-zinc-500">
+                  <p className="mt-1 text-zinc-500 dark:text-zinc-400">
                     {[item.start_date, item.end_date].filter(Boolean).join(' - ') || 'Date not available'}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">No education extracted.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No education extracted.</p>
           )}
         </RecruiterSectionCard>
       </Card>
@@ -682,27 +682,27 @@ export const CandidateDetailPage = () => {
         {(candidate.submission_status !== 'Applied' && candidate.submission_status !== 'Recommended') ? (
           <RecruiterSectionCard title="Fit explanation" variant="compact">
             {hasCandidateExplanation(candidate) && candidateExplanation ? (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">AI-assisted insight</p>
-                <p className="text-sm font-semibold text-zinc-900">Why this candidate is a good fit</p>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-500/10">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">AI-assisted insight</p>
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Why this candidate is a good fit</p>
                 {candidateExplanation.summary ? (
-                  <p className="mt-1 text-sm leading-6 text-zinc-700">
+                  <p className="mt-1 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
                     {candidateExplanation.summary}
                   </p>
                 ) : null}
                 {candidateExplanation.strengths.length ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
                     {candidateExplanation.strengths.map((item, index) => (
                       <li key={`${item}-${index}`}>{item}</li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-zinc-500">No key strengths were extracted.</p>
+                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">No key strengths were extracted.</p>
                 )}
                 {candidateExplanation.gaps?.length ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-sm font-medium text-zinc-800">Possible gaps</p>
-                    <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Possible gaps</p>
+                    <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
                       {candidateExplanation.gaps.map((item, index) => (
                         <li key={`${item}-${index}`}>{item}</li>
                       ))}
@@ -711,14 +711,14 @@ export const CandidateDetailPage = () => {
                 ) : null}
                 {candidateExplanation.recommendation ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-sm font-medium text-zinc-800">Notes</p>
-                    <p className="text-sm leading-6 text-zinc-700">{candidateExplanation.recommendation}</p>
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Notes</p>
+                    <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">{candidateExplanation.recommendation}</p>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-sm text-zinc-500">Explanation not available yet.</p>
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/60">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Explanation not available yet.</p>
               </div>
             )}
           </RecruiterSectionCard>
@@ -726,9 +726,9 @@ export const CandidateDetailPage = () => {
 
         <RecruiterSectionCard title="Professional Summary" variant="compact">
           {parsedResume?.summary?.length ? (
-            <p className="text-sm leading-7 text-zinc-700">{parsedResume.summary.join(' ')}</p>
+            <p className="text-sm leading-7 text-zinc-700 dark:text-zinc-300">{parsedResume.summary.join(' ')}</p>
           ) : (
-            <p className="text-sm text-zinc-500">No summary extracted from parsed resume.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No summary extracted from parsed resume.</p>
           )}
         </RecruiterSectionCard>
 
@@ -736,13 +736,16 @@ export const CandidateDetailPage = () => {
           {parsedResume?.skills?.length ? (
             <div className="flex flex-wrap gap-2">
               {parsedResume.skills.map((skill) => (
-                <span key={skill} className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+                <span
+                  key={skill}
+                  className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                >
                   {skill}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">No skills extracted.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No skills extracted.</p>
           )}
         </RecruiterSectionCard>
 
@@ -754,7 +757,7 @@ export const CandidateDetailPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">No work experience extracted.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No work experience extracted.</p>
           )}
         </RecruiterSectionCard>
 
@@ -766,7 +769,7 @@ export const CandidateDetailPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500">No projects extracted.</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No projects extracted.</p>
           )}
         </RecruiterSectionCard>
       </div>

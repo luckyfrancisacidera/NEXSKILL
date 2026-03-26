@@ -35,7 +35,7 @@ export const RecruiterSectionCard = ({
         {Icon ? <Icon className="mt-1 h-4 w-4 text-zinc-600 dark:text-zinc-400" /> : null}
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
-          {description ? <p className="mt-1 text-sm text-zinc-500">{description}</p> : null}
+          {description ? <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{description}</p> : null}
         </div>
       </div>
       {children}

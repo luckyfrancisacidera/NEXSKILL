@@ -12,5 +12,4 @@ export * from "@features/recruiter/loaders/candidatesLoader";
 export * from "@features/recruiter/loaders/candidateDetailLoader";
 export * from "@features/recruiter/loaders/interviewsLoader";
 export * from "@features/recruiter/loaders/interviewDetailLoader";
-export * from "@features/recruiter/loaders/automationsLoader";
 export * from "@features/recruiter/loaders/settingsLoader";

@@ -72,7 +72,7 @@ export const SideDrawer = ({
         aria-modal="true"
         role="dialog"
         className={cn(
-          "absolute right-0 top-0 flex h-full w-full max-w-[92vw] flex-col border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-950",
+          "absolute right-0 top-0 flex h-full w-full max-w-[92vw] flex-col border-l border-zinc-200 bg-white font-inter shadow-2xl transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-950",
           widthClassName ?? "sm:max-w-[460px]",
           isVisible ? "translate-x-0" : "translate-x-full",
         )}

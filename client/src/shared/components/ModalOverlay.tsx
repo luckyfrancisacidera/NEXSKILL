@@ -5,7 +5,7 @@ interface ModalOverlayProps extends PropsWithChildren {
 }
 
 export const ModalOverlay = ({ onClose, children }: ModalOverlayProps) => (
-  <div className="fixed inset-0 z-80 flex items-center justify-center p-4 fony-inter">
+  <div className="fixed inset-0 z-80 flex items-center justify-center p-4 font-inter">
     <button
       type="button"
       onClick={onClose}
