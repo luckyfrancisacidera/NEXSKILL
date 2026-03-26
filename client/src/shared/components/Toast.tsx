@@ -43,7 +43,7 @@ export const AppToast = ({ id, title, description, tone, durationMs, onClose }: 
   const style = toastStyleByTone[tone];
 
   return (
-    <article className={`pointer-events-auto overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ${style.ring}`} role="status" aria-live="polite">
+    <article className={`font-inter pointer-events-auto overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ${style.ring}`} role="status" aria-live="polite">
       <div className="flex items-start gap-3 px-4 py-3">
         <div className="mt-0.5">{style.icon}</div>
         <div className="min-w-0 flex-1">

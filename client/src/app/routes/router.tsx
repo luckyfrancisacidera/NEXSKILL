@@ -26,7 +26,6 @@ import {
   OffersPage,
 } from "@features/jobseeker";
 import {
-  AutomationsPage,
   CandidateDetailPage,
   CandidatesPage,
   InterviewFormPage,
@@ -34,10 +33,8 @@ import {
   JobFormPage,
   JobPostsPage,
   RecruiterDashboardPage,
-  automationRuleAction,
   cancelInterviewAction,
   deleteJobAction,
-  recruiterAutomationsLoader,
   recruiterCandidateDetailLoader,
   recruiterCandidatesLoader,
   recruiterDashboardLoader,
@@ -45,7 +42,6 @@ import {
   recruiterInterviewsLoader,
   recruiterJobDetailLoader,
   recruiterJobsLoader,
-  runOfferAutomationAction,
   candidatesAction,
   updateCandidateAction,
   updateJobStatusAction,
@@ -312,31 +308,6 @@ const recruiterRoutes: AppRoute = {
             }),
           ],
         },
-      ],
-    },
-    {
-      path: "automations",
-      element: <Outlet />,
-      children: [
-        protectedRoute({
-          index: true,
-          access: "recruiterAutomations",
-          loader: recruiterAutomationsLoader,
-          action: automationRuleAction,
-          element: <AutomationsPage />,
-        }),
-        actionOnlyRoute({
-          path: ":ruleId",
-          access: "recruiterAutomations",
-          action: automationRuleAction,
-          redirectTo: "/recruiter/automations",
-        }),
-        actionOnlyRoute({
-          path: "run-offer",
-          access: "recruiterAutomations",
-          action: runOfferAutomationAction,
-          redirectTo: "/recruiter/automations",
-        }),
       ],
     },
     {
