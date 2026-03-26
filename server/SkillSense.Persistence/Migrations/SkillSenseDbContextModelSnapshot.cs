@@ -971,6 +971,11 @@ namespace SkillSense.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<bool>("IsHiddenFromJobSeekerHistory")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
 

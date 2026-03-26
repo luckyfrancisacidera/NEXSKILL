@@ -1,11 +1,14 @@
-import { CalendarDays, CircleAlert, Eye, Mail, Sparkles } from "lucide-react";
+import { CalendarDays, CircleAlert, Eye, Loader2, Mail, Sparkles, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { JobseekerApplicationStage, JobseekerOfferDto } from "@features/jobseeker/types";
+import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
+import { IconActionButton, iconActionButtonClassName } from "@shared/components/IconActionButton";
 import { StatusBadge } from "@shared/components/StatusBadge";
+import { cn } from "@shared/utils/cn";
 
 import { OfferStageTimeline } from "./OfferStageTimeline";
 
@@ -110,15 +113,22 @@ export const OfferPipelineCard = ({
   item,
   onAccept,
   onDecline,
+  onDeleteHistory,
   isActing,
+  isDeletingHistory,
 }: {
   item: OfferPipelineCardData;
   onAccept: (applicationId: string) => void;
   onDecline: (applicationId: string) => void;
+  onDeleteHistory: (applicationId: string) => void;
   isActing?: boolean;
-}) => (
-  <Card className="rounded-[22px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
-    <div className="space-y-3">
+  isDeletingHistory?: boolean;
+}) => {
+  const actions = getJobseekerListActions(item.currentStage, "offers");
+
+  return (
+    <Card className="rounded-[22px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
+      <div className="space-y-3">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -205,12 +215,24 @@ export const OfferPipelineCard = ({
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           {item.jobId ? (
-            <Link to={`/jobs/${item.jobId}`} className="w-full sm:w-auto">
-              <Button type="button" variant="secondary" className="flex w-full items-center justify-center gap-2">
-                <Eye className="h-4 w-4" />
-                View Job
-              </Button>
+            <Link
+              to={`/jobs/${item.jobId}`}
+              title="View job"
+              aria-label="View job"
+              className={cn(iconActionButtonClassName(), "no-underline")}
+            >
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">View job</span>
             </Link>
+          ) : null}
+          {actions.includes("delete_history") ? (
+            <IconActionButton
+              icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              label="Delete history"
+              variant="danger"
+              disabled={isDeletingHistory || isActing}
+              onClick={() => onDeleteHistory(item.id)}
+            />
           ) : null}
           {item.offer?.can_accept ? (
             <Button
@@ -252,6 +274,7 @@ export const OfferPipelineCard = ({
           ) : null}
         </div>
       </div>
-    </div>
-  </Card>
-);
+      </div>
+    </Card>
+  );
+};

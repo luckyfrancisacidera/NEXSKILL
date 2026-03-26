@@ -256,10 +256,25 @@ namespace SkillSense.Application.Services.Jobseeker
 
         public async Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
-            var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
+            var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
             if (entity.Status is ResumeSubmissionStatus.Hire or ResumeSubmissionStatus.Rejected)
                 throw new InvalidOperationException("This application can no longer be withdrawn.");
             entity.Status = ResumeSubmissionStatus.Failed;
+            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+        }
+
+        public async Task HideApplicationFromHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Application not found.");
+
+            if (entity.Status is not (ResumeSubmissionStatus.Failed or ResumeSubmissionStatus.Hire))
+            {
+                throw new InvalidOperationException("Only withdrawn or hired applications can be removed from your visible history.");
+            }
+
+            entity.IsHiddenFromJobSeekerHistory = true;
             entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
             await jobSeekerRepository.SaveChangesAsync(ct);
         }

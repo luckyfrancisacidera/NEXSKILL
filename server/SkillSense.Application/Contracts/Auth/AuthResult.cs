@@ -10,6 +10,7 @@ public sealed class AuthResult
     public string? UserId { get; init; }
     public string? FirstName { get; init; }
     public string? LastName { get; init; }
+    public bool IsPersistent { get; init; }
     public IReadOnlyCollection<string> Roles { get; init; } = [];
     public IReadOnlyCollection<string> Errors { get; init; } = [];
 
@@ -28,6 +29,7 @@ public sealed class AuthResult
         string? userId = null,
         string? firstName = null,
         string? lastName = null,
+        bool isPersistent = false,
         IReadOnlyCollection<string>? roles = null) => new()
      {
         Succeeded = true,
@@ -38,6 +40,7 @@ public sealed class AuthResult
         UserId = userId,
         FirstName = firstName,
         LastName = lastName,
+        IsPersistent = isPersistent,
         Roles = roles ?? [],
     };
 }

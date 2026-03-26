@@ -7,6 +7,8 @@ import { DetailBlock } from "@shared/components/DetailBlock";
 import { RichTextContent } from "@shared/components/RichTextContent";
 import { formatCurrencyAmount } from "@shared/data/currency";
 import { splitToBullets, toList } from "@shared/utils/formatText";
+import { formatJobLabel } from "@shared/utils/jobLabels";
+import { formatPostedDateLabel, getPostedDateValue } from "@shared/utils/jobPostingDate";
 import { ApplyModalWizard } from "@features/jobseeker/pages/JobDetailPage/components/ApplyModalWizard";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import type { JobDetailLoaderData, JobseekerApplicationInput } from "@features/jobseeker/types";
@@ -34,9 +36,7 @@ export const JobDetailPage = () => {
     () => toList(job.preferred_skills),
     [job.preferred_skills],
   );
-  const postedDate =
-    (job as { posted_at?: string; created_at?: string }).posted_at ??
-    (job as { posted_at?: string; created_at?: string }).created_at;
+  const postedDateLabel = formatPostedDateLabel(getPostedDateValue(job));
 
   const applyToJob = async (formData: FormData) => {
     if (isApplying) {
@@ -103,7 +103,7 @@ export const JobDetailPage = () => {
     <div className="space-y-4">
       <Card className="overflow-hidden border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="space-y-5">
-          <header className="border-b border-zinc-200 bg-[radial-gradient(circle_at_top_right,_rgba(63,63,70,0.18),_transparent_35%),linear-gradient(135deg,#fafafa_0%,#f4f4f5_100%)] px-4 py-5 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(161,161,170,0.12),_transparent_35%),linear-gradient(135deg,#09090b_0%,#18181b_100%)] sm:px-6">
+          <header className="border-b border-zinc-200 bg-[radial-gradient(circle_at_top_right,rgba(63,63,70,0.18),transparent_35%),linear-gradient(135deg,#fafafa_0%,#f4f4f5_100%)] px-4 py-5 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_right,rgba(161,161,170,0.12),transparent_35%),linear-gradient(135deg,#09090b_0%,#18181b_100%)] sm:px-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -122,7 +122,7 @@ export const JobDetailPage = () => {
                     {job.location || "Location not specified"}
                   </span>
                   <span className="rounded-lg border border-zinc-200 bg-white/80 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300">
-                    {job.employment_type || "Employment type not specified"}
+                    {formatJobLabel(job.employment_type, "Employment type not specified")}
                   </span>
                   <span className="rounded-lg border border-zinc-200 bg-white/80 px-3 py-1 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300">
                     {job.experience_level || "Experience level not specified"}
@@ -167,9 +167,7 @@ export const JobDetailPage = () => {
                       Posted
                     </p>
                     <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {postedDate
-                        ? new Date(postedDate).toLocaleDateString()
-                        : "Not available"}
+                      {postedDateLabel}
                     </p>
                   </div>
                 </div>
@@ -275,9 +273,7 @@ export const JobDetailPage = () => {
                     </li>
                     <li>
                       <span className="font-medium text-zinc-900">Posted:</span>{" "}
-                      {postedDate
-                        ? new Date(postedDate).toLocaleDateString()
-                        : "Not available"}
+                      {postedDateLabel}
                     </li>
                   </ul>
                 </DetailBlock>

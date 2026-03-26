@@ -18,6 +18,7 @@ public sealed class ResumeSubmissionEntity
     public Guid? JobSeekerUserId { get; set; }
     public ResumeSubmissionStatus Status { get; set; }
     public string ParsedResumeJson { get; set; } = "{}";
+    public bool IsHiddenFromJobSeekerHistory { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 
