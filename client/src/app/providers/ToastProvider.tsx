@@ -34,7 +34,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const showToast = useCallback(({ title, description, tone = "info", durationMs = 3500 }: ShowToastInput) => {
     const id = ++idRef.current;
     const nextToast: ToastRecord = { id, title, description, tone, durationMs };
-    setToasts((current) => [...current, nextToast]);
+    setToasts([nextToast]);
 
     window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -72,7 +72,6 @@ export const useToast = () => {
 
   return context;
 };
-
 
 
 
