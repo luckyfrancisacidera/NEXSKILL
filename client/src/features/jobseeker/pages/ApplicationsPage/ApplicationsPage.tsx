@@ -13,10 +13,11 @@ import { ApplicationsTableSkeleton } from "@features/jobseeker/pages/Application
 const statusOptions = [
   { value: "", label: "All statuses" },
   { value: "Applied", label: "Applied" },
+  { value: "Under Review", label: "Under Review" },
   { value: "Shortlisted", label: "Shortlisted" },
   { value: "Interview", label: "Interview" },
   { value: "Offer", label: "Offer" },
-  { value: "Hire", label: "Hire" },
+  { value: "Hired", label: "Hired" },
   { value: "Rejected", label: "Rejected" },
   { value: "Withdrawn", label: "Withdrawn" },
 ];

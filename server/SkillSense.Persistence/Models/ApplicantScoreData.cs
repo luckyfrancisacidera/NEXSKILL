@@ -18,6 +18,7 @@ public sealed class ApplicantScoreData
     public decimal Score { get; init; }
     public bool HasResume { get; init; }
     public string? ResumeFileName { get; init; }
+    public string? OfferStatus { get; init; }
 }
 
 public sealed class JobFilterData

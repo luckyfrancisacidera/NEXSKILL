@@ -1,8 +1,10 @@
 import { http } from "@shared/api/http";
 import type {
+  ApplyToJobResponse,
   DashboardDto,
   JobDto,
   JobseekerApplicationInput,
+  JobseekerOfferDto,
   JobseekerApplicationsQueryParams,
   JobseekerApplicationsResponse,
   JobseekerProfileDto,
@@ -50,13 +52,14 @@ export const jobseekerService = {
   async applyToJob(
     jobId: string,
     input: JobseekerApplicationInput,
-  ): Promise<void> {
+  ): Promise<ApplyToJobResponse> {
     const formData = new FormData();
     Object.entries(input).forEach(([key, value]) => {
       formData.append(key, value);
     });
 
-    await http.post(`/api/jobseeker/jobs/${jobId}/apply`, formData);
+    const response = await http.post<ApplyToJobResponse>(`/api/jobseeker/jobs/${jobId}/apply`, formData);
+    return response.data;
   },
 
   async getDashboard(range: string): Promise<DashboardDto> {
@@ -80,6 +83,21 @@ export const jobseekerService = {
 
   async getApplicationDetail(id: string): Promise<unknown> {
     const response = await http.get(`/api/jobseeker/applications/${id}`);
+    return response.data;
+  },
+
+  async getOffer(id: string): Promise<JobseekerOfferDto> {
+    const response = await http.get<JobseekerOfferDto>(`/api/jobseeker/applications/${id}/offer`);
+    return response.data;
+  },
+
+  async acceptOffer(id: string): Promise<JobseekerOfferDto> {
+    const response = await http.post<JobseekerOfferDto>(`/api/jobseeker/applications/${id}/offer/accept`);
+    return response.data;
+  },
+
+  async declineOffer(id: string): Promise<JobseekerOfferDto> {
+    const response = await http.post<JobseekerOfferDto>(`/api/jobseeker/applications/${id}/offer/decline`);
     return response.data;
   },
 

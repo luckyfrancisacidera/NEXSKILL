@@ -184,6 +184,7 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
     {
         ArgumentException ex => (StatusCodes.Status400BadRequest, ex.Message),
         UnauthorizedAccessException ex => (StatusCodes.Status403Forbidden, ex.Message),
+        InvalidOperationException ex => (StatusCodes.Status409Conflict, ex.Message),
         InvalidStageTransitionException ex => (StatusCodes.Status409Conflict, ex.Message),
         KeyNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message),
         _ => (StatusCodes.Status500InternalServerError, error.Error.Message),

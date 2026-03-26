@@ -88,11 +88,31 @@ export const useApplications = ({
     }
   };
 
+  const refresh = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const refreshed = await jobseekerService.getMyApplications({
+        pageNumber,
+        pageSize,
+        search,
+        status,
+      });
+      setData(refreshed);
+    } catch {
+      setError("Unable to refresh applications right now.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     data,
     error,
     isLoading,
     withdrawingId,
     withdraw,
+    refresh,
   };
 };

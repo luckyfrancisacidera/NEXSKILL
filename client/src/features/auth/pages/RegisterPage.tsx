@@ -16,6 +16,8 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,13 +31,31 @@ const RegisterPage = () => {
     event.preventDefault();
     setError("");
 
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
+
+    if (!normalizedFirstName) {
+      setError("First name is required.");
+      return;
+    }
+
+    if (!normalizedLastName) {
+      setError("Last name is required.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
     try {
-      const roles = await register(email, password);
+      const roles = await register({
+        first_name: normalizedFirstName,
+        last_name: normalizedLastName,
+        email: email.trim(),
+        password,
+      });
       navigate(
         hasAnyAllowedRole(roles, ["jobseeker"]) ? "/dashboard" : "/login",
         { replace: true }
@@ -91,16 +111,28 @@ const RegisterPage = () => {
               <div className="w-full">
                 <input
                   type="text"
+                  name="firstName"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
                   className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
                   placeholder="First Name"
+                  autoComplete="given-name"
+                  maxLength={120}
+                  required
                 />
               </div>
 
               <div className="w-full">
                 <input
                   type="text"
+                  name="lastName"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
                   className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
                   placeholder="Last Name"
+                  autoComplete="family-name"
+                  maxLength={120}
+                  required
                 />
               </div>
             </div>
@@ -113,6 +145,8 @@ const RegisterPage = () => {
                 onChange={(event) => setEmail(event.target.value)}
                 className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
                 placeholder="Email Address"
+                autoComplete="email"
+                required
               />
             </div>
 
@@ -124,6 +158,8 @@ const RegisterPage = () => {
                 onChange={(event) => setPassword(event.target.value)}
                 className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 pr-10 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
                 placeholder="Password"
+                autoComplete="new-password"
+                required
               />
 
               <button
@@ -143,6 +179,8 @@ const RegisterPage = () => {
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 pr-10 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
                 placeholder="Confirm Password"
+                autoComplete="new-password"
+                required
               />
 
               <button

@@ -21,8 +21,14 @@ internal static class ApplicantStageTransitionPolicy
             // Allow recruiters to move candidates between any active stages, including reviving rejected applicants.
             ["shortlist"] = ActiveStatuses,
             ["set-interview"] = ActiveStatuses,
-            ["offer"] = ActiveStatuses,
-            ["hire"] = ActiveStatuses,
+            ["offer"] = new HashSet<ResumeSubmissionStatus>
+            {
+                ResumeSubmissionStatus.Interview,
+            },
+            ["hire"] = new HashSet<ResumeSubmissionStatus>
+            {
+                ResumeSubmissionStatus.Offer,
+            },
             ["reject"] = ActiveStatuses,
             ["remove-shortlist"] = new HashSet<ResumeSubmissionStatus>
             {

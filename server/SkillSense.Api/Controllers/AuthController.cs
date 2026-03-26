@@ -30,7 +30,18 @@ public sealed class AuthController(
 
         WriteAccessCookie(result.Token!);
         WriteRefreshCookie(result.RefreshToken!);
-        return Ok(new { message = result.Message, user = new { result.Email, result.UserId, roles = result.Roles } });
+        return Ok(new
+        {
+            message = result.Message,
+            user = new
+            {
+                result.Email,
+                result.UserId,
+                first_name = result.FirstName,
+                last_name = result.LastName,
+                roles = result.Roles
+            }
+        });
     }
 
     [HttpPost("login")]
@@ -46,7 +57,18 @@ public sealed class AuthController(
 
         WriteAccessCookie(result.Token!);
         WriteRefreshCookie(result.RefreshToken!);
-        return Ok(new { message = result.Message, user = new { result.Email, result.UserId, roles = result.Roles } });
+        return Ok(new
+        {
+            message = result.Message,
+            user = new
+            {
+                result.Email,
+                result.UserId,
+                first_name = result.FirstName,
+                last_name = result.LastName,
+                roles = result.Roles
+            }
+        });
     }
 
     [HttpPost("refresh")]

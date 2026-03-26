@@ -21,6 +21,20 @@ public sealed class ResumeSubmissionRepository(SkillSenseDbContext dbContext) : 
             .OrderBy(x => x.CreatedAtUtc)
             .FirstOrDefaultAsync(x => x.Status == ResumeSubmissionStatus.Pending, ct);
 
+    public Task<List<ResumeSubmissionEntity>> GetPendingBatchAsync(int batchSize, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(x => x.Status == ResumeSubmissionStatus.Pending)
+            .OrderBy(x => x.CreatedAtUtc)
+            .Take(batchSize)
+            .ToListAsync(ct);
+
+    public Task<bool> ExistsActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions.AsNoTracking().AnyAsync(
+            x => x.JobId == jobId
+                && x.JobSeekerUserId == jobSeekerUserId
+                && x.Status != ResumeSubmissionStatus.Failed,
+            ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => dbContext.SaveChangesAsync(ct);
 }

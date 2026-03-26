@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SkillSense.Application.Contracts.Offers;
 
 namespace SkillSense.Application.Contracts.Recruiter.Response
 {
@@ -70,6 +71,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("resume_file_name")]
         public string? ResumeFileName { get; set; }
+
+        [JsonPropertyName("offer")]
+        public OfferResponse? Offer { get; set; }
     }
 
     public sealed class ApplicantDetailResponse : ApplicantScoreItemResponse

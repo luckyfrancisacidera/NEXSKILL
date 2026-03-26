@@ -15,6 +15,9 @@ const normalizeWhitespace = (value: string) =>
 
 const getNodeText = (value?: string | null) => normalizeWhitespace(value ?? "");
 
+const stripLeadingBullets = (value?: string | null) =>
+  getNodeText(value).replace(/^[\s\u2022*\-\u00b7]+/, "").trim();
+
 export const sanitizeRichText = (value?: string | null) => {
   const raw = value ?? "";
   if (!raw.trim()) {
@@ -79,7 +82,7 @@ export const extractListItemsFromHtml = (value?: string | null) => {
 
   const container = parseHtml(sanitized);
   const listItems = normalizeStringArray(
-    Array.from(container.querySelectorAll("li")).map((item) => item.textContent ?? ""),
+    Array.from(container.querySelectorAll("li")).map((item) => stripLeadingBullets(item.textContent)),
   );
 
   if (listItems.length > 0) {
@@ -89,7 +92,7 @@ export const extractListItemsFromHtml = (value?: string | null) => {
   return normalizeStringArray(
     container.innerText
     .split(/\r?\n/)
-      .map((item) => item.trim()),
+      .map((item) => stripLeadingBullets(item)),
   );
 };
 

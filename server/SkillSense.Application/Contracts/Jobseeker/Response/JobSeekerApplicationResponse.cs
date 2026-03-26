@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using SkillSense.Application.Contracts.Offers;
 
 namespace SkillSense.Application.Contracts.Jobseeker.Response;
 
@@ -51,4 +52,10 @@ public sealed class JobSeekerApplicationResponse
 
     [JsonPropertyName("created_at_utc")]
     public DateTime CreatedAtUtc { get; init; }
+
+    [JsonPropertyName("updated_at_utc")]
+    public DateTime UpdatedAtUtc { get; init; }
+
+    [JsonPropertyName("offer")]
+    public OfferResponse? Offer { get; init; }
 }

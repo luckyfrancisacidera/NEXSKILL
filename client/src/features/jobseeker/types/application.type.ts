@@ -10,12 +10,46 @@ export interface JobseekerApplicationInput {
 
 export type JobseekerApplicationStage =
   | "Applied"
+  | "Under Review"
   | "Shortlisted"
   | "Interview"
   | "Offer"
-  | "Hire"
+  | "Hired"
   | "Rejected"
   | "Withdrawn";
+
+export interface ApplyToJobResponse {
+  submission_id: string;
+  status: string;
+  message: string;
+}
+
+export type JobseekerOfferStatus =
+  | "Pending"
+  | "Accepted"
+  | "Declined"
+  | "Expired"
+  | "Cancelled";
+
+export interface JobseekerOfferDto {
+  id: string;
+  application_id: string;
+  sent_by_user_id: string;
+  title: string;
+  message: string;
+  salary_text: string;
+  employment_type: string;
+  start_date?: string | null;
+  expiration_date?: string | null;
+  status: JobseekerOfferStatus;
+  sent_at_utc: string;
+  responded_at_utc?: string | null;
+  created_at_utc: string;
+  updated_at_utc: string;
+  can_accept: boolean;
+  can_decline: boolean;
+  can_mark_hired: boolean;
+}
 
 export interface JobseekerApplicationDto {
   id: string;
@@ -34,6 +68,8 @@ export interface JobseekerApplicationDto {
   offered_at_utc?: string | null;
   hired_at_utc?: string | null;
   created_at_utc: string;
+  updated_at_utc?: string;
+  offer?: JobseekerOfferDto | null;
 }
 
 export interface JobseekerApplicationsQueryParams {

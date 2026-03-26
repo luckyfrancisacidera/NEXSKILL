@@ -44,6 +44,14 @@ public sealed class ResumeUploadService(
         };
 
         await resumeSubmissionRepository.AddAsync(submission, ct);
-        return new ResumeUploadResponse { SubmissionId = submission.Id, Status = submission.Status.ToString() };
+        return new ResumeUploadResponse
+        {
+            SubmissionId = submission.Id,
+            Status = submission.Status.ToString(),
+            Message = "Application queued for processing.",
+        };
     }
+
+    public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+        => resumeSubmissionRepository.ExistsActiveApplicationAsync(jobId, jobSeekerUserId, ct);
 }
