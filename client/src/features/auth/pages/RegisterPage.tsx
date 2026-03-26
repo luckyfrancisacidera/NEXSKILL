@@ -7,9 +7,9 @@ import BuildingImage from "@shared/assets/BuildingImage.jpg";
 import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
-import { AuthCheckbox } from "@features/auth/components/AuthCheckbox";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ApiError } from "@shared/api/http";
+import { Checkbox } from "@shared/components/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 import { hasAnyAllowedRole } from "@shared/utils/permissions";
 
@@ -213,7 +213,7 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              <AuthCheckbox
+              <Checkbox
                 id="register-agree-terms"
                 checked={agreedToTerms}
                 onChange={(event) => setAgreedToTerms(event.target.checked)}

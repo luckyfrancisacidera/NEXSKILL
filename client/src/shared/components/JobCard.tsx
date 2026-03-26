@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Bookmark, BookmarkCheck, Loader2, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Job } from "@shared/types";
+import { ActionButton } from "@shared/components/ActionButton";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
-import { IconActionButton } from "@shared/components/IconActionButton";
 import { formatCurrencyAmount } from "@shared/data/currency";
 
 interface JobCardProps {
@@ -72,7 +72,7 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
             </div>
           </div>
           {onToggleSave ? (
-            <IconActionButton
+            <ActionButton
               icon={
                 isSaving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -86,9 +86,10 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
                 isSaving
                   ? "Updating saved job"
                   : saved
-                    ? "Saved job"
-                    : "Save job"
+                  ? "Saved job"
+                  : "Save job"
               }
+              iconOnly
               disabled={isSaving}
               className="shrink-0"
               onClick={() => {
