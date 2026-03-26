@@ -57,10 +57,11 @@ public sealed class CandidateExplanationServiceTests
         Assert.Equal(ExplanationStatus.Succeeded, stored.Status);
         Assert.DoesNotContain("missing c#", explanationText, StringComparison.Ordinal);
         Assert.DoesNotContain("expertise in sql server", explanationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("postgresql and mysql database design for backend services", stored.StructuredDataJson, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(strengths, x => x.Contains("C#", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(strengths, x => x.Contains("REST APIs", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(gaps, x => x.Contains("SQL Server", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(gaps, x => x.Contains("PostgreSQL", StringComparison.OrdinalIgnoreCase) || x.Contains("MySQL", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(gaps, x => x.Contains("backend service", StringComparison.OrdinalIgnoreCase) || x.Contains("database", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -146,7 +147,7 @@ public sealed class CandidateExplanationServiceTests
         Assert.Equal(ExplanationStatus.Succeeded, stored.Status);
         Assert.DoesNotContain("docker compose expertise", explanationText, StringComparison.Ordinal);
         Assert.Contains(gaps, x => x.Contains("Docker Compose", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(gaps, x => x.Contains("not found", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(gaps, x => x.Contains("No clear evidence", StringComparison.OrdinalIgnoreCase));
     }
 
     private static CandidateExplanationPayloadData BuildPayload(
@@ -261,7 +262,7 @@ public sealed class CandidateExplanationServiceTests
         public string ProviderName => "stub";
         public string ModelName => "stub-model";
 
-        public Task<CandidateExplanationGenerationResult> GenerateRecruiterExplanationAsync(CandidateExplanationFacts facts, CancellationToken ct = default)
+        public Task<CandidateExplanationGenerationResult> GenerateRecruiterExplanationAsync(CandidateEvaluationContext context, CancellationToken ct = default)
         {
             return Task.FromResult(new CandidateExplanationGenerationResult
             {

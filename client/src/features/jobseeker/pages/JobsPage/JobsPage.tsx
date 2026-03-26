@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLoaderData, useSearchParams } from "react-router-dom";
 import { Card } from "@shared/components/Card";
 import { JobCard } from "@shared/components/JobCard";
@@ -18,6 +19,13 @@ const toJobType = (employmentType?: string): JobType => {
 export const JobsPage = () => {
   const data = useLoaderData() as JobsLoaderData;
   const [params] = useSearchParams();
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(
+    () => new Set(data.items.filter((job) => job.is_saved).map((job) => String(job.id))),
+  );
+
+  useEffect(() => {
+    setSavedJobIds(new Set(data.items.filter((job) => job.is_saved).map((job) => String(job.id))));
+  }, [data.items]);
 
   return (
     <div className="space-y-6">
@@ -68,11 +76,37 @@ export const JobsPage = () => {
             <JobCard
               key={job.id}
               job={cardJob}
-              onToggleSave={(jobId, nextSavedState) =>
-                nextSavedState
-                  ? jobseekerService.saveJob(jobId)
-                  : jobseekerService.removeSavedJob(jobId)
-              }
+              isSaved={savedJobIds.has(String(job.id))}
+              onToggleSave={async (jobId, nextSavedState) => {
+                setSavedJobIds((current) => {
+                  const next = new Set(current);
+                  if (nextSavedState) {
+                    next.add(String(jobId));
+                  } else {
+                    next.delete(String(jobId));
+                  }
+                  return next;
+                });
+
+                try {
+                  if (nextSavedState) {
+                    await jobseekerService.saveJob(jobId);
+                  } else {
+                    await jobseekerService.removeSavedJob(jobId);
+                  }
+                } catch (error) {
+                  setSavedJobIds((current) => {
+                    const next = new Set(current);
+                    if (nextSavedState) {
+                      next.delete(String(jobId));
+                    } else {
+                      next.add(String(jobId));
+                    }
+                    return next;
+                  });
+                  throw error;
+                }
+              }}
             />
           );
           })}

@@ -27,7 +27,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   user: AuthUser | null;
   roles: Role[];
-  login: (email: string, password: string) => Promise<Role[]>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<Role[]>;
   register: (payload: RegisterPayload) => Promise<Role[]>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<Role[]>;
@@ -96,10 +96,11 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, rememberMe = false) => {
       const response = await http.post<AuthMutationResponse>("/api/auth/login", {
         email,
         password,
+        rememberMe,
       });
 
       const userId = response.data.user?.userId;

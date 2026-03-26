@@ -2,8 +2,9 @@ import { Copy, Eye, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { JobListItem } from '@features/recruiter/types';
-import { getJobActionButtonClassName } from '@features/recruiter/utils/jobActionButtonStyles';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
+import { getJobActionButtonClassName } from '@shared/utils/jobActionButtonStyles';
+import { formatJobLabel } from '@shared/utils/jobLabels';
 
 export interface JobPostsTableProps {
   jobs: JobListItem[];
@@ -37,7 +38,7 @@ export const JobPostsTable = ({ jobs, isDeleting, isDuplicating, onDelete, onDup
               <td className="px-4 py-3 font-medium">{job.title}</td>
               <td className="px-4 py-3">{job.department ?? '-'}</td>
               <td className="px-4 py-3">{job.location}</td>
-              <td className="px-4 py-3">{job.employment_type}</td>
+              <td className="px-4 py-3">{formatJobLabel(job.employment_type, 'Employment type not specified')}</td>
               <td className="px-4 py-3">
                 <span className={`rounded-lg border px-3 py-1 text-sm font-medium ${statusAccent.className}`}>
                   {statusAccent.label}
@@ -68,7 +69,6 @@ export const JobPostsTable = ({ jobs, isDeleting, isDuplicating, onDelete, onDup
                     type="button"
                     className={getJobActionButtonClassName({ destructive: true, iconOnly: true })}
                     onClick={(event) => {
-                      // Stop propagation so delete only opens one controlled verification modal.
                       event.stopPropagation();
                       onDelete(job);
                     }}

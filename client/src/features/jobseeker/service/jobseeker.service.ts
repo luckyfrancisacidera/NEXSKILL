@@ -105,6 +105,10 @@ export const jobseekerService = {
     await http.patch(`/api/jobseeker/applications/${id}/withdraw`);
   },
 
+  async deleteApplicationHistory(id: string): Promise<void> {
+    await http.delete(`/api/jobseeker/applications/${id}/history`);
+  },
+
   async getSavedJobs(search?: string): Promise<SavedJobDto[]> {
     const response = await http.get<SavedJobDto[]>(
       "/api/jobseeker/saved-jobs",

@@ -28,8 +28,8 @@ public sealed class AuthController(
             return BadRequest(new { message = result.Message, errors = result.Errors });
         }
 
-        WriteAccessCookie(result.Token!);
-        WriteRefreshCookie(result.RefreshToken!);
+        WriteAccessCookie(result.Token!, result.IsPersistent);
+        WriteRefreshCookie(result.RefreshToken!, result.IsPersistent);
         return Ok(new
         {
             message = result.Message,
@@ -55,8 +55,8 @@ public sealed class AuthController(
             return Unauthorized(new { message = result.Message, errors = result.Errors });
         }
 
-        WriteAccessCookie(result.Token!);
-        WriteRefreshCookie(result.RefreshToken!);
+        WriteAccessCookie(result.Token!, result.IsPersistent);
+        WriteRefreshCookie(result.RefreshToken!, result.IsPersistent);
         return Ok(new
         {
             message = result.Message,
@@ -86,8 +86,8 @@ public sealed class AuthController(
             return Unauthorized(new { message = result.Message, errors = result.Errors });
         }
 
-        WriteAccessCookie(result.Token!);
-        WriteRefreshCookie(result.RefreshToken!);
+        WriteAccessCookie(result.Token!, result.IsPersistent);
+        WriteRefreshCookie(result.RefreshToken!, result.IsPersistent);
 
         return Ok(new { message = result.Message });
     }
@@ -237,33 +237,47 @@ public sealed class AuthController(
         return Ok(currentUser);
     }
 
-    private void WriteAccessCookie(string token)
+    private void WriteAccessCookie(string token, bool isPersistent)
     {
         var isProduction = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsProduction();
         var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var minutes) ? minutes : 30;
 
-        Response.Cookies.Append("access_token", token, new CookieOptions
+        var options = new CookieOptions
         {
             HttpOnly = true,
             Secure = isProduction,
             SameSite = SameSiteMode.Lax,
             Path = "/",
-            Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
-        });
+            IsEssential = true,
+        };
+
+        if (isPersistent)
+        {
+            options.Expires = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes);
+        }
+
+        Response.Cookies.Append("access_token", token, options);
     }
 
-    private void WriteRefreshCookie(string token)
+    private void WriteRefreshCookie(string token, bool isPersistent)
     {
         var isProduction = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsProduction();
         var expiryDays = int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var days) ? days : 7;
 
-        Response.Cookies.Append("refresh_token", token, new CookieOptions
+        var options = new CookieOptions
         {
             HttpOnly = true,
             Secure = isProduction,
             SameSite = SameSiteMode.Lax,
             Path = "/",
-            Expires = DateTimeOffset.UtcNow.AddDays(expiryDays)
-        });
+            IsEssential = true,
+        };
+
+        if (isPersistent)
+        {
+            options.Expires = DateTimeOffset.UtcNow.AddDays(expiryDays);
+        }
+
+        Response.Cookies.Append("refresh_token", token, options);
     }
 }

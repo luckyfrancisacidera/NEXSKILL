@@ -21,18 +21,34 @@ public sealed class CandidateExplanationService(
     private const float PartialEvidenceThreshold = 0.58f;
     private const float LimitedEvidenceThreshold = 0.42f;
 
-    private static readonly string[] ResponsibilityGapHints =
+    private static readonly string[] LeadInWords =
     [
-        "scalability",
+        "build",
+        "built",
+        "design",
+        "develop",
+        "developed",
         "maintain",
-        "maintenance",
-        "architecture",
-        "ownership",
-        "high-traffic",
-        "optimiz",
-        "performance",
-        "secure",
-        "security"
+        "maintained",
+        "ensure",
+        "ensured",
+        "support",
+        "supported",
+        "collaborate",
+        "collaborated",
+        "work",
+        "worked",
+        "drive",
+        "drove",
+        "own",
+        "owned",
+        "deliver",
+        "delivered",
+        "using",
+        "with",
+        "across",
+        "for",
+        "to",
     ];
 
     public async Task GenerateForShortlistedAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
@@ -50,7 +66,7 @@ public sealed class CandidateExplanationService(
             return;
         }
 
-        var facts = BuildFacts(payload.Submission, payload.Job, payload.Score);
+        var context = BuildEvaluationContext(payload.Submission, payload.Job, payload.Score);
 
         var explanationEntity = existing ?? new CandidateExplanationEntity
         {
@@ -63,7 +79,7 @@ public sealed class CandidateExplanationService(
 
         explanationEntity.Provider = explanationProvider.ProviderName;
         explanationEntity.Model = explanationProvider.ModelName;
-        explanationEntity.StructuredDataJson = JsonSerializer.Serialize(facts);
+        explanationEntity.StructuredDataJson = JsonSerializer.Serialize(context);
         explanationEntity.Status = ExplanationStatus.Pending;
         explanationEntity.ExplanationText = string.Empty;
         explanationEntity.Summary = null;
@@ -85,13 +101,8 @@ public sealed class CandidateExplanationService(
 
         try
         {
-            var result = await explanationProvider.GenerateRecruiterExplanationAsync(facts, ct);
-            var normalized = NormalizeStructuredExplanation(result.Explanation, facts);
-
-            if (normalized.Strengths.Count < 2)
-            {
-                throw new InvalidOperationException("Explanation did not contain enough strengths.");
-            }
+            var result = await explanationProvider.GenerateRecruiterExplanationAsync(context, ct);
+            var normalized = NormalizeStructuredExplanation(result.Explanation, context);
 
             explanationEntity.Summary = normalized.Summary;
             explanationEntity.StrengthsJson = JsonSerializer.Serialize(normalized.Strengths);
@@ -117,7 +128,7 @@ public sealed class CandidateExplanationService(
         }
     }
 
-    private static CandidateExplanationFacts BuildFacts(
+    private static CandidateEvaluationContext BuildEvaluationContext(
         ResumeSubmissionEntity submission,
         JobEntity job,
         ResumeScoreEntity score)
@@ -125,22 +136,21 @@ public sealed class CandidateExplanationService(
         var parsedResume = ParseResume(submission.ParsedResumeJson);
         var finalScore = ParseFinalScore(score.ScoreBreakdownJson);
 
-        var requiredMatches = finalScore?.Matches.RequiredSkills ?? [];
-        var preferredMatches = finalScore?.Matches.PreferredSkills ?? [];
-        var responsibilityMatches = finalScore?.Matches.Responsibilities ?? [];
-        var descriptionMatches = finalScore?.Matches.DescriptionTopMatches ?? [];
+        var requiredDetails = BuildMatchDetails(finalScore?.Matches.RequiredSkills ?? []);
+        var preferredDetails = BuildMatchDetails(finalScore?.Matches.PreferredSkills ?? []);
+        var responsibilityDetails = BuildMatchDetails(finalScore?.Matches.Responsibilities ?? []);
+        var descriptionDetails = BuildMatchDetails(finalScore?.Matches.DescriptionTopMatches ?? []);
 
-        var requiredSkillDetails = BuildMatchDetails(requiredMatches);
-        var preferredSkillDetails = BuildMatchDetails(preferredMatches);
-        var responsibilityDetails = BuildMatchDetails(responsibilityMatches);
-        var descriptionDetails = BuildMatchDetails(descriptionMatches);
+        var candidateSkills = NormalizeSkillList(parsedResume?.Derived?.NormalizedSkills ?? []);
+        var requiredSkills = BuildSkillSignals(DeserializeStringList(job.RequiredSkillsJson), requiredDetails);
+        var preferredSkills = BuildSkillSignals(DeserializeStringList(job.PreferredSkillsJson), preferredDetails);
+        var highlights = BuildHighlights(requiredDetails, responsibilityDetails, descriptionDetails);
+        var experienceAssessment = BuildExperienceAssessment(finalScore?.HardRequirements.MinimumYearsExperienceMet, parsedResume?.Derived?.TotalExperienceMonths, job.MinYears);
+        var educationAssessment = BuildEducationAssessment(finalScore?.HardRequirements.MinimumEducationMet);
 
-        var responsibilitiesSectionScore = finalScore?.SectionScores.GetValueOrDefault("responsibilities");
-        var descriptionSectionScore = finalScore?.SectionScores.GetValueOrDefault("description");
-
-        return new CandidateExplanationFacts
+        return new CandidateEvaluationContext
         {
-            Job = new CandidateExplanationJobFacts
+            Job = new CandidateEvaluationJobContext
             {
                 Title = job.Title,
                 RequiredSkills = DeserializeStringList(job.RequiredSkillsJson),
@@ -151,352 +161,338 @@ public sealed class CandidateExplanationService(
                 WorkSetup = job.WorkSetup.ToString(),
                 EmploymentType = job.EmploymentType.ToString(),
             },
-            Candidate = new CandidateExplanationCandidateFacts
+            Candidate = new CandidateEvaluationCandidateContext
             {
                 Name = submission.FullName ?? "Unknown Applicant",
-                Email = submission.Email ?? string.Empty,
                 Location = submission.Location,
                 TotalExperienceMonths = parsedResume?.Derived?.TotalExperienceMonths,
                 EducationMaxLevel = parsedResume?.Derived?.EducationMaxLevel,
-                NormalizedSkills = parsedResume?.Derived?.NormalizedSkills ?? [],
+                NormalizedSkills = candidateSkills,
             },
-            Compatibility = BuildCompatibilityFacts(submission, job),
-            Scoring = new CandidateExplanationScoringFacts
+            Compatibility = BuildCompatibilityContext(submission, job),
+            Evaluation = new CandidateEvaluationSignals
             {
-                FinalWeightedScore = score.FinalWeightedScore,
-                SkillsScore = score.SkillsScore,
-                ExperienceScore = score.ExperienceScore,
-                EducationScore = score.EducationScore,
-                SummaryScore = score.SummaryScore,
-                ResponsibilitiesSectionScore = responsibilitiesSectionScore,
-                DescriptionSectionScore = descriptionSectionScore,
-                MinimumYearsMet = finalScore?.HardRequirements.MinimumYearsExperienceMet,
-                MinimumEducationMet = finalScore?.HardRequirements.MinimumEducationMet,
-            },
-            MatchSummary = BuildMatchSummary(requiredSkillDetails, preferredSkillDetails, responsibilityDetails, descriptionDetails)
+                RequiredSkills = requiredSkills,
+                PreferredSkills = preferredSkills,
+                Strengths = BuildStrengthSignals(requiredSkills, preferredSkills, highlights, experienceAssessment),
+                WeakSignals = BuildWeakSignals(requiredSkills, responsibilityDetails, descriptionDetails),
+                MissingSkills = requiredSkills
+                    .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Missing)
+                    .Select(signal => signal.Name)
+                    .Take(3)
+                    .ToList(),
+                Highlights = highlights,
+                ExperienceAssessment = experienceAssessment,
+                EducationAssessment = educationAssessment,
+            }
         };
     }
 
     private static CandidateStructuredExplanation NormalizeStructuredExplanation(
         CandidateStructuredExplanation explanation,
-        CandidateExplanationFacts facts)
+        CandidateEvaluationContext context)
     {
-        var deterministicStrengths = BuildDeterministicStrengths(facts);
-        var deterministicGaps = BuildDeterministicGaps(facts);
-        var normalizedSummary = BuildDeterministicSummary(facts, deterministicStrengths, deterministicGaps);
+        var strengths = BuildDeterministicStrengths(context);
+        var gaps = BuildDeterministicGaps(context);
 
         return new CandidateStructuredExplanation
         {
-            Summary = normalizedSummary,
-            Strengths = deterministicStrengths.Take(4).ToList(),
-            Gaps = deterministicGaps.Take(2).ToList(),
+            Summary = BuildDeterministicSummary(context, strengths, gaps),
+            Strengths = strengths,
+            Gaps = gaps,
+            Recommendation = NormalizeRecommendation(explanation.Recommendation, context),
         };
     }
 
-    private static CandidateExplanationMatchSummaryFacts BuildMatchSummary(
-        List<CandidateExplanationMatchItem> requiredSkillDetails,
-        List<CandidateExplanationMatchItem> preferredSkillDetails,
-        List<CandidateExplanationMatchItem> responsibilityDetails,
-        List<CandidateExplanationMatchItem> descriptionDetails)
+    private static List<CandidateEvaluationSkillSignal> BuildSkillSignals(
+        IEnumerable<string> jobSkills,
+        IEnumerable<CandidateExplanationMatchItem> details)
     {
-        return new CandidateExplanationMatchSummaryFacts
+        var signals = new Dictionary<string, CandidateEvaluationSkillSignal>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var skill in jobSkills)
         {
-            RequiredSkillDetails = requiredSkillDetails,
-            PreferredSkillDetails = preferredSkillDetails,
-            ResponsibilityDetails = responsibilityDetails,
-            DescriptionDetails = descriptionDetails,
-            MatchedRequiredSkills = requiredSkillDetails.Where(IsPositiveEvidenceState).Select(x => x.JdItem).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            MissingRequiredSkills = requiredSkillDetails.Where(x => x.MatchState == CandidateExplanationMatchStates.NotFound).Select(x => x.JdItem).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            MatchedPreferredSkills = preferredSkillDetails.Where(IsPositiveEvidenceState).Select(x => x.JdItem).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            MatchedResponsibilities = responsibilityDetails.Where(IsPositiveEvidenceState).Select(x => x.JdItem).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            MissingResponsibilities = responsibilityDetails.Where(x => x.MatchState == CandidateExplanationMatchStates.NotFound).Select(x => x.JdItem).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            TopDescriptionAlignmentEvidence = descriptionDetails
-                .Where(x => !string.IsNullOrWhiteSpace(x.BestResumeEvidence))
-                .OrderByDescending(x => x.FinalMatchConfidence)
-                .Select(ToEvidenceItem)
-                .GroupBy(x => new { JdItem = x.JdItem.ToLowerInvariant(), Evidence = x.BestResumeEvidence.ToLowerInvariant() })
-                .Select(x => x.First())
-                .Take(3)
-                .ToList(),
-            DescriptionTopMatches = descriptionDetails
-                .Where(IsPositiveEvidenceState)
-                .OrderByDescending(x => x.FinalMatchConfidence)
-                .Select(x => x.JdItem)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(3)
-                .ToList(),
-            RoleRelevantExperienceEvidence = responsibilityDetails
-                .Concat(requiredSkillDetails)
-                .Where(x => !string.IsNullOrWhiteSpace(x.Source))
-                .Where(x => x.Source.StartsWith("work_experience", StringComparison.OrdinalIgnoreCase))
-                .Where(IsPositiveEvidenceState)
-                .OrderByDescending(x => x.FinalMatchConfidence)
-                .Select(ToEvidenceItem)
-                .GroupBy(x => new { JdItem = x.JdItem.ToLowerInvariant(), Evidence = x.BestResumeEvidence.ToLowerInvariant() })
-                .Select(x => x.First())
-                .Take(4)
-                .ToList(),
-            NotableEvidence = requiredSkillDetails
-                .Concat(preferredSkillDetails)
-                .Concat(responsibilityDetails)
-                .Concat(descriptionDetails)
-                .Where(x => !string.IsNullOrWhiteSpace(x.BestResumeEvidence))
-                .OrderByDescending(x => x.FinalMatchConfidence)
-                .Select(ToEvidenceItem)
-                .GroupBy(x => new { JdItem = x.JdItem.ToLowerInvariant(), Evidence = x.BestResumeEvidence.ToLowerInvariant() })
-                .Select(x => x.First())
-                .Take(5)
-                .ToList()
-        };
+            var cleanedName = CleanSkillName(skill);
+            var key = NormalizeForComparison(cleanedName);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            signals[key] = new CandidateEvaluationSkillSignal
+            {
+                Name = cleanedName,
+                Level = CandidateEvaluationSignalLevels.Missing,
+            };
+        }
+
+        foreach (var detail in details)
+        {
+            var cleanedName = CleanSkillName(detail.JdItem);
+            var key = NormalizeForComparison(cleanedName);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            var candidate = new CandidateEvaluationSkillSignal
+            {
+                Name = cleanedName,
+                Level = ToSignalLevel(detail.MatchState),
+                Signal = NormalizeCapabilityPhrase(detail.JdItem, detail.BestResumeEvidence),
+            };
+
+            if (!signals.TryGetValue(key, out var existing) || GetSignalRank(candidate.Level) > GetSignalRank(existing.Level))
+            {
+                signals[key] = candidate;
+            }
+            else if (string.IsNullOrWhiteSpace(existing.Signal) && !string.IsNullOrWhiteSpace(candidate.Signal))
+            {
+                existing.Signal = candidate.Signal;
+            }
+        }
+
+        return signals.Values
+            .OrderByDescending(signal => GetSignalRank(signal.Level))
+            .ThenBy(signal => signal.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
-    private static List<string> BuildDeterministicStrengths(CandidateExplanationFacts facts)
+    private static List<string> BuildHighlights(params IEnumerable<CandidateExplanationMatchItem>[] groups)
+    {
+        var highlights = new List<string>();
+
+        foreach (var item in groups.SelectMany(group => group)
+                     .Where(item => item.MatchState != CandidateExplanationMatchStates.NotFound))
+        {
+            AddPhrase(highlights, NormalizeCapabilityPhrase(item.JdItem, item.BestResumeEvidence));
+        }
+
+        return highlights.Take(4).ToList();
+    }
+
+    private static List<string> BuildStrengthSignals(
+        IReadOnlyList<CandidateEvaluationSkillSignal> requiredSkills,
+        IReadOnlyList<CandidateEvaluationSkillSignal> preferredSkills,
+        IReadOnlyList<string> highlights,
+        string experienceAssessment)
     {
         var strengths = new List<string>();
 
-        var exactRequiredSkills = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.ExactEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .ThenByDescending(x => x.EvidenceCountDistinct)
-            .Take(4)
-            .ToList();
-
-        if (exactRequiredSkills.Count > 0)
+        foreach (var skill in requiredSkills.Where(skill => skill.Level == CandidateEvaluationSignalLevels.Strong).Take(3))
         {
-            strengths.Add($"Clear evidence of {JoinItems(exactRequiredSkills.Select(x => x.JdItem).Take(3))} through {SummarizeEvidenceTypes(exactRequiredSkills)}.");
+            AddPhrase(strengths, skill.Name);
         }
 
-        var strongResponsibilities = facts.MatchSummary.ResponsibilityDetails
-            .Where(x => x.MatchState is CandidateExplanationMatchStates.ExactEvidence or CandidateExplanationMatchStates.PartialEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .Take(2)
-            .ToList();
-
-        if (strongResponsibilities.Count > 0)
+        foreach (var highlight in highlights)
         {
-            strengths.Add($"Strong alignment to role responsibilities such as {Shorten(strongResponsibilities[0].JdItem, 110)}, supported by {DescribeEvidence(strongResponsibilities[0])}.");
+            AddPhrase(strengths, highlight);
         }
 
-        var descriptionAlignment = facts.MatchSummary.DescriptionDetails
-            .Where(x => x.MatchState is CandidateExplanationMatchStates.ExactEvidence or CandidateExplanationMatchStates.PartialEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .FirstOrDefault();
-
-        if (descriptionAlignment is not null)
+        foreach (var skill in preferredSkills.Where(skill => skill.Level == CandidateEvaluationSignalLevels.Strong).Take(2))
         {
-            strengths.Add($"Job description alignment is strongest around {Shorten(descriptionAlignment.JdItem, 90)}, backed by {DescribeEvidence(descriptionAlignment)}.");
+            AddPhrase(strengths, skill.Name);
         }
 
-        var relatedSkills = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.RelatedEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .Take(2)
-            .ToList();
-
-        if (relatedSkills.Count > 0)
+        if (experienceAssessment == "meets requirement")
         {
-            strengths.Add($"Related experience supports {JoinItems(relatedSkills.Select(x => x.JdItem))}, with strongest evidence in {JoinItems(relatedSkills.Select(GetRelatedEvidenceLabel))}.");
+            AddPhrase(strengths, "Required experience level");
         }
 
-        if (facts.Scoring.MinimumYearsMet == true && facts.Job.MinimumYears is > 0)
-        {
-            strengths.Add("The minimum years-of-experience requirement appears to be satisfied.");
-        }
-
-        return strengths
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(4)
-            .ToList();
+        return strengths.Take(4).ToList();
     }
 
-    private static List<string> BuildDeterministicGaps(CandidateExplanationFacts facts)
+    private static List<string> BuildWeakSignals(
+        IReadOnlyList<CandidateEvaluationSkillSignal> requiredSkills,
+        IEnumerable<CandidateExplanationMatchItem> responsibilityDetails,
+        IEnumerable<CandidateExplanationMatchItem> descriptionDetails)
+    {
+        var weakSignals = new List<string>();
+
+        foreach (var skill in requiredSkills.Where(skill => skill.Level == CandidateEvaluationSignalLevels.Related).Take(3))
+        {
+            AddPhrase(weakSignals, string.IsNullOrWhiteSpace(skill.Signal) ? skill.Name : skill.Signal);
+        }
+
+        foreach (var item in responsibilityDetails.Concat(descriptionDetails)
+                     .Where(item => item.MatchState is CandidateExplanationMatchStates.RelatedEvidence
+                         or CandidateExplanationMatchStates.PartialEvidence
+                         or CandidateExplanationMatchStates.LimitedEvidence))
+        {
+            AddPhrase(weakSignals, NormalizeCapabilityPhrase(item.JdItem, item.BestResumeEvidence));
+        }
+
+        return weakSignals.Take(3).ToList();
+    }
+
+    private static List<string> BuildDeterministicStrengths(CandidateEvaluationContext context)
+    {
+        var strengths = new List<string>();
+
+        var strongRequired = context.Evaluation.RequiredSkills
+            .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
+            .Select(signal => signal.Name)
+            .Take(3)
+            .ToList();
+
+        if (strongRequired.Count > 0)
+        {
+            AddInsight(strengths, $"Strong experience in {JoinItems(strongRequired)}.");
+        }
+
+        if (context.Evaluation.Highlights.Count > 0)
+        {
+            AddInsight(strengths, $"Solid background in role responsibilities such as {JoinItems(context.Evaluation.Highlights.Take(2))}.");
+        }
+
+        var strongPreferred = context.Evaluation.PreferredSkills
+            .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
+            .Select(signal => signal.Name)
+            .Take(2)
+            .ToList();
+
+        if (strongPreferred.Count > 0)
+        {
+            AddInsight(strengths, $"Additional exposure to {JoinItems(strongPreferred)}.");
+        }
+
+        if (context.Evaluation.ExperienceAssessment == "meets requirement")
+        {
+            AddInsight(strengths, "Meets the required years of experience.");
+        }
+
+        return strengths.Take(4).ToList();
+    }
+
+    private static List<string> BuildDeterministicGaps(CandidateEvaluationContext context)
     {
         var gaps = new List<string>();
 
-        var relatedRequiredGap = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.RelatedEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .FirstOrDefault();
+        var firstRelatedRequired = context.Evaluation.RequiredSkills
+            .FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
 
-        if (relatedRequiredGap is not null)
+        if (firstRelatedRequired is not null)
         {
-            gaps.Add($"Related experience is clear for {relatedRequiredGap.JdItem}, but direct evidence is strongest in {GetRelatedEvidenceLabel(relatedRequiredGap)} rather than the exact requested stack.");
+            var relatedSignal = string.IsNullOrWhiteSpace(firstRelatedRequired.Signal)
+                || NormalizeForComparison(firstRelatedRequired.Signal) == NormalizeForComparison(firstRelatedRequired.Name)
+                    ? null
+                    : firstRelatedRequired.Signal.ToLowerInvariant();
+
+            AddInsight(
+                gaps,
+                relatedSignal is null
+                    ? $"Limited direct evidence of {firstRelatedRequired.Name}."
+                    : $"Limited direct evidence of {firstRelatedRequired.Name}; related experience is closer to {relatedSignal}.");
         }
 
-        var limitedRequired = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.LimitedEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .FirstOrDefault();
-
-        if (limitedRequired is not null)
+        foreach (var missingSkill in context.Evaluation.MissingSkills)
         {
-            gaps.Add($"Limited direct evidence is shown for {limitedRequired.JdItem}.");
-        }
-
-        if (gaps.Count < 2)
-        {
-            var missingRequired = facts.MatchSummary.RequiredSkillDetails
-                .Where(x => x.MatchState == CandidateExplanationMatchStates.NotFound)
-                .OrderByDescending(x => x.BaseMatchScore)
-                .FirstOrDefault();
-
-            if (missingRequired is not null)
+            AddInsight(gaps, $"No clear evidence of {missingSkill}.");
+            if (gaps.Count >= 2)
             {
-                gaps.Add($"Direct evidence for {missingRequired.JdItem} was not found in the resume.");
+                break;
             }
         }
 
-        if (gaps.Count < 2)
+        if (gaps.Count < 3 && context.Evaluation.ExperienceAssessment == "below requirement")
         {
-            var limitedResponsibility = facts.MatchSummary.ResponsibilityDetails
-                .Where(x => x.MatchState is CandidateExplanationMatchStates.LimitedEvidence or CandidateExplanationMatchStates.NotFound)
-                .OrderByDescending(ResponsibilityGapPriority)
-                .ThenByDescending(x => x.FinalMatchConfidence)
-                .FirstOrDefault();
-
-            if (limitedResponsibility is not null)
-            {
-                gaps.Add(
-                    limitedResponsibility.MatchState == CandidateExplanationMatchStates.NotFound
-                        ? $"Direct evidence for {Shorten(limitedResponsibility.JdItem, 110)} was not found."
-                        : $"There is limited direct evidence for {Shorten(limitedResponsibility.JdItem, 110)}.");
-            }
+            AddInsight(gaps, "May fall short of the stated years-of-experience requirement.");
         }
 
-        if (gaps.Count < 2 && facts.Scoring.MinimumYearsMet == false)
+        if (gaps.Count < 3 && context.Evaluation.EducationAssessment == "below requirement")
         {
-            gaps.Add("The formal years-of-experience requirement appears below the stated minimum, even though other evidence may still be relevant.");
+            AddInsight(gaps, "May not meet the stated education requirement.");
         }
 
-        if (gaps.Count < 2 && facts.Scoring.MinimumEducationMet == false)
-        {
-            gaps.Add("The stated education requirement appears unmet.");
-        }
-
-        return gaps
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(2)
-            .ToList();
+        return gaps.Take(3).ToList();
     }
 
-    private static string? BuildDeterministicSummary(
-        CandidateExplanationFacts facts,
-        List<string> strengths,
-        List<string> gaps)
+    private static string BuildDeterministicSummary(
+        CandidateEvaluationContext context,
+        IReadOnlyList<string> strengths,
+        IReadOnlyList<string> gaps)
     {
-        var exactSkills = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.ExactEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
+        var strongRequired = context.Evaluation.RequiredSkills
+            .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
+            .Select(signal => signal.Name)
             .Take(3)
-            .Select(x => x.JdItem)
             .ToList();
 
         var summary = new StringBuilder();
 
-        if (exactSkills.Count > 0)
+        if (strongRequired.Count > 0)
         {
-            summary.Append($"Strong alignment to the role is supported by clear evidence in {JoinItems(exactSkills)}.");
+            summary.Append($"Good fit overall, especially for {JoinItems(strongRequired)}.");
         }
         else if (strengths.Count > 0)
         {
             summary.Append(strengths[0]);
         }
 
-        var relatedSkill = facts.MatchSummary.RequiredSkillDetails
-            .Where(x => x.MatchState == CandidateExplanationMatchStates.RelatedEvidence)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .FirstOrDefault();
-
-        if (relatedSkill is not null)
+        if (context.Evaluation.WeakSignals.Count > 0)
         {
-            summary.Append($" Related experience is strongest in {GetRelatedEvidenceLabel(relatedSkill)}, while direct {relatedSkill.JdItem} evidence is not shown.");
+            var relatedSkill = context.Evaluation.RequiredSkills.FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
+            summary.Append($" One area to verify is {(relatedSkill?.Name ?? context.Evaluation.WeakSignals[0])}.");
         }
         else if (gaps.Count > 0)
         {
             summary.Append($" {gaps[0]}");
         }
 
-        var result = summary.ToString().Trim();
-        return string.IsNullOrWhiteSpace(result) ? null : result;
+        return CleanupInsightText(summary.ToString());
     }
 
-    private static bool IsConsistentWithFacts(string? text, CandidateExplanationFacts facts)
+    private static string NormalizeRecommendation(string? recommendation, CandidateEvaluationContext context)
     {
-        if (string.IsNullOrWhiteSpace(text))
+        var cleaned = CleanupInsightText(recommendation);
+
+        if (string.IsNullOrWhiteSpace(cleaned) || LooksLikeResumeFragment(cleaned))
         {
-            return false;
+            return BuildDeterministicRecommendation(context);
         }
 
-        var normalized = NormalizeForComparison(text);
-
-        foreach (var item in EnumerateAllMatchItems(facts))
-        {
-            var normalizedItem = NormalizeForComparison(item.JdItem);
-            if (string.IsNullOrWhiteSpace(normalizedItem))
-            {
-                continue;
-            }
-
-            if (IsFalseMissingClaim(normalized, normalizedItem, item.MatchState))
-            {
-                return false;
-            }
-
-            if (IsFalseExactClaim(normalized, normalizedItem, item.MatchState))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return cleaned;
     }
 
-    private static bool IsFalseMissingClaim(string normalizedText, string normalizedItem, string matchState)
+    private static string BuildDeterministicRecommendation(CandidateEvaluationContext context)
     {
-        if (matchState == CandidateExplanationMatchStates.NotFound || !normalizedText.Contains(normalizedItem, StringComparison.Ordinal))
+        var focusAreas = new List<string>();
+
+        if (context.Evaluation.WeakSignals.Count > 0)
         {
-            return false;
+            AddPhrase(focusAreas, context.Evaluation.WeakSignals[0]);
         }
 
-        var escapedItem = Regex.Escape(normalizedItem);
-        return Regex.IsMatch(normalizedText, $@"\bmissing\b(?:\s+\w+){{0,4}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\blacks?\b(?:\s+\w+){{0,4}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bno\b(?:\s+\w+){{0,4}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bnot found\b(?:\s+\w+){{0,4}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bgap in\b(?:\s+\w+){{0,4}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant);
-    }
-
-    private static bool IsFalseExactClaim(string normalizedText, string normalizedItem, string matchState)
-    {
-        if (matchState == CandidateExplanationMatchStates.ExactEvidence || !normalizedText.Contains(normalizedItem, StringComparison.Ordinal))
+        if (focusAreas.Count == 0 && context.Evaluation.MissingSkills.Count > 0)
         {
-            return false;
+            AddPhrase(focusAreas, context.Evaluation.MissingSkills[0]);
         }
 
-        var escapedItem = Regex.Escape(normalizedItem);
-        return Regex.IsMatch(normalizedText, $@"\b(?:demonstrated\s+)?expertise in\b(?:\s+\w+){{0,3}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bstrong evidence of\b(?:\s+\w+){{0,3}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bclear evidence of\b(?:\s+\w+){{0,3}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bhas\b(?:\s+\w+){{0,3}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant)
-            || Regex.IsMatch(normalizedText, $@"\bexperienced in\b(?:\s+\w+){{0,3}}\s+{escapedItem}(?:\s|$)", RegexOptions.CultureInvariant);
+        if (focusAreas.Count == 0)
+        {
+            return "Shortlist looks reasonable based on the strongest required-skill alignment.";
+        }
+
+        return CleanupInsightText($"Worth validating {JoinItems(focusAreas)} during interview.");
     }
 
-    private static IEnumerable<CandidateExplanationMatchItem> EnumerateAllMatchItems(CandidateExplanationFacts facts)
+    private static bool LooksLikeResumeFragment(string value)
     {
-        return facts.MatchSummary.RequiredSkillDetails
-            .Concat(facts.MatchSummary.PreferredSkillDetails)
-            .Concat(facts.MatchSummary.ResponsibilityDetails)
-            .Concat(facts.MatchSummary.DescriptionDetails);
+        if (value.Contains('"'))
+        {
+            return true;
+        }
+
+        var wordCount = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Length;
+        return wordCount > 28 || value.Count(character => character == ',') >= 3 || value.Contains(';');
     }
 
     private static List<CandidateExplanationMatchItem> BuildMatchDetails(IEnumerable<MatchEvidence> matches)
     {
         return matches
             .Select(BuildMatchDetail)
-            .OrderByDescending(x => x.FinalMatchConfidence)
-            .ThenByDescending(x => x.EvidenceCountDistinct)
+            .OrderByDescending(item => item.FinalMatchConfidence)
+            .ThenByDescending(item => item.EvidenceCountDistinct)
             .ToList();
     }
 
@@ -554,128 +550,261 @@ public sealed class CandidateExplanationService(
             : Math.Max(match.Similarity, match.BaseMatchScore);
     }
 
-    private static bool IsPositiveEvidenceState(CandidateExplanationMatchItem item)
+    private static string ToSignalLevel(string matchState)
     {
-        return item.MatchState != CandidateExplanationMatchStates.NotFound
-            && item.MatchState != CandidateExplanationMatchStates.LimitedEvidence;
-    }
-
-    private static CandidateExplanationEvidenceItem ToEvidenceItem(CandidateExplanationMatchItem item)
-    {
-        return new CandidateExplanationEvidenceItem
+        return matchState switch
         {
-            JdItem = item.JdItem,
-            BestResumeEvidence = item.StrongestEvidence
+            CandidateExplanationMatchStates.ExactEvidence => CandidateEvaluationSignalLevels.Strong,
+            CandidateExplanationMatchStates.RelatedEvidence => CandidateEvaluationSignalLevels.Related,
+            CandidateExplanationMatchStates.PartialEvidence => CandidateEvaluationSignalLevels.Related,
+            CandidateExplanationMatchStates.LimitedEvidence => CandidateEvaluationSignalLevels.Related,
+            _ => CandidateEvaluationSignalLevels.Missing,
         };
     }
 
-    private static string DescribeEvidence(CandidateExplanationMatchItem item)
+    private static int GetSignalRank(string level)
     {
-        if (!string.IsNullOrWhiteSpace(item.BestResumeEvidence))
+        return level switch
         {
-            var sourceLabel = GetSourceLabel(item);
-            return string.IsNullOrWhiteSpace(sourceLabel)
-                ? $"resume evidence like \"{Shorten(item.BestResumeEvidence, 90)}\""
-                : $"{sourceLabel} evidence like \"{Shorten(item.BestResumeEvidence, 90)}\"";
-        }
-
-        if (item.EvidenceTypesUsed.Count > 0)
-        {
-            return SummarizeEvidenceTypes([item]);
-        }
-
-        return "resume evidence";
+            CandidateEvaluationSignalLevels.Strong => 2,
+            CandidateEvaluationSignalLevels.Related => 1,
+            _ => 0,
+        };
     }
 
-    private static string GetRelatedEvidenceLabel(CandidateExplanationMatchItem item)
+    private static CandidateEvaluationCompatibilityContext BuildCompatibilityContext(
+        ResumeSubmissionEntity submission,
+        JobEntity job)
     {
-        return !string.IsNullOrWhiteSpace(item.BestResumeEvidence)
-            ? Shorten(item.BestResumeEvidence, 70)
-            : item.JdItem;
+        return new CandidateEvaluationCompatibilityContext
+        {
+            LocationCompatibility = EvaluateLocationCompatibility(submission.Location, job.Location),
+            WorkSetupCompatibility = "unknown",
+            EmploymentTypeCompatibility = "unknown",
+        };
     }
 
-    private static string SummarizeEvidenceTypes(IEnumerable<CandidateExplanationMatchItem> items)
+    private static string BuildExperienceAssessment(bool? minimumYearsMet, int? totalExperienceMonths, int? minimumYears)
     {
-        var types = items
-            .SelectMany(x => x.EvidenceTypesUsed)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(NormalizeEvidenceType)
+        if (minimumYearsMet.HasValue)
+        {
+            return minimumYearsMet.Value ? "meets requirement" : "below requirement";
+        }
+
+        if (minimumYears.HasValue && totalExperienceMonths.HasValue)
+        {
+            return totalExperienceMonths.Value >= minimumYears.Value * 12 ? "meets requirement" : "below requirement";
+        }
+
+        return "unknown";
+    }
+
+    private static string BuildEducationAssessment(bool? minimumEducationMet)
+    {
+        return minimumEducationMet.HasValue
+            ? minimumEducationMet.Value ? "meets requirement" : "below requirement"
+            : "unknown";
+    }
+
+    private static List<string> NormalizeSkillList(IEnumerable<string> values)
+    {
+        return values
+            .Select(CleanSkillName)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(3)
             .ToList();
-
-        return types.Count == 0 ? "resume evidence" : JoinItems(types);
     }
 
-    private static string NormalizeEvidenceType(string value)
+    private static string CleanSkillName(string? value)
     {
-        return value.Trim().ToLowerInvariant() switch
+        if (string.IsNullOrWhiteSpace(value))
         {
-            "workbullet" => "work bullets",
-            "projectbullet" => "project bullets",
-            "projectsummary" => "project summaries",
-            "skilllist" => "skills",
-            "summary" => "resume summary",
-            _ => value.Trim().Replace('_', ' ').ToLowerInvariant()
-        };
-    }
-
-    private static string GetSourceLabel(CandidateExplanationMatchItem item)
-    {
-        var source = item.EvidenceSourcePath;
-        if (string.IsNullOrWhiteSpace(source))
-        {
-            source = item.Source;
+            return string.Empty;
         }
 
+        var cleaned = value.Trim();
+        cleaned = Regex.Replace(cleaned, @"\s+", " ");
+        return cleaned.Trim().TrimEnd('.', ';', ':');
+    }
+
+    private static string NormalizeCapabilityPhrase(string? primaryText, string? rawEvidence)
+    {
+        var combined = $"{primaryText} {rawEvidence}".Trim().ToLowerInvariant();
+        combined = combined.Replace("restful", "rest");
+
+        if (combined.Contains("typescript", StringComparison.Ordinal) && combined.Contains("next.js", StringComparison.Ordinal))
+        {
+            return "TypeScript and Next.js development";
+        }
+
+        if (combined.Contains("react", StringComparison.Ordinal) && combined.Contains("typescript", StringComparison.Ordinal))
+        {
+            return "React and TypeScript development";
+        }
+
+        if (combined.Contains("javascript", StringComparison.Ordinal) && combined.Contains("typescript", StringComparison.Ordinal))
+        {
+            return "TypeScript and JavaScript development";
+        }
+
+        if (combined.Contains("api", StringComparison.Ordinal) && combined.Contains("integrat", StringComparison.Ordinal))
+        {
+            return "API integration";
+        }
+
+        if (combined.Contains("rest", StringComparison.Ordinal) && combined.Contains("api", StringComparison.Ordinal))
+        {
+            return "REST API development";
+        }
+
+        if (combined.Contains("responsive", StringComparison.Ordinal)
+            || combined.Contains("cross browser", StringComparison.Ordinal)
+            || combined.Contains("cross-browser", StringComparison.Ordinal)
+            || combined.Contains("device responsiveness", StringComparison.Ordinal))
+        {
+            return "Responsive frontend development";
+        }
+
+        if (combined.Contains("frontend", StringComparison.Ordinal)
+            || combined.Contains("user interface", StringComparison.Ordinal)
+            || combined.Contains("ui ", StringComparison.Ordinal))
+        {
+            return "Frontend application delivery";
+        }
+
+        if (combined.Contains("dashboard", StringComparison.Ordinal))
+        {
+            return "Dashboard development";
+        }
+
+        if (combined.Contains("stakeholder", StringComparison.Ordinal)
+            || combined.Contains("cross functional", StringComparison.Ordinal)
+            || combined.Contains("cross-functional", StringComparison.Ordinal)
+            || combined.Contains("collaborat", StringComparison.Ordinal))
+        {
+            return "Cross-functional collaboration";
+        }
+
+        if (combined.Contains("performance", StringComparison.Ordinal) || combined.Contains("optimiz", StringComparison.Ordinal))
+        {
+            return "Performance optimization";
+        }
+
+        if (combined.Contains("scalab", StringComparison.Ordinal))
+        {
+            return "Scalable application development";
+        }
+
+        if (combined.Contains("backend", StringComparison.Ordinal))
+        {
+            return "Backend service development";
+        }
+
+        if (combined.Contains("architecture", StringComparison.Ordinal))
+        {
+            return "System architecture exposure";
+        }
+
+        if (combined.Contains("security", StringComparison.Ordinal)
+            || combined.Contains("secure", StringComparison.Ordinal)
+            || combined.Contains("authentication", StringComparison.Ordinal))
+        {
+            return "Security-focused development";
+        }
+
+        if (combined.Contains("testing", StringComparison.Ordinal) || combined.Contains("quality", StringComparison.Ordinal))
+        {
+            return "Testing and quality practices";
+        }
+
+        if (combined.Contains("maintain", StringComparison.Ordinal) || combined.Contains("maintenance", StringComparison.Ordinal))
+        {
+            return "Application maintenance";
+        }
+
+        var source = !string.IsNullOrWhiteSpace(primaryText) ? primaryText : rawEvidence;
         if (string.IsNullOrWhiteSpace(source))
         {
             return string.Empty;
         }
 
-        var normalized = source.ToLowerInvariant();
-        if (normalized.Contains("work_experience", StringComparison.Ordinal))
+        var cleaned = Regex.Replace(source, @"[\r\n]+", " ");
+        cleaned = Regex.Replace(cleaned, @"[^A-Za-z0-9\+#\. ]+", " ");
+
+        var tokens = cleaned
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        while (tokens.Count > 0 && LeadInWords.Contains(tokens[0], StringComparer.OrdinalIgnoreCase))
         {
-            return "work experience";
+            tokens.RemoveAt(0);
         }
 
-        if (normalized.Contains("projects", StringComparison.Ordinal))
+        if (tokens.Count == 0)
         {
-            return "project";
+            return string.Empty;
         }
 
-        if (normalized.Contains("skills", StringComparison.Ordinal))
-        {
-            return "skills";
-        }
+        var compactTokens = tokens
+            .Take(6)
+            .Select(PreserveTokenCase)
+            .ToList();
 
-        if (normalized.Contains("summary", StringComparison.Ordinal))
-        {
-            return "summary";
-        }
-
-        return string.Empty;
+        return ToSentenceCase(string.Join(' ', compactTokens));
     }
 
-    private static int ResponsibilityGapPriority(CandidateExplanationMatchItem item)
+    private static string PreserveTokenCase(string token)
     {
-        var normalized = item.JdItem.ToLowerInvariant();
-        for (var index = 0; index < ResponsibilityGapHints.Length; index++)
+        return token.ToLowerInvariant() switch
         {
-            if (normalized.Contains(ResponsibilityGapHints[index], StringComparison.Ordinal))
-            {
-                return ResponsibilityGapHints.Length - index;
-            }
+            "api" => "API",
+            "apis" => "APIs",
+            "ui" => "UI",
+            "ux" => "UX",
+            "sql" => "SQL",
+            "c#" => "C#",
+            ".net" => ".NET",
+            "asp.net" => "ASP.NET",
+            "typescript" => "TypeScript",
+            "javascript" => "JavaScript",
+            "next.js" => "Next.js",
+            "react" => "React",
+            _ => token.ToLowerInvariant(),
+        };
+    }
+
+    private static string ToSentenceCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
         }
 
-        return 0;
+        return char.ToUpperInvariant(value[0]) + value[1..];
+    }
+
+    private static void AddPhrase(List<string> values, string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+        {
+            return;
+        }
+
+        var cleaned = candidate.Trim().TrimEnd('.', ';', ':');
+        var normalized = NormalizeForComparison(cleaned);
+        if (string.IsNullOrWhiteSpace(normalized) || values.Any(existing => NormalizeForComparison(existing) == normalized))
+        {
+            return;
+        }
+
+        values.Add(cleaned);
     }
 
     private static string JoinItems(IEnumerable<string> values)
     {
         var items = values
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
@@ -688,14 +817,86 @@ public sealed class CandidateExplanationService(
         };
     }
 
-    private static string Shorten(string value, int maxLength)
+    private static string ComposeFallbackText(CandidateStructuredExplanation explanation)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
+        var sections = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(explanation.Summary))
         {
-            return value.Trim();
+            sections.Add(CleanupInsightText(explanation.Summary));
         }
 
-        return $"{value[..(maxLength - 3)].Trim()}...";
+        if (explanation.Strengths.Count > 0)
+        {
+            sections.Add($"Strengths: {string.Join(" | ", explanation.Strengths.Select(CleanupInsightText))}");
+        }
+
+        if (explanation.Gaps.Count > 0)
+        {
+            sections.Add($"Gaps: {string.Join(" | ", explanation.Gaps.Select(CleanupInsightText))}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(explanation.Recommendation))
+        {
+            sections.Add($"Notes: {CleanupInsightText(explanation.Recommendation)}");
+        }
+
+        return CleanupInsightText(string.Join(" ", sections));
+    }
+
+    private static void AddInsight(List<string> insights, string? candidate)
+    {
+        var cleaned = CleanupInsightText(candidate);
+        if (string.IsNullOrWhiteSpace(cleaned))
+        {
+            return;
+        }
+
+        var normalized = NormalizeForComparison(cleaned);
+        if (insights.Any(existing => NormalizeForComparison(existing) == normalized))
+        {
+            return;
+        }
+
+        insights.Add(cleaned);
+    }
+
+    private static string CleanupInsightText(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var cleaned = value
+            .Replace("...", string.Empty, StringComparison.Ordinal)
+            .Replace("..", ".", StringComparison.Ordinal)
+            .Replace("supported by", "shown in", StringComparison.OrdinalIgnoreCase)
+            .Replace("backed by", "shown in", StringComparison.OrdinalIgnoreCase)
+            .Replace("based on extracted resume", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("These are insights based on the extracted resume", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Trim();
+
+        cleaned = Regex.Replace(cleaned, @"\s+", " ");
+
+        var sentences = Regex.Split(cleaned, @"(?<=[.!?])\s+")
+            .Select(sentence => sentence.Trim())
+            .Where(sentence => !string.IsNullOrWhiteSpace(sentence));
+
+        var deduped = new List<string>();
+        foreach (var sentence in sentences)
+        {
+            var normalized = NormalizeForComparison(sentence);
+            if (string.IsNullOrWhiteSpace(normalized) || deduped.Any(existing => NormalizeForComparison(existing) == normalized))
+            {
+                continue;
+            }
+
+            deduped.Add(sentence);
+        }
+
+        var result = deduped.Count > 0 ? string.Join(" ", deduped) : cleaned;
+        return result.Trim().TrimEnd();
     }
 
     private static string NormalizeForComparison(string value)
@@ -706,45 +907,6 @@ public sealed class CandidateExplanationService(
         lowered = lowered.Replace("frameworks", "framework");
         lowered = Regex.Replace(lowered, @"[^a-z0-9\+#\. ]+", " ");
         return Regex.Replace(lowered, @"\s+", " ").Trim();
-    }
-
-    private static string ComposeFallbackText(CandidateStructuredExplanation explanation)
-    {
-        var parts = new List<string>();
-
-        if (!string.IsNullOrWhiteSpace(explanation.Summary))
-        {
-            parts.Add(explanation.Summary.Trim());
-        }
-
-        parts.AddRange(explanation.Strengths);
-
-        if (explanation.Gaps.Count > 0)
-        {
-            parts.Add($"Possible gaps: {string.Join("; ", explanation.Gaps)}");
-        }
-
-        return string.Join(" ", parts);
-    }
-
-    private static CandidateExplanationCompatibilityFacts BuildCompatibilityFacts(
-        ResumeSubmissionEntity submission,
-        JobEntity job)
-    {
-        var locationCompatibility = EvaluateLocationCompatibility(submission.Location, job.Location);
-
-        return new CandidateExplanationCompatibilityFacts
-        {
-            LocationCompatibility = locationCompatibility,
-            WorkSetupCompatibility = "unknown",
-            EmploymentType = job.EmploymentType.ToString(),
-            EmploymentTypeCompatibility = "unknown",
-            Notes =
-            [
-                "Candidate work setup preference is not currently captured in structured profile data.",
-                "Candidate employment type preference is not currently captured in structured profile data."
-            ]
-        };
     }
 
     private static string EvaluateLocationCompatibility(string? candidateLocation, string jobLocation)

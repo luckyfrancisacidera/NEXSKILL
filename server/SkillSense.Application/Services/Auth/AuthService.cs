@@ -96,7 +96,7 @@ public sealed class AuthService(
         SyncJobSeekerProfile(user, ["JobSeeker"]);
         await _userManager.UpdateAsync(user);
 
-        return await CreateSuccessAuthResultAsync(user, "Registration successful.", cancellationToken);
+        return await CreateSuccessAuthResultAsync(user, "Registration successful.", isPersistent: true, cancellationToken);
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ public sealed class AuthService(
             return blockedResult;
         }
 
-        return await CreateSuccessAuthResultAsync(user, "Login successful.", cancellationToken);
+        return await CreateSuccessAuthResultAsync(user, "Login successful.", request.RememberMe, cancellationToken);
     }
 
     /// <summary>
@@ -127,13 +127,13 @@ public sealed class AuthService(
     /// </summary>
     public async Task<AuthResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        var userId = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
-        if (!userId.HasValue)
+        var refreshTokenValidation = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
+        if (refreshTokenValidation is null)
         {
             return AuthResult.Failure("Invalid refresh token.");
         }
 
-        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
+        var user = await _userManager.FindByIdAsync(refreshTokenValidation.UserId.ToString());
         if (user is null)
         {
             return AuthResult.Failure("Invalid refresh token.");
@@ -145,7 +145,7 @@ public sealed class AuthService(
             return blockedResult;
         }
 
-        return await CreateSuccessAuthResultAsync(user, "Token refreshed.", cancellationToken);
+        return await CreateSuccessAuthResultAsync(user, "Token refreshed.", refreshTokenValidation.IsPersistent, cancellationToken);
     }
 
     public async Task<bool> IsSessionActiveAsync(Guid userId, CancellationToken cancellationToken)
@@ -662,11 +662,11 @@ public sealed class AuthService(
         }
     }
 
-    private async Task<AuthResult> CreateSuccessAuthResultAsync(AppUser user, string message, CancellationToken cancellationToken)
+    private async Task<AuthResult> CreateSuccessAuthResultAsync(AppUser user, string message, bool isPersistent, CancellationToken cancellationToken)
     {
         var roles = await _userManager.GetRolesAsync(user);
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
-        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, isPersistent, cancellationToken);
         var profile = AuthUserProfileMapper.ToCurrentUserResponse(user, roles);
 
         return AuthResult.Success(
@@ -677,6 +677,7 @@ public sealed class AuthService(
             user.Id.ToString(),
             profile.FirstName,
             profile.LastName,
+            isPersistent,
             roles.ToArray());
     }
 

@@ -1,11 +1,17 @@
+import { Eye, Loader2, Trash2, Undo2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { JobseekerApplicationDto } from "@features/jobseeker/types";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
+import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
+import { IconActionButton} from "@shared/components/IconActionButton";
+import { getJobActionButtonClassName } from "@shared/utils/jobActionButtonStyles";
 
 type ApplicationsTableProps = {
   items: JobseekerApplicationDto[];
   withdrawingId: string | null;
+  deletingHistoryId: string | null;
   onWithdraw: (applicationId: string) => void;
+  onDeleteHistory: (applicationId: string) => void;
 };
 
 const formatAppliedDate = (value: string) =>
@@ -18,7 +24,9 @@ const formatAppliedDate = (value: string) =>
 export const ApplicationsTable = ({
   items,
   withdrawingId,
+  deletingHistoryId,
   onWithdraw,
+  onDeleteHistory,
 }: ApplicationsTableProps) => (
   <div className="overflow-x-auto">
     <table className="min-w-full table-fixed">
@@ -42,6 +50,8 @@ export const ApplicationsTable = ({
         {items.map((item) => {
           const itemId = String(item.id);
           const isWithdrawing = withdrawingId === itemId;
+          const isDeletingHistory = deletingHistoryId === itemId;
+          const actions = getJobseekerListActions(item.current_stage ?? item.status, "applications");
 
           return (
             <tr
@@ -73,20 +83,38 @@ export const ApplicationsTable = ({
               </td>
               <td className="px-4 py-4 align-top">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    to={`/jobs/${String(item.job_id)}`}
-                    className="inline-flex h-9 items-center border border-zinc-200 px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    View job
-                  </Link>
-                  <button
-                    type="button"
-                    disabled={isWithdrawing || String(item.status) === "Withdrawn"}
-                    className="inline-flex h-9 items-center border border-zinc-200 px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400 disabled:hover:bg-transparent dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:disabled:text-zinc-600"
-                    onClick={() => onWithdraw(itemId)}
-                  >
-                    {isWithdrawing ? "Withdrawing..." : "Withdraw"}
-                  </button>
+                  {actions.includes("view_job") ? (
+                    <Link
+                      to={`/jobs/${String(item.job_id)}`}
+                      title="View job"
+                      aria-label="View job"
+                      className={getJobActionButtonClassName({ iconOnly: true })}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">View job</span>
+                    </Link>
+                  ) : null}
+                  {actions.includes("withdraw") ? (
+                    <IconActionButton
+                      icon={isWithdrawing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+                      label={
+                        isWithdrawing
+                          ? "Withdrawing application"
+                          : "Withdraw application"
+                      }
+                      disabled={isWithdrawing || isDeletingHistory}
+                      onClick={() => onWithdraw(itemId)}
+                    />
+                  ) : null}
+                  {actions.includes("delete_history") ? (
+                    <IconActionButton
+                      icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      label="Delete history"
+                      variant="danger"
+                      disabled={isDeletingHistory || isWithdrawing}
+                      onClick={() => onDeleteHistory(itemId)}
+                    />
+                  ) : null}
                 </div>
               </td>
             </tr>

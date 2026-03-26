@@ -23,5 +23,6 @@ namespace SkillSense.Application.Interfaces.Jobseeker
         Task<OfferResponse> AcceptOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task<OfferResponse> DeclineOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task HideApplicationFromHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
     }
 }
