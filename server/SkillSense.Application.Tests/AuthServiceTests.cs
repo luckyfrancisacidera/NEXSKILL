@@ -16,6 +16,49 @@ namespace SkillSense.Application.Tests;
 public sealed class AuthServiceTests
 {
     [Fact]
+    public async Task RegisterJobSeekerAsync_PersistsFirstAndLastName_AndReturnsThemInAuthResult()
+    {
+        var userManager = CreateUserManager();
+        var service = CreateService(userManager: userManager, authRepository: new TestAuthRepository());
+
+        var result = await service.RegisterJobSeekerAsync(new RegisterJobSeekerRequest
+        {
+            FirstName = "Lucky",
+            LastName = "Acidera",
+            Email = "lucky@example.com",
+            Password = "Password123!"
+        }, CancellationToken.None);
+
+        var createdUser = await userManager.FindByEmailAsync("lucky@example.com");
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(createdUser);
+        Assert.Equal("Lucky", createdUser!.FirstName);
+        Assert.Equal("Acidera", createdUser.LastName);
+        Assert.Equal("Lucky", result.FirstName);
+        Assert.Equal("Acidera", result.LastName);
+        Assert.NotNull(createdUser.JobSeekerProfile);
+        Assert.Equal("Lucky Acidera", createdUser.JobSeekerProfile!.FullName);
+    }
+
+    [Fact]
+    public async Task RegisterJobSeekerAsync_RejectsWhitespaceOnlyNames()
+    {
+        var service = CreateService(userManager: CreateUserManager(), authRepository: new TestAuthRepository());
+
+        var result = await service.RegisterJobSeekerAsync(new RegisterJobSeekerRequest
+        {
+            FirstName = "   ",
+            LastName = "Acidera",
+            Email = "lucky@example.com",
+            Password = "Password123!"
+        }, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("First name is required.", result.Errors);
+    }
+
+    [Fact]
     public async Task LoginAsync_BlocksInactiveRecruiter()
     {
         var recruiter = CreateUser("recruiter@company.com", lockoutEnd: DateTimeOffset.UtcNow.AddYears(1));
@@ -154,6 +197,28 @@ public sealed class AuthServiceTests
         Assert.Equal(0, tokenService.CreateRefreshTokenCalls);
     }
 
+    [Fact]
+    public async Task LoginAsync_ReturnsStoredNamesInAuthResult()
+    {
+        var user = CreateUser("jobseeker@example.com");
+        user.FirstName = "Lucky";
+        user.LastName = "Acidera";
+
+        var service = CreateService(
+            userManager: CreateUserManager((user, true, ["JobSeeker"])),
+            authRepository: new TestAuthRepository());
+
+        var result = await service.LoginAsync(new LoginRequest
+        {
+            Email = user.Email!,
+            Password = "Password123!"
+        }, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("Lucky", result.FirstName);
+        Assert.Equal("Acidera", result.LastName);
+    }
+
     private static AuthService CreateService(
         TestUserManager? userManager = null,
         TestTokenService? tokenService = null,
@@ -233,6 +298,35 @@ public sealed class AuthServiceTests
 
         public override Task<IList<string>> GetRolesAsync(AppUser user)
             => Task.FromResult(_rolesByUserId.TryGetValue(user.Id, out var roles) ? roles : (IList<string>)[]);
+
+        public override Task<IdentityResult> CreateAsync(AppUser user, string password)
+        {
+            user.Id = user.Id == Guid.Empty ? Guid.NewGuid() : user.Id;
+            AddUser(user, true);
+            return Task.FromResult(IdentityResult.Success);
+        }
+
+        public override Task<IdentityResult> UpdateAsync(AppUser user)
+        {
+            AddUser(user, _passwordValidity.TryGetValue(user.Id, out var isValid) ? isValid : true, _rolesByUserId.TryGetValue(user.Id, out var roles) ? roles.ToArray() : []);
+            return Task.FromResult(IdentityResult.Success);
+        }
+
+        public override Task<IdentityResult> AddToRoleAsync(AppUser user, string role)
+        {
+            if (!_rolesByUserId.TryGetValue(user.Id, out var roles))
+            {
+                roles = [];
+                _rolesByUserId[user.Id] = roles;
+            }
+
+            if (!roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+            {
+                roles.Add(role);
+            }
+
+            return Task.FromResult(IdentityResult.Success);
+        }
     }
 
     private sealed class TestRoleManager()
@@ -274,6 +368,15 @@ public sealed class AuthServiceTests
 
         public Task<AuthUserCompanyAccessData?> GetUserCompanyAccessAsync(Guid userId, CancellationToken ct = default)
             => Task.FromResult(CompanyAccessByUserId.TryGetValue(userId, out var access) ? access : null);
+
+        public Task SaveChangesAsync(CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public Task<List<PasswordResetPinEntity>> GetActivePinsAsync(Guid userId, VerificationPinPurpose purpose, DateTime nowUtc, CancellationToken ct = default)
+            => Task.FromResult(new List<PasswordResetPinEntity>());
+
+        public Task AddPasswordResetPinAsync(PasswordResetPinEntity pin, CancellationToken ct = default)
+            => Task.CompletedTask;
 
     }
 

@@ -25,6 +25,7 @@ interface RecruiterInterviewDto {
   companyName?: string | null;
   jobTitle?: string | null;
   jobSeekerName?: string | null;
+  warningMessage?: string | null;
 }
 
 interface ShortlistedCandidateOptionDto {
@@ -55,6 +56,7 @@ const mapInterview = (dto: RecruiterInterviewDto): Interview => {
     recruiterName: dto.recruiterName ?? undefined,
     recruiterEmail: dto.recruiterEmail ?? undefined,
     companyName: dto.companyName ?? undefined,
+    warningMessage: dto.warningMessage ?? undefined,
   };
 };
 

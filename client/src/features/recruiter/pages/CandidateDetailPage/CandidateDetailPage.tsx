@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLoaderData, useRevalidator } from 'react-router-dom';
 import {
   BriefcaseBusiness,
+  CalendarDays,
   Download,
   GraduationCap,
   Mail,
   MapPin,
+  ReceiptText,
   Phone,
 } from 'lucide-react';
 
@@ -63,15 +65,7 @@ const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> 
     status: 'Offer',
     label: 'Send Offer',
     title: 'Send offer',
-    message: (name) => `Move ${name} to Offer stage?`,
-    accent: 'green',
-  },
-  Offer: {
-    action: 'hire',
-    status: 'Hire',
-    label: 'Mark Hired',
-    title: 'Hire candidate',
-    message: (name) => `Move ${name} to Hire stage?`,
+    message: (name) => `Send an offer to ${name}?`,
     accent: 'green',
   },
 };
@@ -103,12 +97,26 @@ const monthsToText = (months: number | undefined) => {
   return `${remainder} months`;
 };
 
+const formatDateLabel = (value?: string | null) => {
+  if (!value) {
+    return 'Not set';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
+};
+
 export const CandidateDetailPage = () => {
   const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
   const [isDownloadingResume, setIsDownloadingResume] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [interviewForm, setInterviewForm] = useState<InterviewFormValues>({
     date: '',
     hour: '9',
@@ -119,9 +127,11 @@ export const CandidateDetailPage = () => {
     notes: '',
   });
   const [offerForm, setOfferForm] = useState<OfferFormValues>({
-    role: candidate.job_title,
-    packageSummary: '',
+    title: candidate.job_title,
+    salaryText: '',
+    employmentType: '',
     startDate: '',
+    expirationDate: '',
     message: '',
   });
 
@@ -132,6 +142,18 @@ export const CandidateDetailPage = () => {
   const parsedResume = candidate.parsed_resume_json;
   const personalInfo = parsedResume?.personal_info;
   const hasResume = candidate.has_resume;
+
+  const resetInterviewForm = () => {
+    setInterviewForm({
+      date: '',
+      hour: '9',
+      minute: '00',
+      meridiem: 'AM',
+      mode: 'Virtual',
+      location: '',
+      notes: '',
+    });
+  };
 
   const closeCandidateModals = () => {
     setIsInterviewOpen(false);
@@ -151,12 +173,28 @@ export const CandidateDetailPage = () => {
   useEffect(() => {
     setCandidate(loaderCandidate);
   }, [loaderCandidate]);
-
-
+  useEffect(() => {
+    setOfferForm((current) => ({
+      ...current,
+      title: loaderCandidate.offer?.title || loaderCandidate.job_title,
+    }));
+  }, [loaderCandidate.job_title, loaderCandidate.offer?.title]);
 
   const primaryAction = useMemo(
-    () => nextActionByStage[candidate.submission_status],
-    [candidate.submission_status],
+    () =>
+      candidate.submission_status === 'Offer'
+        ? candidate.offer?.can_mark_hired
+          ? {
+              action: 'hire',
+              status: 'Hire' as CandidateStage,
+              label: 'Mark Hired',
+              title: 'Hire candidate',
+              message: (name: string) => `Mark ${name} as hired?`,
+              accent: 'green' as const,
+            }
+          : undefined
+        : nextActionByStage[candidate.submission_status],
+    [candidate.offer?.can_mark_hired, candidate.submission_status],
   );
 
   const canRunAction = (action: CandidateDetailAction) => {
@@ -217,10 +255,22 @@ export const CandidateDetailPage = () => {
     status: CandidateStage,
     successTitle: string,
     successDescription: string,
+    offerPayload?: {
+      title: string;
+      message: string;
+      salary_text: string;
+      employment_type: string;
+      start_date?: string | null;
+      expiration_date?: string | null;
+    },
   ) => {
     try {
       if (action === 'offer') {
-        const updatedCandidate = await recruiterService.sendOffer(candidate.resume_submission_id);
+        if (!offerPayload) {
+          throw new Error('Offer details are required before sending an offer.');
+        }
+
+        const updatedCandidate = await recruiterService.sendOffer(candidate.resume_submission_id, offerPayload);
         setCandidate((current) => ({ ...current, ...updatedCandidate }));
       } else if (action === 'hire') {
         const updatedCandidate = await recruiterService.markHired(candidate.resume_submission_id);
@@ -242,6 +292,7 @@ export const CandidateDetailPage = () => {
       // Reload the canonical candidate payload so dashboard and detail views stay aligned with backend metrics.
       revalidator.revalidate();
       showToast({ title: successTitle, description: successDescription, tone: 'success' });
+      return true;
     } catch (error) {
       const description =
         error instanceof ApiError
@@ -251,6 +302,7 @@ export const CandidateDetailPage = () => {
             : 'Unable to update candidate stage. Please try again.';
 
       showToast({ title: 'Action failed', description, tone: 'error' });
+      return false;
     }
   };
 
@@ -275,7 +327,7 @@ export const CandidateDetailPage = () => {
       throw new Error('Please provide a valid interview date and time.');
     }
 
-    await recruiterInterviewService.scheduleInterview({
+    return await recruiterInterviewService.scheduleInterview({
       jobId: candidate.job_id,
       jobseekerId: candidate.jobseeker_user_id,
       scheduledDate: scheduledDateTimeUtc.toISOString(),
@@ -379,11 +431,20 @@ export const CandidateDetailPage = () => {
                   void requestCandidateAction(primaryAction);
                 }
               }}
-              disabled={(candidate.submission_status === 'Interview' && !canSendOffers) || (candidate.submission_status === 'Offer' && !canHireCandidates)}
+              disabled={
+                (candidate.submission_status === 'Interview' && !canSendOffers)
+                || (candidate.submission_status === 'Offer'
+                  && (!canHireCandidates || !candidate.offer?.can_mark_hired))
+              }
               className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {primaryAction.label}
             </button>
+          ) : null}
+          {candidate.submission_status === 'Offer' && !candidate.offer?.can_mark_hired ? (
+            <p className="mt-3 text-center text-xs text-zinc-500">
+              Hire is available only after the candidate accepts the latest offer.
+            </p>
           ) : null}
         </div>
 
@@ -404,6 +465,56 @@ export const CandidateDetailPage = () => {
               <span className="font-semibold text-zinc-800">{candidate.score}</span>
             </li>
           </ul>
+        </RecruiterSectionCard>
+
+        <RecruiterSectionCard title="Offer Status" variant="compact">
+          {candidate.offer ? (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Current offer</span>
+                <StatusBadge status={candidate.offer.status} />
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="font-semibold text-zinc-900">{candidate.offer.title}</p>
+                <p className="mt-1 text-zinc-600">{candidate.offer.salary_text}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-500">
+                  {candidate.offer.employment_type}
+                </p>
+              </div>
+              <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3">
+                <p className="flex items-center gap-2 text-zinc-600">
+                  <CalendarDays className="h-4 w-4 text-zinc-400" />
+                  Start date: <span className="font-semibold text-zinc-800">{formatDateLabel(candidate.offer.start_date)}</span>
+                </p>
+                <p className="flex items-center gap-2 text-zinc-600">
+                  <ReceiptText className="h-4 w-4 text-zinc-400" />
+                  Expires: <span className="font-semibold text-zinc-800">{formatDateLabel(candidate.offer.expiration_date)}</span>
+                </p>
+                <p className="text-xs text-zinc-500">
+                  Sent {new Date(candidate.offer.sent_at_utc).toLocaleString()}
+                  {candidate.offer.responded_at_utc ? ` • Responded ${new Date(candidate.offer.responded_at_utc).toLocaleString()}` : ''}
+                </p>
+              </div>
+              {candidate.offer.message ? (
+                <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-zinc-600">
+                  {candidate.offer.message}
+                </div>
+              ) : null}
+              {canSendOffers && candidate.offer.status !== 'Accepted' && candidate.offer.status !== 'Pending' ? (
+                <button
+                  type="button"
+                  onClick={openOfferModal}
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
+                >
+                  Send new offer
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-500">
+              No offer has been sent yet. Once the candidate is ready, send an offer from this page.
+            </div>
+          )}
         </RecruiterSectionCard>
 
         <RecruiterSectionCard title="Resume Information" variant="compact">
@@ -622,20 +733,46 @@ export const CandidateDetailPage = () => {
         <InterviewModal
           open={isInterviewOpen}
           form={interviewForm}
+          isSubmitting={isSchedulingInterview}
           onClose={closeCandidateModals}
           onChange={(field, value) => setInterviewForm((state) => ({ ...state, [field]: value }))}
           onSubmit={async (event) => {
             event.preventDefault();
-            // Interview scheduling is restricted to CandidateDetailPage
-            // because interview configuration requires detailed candidate context
-            await scheduleInterview();
-            await runCandidateAction(
-              'set-interview',
-              'Interview',
-              'Interview scheduled successfully',
-              'Candidate moved to interview stage.',
-            );
-            closeCandidateModals();
+            if (isSchedulingInterview) {
+              return;
+            }
+
+            setIsSchedulingInterview(true);
+            try {
+              // Interview scheduling is restricted to CandidateDetailPage
+              // because interview configuration requires detailed candidate context.
+              const scheduledInterview = await scheduleInterview();
+              setCandidate((current) => ({
+                ...current,
+                submission_status: 'Interview',
+              }));
+              revalidator.revalidate();
+              showToast({
+                title: scheduledInterview.warningMessage ? 'Interview scheduled with warning' : 'Interview scheduled successfully',
+                description:
+                  scheduledInterview.warningMessage
+                  ?? 'Candidate moved to interview stage and the schedule was saved.',
+                tone: scheduledInterview.warningMessage ? 'warning' : 'success',
+              });
+              resetInterviewForm();
+              closeCandidateModals();
+            } catch (error) {
+              const description =
+                error instanceof ApiError
+                  ? ((error.data as { message?: string } | null)?.message ?? error.message)
+                  : error instanceof Error
+                    ? error.message
+                    : 'Unable to schedule interview. Please try again.';
+
+              showToast({ title: 'Interview scheduling failed', description, tone: 'error' });
+            } finally {
+              setIsSchedulingInterview(false);
+            }
           }}
         />
       ) : null}
@@ -648,15 +785,26 @@ export const CandidateDetailPage = () => {
           onChange={(field, value) => setOfferForm((state) => ({ ...state, [field]: value }))}
           onSubmit={async (event) => {
             event.preventDefault();
-            await runCandidateAction('offer', 'Offer', 'Offer sent successfully', 'Candidate moved to offer stage.');
-            closeCandidateModals();
+            const succeeded = await runCandidateAction(
+              'offer',
+              'Offer',
+              'Offer sent successfully',
+              'Offer details were saved and sent to the candidate.',
+              {
+                title: offerForm.title.trim(),
+                message: sanitizeRichText(offerForm.message) || '',
+                salary_text: offerForm.salaryText.trim(),
+                employment_type: offerForm.employmentType.trim(),
+                start_date: offerForm.startDate || null,
+                expiration_date: offerForm.expirationDate || null,
+              },
+            );
+            if (succeeded) {
+              closeCandidateModals();
+            }
           }}
         />
       ) : null}
     </div>
   );
 };
-
-
-
-

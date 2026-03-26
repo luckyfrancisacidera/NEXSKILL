@@ -28,6 +28,7 @@ export interface Interview {
   recruiterName?: string;
   recruiterEmail?: string;
   companyName?: string;
+  warningMessage?: string;
 }
 
 export interface ShortlistedCandidateOption {
