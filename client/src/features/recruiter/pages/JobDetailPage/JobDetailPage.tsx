@@ -187,10 +187,10 @@ export const JobDetailPage = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-zinc-50/60 p-3 sm:p-5">
+      <Card className="bg-zinc-50/60 p-3 dark:bg-zinc-950 sm:p-5">
         <div className="space-y-5">
-          <header className="space-y-4 border-b border-zinc-200 pb-4">
-            <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">{job.title}</h1>
+          <header className="space-y-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">{job.title}</h1>
             <div className="flex flex-wrap gap-2">
               <span className={`rounded-lg border px-3 py-1 text-sm font-medium ${statusAccent.className}`}>
                 {statusAccent.label}
@@ -241,22 +241,22 @@ export const JobDetailPage = () => {
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <DetailBlock title="Qualifications">
-                  <ul className="list-disc space-y-2 pl-5 text-zinc-700">
+                  <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                     <li>{job.min_years ? `${job.min_years}+ years of experience` : 'Experience not specified'}</li>
                     <li>{job.education || job.min_education || 'Education not specified'}</li>
                     <li>{job.experience_level || 'Role level not specified'}</li>
                   </ul>
                 </DetailBlock>
                 <DetailBlock title="Work Details">
-                  <ul className="space-y-2 text-zinc-700">
+                  <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
                     <li>
-                      <span className="font-medium text-zinc-900">Schedule:</span> {job.schedule || 'Not specified'}
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">Schedule:</span> {job.schedule || 'Not specified'}
                     </li>
                     <li>
-                      <span className="font-medium text-zinc-900">Work Setup:</span> {job.work_setup || 'Not specified'}
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">Work Setup:</span> {job.work_setup || 'Not specified'}
                     </li>
                     <li>
-                      <span className="font-medium text-zinc-900">Location:</span> {job.location || 'Not specified'}
+                      <span className="font-medium text-zinc-900 dark:text-zinc-100">Location:</span> {job.location || 'Not specified'}
                     </li>
                   </ul>
                 </DetailBlock>

@@ -35,6 +35,7 @@ import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { formatJobLabel } from '@shared/utils/jobLabels';
 import { sanitizeRichText } from '@shared/utils/richText';
+import { canShortlistCandidate } from '@features/recruiter/utils/candidateStageRules';
 
 const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
   Applied: {
@@ -156,6 +157,7 @@ export const CandidateDetailPage = () => {
   const candidateExplanation = candidate.candidate_explanation;
   const personalInfo = parsedResume?.personal_info;
   const hasResume = candidate.has_resume;
+  const shortlistDisabled = !canShortlistCandidate(candidate.submission_status);
 
   const resetInterviewForm = () => {
     setInterviewForm({
@@ -573,9 +575,18 @@ export const CandidateDetailPage = () => {
                 {candidate.submission_status === 'Interview' ? (
                   <button
                     type="button"
+                    disabled={shortlistDisabled}
                     onClick={(event) => {
                       // Stop propagation so shortlist actions do not bubble into parent page handlers.
                       event.stopPropagation();
+                      if (shortlistDisabled) {
+                        showToast({
+                          title: 'Shortlist unavailable',
+                          description: 'This candidate is already shortlisted or in a later stage.',
+                          tone: 'warning',
+                        });
+                        return;
+                      }
                       void requestCandidateAction({
                         action: 'shortlist',
                         status: 'Shortlisted',
@@ -585,7 +596,12 @@ export const CandidateDetailPage = () => {
                         accent: 'violet',
                       });
                     }}
-                    className="w-full rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                    title={shortlistDisabled ? 'This candidate is already shortlisted or in a later stage.' : undefined}
+                    className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                      shortlistDisabled
+                        ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+                        : 'border-violet-300 bg-white text-violet-700 hover:bg-violet-50 dark:border-zinc-900 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800'
+                    }`}
                   >
                     Shortlist
                   </button>
