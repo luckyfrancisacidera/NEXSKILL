@@ -11,7 +11,7 @@ export interface ApplicantsTrendCardProps {
  */
 export const ApplicantsTrendCard = ({ trend }: ApplicantsTrendCardProps) => (
   <Card>
-    <h3 className="mb-2 font-semibold">Applicants trend</h3>
+    <h3 className="mb-2 font-semibold text-zinc-900 dark:text-zinc-100">Applicants trend</h3>
     {trend.length ? (
       <div className="h-50">
         <DashboardAreaChart
@@ -27,7 +27,7 @@ export const ApplicantsTrendCard = ({ trend }: ApplicantsTrendCardProps) => (
         />
       </div>
     ) : (
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-500">
+      <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
         No applicant trend data is available for this job yet.
       </div>
     )}

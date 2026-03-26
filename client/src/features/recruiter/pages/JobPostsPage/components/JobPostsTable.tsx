@@ -34,13 +34,13 @@ export const JobPostsTable = ({ jobs, isDeleting, isDuplicating, onDelete, onDup
           const statusAccent = getJobStatusAccent(job.status);
 
           return (
-            <tr key={job.id} className={index % 2 ? 'bg-zinc-50 dark:bg-zinc-900' : 'bg-white dark:bg-zinc-950'}>
+            <tr key={job.id} className={index % 2 ? 'bg-zinc-50 dark:bg-zinc-900' : 'bg-white dark:bg-zinc-950 text-[13px]'}>
               <td className="px-4 py-3 font-medium">{job.title}</td>
               <td className="px-4 py-3">{job.department ?? '-'}</td>
               <td className="px-4 py-3">{job.location}</td>
               <td className="px-4 py-3">{formatJobLabel(job.employment_type, 'Employment type not specified')}</td>
               <td className="px-4 py-3">
-                <span className={`rounded-lg border px-3 py-1 text-sm font-medium ${statusAccent.className}`}>
+                <span className={`rounded-lg border px-3 py-1 font-medium text-xs font-inter ${statusAccent.className}`}>
                   {statusAccent.label}
                 </span>
               </td>

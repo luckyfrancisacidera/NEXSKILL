@@ -29,7 +29,7 @@ export const actionButtonClassName = ({
   cn(
     neutralBaseClassName,
     destructive && destructiveClassName,
-    iconOnly && 'h-9 w-9 px-0',
+    iconOnly && 'h-10 w-10 px-0',
     fullWidth && 'flex w-full px-4 py-3 text-base font-semibold',
   );
 

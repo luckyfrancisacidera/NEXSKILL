@@ -27,6 +27,9 @@ const formatBytes = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 };
 
+const fieldClassName =
+  "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500";
+
 export const ApplyModalWizard = ({
   errorMessage,
   isSubmitting,
@@ -153,7 +156,7 @@ export const ApplyModalWizard = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-3 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-3 backdrop-blur-sm sm:p-6"
       onClick={(event) => {
         if (event.target === event.currentTarget) void handleClose();
       }}
@@ -163,10 +166,10 @@ export const ApplyModalWizard = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="apply-modal-title"
-        className="w-full max-w-5xl rounded-xl bg-white p-4 shadow-2xl sm:p-6"
+        className="w-full max-w-5xl rounded-xl border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 id="apply-modal-title" className="text-lg font-semibold">
+          <h3 id="apply-modal-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             Proceed to Apply
           </h3>
           <button
@@ -175,9 +178,9 @@ export const ApplyModalWizard = ({
               void handleClose();
             }}
             aria-label="Close application modal"
-            className="rounded-md px-2 py-1 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+            className="rounded-md px-2 py-1 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
           >
-            ×
+            x
           </button>
         </div>
 
@@ -213,10 +216,10 @@ export const ApplyModalWizard = ({
           }}
         >
           {errorMessage ? (
-            <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>
+            <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">{errorMessage}</p>
           ) : null}
           {submissionHint ? (
-            <p className="rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">{submissionHint}</p>
+            <p className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">{submissionHint}</p>
           ) : null}
 
           <div className={step === 1 ? "space-y-3" : "hidden"}>
@@ -226,7 +229,7 @@ export const ApplyModalWizard = ({
               required
               value={values.full_name}
               onChange={updateField("full_name")}
-              className="w-full rounded border border-zinc-300 px-3 py-2"
+              className={fieldClassName}
               placeholder="Full name"
             />
             <input
@@ -235,7 +238,7 @@ export const ApplyModalWizard = ({
               required
               value={values.email}
               onChange={updateField("email")}
-              className="w-full rounded border border-zinc-300 px-3 py-2"
+              className={fieldClassName}
               placeholder="Email"
             />
             <input
@@ -243,7 +246,7 @@ export const ApplyModalWizard = ({
               required
               value={values.postal_code}
               onChange={updateField("postal_code")}
-              className="w-full rounded border border-zinc-300 px-3 py-2"
+              className={fieldClassName}
               placeholder="Postal code"
             />
             <input
@@ -251,11 +254,11 @@ export const ApplyModalWizard = ({
               required
               value={values.location}
               onChange={updateField("location")}
-              className="w-full rounded border border-zinc-300 px-3 py-2"
+              className={fieldClassName}
               placeholder="Location"
             />
             {values.email !== "" && !isEmailValid(values.email) ? (
-              <p className="text-xs text-red-600">Please provide a valid email address.</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Please provide a valid email address.</p>
             ) : null}
           </div>
 
@@ -269,59 +272,59 @@ export const ApplyModalWizard = ({
                 const file = event.target.files?.[0] ?? null;
                 setResumeFile(file);
               }}
-              className="w-full rounded border border-zinc-300 px-3 py-2"
+              className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-700 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:file:bg-zinc-100 dark:file:text-zinc-900 dark:hover:file:bg-zinc-200"
             />
 
             {resumeFile ? (
-              <div className="space-y-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm">
-                <p className="font-medium text-zinc-900">Selected file: {resumeFile.name}</p>
-                <p className="text-zinc-600">Size: {formatBytes(resumeFile.size)}</p>
+              <div className="space-y-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <p className="font-medium text-zinc-900 dark:text-zinc-100">Selected file: {resumeFile.name}</p>
+                <p className="text-zinc-600 dark:text-zinc-300">Size: {formatBytes(resumeFile.size)}</p>
                 {resumeFile.type === "application/pdf" && resumePreviewUrl ? (
-                  <a className="inline-flex text-zinc-900 underline" href={resumePreviewUrl} target="_blank" rel="noreferrer">
+                  <a className="inline-flex text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300" href={resumePreviewUrl} target="_blank" rel="noreferrer">
                     Open preview
                   </a>
                 ) : null}
-                <p className="text-xs text-zinc-500">Use the file picker above to replace file.</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Use the file picker above to replace file.</p>
               </div>
             ) : (
-              <p className="text-sm text-zinc-500">Upload your resume to continue.</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Upload your resume to continue.</p>
             )}
           </div>
 
           <div className={step === 3 ? "space-y-3 text-sm" : "hidden"}>
-            <div className="rounded-md border border-zinc-200 p-3">
-              <p className="font-semibold">Credentials</p>
-              <ul className="mt-2 space-y-1 text-zinc-700">
+            <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">Credentials</p>
+              <ul className="mt-2 space-y-1 text-zinc-700 dark:text-zinc-300">
                 <li>
-                  <span className="font-medium">Full name:</span> {values.full_name}
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">Full name:</span> {values.full_name}
                 </li>
                 <li>
-                  <span className="font-medium">Email:</span> {values.email}
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">Email:</span> {values.email}
                 </li>
                 <li>
-                  <span className="font-medium">Postal code:</span> {values.postal_code}
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">Postal code:</span> {values.postal_code}
                 </li>
                 <li>
-                  <span className="font-medium">Location:</span> {values.location}
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">Location:</span> {values.location}
                 </li>
               </ul>
             </div>
 
-            <div className="rounded-md border border-zinc-200 p-3">
-              <p className="font-semibold">Resume</p>
+            <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">Resume</p>
               {resumeFile ? (
-                <p className="mt-2 text-zinc-700">
+                <p className="mt-2 text-zinc-700 dark:text-zinc-300">
                   {resumeFile.name} ({formatBytes(resumeFile.size)})
                 </p>
               ) : (
-                <p className="mt-2 text-red-600">No file selected.</p>
+                <p className="mt-2 text-red-600 dark:text-red-400">No file selected.</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-4">
+          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
             {step > 1 ? (
-              <button type="button" disabled={isSubmitting} onClick={goBack} className="rounded border border-zinc-300 px-4 py-2 text-zinc-700 disabled:opacity-60">
+              <button type="button" disabled={isSubmitting} onClick={goBack} className="rounded border border-zinc-300 bg-white px-4 py-2 text-zinc-700 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
                 Back
               </button>
             ) : null}
@@ -331,7 +334,7 @@ export const ApplyModalWizard = ({
                 type="button"
                 disabled={isSubmitting || (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
                 onClick={goNext}
-                className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-60"
+                className="rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 Next
               </button>
@@ -342,7 +345,7 @@ export const ApplyModalWizard = ({
                 onClick={() => {
                   allowSubmitRef.current = true;
                 }}
-                className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-60"
+                className="rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 {isSubmitting ? "Uploading Resume..." : "Submit"}
               </button>
