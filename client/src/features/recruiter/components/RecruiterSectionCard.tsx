@@ -32,9 +32,9 @@ export const RecruiterSectionCard = ({
   return (
     <section className="w-full min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mb-3 flex items-start gap-2">
-        {Icon ? <Icon className="mt-0.5 h-4 w-4 text-violet-700" /> : null}
+        {Icon ? <Icon className="mt-1 h-4 w-4 text-zinc-600 dark:text-zinc-400" /> : null}
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-zinc-900">{title}</h3>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
           {description ? <p className="mt-1 text-sm text-zinc-500">{description}</p> : null}
         </div>
       </div>

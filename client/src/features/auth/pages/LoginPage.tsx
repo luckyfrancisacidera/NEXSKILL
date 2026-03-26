@@ -8,10 +8,10 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
-import { AuthCheckbox } from "@features/auth/components/AuthCheckbox";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { ApiError } from "@shared/api/http";
+import { Checkbox } from "@shared/components/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 
 const LoginPage = () => {
@@ -149,7 +149,7 @@ const LoginPage = () => {
               {error && <p className="text-xs text-red-400">{error}</p>}
 
               <div className="flex items-center justify-between gap-4 text-sm">
-                <AuthCheckbox
+                <Checkbox
                   id="login-remember-me"
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}

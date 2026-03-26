@@ -281,15 +281,6 @@ export const JobDetailPage = () => {
 
               <DetailBlock title="Compensation & Benefits">
                 <div className="flex flex-wrap items-center gap-2 text-zinc-700">
-                  <span className="text-xl font-bold text-zinc-900">
-                    {formatCurrencyAmount(job.salary_min_per_annum, job.currency)}{" "}
-                    -{" "}
-                    {formatCurrencyAmount(job.salary_max_per_annum, job.currency)}
-                    <span className="text-base font-medium text-zinc-600">
-                      {" "}
-                      / year
-                    </span>
-                  </span>
                   {benefits.length > 0
                     ? benefits.map((benefit) => (
                         <span
