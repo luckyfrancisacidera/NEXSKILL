@@ -5,6 +5,7 @@ import {
   getApiErrorMessage,
   getString,
 } from "@features/recruiter/actions/utils";
+import { publishRecruiterJobMutation, toJobListItem } from "@features/recruiter/utils/jobMutationSync";
 
 export const updateJobStatusAction = async ({
   request,
@@ -23,6 +24,7 @@ export const updateJobStatusAction = async ({
     }
 
     const job = await recruiterService.updateJobStatus(params.jobId, status);
+    publishRecruiterJobMutation({ type: "status_updated", jobId: job.id, job: toJobListItem(job) });
     return { job };
   } catch (error) {
     console.error("[Recruiter] Status update failed", error);
@@ -39,4 +41,3 @@ export const updateJobStatusAction = async ({
     };
   }
 };
-

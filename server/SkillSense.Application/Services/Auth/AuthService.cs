@@ -55,13 +55,34 @@ public sealed class AuthService(
     /// </summary>
     public async Task<AuthResult> RegisterJobSeekerAsync(RegisterJobSeekerRequest request, CancellationToken cancellationToken)
     {
+        var firstName = NullIfEmpty(_sanitizer.Sanitize(request.FirstName));
+        var lastName = NullIfEmpty(_sanitizer.Sanitize(request.LastName));
         var email = _sanitizer.SanitizeEmail(request.Email);
         var password = _sanitizer.Sanitize(request.Password);
+
+        if (firstName is null)
+        {
+            return AuthResult.Failure("Validation failed.", "First name is required.");
+        }
+
+        if (lastName is null)
+        {
+            return AuthResult.Failure("Validation failed.", "Last name is required.");
+        }
 
         var existing = await _userManager.FindByEmailAsync(email);
         if (existing is not null) return AuthResult.Failure("Registration failed.", "Unable to create user with provided credentials.");
 
-        var user = new AppUser { UserName = email, Email = email, NormalizedEmail = email.ToUpperInvariant(), NormalizedUserName = email.ToUpperInvariant(), EmailConfirmed = true };
+        var user = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            FirstName = firstName,
+            LastName = lastName
+        };
         var passwordValidation = await ValidatePasswordAsync(user, password);
         if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
 
@@ -72,6 +93,7 @@ public sealed class AuthService(
         await _userManager.AddToRoleAsync(user, "JobSeeker");
 
         user.JobSeekerProfile = new JobSeekerProfileEntity { UserId = user.Id };
+        SyncJobSeekerProfile(user, ["JobSeeker"]);
         await _userManager.UpdateAsync(user);
 
         return await CreateSuccessAuthResultAsync(user, "Registration successful.", cancellationToken);
@@ -645,8 +667,17 @@ public sealed class AuthService(
         var roles = await _userManager.GetRolesAsync(user);
         var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
         var refreshToken = await _tokenService.CreateRefreshTokenAsync(user, cancellationToken);
+        var profile = AuthUserProfileMapper.ToCurrentUserResponse(user, roles);
 
-        return AuthResult.Success(message, token, refreshToken, user.Email, user.Id.ToString(), roles.ToArray());
+        return AuthResult.Success(
+            message,
+            token,
+            refreshToken,
+            user.Email,
+            user.Id.ToString(),
+            profile.FirstName,
+            profile.LastName,
+            roles.ToArray());
     }
 
     private async Task<AuthResult?> GetBlockedAuthenticationResultAsync(AppUser user, CancellationToken cancellationToken)

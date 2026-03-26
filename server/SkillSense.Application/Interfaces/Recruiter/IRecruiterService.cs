@@ -2,6 +2,7 @@ using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Offers;
 
 namespace SkillSense.Application.Interfaces.Recruiter;
 
@@ -11,6 +12,8 @@ public interface IRecruiterService
     Task<RecruiterProfileResponse> UpsertProfileAsync(Guid recruiterId, RecruiterProfileRequest request, CancellationToken ct = default);
     Task<JobListItemResponse> CreateJobAsync(Guid recruiterId, CreateJobRequest request, CancellationToken ct = default);
     Task<JobListItemResponse> CreateJobAsync(Guid companyId, Guid recruiterId, CreateJobRequest request, CancellationToken ct = default);
+    Task<JobListItemResponse> DuplicateJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default);
+    Task<JobListItemResponse> DuplicateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default);
     Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default);
     Task<JobListItemResponse> UpdateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default);
     Task<JobListItemResponse> UpdateJobStatusAsync(Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default);
@@ -32,11 +35,12 @@ public interface IRecruiterService
     Task<IReadOnlyList<ShortlistedCandidateOptionDto>> GetShortlistedCandidatesByJobAsync(Guid companyId, Guid recruiterId, Guid jobId, string? department = null, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default);
-    Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
-    Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
+    Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default);
+    Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default);
+    Task<OfferResponse?> GetOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
+    Task<OfferResponse?> GetOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default);
     Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid companyId, Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default);
 }
-

@@ -20,6 +20,14 @@ public sealed class CandidateExplanationFacts
     public CandidateExplanationMatchSummaryFacts MatchSummary { get; set; } = new();
 }
 
+public static class CandidateExplanationMatchStates
+{
+    public const string ExactEvidence = "EXACT_EVIDENCE";
+    public const string RelatedEvidence = "RELATED_EVIDENCE";
+    public const string PartialEvidence = "PARTIAL_EVIDENCE";
+    public const string LimitedEvidence = "LIMITED_EVIDENCE";
+    public const string NotFound = "NOT_FOUND";
+}
 
 public sealed class CandidateExplanationEvidenceItem
 {
@@ -28,6 +36,48 @@ public sealed class CandidateExplanationEvidenceItem
 
     [JsonPropertyName("best_resume_evidence")]
     public string BestResumeEvidence { get; set; } = string.Empty;
+}
+
+public sealed class CandidateExplanationMatchItem
+{
+    [JsonPropertyName("jd_item")]
+    public string JdItem { get; set; } = string.Empty;
+
+    [JsonPropertyName("match_state")]
+    public string MatchState { get; set; } = CandidateExplanationMatchStates.NotFound;
+
+    [JsonPropertyName("match_type")]
+    public string MatchType { get; set; } = "unmatched";
+
+    [JsonPropertyName("base_match_score")]
+    public float BaseMatchScore { get; set; }
+
+    [JsonPropertyName("final_match_confidence")]
+    public float FinalMatchConfidence { get; set; }
+
+    [JsonPropertyName("best_resume_evidence")]
+    public string BestResumeEvidence { get; set; } = string.Empty;
+
+    [JsonPropertyName("strongest_evidence")]
+    public string StrongestEvidence { get; set; } = string.Empty;
+
+    [JsonPropertyName("evidence_source_path")]
+    public string EvidenceSourcePath { get; set; } = string.Empty;
+
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = string.Empty;
+
+    [JsonPropertyName("match_reason")]
+    public string MatchReason { get; set; } = string.Empty;
+
+    [JsonPropertyName("evidence_count_total")]
+    public int EvidenceCountTotal { get; set; }
+
+    [JsonPropertyName("evidence_count_distinct")]
+    public int EvidenceCountDistinct { get; set; }
+
+    [JsonPropertyName("evidence_types_used")]
+    public List<string> EvidenceTypesUsed { get; set; } = [];
 }
 
 public sealed class CandidateExplanationJobFacts
@@ -128,6 +178,18 @@ public sealed class CandidateExplanationScoringFacts
 
 public sealed class CandidateExplanationMatchSummaryFacts
 {
+    [JsonPropertyName("required_skill_details")]
+    public List<CandidateExplanationMatchItem> RequiredSkillDetails { get; set; } = [];
+
+    [JsonPropertyName("preferred_skill_details")]
+    public List<CandidateExplanationMatchItem> PreferredSkillDetails { get; set; } = [];
+
+    [JsonPropertyName("responsibility_details")]
+    public List<CandidateExplanationMatchItem> ResponsibilityDetails { get; set; } = [];
+
+    [JsonPropertyName("description_details")]
+    public List<CandidateExplanationMatchItem> DescriptionDetails { get; set; } = [];
+
     [JsonPropertyName("matched_required_skills")]
     public List<string> MatchedRequiredSkills { get; set; } = [];
 

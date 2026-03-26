@@ -6,6 +6,7 @@ import {
   getApiErrorMessage,
 } from "@features/recruiter/actions/utils";
 import { getJobPayload } from "@features/recruiter/actions/jobPayload";
+import { publishRecruiterJobMutation, toJobListItem } from "@features/recruiter/utils/jobMutationSync";
 
 /**
  * updateJobAction
@@ -32,6 +33,7 @@ export const updateJobAction = async ({
     });
 
     const job = await recruiterService.updateJob(params.jobId, payload);
+    publishRecruiterJobMutation({ type: "updated", jobId: job.id, job: toJobListItem(job) });
 
     return redirect(`/recruiter/job-posts?toast=updated&updatedJobId=${job.id}`);
   } catch (error) {

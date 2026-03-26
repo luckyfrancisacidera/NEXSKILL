@@ -250,6 +250,10 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
             {
                 Submission = submission,
                 Job = job,
+                LatestOffer = dbContext.JobOffers
+                    .Where(offer => offer.ApplicationId == submission.Id)
+                    .OrderByDescending(offer => offer.CreatedAtUtc)
+                    .FirstOrDefault(),
             })
             .FirstOrDefaultAsync(x => x.Job.RecruiterId == recruiterId && x.Job.CompanyId == companyId, ct);
 
@@ -291,6 +295,15 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
                 && job.CompanyId == companyId))
             .FirstOrDefaultAsync(ct);
 
+    public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid applicationId, CancellationToken ct = default)
+        => dbContext.JobOffers
+            .Where(offer => offer.ApplicationId == applicationId)
+            .OrderByDescending(offer => offer.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
+    public Task AddOfferAsync(JobOfferEntity offer, CancellationToken ct = default)
+        => dbContext.JobOffers.AddAsync(offer, ct).AsTask();
+
     public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
         => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
 
@@ -319,10 +332,15 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
                     Score = score != null ? (decimal)score.FinalWeightedScore : 0,
                     CreatedAtUtc = x.submission.CreatedAtUtc,
                     ApplicantName = x.submission.FullName,
-                    ApplicantEmail = x.submission.Email,
-                    PostalCode = x.submission.PostalCode,
-                    MatchSummary = score != null ? score.ScoreBreakdownJson : null,
-                    HasResume = !string.IsNullOrWhiteSpace(x.submission.BlobObjectKey),
-                    ResumeFileName = x.submission.FileName,
+                ApplicantEmail = x.submission.Email,
+                PostalCode = x.submission.PostalCode,
+                MatchSummary = score != null ? score.ScoreBreakdownJson : null,
+                HasResume = !string.IsNullOrWhiteSpace(x.submission.BlobObjectKey),
+                ResumeFileName = x.submission.FileName,
+                OfferStatus = dbContext.JobOffers
+                    .Where(offer => offer.ApplicationId == x.submission.Id)
+                    .OrderByDescending(offer => offer.CreatedAtUtc)
+                    .Select(offer => offer.Status.ToString())
+                    .FirstOrDefault(),
                 });
 }

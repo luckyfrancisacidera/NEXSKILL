@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillSense.Api.Security;
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
@@ -75,6 +76,22 @@ public sealed class RecruiterController(
         logger.LogInformation("Recruiter updated job {JobId} by {UserId}", id, userId);
 
         return Ok(response);
+    }
+
+    [HttpPost("jobs/{id:guid}/duplicate")]
+    [HttpPost("~/api/jobs/{id:guid}/duplicate")]
+    public async Task<ActionResult<JobListItemResponse>> DuplicateJob(Guid id, CancellationToken ct)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        var recruiterProfileId = CurrentUserContext.GetActiveRecruiterProfileId(HttpContext);
+        logger.LogInformation("Recruiter duplicate job requested by {UserId} for job {JobId}. Company={CompanyId} RecruiterProfile={RecruiterProfileId}", userId, id, companyId, recruiterProfileId);
+
+        var response = await recruiterService.DuplicateJobAsync(companyId, userId, id, ct);
+        logger.LogInformation("Recruiter duplicated job {OriginalJobId} into {DuplicateJobId} by {UserId}", id, response.Id, userId);
+
+        return CreatedAtAction(nameof(GetJob), new { id = response.Id }, response);
     }
 
     [HttpPut("jobs/{id:guid}/status")]
@@ -238,13 +255,23 @@ public sealed class RecruiterController(
         return Ok(result);
     }
 
-    [HttpPost("applicants/{id:guid}/offer")]
-    public async Task<ActionResult<ApplicantScoreItemResponse>> CreateOffer(Guid id, CancellationToken ct = default)
+    [HttpGet("applicants/{id:guid}/offer")]
+    public async Task<ActionResult<OfferResponse>> GetOffer(Guid id, CancellationToken ct = default)
     {
         var userId = CurrentUserContext.GetUserId(User);
         var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
             ?? throw new UnauthorizedAccessException("Active company context is required.");
-        return Ok(await recruiterService.CreateOfferAsync(companyId, userId, id, ct));
+        var offer = await recruiterService.GetOfferAsync(companyId, userId, id, ct);
+        return offer is null ? NotFound() : Ok(offer);
+    }
+
+    [HttpPost("applicants/{id:guid}/offer")]
+    public async Task<ActionResult<ApplicantScoreItemResponse>> CreateOffer(Guid id, [FromBody] SendOfferRequest request, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await recruiterService.CreateOfferAsync(companyId, userId, id, request, ct));
     }
 
     [HttpPost("applicants/{id:guid}/hire")]

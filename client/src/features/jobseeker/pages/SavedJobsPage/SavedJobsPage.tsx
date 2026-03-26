@@ -27,7 +27,7 @@ export const SavedJobsPage = () => {
           <p className="text-zinc-500 dark:text-zinc-400">No saved jobs yet.</p>
         </Card>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {saved.map((item) => {
             const job: Job = {
               id: String(item.id),

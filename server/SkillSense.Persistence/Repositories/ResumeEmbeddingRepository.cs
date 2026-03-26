@@ -7,10 +7,19 @@ namespace SkillSense.Persistence.Repositories;
 
 public sealed class ResumeEmbeddingRepository(SkillSenseDbContext dbContext) : IResumeEmbeddingRepository
 {
-    public async Task AddRangeAsync(IEnumerable<ResumeEmbeddingEntity> embeddings, CancellationToken ct = default)
+    public async Task AddRangeAsync(IEnumerable<ResumeEmbeddingEntity> embeddings, bool saveChanges = true, CancellationToken ct = default)
     {
-        dbContext.ResumeEmbeddings.AddRange(embeddings);
-        await dbContext.SaveChangesAsync(ct);
+        var materialized = embeddings as ResumeEmbeddingEntity[] ?? embeddings.ToArray();
+        if (materialized.Length == 0)
+        {
+            return;
+        }
+
+        dbContext.ResumeEmbeddings.AddRange(materialized);
+        if (saveChanges)
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
     }
 
     public Task<List<ResumeEmbeddingEntity>> GetBySubmissionIdAsync(Guid submissionId, CancellationToken ct = default)

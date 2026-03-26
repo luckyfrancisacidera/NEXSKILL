@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
+import { Copy } from 'lucide-react';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { ApplicantsCard } from '@features/recruiter/pages/JobDetailPage/components/ApplicantsCard';
@@ -10,6 +11,8 @@ import { SkillList } from '@features/recruiter/pages/JobDetailPage/components/Sk
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/types';
+import { getJobActionButtonClassName } from '@features/recruiter/utils/jobActionButtonStyles';
+import { publishRecruiterJobMutation, toJobListItem } from '@features/recruiter/utils/jobMutationSync';
 import { Card } from '@shared/components/Card';
 import { DetailBlock } from '@shared/components/DetailBlock';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
@@ -31,6 +34,7 @@ export const JobDetailPage = () => {
   const [job, setJob] = useState(loaderJob);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
 
@@ -42,7 +46,6 @@ export const JobDetailPage = () => {
 
   const statusAccent = getJobStatusAccent(job.status);
   const responsibilities = useMemo(() => splitToBullets(job.responsibilities), [job.responsibilities]);
-  const benefits = useMemo(() => splitToBullets(job.benefits), [job.benefits]);
   const requiredSkills = useMemo(() => toList(job.required_skills), [job.required_skills]);
   const preferredSkills = useMemo(() => toList(job.preferred_skills), [job.preferred_skills]);
 
@@ -77,6 +80,7 @@ export const JobDetailPage = () => {
       setIsUpdatingStatus(true);
       const updated = await recruiterService.updateJobStatus(job.id, status);
       setJob(updated);
+      publishRecruiterJobMutation({ type: 'status_updated', jobId: updated.id, job: toJobListItem(updated) });
       showToast({
         title: 'Job status updated',
         description: `${updated.title} is now ${updated.status}.`,
@@ -98,6 +102,7 @@ export const JobDetailPage = () => {
       setIsDeleting(true);
       setDeleteError(undefined);
       await recruiterService.deleteJob(job.id);
+      publishRecruiterJobMutation({ type: 'deleted', jobId: job.id });
       showToast({
         title: 'Job deleted successfully',
         description: `${job.title} was removed from your job posts.`,
@@ -110,6 +115,43 @@ export const JobDetailPage = () => {
       showToast({ title: 'Unable to delete job', description: 'Please try again.', tone: 'error' });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const duplicateJob = async () => {
+    if (isDuplicating || isDeleting || isUpdatingStatus) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Duplicate this job posting?',
+      message: 'A new draft copy will be created with the current job details pre-filled.',
+      confirmLabel: 'Duplicate Job',
+      accent: 'violet',
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDuplicating(true);
+      const duplicated = await recruiterService.duplicateJob(job.id);
+      publishRecruiterJobMutation({ type: 'duplicated', jobId: duplicated.id, job: toJobListItem(duplicated) });
+      showToast({
+        title: 'Job duplicated successfully',
+        description: `${duplicated.title} is ready to edit as a draft.`,
+        tone: 'success',
+      });
+      navigate(`/recruiter/job-posts/${duplicated.id}/edit`);
+    } catch {
+      showToast({
+        title: 'Unable to duplicate job',
+        description: 'Please try again.',
+        tone: 'error',
+      });
+    } finally {
+      setIsDuplicating(false);
     }
   };
 
@@ -218,62 +260,56 @@ export const JobDetailPage = () => {
                   </ul>
                 </DetailBlock>
               </div>
-
-              <DetailBlock title="Compensation & Benefits">
-                <div className="flex flex-wrap items-center gap-2 text-zinc-700">
-                  <span className="text-xl font-bold text-zinc-900">
-                    {formatCurrencyAmount(job.salary_min_per_annum, job.currency)} -{' '}
-                    {formatCurrencyAmount(job.salary_max_per_annum, job.currency)}
-                    <span className="text-base font-medium text-zinc-600"> / year</span>
-                  </span>
-                  {benefits.map((benefit) => (
-                    <span key={benefit} className="rounded-lg border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm">
-                      {benefit}
-                    </span>
-                  ))}
-                </div>
-              </DetailBlock>
             </div>
 
             <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
               <Link
                 to={`/recruiter/job-posts/${job.id}/edit`}
-                className="block w-full rounded-lg bg-zinc-900 px-4 py-3 text-center text-base font-semibold text-white transition hover:bg-zinc-700"
+                className={getJobActionButtonClassName({ fullWidth: true })}
               >
                 Edit Job
               </Link>
               <button
                 type="button"
+                onClick={() => void duplicateJob()}
+                disabled={isDuplicating || isDeleting || isUpdatingStatus}
+                title="Create a copy of this job with all details pre-filled"
+                className={getJobActionButtonClassName({ fullWidth: true })}
+              >
+                <Copy className="h-4 w-4" />
+                Duplicate Job
+              </button>
+              <button
+                type="button"
                 onClick={() => void updateStatus('Draft')}
-                disabled={isUpdatingStatus || job.status === 'Draft'}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-base font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+                disabled={isUpdatingStatus || isDuplicating || job.status === 'Draft'}
+                className={getJobActionButtonClassName({ fullWidth: true })}
               >
                 Move to Draft
               </button>
               <button
                 type="button"
                 onClick={() => void updateStatus('Published')}
-                disabled={isUpdatingStatus || job.status === 'Published'}
-                className="w-full rounded-lg border border-emerald-300 bg-white px-4 py-3 text-base font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+                disabled={isUpdatingStatus || isDuplicating || job.status === 'Published'}
+                className={getJobActionButtonClassName({ fullWidth: true })}
               >
                 Publish Job
               </button>
               <button
                 type="button"
                 onClick={() => void updateStatus('Closed')}
-                disabled={isUpdatingStatus || job.status === 'Closed'}
-                className="w-full rounded-lg border border-amber-300 bg-white px-4 py-3 text-base font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
+                disabled={isUpdatingStatus || isDuplicating || job.status === 'Closed'}
+                className={getJobActionButtonClassName({ fullWidth: true })}
               >
                 Close Job
               </button>
               <button
                 type="button"
                 onClick={(event) => {
-                  // Stop propagation so delete only opens one controlled verification modal.
                   event.stopPropagation();
                   void openDeleteFlow();
                 }}
-                className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50"
+                className={getJobActionButtonClassName({ destructive: true, fullWidth: true })}
               >
                 Delete Job
               </button>
@@ -302,4 +338,3 @@ export const JobDetailPage = () => {
     </div>
   );
 };
-

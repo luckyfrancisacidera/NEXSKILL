@@ -1,19 +1,22 @@
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Copy, Eye, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { JobListItem } from '@features/recruiter/types';
+import { getJobActionButtonClassName } from '@features/recruiter/utils/jobActionButtonStyles';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
 
 export interface JobPostsTableProps {
   jobs: JobListItem[];
   isDeleting: boolean;
+  isDuplicating: boolean;
   onDelete: (job: JobListItem) => void;
+  onDuplicate: (job: JobListItem) => void;
 }
 
 /**
  * Presentational table for the recruiter job listing.
  */
-export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps) => (
+export const JobPostsTable = ({ jobs, isDeleting, isDuplicating, onDelete, onDuplicate }: JobPostsTableProps) => (
   <div className="overflow-x-auto">
     <table className="min-w-full text-sm">
       <thead className="bg-zinc-100 text-left dark:bg-zinc-900">
@@ -42,17 +45,35 @@ export const JobPostsTable = ({ jobs, isDeleting, onDelete }: JobPostsTableProps
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  <Link className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-zinc-700 dark:text-zinc-400" to={`/recruiter/job-posts/${job.id}`}><Eye size={16} /></Link>
-                  <Link className="rounded border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-zinc-700 dark:text-zinc-400" to={`/recruiter/job-posts/${job.id}/edit`}><Pencil size={16} /></Link>
+                  <Link className={getJobActionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}`} aria-label={`View ${job.title}`}>
+                    <Eye size={16} />
+                  </Link>
+                  <Link className={getJobActionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}/edit`} aria-label={`Edit ${job.title}`}>
+                    <Pencil size={16} />
+                  </Link>
                   <button
                     type="button"
-                    className="rounded border border-rose-300 dark:border-rose-900 px-2 py-1 text-rose-700 dark:text-rose-400"
+                    className={getJobActionButtonClassName({ iconOnly: true })}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDuplicate(job);
+                    }}
+                    disabled={isDeleting || isDuplicating}
+                    title="Create a copy of this job with all details pre-filled"
+                    aria-label={`Duplicate ${job.title}`}
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className={getJobActionButtonClassName({ destructive: true, iconOnly: true })}
                     onClick={(event) => {
                       // Stop propagation so delete only opens one controlled verification modal.
                       event.stopPropagation();
                       onDelete(job);
                     }}
-                    disabled={isDeleting}
+                    disabled={isDeleting || isDuplicating}
+                    aria-label={`Delete ${job.title}`}
                   >
                     <Trash2 size={16} />
                   </button>

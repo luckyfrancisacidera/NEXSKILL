@@ -8,6 +8,8 @@ public sealed class AuthResult
     public string? RefreshToken { get; init; }
     public string? Email { get; init; }
     public string? UserId { get; init; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
     public IReadOnlyCollection<string> Roles { get; init; } = [];
     public IReadOnlyCollection<string> Errors { get; init; } = [];
 
@@ -24,6 +26,8 @@ public sealed class AuthResult
         string? refreshToken = null,
         string? email = null,
         string? userId = null,
+        string? firstName = null,
+        string? lastName = null,
         IReadOnlyCollection<string>? roles = null) => new()
      {
         Succeeded = true,
@@ -32,6 +36,8 @@ public sealed class AuthResult
         RefreshToken = refreshToken,
         Email = email,
         UserId = userId,
+        FirstName = firstName,
+        LastName = lastName,
         Roles = roles ?? [],
     };
 }

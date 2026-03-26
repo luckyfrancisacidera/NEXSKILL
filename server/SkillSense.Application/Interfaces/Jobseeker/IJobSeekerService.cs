@@ -1,5 +1,6 @@
 using SkillSense.Application.Contracts.Jobseeker.Request;
 using SkillSense.Application.Contracts.Jobseeker.Response;
+using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 
@@ -18,6 +19,9 @@ namespace SkillSense.Application.Interfaces.Jobseeker
         Task<object> GetMyProfileAsync(Guid userId, CancellationToken ct = default);
         Task<object> UpdateMyProfileAsync(Guid userId, JobSeekerProfileRequest request, CancellationToken ct = default);
         Task<JobSeekerApplicationResponse> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<OfferResponse> GetOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<OfferResponse> AcceptOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<OfferResponse> DeclineOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
     }
 }

@@ -1,6 +1,8 @@
 using System.Text.Json;
 using SkillSense.Application.Contracts.Jobseeker.Request;
 using SkillSense.Application.Contracts.Jobseeker.Response;
+using SkillSense.Application.Contracts.Notifications;
+using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
@@ -15,7 +17,8 @@ namespace SkillSense.Application.Services.Jobseeker
         IJobSeekerRepository jobSeekerRepository,
         IResumeUploadService resumeUploadService,
         IAppCacheService cacheService,
-        IDateTimeProvider dateTimeProvider) : IJobSeekerService
+        IDateTimeProvider dateTimeProvider,
+        INotificationService notificationService) : IJobSeekerService
     {
         public async Task<PagedResult<JobListItemResponse>> GetPublicJobsAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default)
         {
@@ -46,7 +49,14 @@ namespace SkillSense.Application.Services.Jobseeker
             var job = await jobSeekerRepository.GetPublishedJobByIdAsync(jobId, ct)
                 ?? throw new InvalidOperationException("Published job not found.");
 
+            if (jobSeekerUserId.HasValue
+                && await resumeUploadService.HasActiveApplicationAsync(jobId, jobSeekerUserId.Value, ct))
+            {
+                throw new InvalidOperationException("You have already applied to this job.");
+            }
+
             var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, request.FullName, request.Email, request.PostalCode, request.Location, jobSeekerUserId, ct);
+            response.Message = "Application submitted successfully. We have started processing your resume.";
             cacheService.RemoveByPrefix("dashboard:recruiter:");
             cacheService.RemoveByPrefix($"dashboard:jobseeker:{jobSeekerUserId}");
             return response;
@@ -177,6 +187,73 @@ namespace SkillSense.Application.Services.Jobseeker
             return MapApplication(item);
         }
 
+        public async Task<OfferResponse> GetOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var offer = await jobSeekerRepository.GetLatestOfferByApplicationIdAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Offer not found.");
+
+            offer = await EnsureOfferExpirationStateAsync(offer, ct);
+            return MapOffer(offer);
+        }
+
+        public async Task<OfferResponse> AcceptOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Application not found.");
+            var offer = await jobSeekerRepository.GetLatestOfferByApplicationIdAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Offer not found.");
+
+            offer = await EnsureOfferExpirationStateAsync(offer, ct);
+            ValidatePendingOfferResponse(offer);
+
+            offer.Status = JobOfferStatus.Accepted;
+            offer.RespondedAtUtc = dateTimeProvider.UtcNow;
+            offer.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            entity.Status = ResumeSubmissionStatus.Offer;
+            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+
+            await notificationService.CreateNotificationAsync(new CreateNotificationRequest
+            {
+                UserId = offer.SentByUserId,
+                Title = "Offer accepted",
+                Message = $"{entity.FullName ?? entity.Email ?? "Candidate"} accepted the offer.",
+                Type = NotificationType.Success,
+                RelatedEntityId = entity.Id,
+            }, ct);
+
+            return MapOffer(offer);
+        }
+
+        public async Task<OfferResponse> DeclineOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Application not found.");
+            var offer = await jobSeekerRepository.GetLatestOfferByApplicationIdAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Offer not found.");
+
+            offer = await EnsureOfferExpirationStateAsync(offer, ct);
+            ValidatePendingOfferResponse(offer);
+
+            offer.Status = JobOfferStatus.Declined;
+            offer.RespondedAtUtc = dateTimeProvider.UtcNow;
+            offer.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            entity.Status = ResumeSubmissionStatus.Offer;
+            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+
+            await notificationService.CreateNotificationAsync(new CreateNotificationRequest
+            {
+                UserId = offer.SentByUserId,
+                Title = "Offer declined",
+                Message = $"{entity.FullName ?? entity.Email ?? "Candidate"} declined the offer.",
+                Type = NotificationType.Warning,
+                RelatedEntityId = entity.Id,
+            }, ct);
+
+            return MapOffer(offer);
+        }
+
         public async Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
@@ -187,10 +264,10 @@ namespace SkillSense.Application.Services.Jobseeker
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
-        private static JobSeekerApplicationResponse MapApplication(ApplicationListItemData item)
+        private JobSeekerApplicationResponse MapApplication(ApplicationListItemData item)
         {
             var currentStage = ResolveCurrentStage(item.Status);
-            var hasOffer = item.Status is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire;
+            var hasOffer = item.OfferId.HasValue || item.Status is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire;
             var isHired = item.Status == ResumeSubmissionStatus.Hire;
 
             return new JobSeekerApplicationResponse
@@ -211,19 +288,22 @@ namespace SkillSense.Application.Services.Jobseeker
                 OfferedAtUtc = item.Status == ResumeSubmissionStatus.Offer ? item.UpdatedAtUtc : null,
                 HiredAtUtc = item.Status == ResumeSubmissionStatus.Hire ? item.UpdatedAtUtc : null,
                 CreatedAtUtc = item.CreatedAtUtc,
+                UpdatedAtUtc = item.UpdatedAtUtc,
+                Offer = MapOffer(item),
             };
         }
 
         private static string ResolveCurrentStage(ResumeSubmissionStatus status)
             => status switch
             {
+                ResumeSubmissionStatus.Completed => "Under Review",
                 ResumeSubmissionStatus.Shortlisted => "Shortlisted",
                 ResumeSubmissionStatus.Interview => "Interview",
                 ResumeSubmissionStatus.Offer => "Offer",
-                ResumeSubmissionStatus.Hire => "Hire",
+                ResumeSubmissionStatus.Hire => "Hired",
                 ResumeSubmissionStatus.Rejected => "Rejected",
                 ResumeSubmissionStatus.Failed => "Withdrawn",
-                ResumeSubmissionStatus.Pending or ResumeSubmissionStatus.Processing or ResumeSubmissionStatus.Completed => "Applied",
+                ResumeSubmissionStatus.Pending or ResumeSubmissionStatus.Processing => "Applied",
                 _ => "Applied"
             };
 
@@ -304,6 +384,110 @@ namespace SkillSense.Application.Services.Jobseeker
             var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Replace("\r", string.Empty).Trim());
             return string.Join(Environment.NewLine, lines);
+        }
+
+        private async Task<JobOfferEntity> EnsureOfferExpirationStateAsync(JobOfferEntity offer, CancellationToken ct)
+        {
+            if (offer.Status != JobOfferStatus.Pending || !offer.ExpirationDate.HasValue)
+            {
+                return offer;
+            }
+
+            var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
+            if (offer.ExpirationDate.Value >= today)
+            {
+                return offer;
+            }
+
+            offer.Status = JobOfferStatus.Expired;
+            offer.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+            return offer;
+        }
+
+        private void ValidatePendingOfferResponse(JobOfferEntity offer)
+        {
+            if (offer.Status == JobOfferStatus.Accepted || offer.Status == JobOfferStatus.Declined)
+            {
+                throw new InvalidOperationException("This offer has already been responded to.");
+            }
+
+            if (offer.Status is JobOfferStatus.Cancelled or JobOfferStatus.Expired)
+            {
+                throw new InvalidOperationException("This offer can no longer be responded to.");
+            }
+
+            if (offer.Status != JobOfferStatus.Pending)
+            {
+                throw new InvalidOperationException("This offer is not available for response.");
+            }
+        }
+
+        private OfferResponse MapOffer(JobOfferEntity offer)
+        {
+            var effectiveStatus = offer.Status == JobOfferStatus.Pending
+                && offer.ExpirationDate.HasValue
+                && offer.ExpirationDate.Value < DateOnly.FromDateTime(dateTimeProvider.UtcNow)
+                    ? JobOfferStatus.Expired
+                    : offer.Status;
+            var canRespond = effectiveStatus == JobOfferStatus.Pending;
+
+            return new OfferResponse
+            {
+                Id = offer.Id,
+                ApplicationId = offer.ApplicationId,
+                SentByUserId = offer.SentByUserId,
+                Title = offer.Title,
+                Message = offer.Message,
+                SalaryText = offer.SalaryText,
+                EmploymentType = offer.EmploymentType,
+                StartDate = offer.StartDate,
+                ExpirationDate = offer.ExpirationDate,
+                Status = effectiveStatus.ToString(),
+                SentAtUtc = offer.SentAtUtc,
+                RespondedAtUtc = offer.RespondedAtUtc,
+                CreatedAtUtc = offer.CreatedAtUtc,
+                UpdatedAtUtc = offer.UpdatedAtUtc,
+                CanAccept = canRespond,
+                CanDecline = canRespond,
+                CanMarkHired = false,
+            };
+        }
+
+        private OfferResponse? MapOffer(ApplicationListItemData item)
+        {
+            if (!item.OfferId.HasValue || item.OfferStatus is null)
+            {
+                return null;
+            }
+
+            var effectiveStatus = item.OfferStatus == JobOfferStatus.Pending
+                && item.OfferExpirationDate.HasValue
+                && item.OfferExpirationDate.Value < DateOnly.FromDateTime(dateTimeProvider.UtcNow)
+                    ? JobOfferStatus.Expired
+                    : item.OfferStatus.Value;
+            var canRespond = effectiveStatus == JobOfferStatus.Pending;
+
+            return new OfferResponse
+            {
+                Id = item.OfferId.Value,
+                ApplicationId = item.Id,
+                SentByUserId = Guid.Empty,
+                Title = item.OfferTitle ?? string.Empty,
+                Message = item.OfferMessage ?? string.Empty,
+                SalaryText = item.OfferSalaryText ?? string.Empty,
+                EmploymentType = item.OfferEmploymentType ?? string.Empty,
+                StartDate = item.OfferStartDate,
+                ExpirationDate = item.OfferExpirationDate,
+                Status = effectiveStatus.ToString(),
+                SentAtUtc = item.OfferSentAtUtc ?? item.UpdatedAtUtc,
+                RespondedAtUtc = item.OfferRespondedAtUtc,
+                CreatedAtUtc = item.OfferSentAtUtc ?? item.CreatedAtUtc,
+                UpdatedAtUtc = item.OfferRespondedAtUtc ?? item.OfferSentAtUtc ?? item.UpdatedAtUtc,
+                CanAccept = canRespond,
+                CanDecline = canRespond,
+                CanMarkHired = false,
+            };
         }
     }
 }
