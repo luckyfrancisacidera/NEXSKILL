@@ -6,5 +6,5 @@ public interface IGenerativeExplanationProvider
 {
     string ProviderName { get; }
     string ModelName { get; }
-    Task<CandidateExplanationGenerationResult> GenerateRecruiterExplanationAsync(CandidateExplanationFacts facts, CancellationToken ct = default);
+    Task<CandidateExplanationGenerationResult> GenerateRecruiterExplanationAsync(CandidateEvaluationContext context, CancellationToken ct = default);
 }

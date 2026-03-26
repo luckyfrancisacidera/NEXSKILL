@@ -41,7 +41,7 @@ export const RecruiterInitialSetupModal = ({
 
   return (
     <ModalOverlay onClose={() => undefined}>
-      <div className="rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
+      <div className="font-inter rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-zinc-200 dark:bg-zinc-950 dark:ring-zinc-800">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
           Complete your recruiter setup
         </h2>
@@ -95,7 +95,7 @@ export const RecruiterInitialSetupModal = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 inline-flex w-full items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-400 dark:bg-violet-500 dark:hover:bg-violet-400"
+            className="mt-2 inline-flex w-full items-center justify-center rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-white shadow-sm transition duration-200 hover:bg-zinc-700 focus:ring-2 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:bg-zinc-500"
           >
             {isSubmitting ? "Saving..." : "Save and continue"}
           </button>

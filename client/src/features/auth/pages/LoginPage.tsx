@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import LightLogo from "@shared/assets/Lightbrand_logo.png";
 import BuildingImage from "@shared/assets/BuildingImage.jpg";
-import GoogleLogo from "@shared/assets/GoogleLogo.svg";
-import AppleLogo from "@shared/assets/AppleLogo.svg";
 
 import { Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
+import { AuthCheckbox } from "@features/auth/components/AuthCheckbox";
+import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { ApiError } from "@shared/api/http";
+import { runViewTransition } from "@shared/utils/viewTransition";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,16 +20,23 @@ const LoginPage = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+
+  const openRegister = () => {
+    runViewTransition(() => {
+      navigate("/register", { state: { from: "/login" } });
+    });
+  };
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
 
     try {
-      const userRoles = await login(email, password);
+      const userRoles = await login(email.trim(), password, rememberMe);
       navigate(getDefaultRouteByRole(userRoles), { replace: true });
     } catch (error) {
       setPassword("");
@@ -77,105 +85,110 @@ const LoginPage = () => {
 
       {/* Right panel */}
       <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-wider text-white">
-              Sign in
-            </h1>
-            <p className="text-sm text-zinc-400 mt-2">
-              Enter your credentials to access your account.
-            </p>
-          </div>
-
-          <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-            {/* Email */}
-            <div>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                placeholder="Email Address"
-              />
+        <AuthRouteTransition className="w-full max-w-md">
+          <div className="min-h-[31rem]">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold tracking-wider text-white">
+                Welcome back
+              </h1>
+              <p className="mt-2 text-sm text-zinc-400">
+                Let&apos;s get you back to learning
+              </p>
             </div>
 
-            {/* Password with Eye Toggle */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="bg-zinc-800/50 border border-zinc-700 rounded-lg w-full h-11 px-4 pr-10 text-zinc-200 text-sm font-light placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 transition-all"
-                placeholder="Password"
-              />
+            <form className="flex flex-col gap-5" onSubmit={onSubmit}>
+              <div className="space-y-2">
+                <label
+                  htmlFor="login-email"
+                  className="block text-sm font-medium text-zinc-200"
+                >
+                  Email address
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  required
+                />
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="login-password"
+                  className="block text-sm font-medium text-zinc-200"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-zinc-700 bg-zinc-800/50 px-4 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-500/40 transition-all"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    required
+                  />
 
-            {error && <p className="text-xs text-red-400">{error}</p>}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
 
-            <div className="flex flex-col gap-4 w-full mt-4">
-              {/* Login button */}
-              <button className="w-full h-11 bg-white text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
-                Sign in
-              </button>
+              {error && <p className="text-xs text-red-400">{error}</p>}
 
-              {/* Register link */}
-              <span className="text-[0.8em] text-zinc-300">
-                Dont have an account?{" "}
-                <Link
-                  to="/register"
-                  className="hover:text-zinc-300 text-zinc-400"
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <AuthCheckbox
+                  id="login-remember-me"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  label="Remember me"
+                />
+
+                <button
+                  type="button"
+                  className="text-sm font-medium text-zinc-200 transition-colors hover:text-white"
+                  onClick={() => setIsResetPasswordModalOpen(true)}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4 w-full pt-1">
+                <button className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
+                  Sign in
+                </button>
+
+                <div className="flex items-center gap-4 py-1 w-full">
+                  <div className="flex-1 bg-zinc-700 h-px"></div>
+                  <p className="text-sm text-zinc-400">
+                    Don&apos;t have an account?
+                  </p>
+                  <div className="flex-1 bg-zinc-700 h-px"></div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openRegister}
+                  className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-zinc-500 bg-transparent px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-700/30 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-800"
                 >
                   Create an account
-                </Link>
-              </span>
-
-              <button
-                type="button"
-                className="text-left text-xs text-zinc-400 hover:text-zinc-200"
-                onClick={() => setIsResetPasswordModalOpen(true)}
-              >
-                Forgot password?
-              </button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-4 my-2 w-full">
-                <div className="flex-1 bg-zinc-700 h-px"></div>
-                <p className="text-xs text-zinc-500 tracking-wider font-medium uppercase">
-                  Or sign in with
-                </p>
-                <div className="flex-1 bg-zinc-700 h-px"></div>
-              </div>
-
-              {/* Social Login */}
-              <div className="grid w-full gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
-                  
-                >
-                  <img src={GoogleLogo} className="w-4" alt="" />
-                  Google
-                </button>
-
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-2 w-full h-11 bg-zinc-800 hover:bg-zinc-700 text-sm font-medium rounded-lg border border-zinc-700 text-zinc-300 transition-colors"
-                >
-                  <img src={AppleLogo} className="w-4" alt="" />
-                  Apple
                 </button>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        </AuthRouteTransition>
       </div>
 
       <ResetPasswordPinModal

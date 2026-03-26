@@ -108,7 +108,7 @@ export const OffersPage = () => {
   const [status, setStatus] = useState("");
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
-  const { data, error, isLoading, refresh } = useApplications({
+  const { data, error, isLoading, refresh, deleteHistory, deletingHistoryId } = useApplications({
     initialData,
     pageNumber,
     pageSize,
@@ -343,7 +343,11 @@ export const OffersPage = () => {
                 onDecline={(applicationId) => {
                   void respondToOffer(applicationId, "decline");
                 }}
+                onDeleteHistory={(applicationId) => {
+                  void deleteHistory(applicationId);
+                }}
                 isActing={actingApplicationId === item.id}
+                isDeletingHistory={deletingHistoryId === item.id}
               />
             ))}
           </div>

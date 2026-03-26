@@ -73,6 +73,13 @@ namespace SkillSense.Api.Controllers
             return Ok(new { message = "Application withdrawn." });
         }
 
+        [HttpDelete("applications/{applicationId:guid}/history")]
+        public async Task<IActionResult> DeleteHistory(Guid applicationId, CancellationToken ct = default)
+        {
+            await jobSeekerService.HideApplicationFromHistoryAsync(CurrentUserContext.GetUserId(User), applicationId, ct);
+            return NoContent();
+        }
+
         [HttpGet("saved-jobs")]
         public async Task<IActionResult> GetSavedJobs([FromQuery] string? search = null, CancellationToken ct = default)
             => Ok(await jobSeekerService.GetSavedJobsAsync(CurrentUserContext.GetUserId(User), search, ct));

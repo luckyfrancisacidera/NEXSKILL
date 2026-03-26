@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
+import { ApiError } from "@shared/api/http";
 
 type UseApplicationsArgs = {
   initialData: ApplicationsLoaderData;
@@ -20,6 +21,7 @@ export const useApplications = ({
   const [data, setData] = useState<ApplicationsLoaderData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,10 +83,52 @@ export const useApplications = ({
       }
 
       setData(refreshed);
-    } catch {
-      setError("Unable to withdraw this application right now.");
+    } catch (nextError) {
+      setError(
+        nextError instanceof ApiError
+          ? nextError.message
+          : "Unable to withdraw this application right now.",
+      );
     } finally {
       setWithdrawingId(null);
+    }
+  };
+
+  const deleteHistory = async (applicationId: string) => {
+    setDeletingHistoryId(applicationId);
+    setError(null);
+
+    try {
+      await jobseekerService.deleteApplicationHistory(applicationId);
+
+      let refreshed = await jobseekerService.getMyApplications({
+        pageNumber,
+        pageSize,
+        search,
+        status,
+      });
+
+      if (
+        refreshed.totalPages > 0 &&
+        refreshed.pageNumber > refreshed.totalPages
+      ) {
+        refreshed = await jobseekerService.getMyApplications({
+          pageNumber: refreshed.totalPages,
+          pageSize,
+          search,
+          status,
+        });
+      }
+
+      setData(refreshed);
+    } catch (nextError) {
+      setError(
+        nextError instanceof ApiError
+          ? nextError.message
+          : "Unable to remove this item from your history right now.",
+      );
+    } finally {
+      setDeletingHistoryId(null);
     }
   };
 
@@ -112,7 +156,9 @@ export const useApplications = ({
     error,
     isLoading,
     withdrawingId,
+    deletingHistoryId,
     withdraw,
+    deleteHistory,
     refresh,
   };
 };

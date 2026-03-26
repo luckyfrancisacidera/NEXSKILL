@@ -28,7 +28,7 @@ export const ApplicationsPage = () => {
   const [status, setStatus] = useState("");
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
-  const { data, error, isLoading, withdrawingId, withdraw } = useApplications({
+  const { data, error, isLoading, withdrawingId, deletingHistoryId, withdraw, deleteHistory } = useApplications({
     initialData,
     pageNumber,
     pageSize,
@@ -66,8 +66,7 @@ export const ApplicationsPage = () => {
             Applications
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Track your submitted applications, monitor status changes, and jump
-            back into the jobs that matter.
+            Track your submitted applications, monitor status changes, and jump back into the jobs that matter.
           </p>
         </div>
 
@@ -139,8 +138,12 @@ export const ApplicationsPage = () => {
               <ApplicationsTable
                 items={data.items}
                 withdrawingId={withdrawingId}
+                deletingHistoryId={deletingHistoryId}
                 onWithdraw={(applicationId) => {
                   void withdraw(applicationId);
+                }}
+                onDeleteHistory={(applicationId) => {
+                  void deleteHistory(applicationId);
                 }}
               />
               <ApplicationsPagination

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SkillSense.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddJobSeekerFeature : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -151,6 +151,9 @@ namespace SkillSense.Persistence.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
+                    LastName = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -399,9 +402,13 @@ namespace SkillSense.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Pin = table.Column<string>(type: "character varying(6)", maxLength: 6, nullable: false),
+                    PinHash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    PinSalt = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    PendingEmail = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: true),
+                    Purpose = table.Column<int>(type: "integer", nullable: false),
                     ExpiresAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Used = table.Column<bool>(type: "boolean", nullable: false),
+                    VerifiedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -459,6 +466,7 @@ namespace SkillSense.Persistence.Migrations
                     JobSeekerUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ParsedResumeJson = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'{}'::jsonb"),
+                    IsHiddenFromJobSeekerHistory = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -522,6 +530,42 @@ namespace SkillSense.Persistence.Migrations
                     table.ForeignKey(
                         name: "FK_interview_reschedule_requests_users_JobSeekerId",
                         column: x => x.JobSeekerId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "job_offers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ApplicationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SentByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Message = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: false),
+                    SalaryText = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    EmploymentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    StartDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    ExpirationDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    SentAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RespondedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_job_offers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_job_offers_resume_submissions_ApplicationId",
+                        column: x => x.ApplicationId,
+                        principalTable: "resume_submissions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_job_offers_users_SentByUserId",
+                        column: x => x.SentByUserId,
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -626,6 +670,21 @@ namespace SkillSense.Persistence.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_job_offers_ApplicationId",
+                table: "job_offers",
+                column: "ApplicationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_job_offers_ApplicationId_Status",
+                table: "job_offers",
+                columns: new[] { "ApplicationId", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_job_offers_SentByUserId",
+                table: "job_offers",
+                column: "SentByUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_job_seeker_profiles_UserId",
                 table: "job_seeker_profiles",
                 column: "UserId",
@@ -667,9 +726,9 @@ namespace SkillSense.Persistence.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_password_reset_pins_UserId_Pin_Used",
+                name: "IX_password_reset_pins_UserId_PendingEmail_Purpose_Used",
                 table: "password_reset_pins",
-                columns: new[] { "UserId", "Pin", "Used" });
+                columns: new[] { "UserId", "PendingEmail", "Purpose", "Used" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_recruiter_profiles_CompanyId",
@@ -768,6 +827,9 @@ namespace SkillSense.Persistence.Migrations
                 name: "interview_reschedule_requests");
 
             migrationBuilder.DropTable(
+                name: "job_offers");
+
+            migrationBuilder.DropTable(
                 name: "job_seeker_profiles");
 
             migrationBuilder.DropTable(
@@ -786,9 +848,6 @@ namespace SkillSense.Persistence.Migrations
                 name: "resume_scores");
 
             migrationBuilder.DropTable(
-                name: "resume_submissions");
-
-            migrationBuilder.DropTable(
                 name: "saved_jobs");
 
             migrationBuilder.DropTable(
@@ -796,6 +855,9 @@ namespace SkillSense.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "interviews");
+
+            migrationBuilder.DropTable(
+                name: "resume_submissions");
 
             migrationBuilder.DropTable(
                 name: "companies");

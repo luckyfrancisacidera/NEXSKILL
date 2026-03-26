@@ -62,7 +62,12 @@ import {
   superAdminDashboardLoader,
   superAdminRecruitersLoader,
 } from "@features/admin";
-import { RegisterAccount, LoginAccount } from "@features/auth";
+import {
+  RegisterAccount,
+  LoginAccount,
+  PrivacyPolicyPage,
+  TermsOfServicePage,
+} from "@features/auth";
 import { ForgotPasswordPage } from "@features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@features/auth/pages/ResetPasswordPage";
 
@@ -388,6 +393,8 @@ export const router = createBrowserRouter([
       <LoginAccount />
     </PublicOnly>,
   ),
+  publicRoute("/terms", <TermsOfServicePage />),
+  publicRoute("/privacy", <PrivacyPolicyPage />),
   publicRoute("/forgot-password", <ForgotPasswordPage />),
   publicRoute("/reset-password", <ResetPasswordPage />),
   {

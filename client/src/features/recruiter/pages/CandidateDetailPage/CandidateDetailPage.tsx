@@ -33,6 +33,7 @@ import { Card } from '@shared/components/Card';
 import { StatusBadge } from '@shared/components/StatusBadge';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
+import { formatJobLabel } from '@shared/utils/jobLabels';
 import { sanitizeRichText } from '@shared/utils/richText';
 
 const nextActionByStage: Partial<Record<CandidateStage, CandidateDetailAction>> = {
@@ -110,6 +111,18 @@ const formatDateLabel = (value?: string | null) => {
   return date.toLocaleDateString();
 };
 
+const hasCandidateExplanation = (candidate: ApplicantDetailDto) => {
+  const explanation = candidate.candidate_explanation;
+
+  return Boolean(
+    explanation?.summary?.trim()
+    || explanation?.recommendation?.trim()
+    || explanation?.explanation_text?.trim()
+    || explanation?.strengths?.length
+    || explanation?.gaps?.length,
+  );
+};
+
 export const CandidateDetailPage = () => {
   const { candidate: loaderCandidate } = useLoaderData() as { candidate: ApplicantDetailDto };
   const [candidate, setCandidate] = useState(loaderCandidate);
@@ -140,6 +153,7 @@ export const CandidateDetailPage = () => {
   const { canSendOffers, canHireCandidates } = usePermissions();
   const revalidator = useRevalidator();
   const parsedResume = candidate.parsed_resume_json;
+  const candidateExplanation = candidate.candidate_explanation;
   const personalInfo = parsedResume?.personal_info;
   const hasResume = candidate.has_resume;
 
@@ -289,7 +303,10 @@ export const CandidateDetailPage = () => {
         setCandidate((current) => ({ ...current, ...itemResult.candidate }));
       }
 
-      // Reload the canonical candidate payload so dashboard and detail views stay aligned with backend metrics.
+      const refreshedCandidate = await recruiterService.getApplicantBySubmissionId(candidate.resume_submission_id);
+      setCandidate(refreshedCandidate);
+
+      // Reload the canonical route payload so dashboards and detail views stay aligned with backend metrics.
       revalidator.revalidate();
       showToast({ title: successTitle, description: successDescription, tone: 'success' });
       return true;
@@ -478,7 +495,7 @@ export const CandidateDetailPage = () => {
                 <p className="font-semibold text-zinc-900">{candidate.offer.title}</p>
                 <p className="mt-1 text-zinc-600">{candidate.offer.salary_text}</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-500">
-                  {candidate.offer.employment_type}
+                  {formatJobLabel(candidate.offer.employment_type)}
                 </p>
               </div>
               <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3">
@@ -648,31 +665,40 @@ export const CandidateDetailPage = () => {
       <div className="space-y-4">
         {(candidate.submission_status !== 'Applied' && candidate.submission_status !== 'Recommended') ? (
           <RecruiterSectionCard title="Fit explanation" variant="compact">
-            {candidate.candidate_explanation?.strengths?.length ? (
+            {hasCandidateExplanation(candidate) && candidateExplanation ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">AI-assisted insight</p>
                 <p className="text-sm font-semibold text-zinc-900">Why this candidate is a good fit</p>
-                {candidate.candidate_explanation.summary ? (
+                {candidateExplanation.summary ? (
                   <p className="mt-1 text-sm leading-6 text-zinc-700">
-                    {candidate.candidate_explanation.summary}
+                    {candidateExplanation.summary}
                   </p>
                 ) : null}
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
-                  {candidate.candidate_explanation.strengths.map((item, index) => (
-                    <li key={`${item}-${index}`}>{item}</li>
-                  ))}
-                </ul>
-                {candidate.candidate_explanation.gaps?.length ? (
+                {candidateExplanation.strengths.length ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
+                    {candidateExplanation.strengths.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-zinc-500">No key strengths were extracted.</p>
+                )}
+                {candidateExplanation.gaps?.length ? (
                   <div className="mt-4 space-y-1">
                     <p className="text-sm font-medium text-zinc-800">Possible gaps</p>
                     <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700">
-                      {candidate.candidate_explanation.gaps.map((item, index) => (
+                      {candidateExplanation.gaps.map((item, index) => (
                         <li key={`${item}-${index}`}>{item}</li>
                       ))}
                     </ul>
                   </div>
                 ) : null}
-                <p className="mt-3 text-xs text-zinc-500">These are insights based on the extracted resume</p>
+                {candidateExplanation.recommendation ? (
+                  <div className="mt-4 space-y-1">
+                    <p className="text-sm font-medium text-zinc-800">Notes</p>
+                    <p className="text-sm leading-6 text-zinc-700">{candidateExplanation.recommendation}</p>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">

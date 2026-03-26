@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Loader2, MapPin, Bookmark } from "lucide-react";
+import { ArrowRight, Bookmark, BookmarkCheck, Loader2, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Job } from "@shared/types";
 import { Badge } from "@shared/components/Badge";
 import { Button } from "@shared/components/Button";
 import { Card } from "@shared/components/Card";
+import { IconActionButton } from "@shared/components/IconActionButton";
 import { formatCurrencyAmount } from "@shared/data/currency";
 
 interface JobCardProps {
@@ -33,11 +34,13 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
   const handleToggleSave = async () => {
     if (!onToggleSave || isSaving) return;
     const nextSavedState = !saved;
+    setSaved(nextSavedState);
     setIsSaving(true);
 
     try {
       await onToggleSave(job.id, nextSavedState);
-      setSaved(nextSavedState);
+    } catch {
+      setSaved(!nextSavedState);
     } finally {
       setIsSaving(false);
     }
@@ -69,30 +72,29 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = 'Appl
             </div>
           </div>
           {onToggleSave ? (
-            <Button
-              type="button"
-              variant="secondary"
+            <IconActionButton
+              icon={
+                isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <BookmarkCheck className="h-4 w-4" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )
+              }
+              label={
+                isSaving
+                  ? "Updating saved job"
+                  : saved
+                    ? "Saved job"
+                    : "Save job"
+              }
               disabled={isSaving}
-              className={`shrink-0 px-3 py-1.5 text-xs ${
-                saved
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
-                  : ""
-              }`}
+              className="shrink-0"
               onClick={() => {
                 void handleToggleSave();
               }}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                {isSaving ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : saved ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <Bookmark className="h-3.5 w-3.5" />
-                )}
-                {saved ? "Saved" : "Save"}
-              </span>
-            </Button>
+            />
           ) : null}
         </div>
 

@@ -12,8 +12,8 @@ using SkillSense.Persistence.Data;
 namespace SkillSense.Persistence.Migrations
 {
     [DbContext(typeof(SkillSenseDbContext))]
-    [Migration("20260323161848_AddJobOffers")]
-    partial class AddJobOffers
+    [Migration("20260326131530_AddJobSeekerFeature")]
+    partial class AddJobSeekerFeature
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -973,6 +973,11 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<string>("FullName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsHiddenFromJobSeekerHistory")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
