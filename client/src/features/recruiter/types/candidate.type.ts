@@ -227,6 +227,7 @@ export interface CandidateBulkAction {
   accent: 'red' | 'green' | 'violet';
   eligibleIds?: string[];
   skippedCount?: number;
+  disabled?: boolean;
 }
 
 export interface CandidateDetailAction {
