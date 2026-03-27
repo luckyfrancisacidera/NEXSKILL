@@ -44,6 +44,42 @@ export const jobseekerService = {
     return data;
   },
 
+  async getAllPublicJobs(): Promise<JobDto[]> {
+    const key = "publicJobs:all";
+    const cached = getCached<JobDto[]>(key);
+    if (cached) {
+      return cached;
+    }
+
+    const pageSize = 100;
+    const firstPage = await this.getPublicJobs({
+      pageNumber: 1,
+      pageSize,
+    });
+
+    if (firstPage.totalPages <= 1) {
+      setCached(key, firstPage.items, 60_000);
+      return firstPage.items;
+    }
+
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
+        this.getPublicJobs({
+          pageNumber: index + 2,
+          pageSize,
+        }),
+      ),
+    );
+
+    const allItems = [
+      ...firstPage.items,
+      ...remainingPages.flatMap((page) => page.items),
+    ];
+
+    setCached(key, allItems, 60_000);
+    return allItems;
+  },
+
   async getJobDetail(id: string): Promise<JobDto> {
     const response = await http.get<JobDto>(`/api/jobs/${id}`);
     return response.data;

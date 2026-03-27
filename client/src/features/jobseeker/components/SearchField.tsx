@@ -1,4 +1,5 @@
 type SearchFieldProps = {
+  id?: string;
   ariaLabel: string;
   className?: string;
   defaultValue?: string;
@@ -8,6 +9,7 @@ type SearchFieldProps = {
 };
 
 export const SearchField = ({
+  id,
   ariaLabel,
   className,
   defaultValue,
@@ -16,6 +18,7 @@ export const SearchField = ({
   value,
 }: SearchFieldProps) => (
   <input
+    id={id}
     aria-label={ariaLabel}
     className={
       className ??

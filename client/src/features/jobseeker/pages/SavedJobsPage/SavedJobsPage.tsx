@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { SearchField } from "@features/jobseeker/components";
+import { SavedJobsEmptyState, SearchField } from "@features/jobseeker/components";
 import { useSavedJobs } from "@features/jobseeker/hooks";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import { Card } from "@shared/components/Card";
@@ -32,9 +32,7 @@ export const SavedJobsPage = () => {
       </Card>
 
       {saved.length === 0 ? (
-        <Card className="bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-zinc-500 dark:text-zinc-400">No saved jobs yet.</p>
-        </Card>
+        <SavedJobsEmptyState />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {saved.map((item) => {

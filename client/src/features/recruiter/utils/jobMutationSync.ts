@@ -1,4 +1,5 @@
 import type { JobDto, JobListFilters, JobListItem } from '@features/recruiter/types';
+import { matchesSearchFields } from '@shared/utils/search';
 
 const JOB_MUTATION_EVENT_NAME = 'recruiter:jobs:mutation';
 const JOB_MUTATION_STORAGE_KEY = 'recruiter.jobs.latestMutation';
@@ -93,9 +94,10 @@ export const jobMatchesCurrentFilters = (job: JobListItem, filters: JobListFilte
     return true;
   }
 
-  return [job.title, job.department, job.location, job.employment_type, job.status]
-    .filter(Boolean)
-    .some((value) => value!.toLowerCase().includes(normalizedSearch));
+  return matchesSearchFields(
+    [job.title, job.department, job.location, job.employment_type, job.status],
+    normalizedSearch,
+  );
 };
 
 export const applyRecruiterJobMutation = (
