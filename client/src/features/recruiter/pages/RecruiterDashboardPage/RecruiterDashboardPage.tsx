@@ -258,7 +258,7 @@ export const RecruiterDashboardPage = () => {
         />
       </DashboardSectionCard>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         {summaryCards.map(({ key, label, icon }) => {
           const metric = data.summary[key];
 
