@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Menu, Plus } from "lucide-react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -15,6 +15,7 @@ import type {
 } from "@fullcalendar/core";
 import type { Interview, InterviewStatus } from "@features/recruiter/types/interview.types";
 import { Card } from "@shared/components/Card";
+import { SideDrawer } from "@shared/components/SideDrawer";
 import { cn } from "@shared/utils/cn";
 import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewStatus";
 
@@ -131,6 +132,146 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
   );
 };
 
+interface InterviewCalendarSidebarProps {
+  focusedDate: Date;
+  miniCalendarDays: Date[];
+  activeFilter: "all" | InterviewStatus;
+  filterCounts: Array<{
+    key: "all" | InterviewStatus;
+    label: string;
+    count: number;
+  }>;
+  onAddInterview: () => void;
+  onMoveCalendar: (direction: "prev" | "next") => void;
+  onNavigateToDate: (date: Date) => void;
+  onFilterChange: (filter: "all" | InterviewStatus) => void;
+}
+
+const InterviewCalendarSidebar = ({
+  focusedDate,
+  miniCalendarDays,
+  activeFilter,
+  filterCounts,
+  onAddInterview,
+  onMoveCalendar,
+  onNavigateToDate,
+  onFilterChange,
+}: InterviewCalendarSidebarProps) => (
+  <div className="flex h-full flex-col bg-white dark:bg-zinc-950">
+    <div className="border-b border-zinc-200/70 px-6 py-6 dark:border-zinc-800">
+      <button
+        type="button"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(24,24,27,0.16)] transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+        onClick={onAddInterview}
+      >
+        <Plus className="h-4 w-4" />
+        Add Interview
+      </button>
+    </div>
+
+    <div className="px-6 py-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          aria-label="Previous"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+          onClick={() => onMoveCalendar("prev")}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <p className="text-sm font-medium text-zinc-700 sm:text-base dark:text-zinc-200">
+          {focusedDate.toLocaleDateString(undefined, {
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
+        <button
+          type="button"
+          aria-label="Next"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+          onClick={() => onMoveCalendar("next")}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-y-3 text-center text-[0.95rem] font-medium text-zinc-500 dark:text-zinc-400">
+        {WEEKDAY_LABELS.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+
+      <div className="mt-5 grid grid-cols-7 gap-y-3 text-center">
+        {miniCalendarDays.map((day) => {
+          const isCurrentMonth = day.getMonth() === focusedDate.getMonth();
+          const isSelected = isSameDay(day, focusedDate);
+
+          return (
+            <button
+              key={day.toISOString()}
+              type="button"
+              className={cn(
+                "mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition",
+                isSelected
+                  ? "bg-zinc-900 text-white shadow-[0_10px_18px_rgba(24,24,27,0.18)] dark:bg-zinc-100 dark:text-zinc-900"
+                  : isCurrentMonth
+                    ? "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    : "text-zinc-300 hover:bg-zinc-100 dark:text-zinc-600 dark:hover:bg-zinc-900",
+              )}
+              onClick={() => onNavigateToDate(day)}
+            >
+              {day.getDate()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+
+    <div className="border-t border-zinc-200/70 px-6 py-6 dark:border-zinc-800">
+      <div className="mb-4">
+        <h3 className="text-[1.1rem] font-semibold text-zinc-800 dark:text-zinc-100">
+          Interview Status
+        </h3>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          Narrow the calendar to one schedule state.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        {filterCounts.map((filter) => {
+          const isActive = activeFilter === filter.key;
+
+          return (
+            <button
+              key={filter.key}
+              type="button"
+              className={cn(
+                "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition",
+                isActive
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900",
+              )}
+              onClick={() => onFilterChange(filter.key)}
+            >
+              <span>{filter.label}</span>
+              <span
+                className={cn(
+                  "inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
+                  isActive
+                    ? "bg-white/16 text-white dark:bg-zinc-900/10 dark:text-zinc-900"
+                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400",
+                )}
+              >
+                {filter.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+);
+
 export const InterviewCalendar = ({
   interviews,
   onAddInterview,
@@ -147,6 +288,7 @@ export const InterviewCalendar = ({
   );
   const [currentView, setCurrentView] = useState<(typeof VIEW_OPTIONS)[number]["key"]>("dayGridMonth");
   const [activeFilter, setActiveFilter] = useState<"all" | InterviewStatus>("all");
+  const [isSidebarDrawerOpen, setIsSidebarDrawerOpen] = useState(false);
   const activeInterviews = interviews.filter((interview) => !interview.isArchived);
   const visibleInterviews = activeFilter === "all"
     ? activeInterviews
@@ -209,126 +351,72 @@ export const InterviewCalendar = ({
     syncCalendarState(api);
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const handleMediaQueryChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setIsSidebarDrawerOpen(false);
+      }
+    };
+
+    handleMediaQueryChange(mediaQuery);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleMediaQueryChange);
+      return () => mediaQuery.removeEventListener("change", handleMediaQueryChange);
+    }
+
+    mediaQuery.addListener(handleMediaQueryChange);
+    return () => mediaQuery.removeListener(handleMediaQueryChange);
+  }, []);
+
+  const handleDrawerAddInterview = () => {
+    setIsSidebarDrawerOpen(false);
+    onAddInterview(focusedDate.toISOString().slice(0, 10));
+  };
+
+  const handleDrawerNavigateToDate = (date: Date) => {
+    navigateToDate(date);
+    setIsSidebarDrawerOpen(false);
+  };
+
+  const handleDrawerFilterChange = (filter: "all" | InterviewStatus) => {
+    setActiveFilter(filter);
+    setIsSidebarDrawerOpen(false);
+  };
+
   return (
     <Card className="interview-calendar overflow-hidden border-0 bg-white p-0 shadow-[0_18px_50px_rgba(24,24,27,0.06)] dark:bg-zinc-950">
-      <div className="grid gap-0 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="border-r border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="border-b border-zinc-200/70 px-6 py-6 dark:border-zinc-800">
-            <button
-              type="button"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(24,24,27,0.16)] transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              onClick={() => onAddInterview(focusedDate.toISOString().slice(0, 10))}
-            >
-              <Plus className="h-4 w-4" />
-              Add Interview
-            </button>
-          </div>
-
-          <div className="px-6 py-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                aria-label="Previous"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
-                onClick={() => moveCalendar("prev")}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <p className="text-[1.05rem] font-medium text-zinc-700 dark:text-zinc-200">
-                {focusedDate.toLocaleDateString(undefined, {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-              <button
-                type="button"
-                aria-label="Next"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
-                onClick={() => moveCalendar("next")}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-y-3 text-center text-[0.95rem] font-medium text-zinc-500 dark:text-zinc-400">
-              {WEEKDAY_LABELS.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-
-            <div className="mt-5 grid grid-cols-7 gap-y-3 text-center">
-              {miniCalendarDays.map((day) => {
-                const isCurrentMonth = day.getMonth() === focusedDate.getMonth();
-                const isSelected = isSameDay(day, focusedDate);
-
-                return (
-                  <button
-                    key={day.toISOString()}
-                    type="button"
-                    className={cn(
-                      "mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition",
-                      isSelected
-                        ? "bg-zinc-900 text-white shadow-[0_10px_18px_rgba(24,24,27,0.18)] dark:bg-zinc-100 dark:text-zinc-900"
-                        : isCurrentMonth
-                          ? "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                          : "text-zinc-300 hover:bg-zinc-100 dark:text-zinc-600 dark:hover:bg-zinc-900",
-                    )}
-                    onClick={() => navigateToDate(day)}
-                  >
-                    {day.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="border-t border-zinc-200/70 px-6 py-6 dark:border-zinc-800">
-            <div className="mb-4">
-              <h3 className="text-[1.1rem] font-semibold text-zinc-800 dark:text-zinc-100">
-                Interview Status
-              </h3>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Narrow the calendar to one schedule state.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              {filterCounts.map((filter) => {
-                const isActive = activeFilter === filter.key;
-
-                return (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition",
-                      isActive
-                        ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                        : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900",
-                    )}
-                    onClick={() => setActiveFilter(filter.key)}
-                  >
-                    <span>{filter.label}</span>
-                    <span
-                      className={cn(
-                        "inline-flex min-w-7 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-                        isActive
-                          ? "bg-white/16 text-white dark:bg-zinc-900/10 dark:text-zinc-900"
-                          : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400",
-                      )}
-                    >
-                      {filter.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div className="grid gap-0 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-950 lg:block">
+          <InterviewCalendarSidebar
+            focusedDate={focusedDate}
+            miniCalendarDays={miniCalendarDays}
+            activeFilter={activeFilter}
+            filterCounts={filterCounts}
+            onAddInterview={() => onAddInterview(focusedDate.toISOString().slice(0, 10))}
+            onMoveCalendar={moveCalendar}
+            onNavigateToDate={navigateToDate}
+            onFilterChange={setActiveFilter}
+          />
         </aside>
 
-        <div className="bg-white dark:bg-zinc-950">
-          <div className="flex flex-col gap-5 border-b border-zinc-200/70 px-6 py-5 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
+        <div className="min-w-0 bg-white dark:bg-zinc-950">
+          <div className="flex flex-col gap-5 border-b border-zinc-200/70 px-4 py-5 dark:border-zinc-800 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                type="button"
+                aria-label="Open interview controls"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white dark:focus-visible:ring-zinc-500 lg:hidden"
+                onClick={() => setIsSidebarDrawerOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -348,18 +436,18 @@ export const InterviewCalendar = ({
                 </button>
               </div>
 
-              <h2 className="text-[2rem] font-semibold tracking-[-0.03em] text-zinc-800 dark:text-zinc-100">
+              <h2 className="min-w-0 text-[1.2rem] font-semibold tracking-[-0.03em] text-zinc-800 sm:text-[1.45rem] md:text-[1.7rem] lg:text-[2rem] dark:text-zinc-100">
                 {calendarTitle}
               </h2>
             </div>
 
-            <div className="inline-flex overflow-hidden rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+            <div className="flex w-full rounded-xl bg-zinc-100 p-1 md:inline-flex md:w-auto dark:bg-zinc-900">
               {VIEW_OPTIONS.map((option) => (
                 <button
                   key={option.key}
                   type="button"
                   className={cn(
-                    "min-w-19.5 rounded-lg px-4 py-2.5 text-sm font-medium transition",
+                    "flex-1 rounded-lg px-3 py-2 text-center text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm md:min-w-19.5 md:flex-none",
                     currentView === option.key
                       ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
                       : "bg-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white",
@@ -372,7 +460,7 @@ export const InterviewCalendar = ({
             </div>
           </div>
 
-          <div className="pl-0 pr-5 py-0">
+          <div className="min-w-0 px-0 py-0 pr-0 lg:pr-5">
             <FullCalendar
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -413,6 +501,27 @@ export const InterviewCalendar = ({
           </div>
         </div>
       </div>
+
+      <SideDrawer
+        open={isSidebarDrawerOpen}
+        side="left"
+        title="Interview controls"
+        description="Create interviews, jump between dates, and refine the calendar view."
+        onClose={() => setIsSidebarDrawerOpen(false)}
+        widthClassName="max-w-[88vw] sm:max-w-[380px]"
+        contentClassName="px-0 py-0"
+      >
+        <InterviewCalendarSidebar
+          focusedDate={focusedDate}
+          miniCalendarDays={miniCalendarDays}
+          activeFilter={activeFilter}
+          filterCounts={filterCounts}
+          onAddInterview={handleDrawerAddInterview}
+          onMoveCalendar={moveCalendar}
+          onNavigateToDate={handleDrawerNavigateToDate}
+          onFilterChange={handleDrawerFilterChange}
+        />
+      </SideDrawer>
     </Card>
   );
 };

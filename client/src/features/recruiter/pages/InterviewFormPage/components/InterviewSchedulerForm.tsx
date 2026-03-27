@@ -586,15 +586,15 @@ export const InterviewSchedulerForm = ({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
             Calendar sync will be available once connected in settings.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             {onCancel ? (
               <button
                 type="button"
-                className="rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                className="w-full rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
                 onClick={onCancel}
                 disabled={isSubmitting}
               >
@@ -603,7 +603,7 @@ export const InterviewSchedulerForm = ({
             ) : null}
             <button
               type="submit"
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              className="w-full rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80 sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               disabled={isSubmitting || isLoadingJobs}
             >
               {isSubmitting ? "Scheduling..." : submitLabel}

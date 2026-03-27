@@ -274,12 +274,6 @@ export const JobPostsPage = () => {
         </section>
 
         <section className="border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="px-5 py-5 sm:px-6">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Job Posts</h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Review active listings, update job metadata, and manage posting status.
-          </p>
-        </div>
 
         {isEmptyPage ? (
           <EmptyState

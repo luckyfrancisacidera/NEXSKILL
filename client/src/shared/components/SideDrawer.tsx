@@ -7,6 +7,7 @@ interface SideDrawerProps extends PropsWithChildren {
   title: string;
   description?: string;
   onClose: () => void;
+  side?: "left" | "right";
   widthClassName?: string;
   contentClassName?: string;
   closeOnBackdrop?: boolean;
@@ -17,6 +18,7 @@ export const SideDrawer = ({
   title,
   description,
   onClose,
+  side = "right",
   widthClassName,
   contentClassName,
   closeOnBackdrop = true,
@@ -93,9 +95,16 @@ export const SideDrawer = ({
         aria-modal="true"
         role="dialog"
         className={cn(
-          "absolute right-0 top-0 flex h-full w-full max-w-[92vw] flex-col border-l border-zinc-200 bg-white font-inter shadow-2xl transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-950",
+          "absolute top-0 flex h-full w-full max-w-[92vw] flex-col bg-white font-inter shadow-2xl transition-transform duration-200 dark:bg-zinc-950",
+          side === "right"
+            ? "right-0 border-l border-zinc-200 dark:border-zinc-800"
+            : "left-0 border-r border-zinc-200 dark:border-zinc-800",
           widthClassName ?? "sm:max-w-[460px]",
-          isVisible ? "translate-x-0" : "translate-x-full",
+          isVisible
+            ? "translate-x-0"
+            : side === "right"
+              ? "translate-x-full"
+              : "-translate-x-full",
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
