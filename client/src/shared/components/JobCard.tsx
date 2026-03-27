@@ -30,7 +30,7 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = "Appl
 
   const salaryLabel =
     job.salaryMin > 0 || job.salaryMax > 0
-      ? `${formatCurrencyAmount(job.salaryMin, job.currency)} - ${formatCurrencyAmount(job.salaryMax, job.currency)}`
+      ? `${formatCurrencyAmount(job.salaryMin, job.currency)} - ${formatCurrencyAmount(job.salaryMax, job.currency)} / yr`
       : "Salary not specified";
   const locationLabel = job.location?.trim() || "Location not specified";
   const companyLabel = job.company?.trim() || "Company";

@@ -5,7 +5,6 @@ import {
   CalendarDays,
   Download,
   GraduationCap,
-  Loader2,
   Mail,
   MapPin,
   ReceiptText,
