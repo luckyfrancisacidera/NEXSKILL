@@ -296,6 +296,9 @@ public sealed class RecruiterServiceTests
         public Task<List<ResumeSubmissionEntity>> GetDashboardApplicationsAsync(IReadOnlyCollection<Guid> jobIds, DateTime? startUtc, DateTime? endExclusiveUtc, CancellationToken ct = default)
             => throw new NotImplementedException();
 
+        public Task<List<DashboardOfferMetricData>> GetLatestDashboardOffersAsync(IReadOnlyCollection<Guid> applicationIds, CancellationToken ct = default)
+            => throw new NotImplementedException();
+
         public Task<Dictionary<Guid, (string Title, string Department)>> GetJobLookupAsync(Guid recruiterIdInput, Guid companyIdInput, CancellationToken ct = default)
             => throw new NotImplementedException();
 

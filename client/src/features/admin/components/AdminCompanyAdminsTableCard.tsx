@@ -1,7 +1,8 @@
 import { Badge } from '@shared/components/Badge';
 import { Button } from '@shared/components/Button';
-import { Card } from '@shared/components/Card';
-import { AdminTablePagination } from '@features/admin/components/AdminTablePagination';
+import { DataTable } from '@shared/components/ui/data-table/DataTable';
+import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { AdminStatusBadge } from '@features/admin/components/AdminStatusBadge';
 import type { AdminCompanyAdminOverviewDto, Paged } from '@features/admin/types/admin.type';
 
@@ -16,8 +17,7 @@ interface AdminCompanyAdminsTableCardProps {
   canManageCompanies: boolean;
   pendingActionId: string | null;
   onToggleCompanyAdmin: (admin: AdminCompanyAdminOverviewDto) => Promise<void>;
-  previousHref: string;
-  nextHref: string;
+  getPageHref: (page: number) => string;
   onPageSizeChange: (nextPageSize: string) => void;
 }
 
@@ -26,11 +26,10 @@ export const AdminCompanyAdminsTableCard = ({
   canManageCompanies,
   pendingActionId,
   onToggleCompanyAdmin,
-  previousHref,
-  nextHref,
+  getPageHref,
   onPageSizeChange,
 }: AdminCompanyAdminsTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+  <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
     <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company Admin Accounts</h2>
@@ -38,49 +37,63 @@ export const AdminCompanyAdminsTableCard = ({
       </div>
       <Badge>{companyAdmins.totalCount} total</Badge>
     </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
-          <tr>
-            <th className="px-6 py-3">Admin</th>
-            <th className="px-6 py-3">Company</th>
-            <th className="px-6 py-3">Joined</th>
-            <th className="px-6 py-3">Status</th>
-            <th className="px-6 py-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-          {companyAdmins.items.map((admin) => (
-            <tr key={admin.userId}>
-              <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{admin.email}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{admin.companyName}</td>
-              <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">{createdAtFormatter.format(new Date(admin.createdAtUtc))}</td>
-              <td className="px-6 py-4">
-                <AdminStatusBadge isActive={admin.isActive} />
-              </td>
-              <td className="px-6 py-4 text-right">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={!canManageCompanies || pendingActionId === admin.userId}
-                  onClick={() => void onToggleCompanyAdmin(admin)}
-                >
-                  {pendingActionId === admin.userId ? 'Updating...' : admin.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <AdminTablePagination
-      pageNumber={companyAdmins.pageNumber}
+    <DataTable
+      data={companyAdmins.items}
+      getRowKey={(admin) => admin.userId}
+      surfaceClassName="border-0"
+      columns={[
+        {
+          id: 'admin',
+          header: 'Admin',
+          cell: (admin) => <IdentityCell name={admin.email} email={admin.companyName} />,
+          accessor: (admin) => admin.email,
+          sortable: true,
+          sortType: 'string',
+          widthClassName: 'min-w-[240px]',
+        },
+        {
+          id: 'joined',
+          header: 'Joined',
+          cell: (admin) => createdAtFormatter.format(new Date(admin.createdAtUtc)),
+          accessor: (admin) => new Date(admin.createdAtUtc),
+          sortable: true,
+          sortType: 'date',
+        },
+        {
+          id: 'status',
+          header: 'Status',
+          cell: (admin) => <AdminStatusBadge isActive={admin.isActive} />,
+          accessor: (admin) => (admin.isActive ? 'Active' : 'Inactive'),
+          sortable: true,
+          sortType: 'string',
+        },
+        {
+          id: 'action',
+          header: 'Action',
+          align: 'right',
+          cell: (admin) => (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!canManageCompanies || pendingActionId === admin.userId}
+              onClick={() => void onToggleCompanyAdmin(admin)}
+            >
+              {pendingActionId === admin.userId ? 'Updating...' : admin.isActive ? 'Deactivate' : 'Activate'}
+            </Button>
+          ),
+          cellClassName: 'w-[140px]',
+        },
+      ]}
+    />
+    <TablePagination
+      page={companyAdmins.pageNumber}
       totalPages={companyAdmins.totalPages}
       totalCount={companyAdmins.totalCount}
       pageSize={companyAdmins.pageSize}
-      previousHref={previousHref}
-      nextHref={nextHref}
-      onPageSizeChange={onPageSizeChange}
+      getPageHref={getPageHref}
+      onPageSizeChange={(pageSize) => onPageSizeChange(String(pageSize))}
+      itemLabel="admins"
+      className="px-6"
     />
-  </Card>
+  </section>
 );

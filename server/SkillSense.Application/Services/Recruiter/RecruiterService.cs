@@ -386,6 +386,19 @@ public sealed class RecruiterService(
                 previousApplications = await recruiterRepository.GetDashboardApplicationsAsync(jobIds, prevStartUtc, prevEndExclusiveUtc, ct);
             }
 
+            var currentOfferApplicationIds = applications
+                .Where(application => application.Status == ResumeSubmissionStatus.Offer)
+                .Select(application => application.Id)
+                .Distinct()
+                .ToList();
+            var previousOfferApplicationIds = previousApplications
+                .Where(application => application.Status == ResumeSubmissionStatus.Offer)
+                .Select(application => application.Id)
+                .Distinct()
+                .ToList();
+            var currentOffers = await recruiterRepository.GetLatestDashboardOffersAsync(currentOfferApplicationIds, ct);
+            var previousOffers = await recruiterRepository.GetLatestDashboardOffersAsync(previousOfferApplicationIds, ct);
+
             return new RecruiterDashboardResponse
             {
                 Filters = new RecruiterDashboardFilterOptionsResponse
@@ -394,7 +407,7 @@ public sealed class RecruiterService(
                     JobRoles = filterData.JobRoles,
                     JobRolesByDepartment = filterData.JobRolesByDepartment,
                 },
-                Summary = RecruiterDashboardComposer.BuildSummary(applications, previousApplications),
+                Summary = RecruiterDashboardComposer.BuildSummary(applications, previousApplications, currentOffers, previousOffers),
                 Trends = RecruiterDashboardComposer.BuildTrends(applications, normalizedGroupBy, await recruiterRepository.GetJobLookupAsync(recruiterId, companyId, ct)),
             };
         });

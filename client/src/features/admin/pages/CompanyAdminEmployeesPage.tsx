@@ -4,6 +4,11 @@ import { Link, useLoaderData, useSubmit } from "react-router-dom";
 import type { CompanyAdminEmployeesDto } from "@features/admin/types/admin.type";
 import { Card } from "@shared/components/Card";
 import { actionButtonClassName } from "@shared/components/ActionButton";
+import { DepartmentCell } from "@shared/components/DepartmentCell";
+import { DataTable } from "@shared/components/ui/data-table/DataTable";
+import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 
 export const CompanyAdminEmployeesPage = () => {
   const data = useLoaderData() as CompanyAdminEmployeesDto & { filters: { search: string } };
@@ -18,8 +23,73 @@ export const CompanyAdminEmployeesPage = () => {
   const buildHref = (page: number) =>
     `?search=${encodeURIComponent(data.filters.search)}&pageSize=${data.pageSize}&page=${page}`;
 
+  const columns: Array<DataTableColumn<CompanyAdminEmployeesDto["items"][number]>> = [
+    {
+      id: "employee",
+      header: "Employee",
+      cell: (employee) => (
+        <IdentityCell name={employee.employee_name} email={employee.employee_email} />
+      ),
+      accessor: (employee) => employee.employee_name,
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[240px]",
+    },
+    {
+      id: "recruiter",
+      header: "Recruiter",
+      cell: (employee) => employee.recruiter_name,
+      accessor: (employee) => employee.recruiter_name,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "date",
+      header: "Date",
+      cell: (employee) => new Date(employee.hire_date_utc).toLocaleDateString(),
+      accessor: (employee) => new Date(employee.hire_date_utc),
+      sortable: true,
+      sortType: "date",
+    },
+    {
+      id: "offer",
+      header: "Offer",
+      cell: (employee) => employee.offer_title || employee.offer_salary_text || "Accepted offer",
+      accessor: (employee) => employee.offer_title || employee.offer_salary_text || "Accepted offer",
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "department",
+      header: "Department",
+      cell: (employee) => <DepartmentCell department={employee.department} />,
+      accessor: (employee) => employee.department,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "job",
+      header: "Job",
+      cell: (employee) => employee.job_title,
+      accessor: (employee) => employee.job_title,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      cell: (employee) => (
+        <Link to={`/admin/company/candidates/${employee.resume_submission_id}`} className={actionButtonClassName()}>
+          View Profile
+        </Link>
+      ),
+      cellClassName: "w-[160px]",
+    },
+  ];
+
   return (
-    <Card className="rounded-3xl border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
       <div className="border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
         <h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-100">Employees</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -50,54 +120,23 @@ export const CompanyAdminEmployeesPage = () => {
       {data.items.length === 0 ? (
         <div className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No employees yet.</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
-            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-200">
-              <tr>
-                {["Name of Employee", "Recruiter", "Date", "Offer", "Department", "Job", "Actions"].map((column) => (
-                  <th key={column} className="px-6 py-3">{column}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {data.items.map((employee) => (
-                <tr key={employee.resume_submission_id}>
-                  <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">{employee.employee_name}</td>
-                  <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{employee.recruiter_name}</td>
-                  <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{new Date(employee.hire_date_utc).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{employee.offer_title || employee.offer_salary_text || "Accepted offer"}</td>
-                  <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{employee.department}</td>
-                  <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{employee.job_title}</td>
-                  <td className="px-6 py-4">
-                    <Link to={`/admin/company/candidates/${employee.resume_submission_id}`} className={actionButtonClassName()}>
-                      View Profile
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          data={data.items}
+          columns={columns}
+          getRowKey={(employee) => employee.resume_submission_id}
+          surfaceClassName="border-0"
+        />
       )}
 
-      <div className="flex items-center justify-between border-t border-zinc-200 px-6 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-        <span>{data.totalCount} total employees</span>
-        <div className="flex items-center gap-2">
-          <Link
-            to={buildHref(Math.max(1, data.pageNumber - 1))}
-            className={`rounded-lg border px-3 py-1.5 ${data.pageNumber <= 1 ? "pointer-events-none opacity-50" : "border-zinc-300 dark:border-zinc-700"}`}
-          >
-            Previous
-          </Link>
-          <span>Page {data.pageNumber} of {data.totalPages}</span>
-          <Link
-            to={buildHref(Math.min(data.totalPages, data.pageNumber + 1))}
-            className={`rounded-lg border px-3 py-1.5 ${data.pageNumber >= data.totalPages ? "pointer-events-none opacity-50" : "border-zinc-300 dark:border-zinc-700"}`}
-          >
-            Next
-          </Link>
-        </div>
-      </div>
+      <TablePagination
+        page={data.pageNumber}
+        totalPages={data.totalPages}
+        totalCount={data.totalCount}
+        pageSize={data.pageSize}
+        getPageHref={buildHref}
+        itemLabel="employees"
+        className="px-6"
+      />
     </Card>
   );
 };

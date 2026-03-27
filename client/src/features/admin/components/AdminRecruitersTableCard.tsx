@@ -1,23 +1,17 @@
 import { Badge } from '@shared/components/Badge';
 import { Button } from '@shared/components/Button';
-import { Card } from '@shared/components/Card';
-import { AdminTablePagination } from '@features/admin/components/AdminTablePagination';
+import { DataTable } from '@shared/components/ui/data-table/DataTable';
+import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { AdminStatusBadge } from '@features/admin/components/AdminStatusBadge';
 import type { AdminRecruiterOverviewDto, Paged } from '@features/admin/types/admin.type';
-
-const createdAtFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
 
 interface AdminRecruitersTableCardProps {
   recruiters: Paged<AdminRecruiterOverviewDto>;
   canManageRecruiters: boolean;
   pendingActionId: string | null;
   onToggleRecruiter: (recruiter: AdminRecruiterOverviewDto) => Promise<void>;
-  previousHref: string;
-  nextHref: string;
+  getPageHref: (page: number) => string;
   onPageSizeChange: (nextPageSize: string) => void;
 }
 
@@ -26,11 +20,10 @@ export const AdminRecruitersTableCard = ({
   canManageRecruiters,
   pendingActionId,
   onToggleRecruiter,
-  previousHref,
-  nextHref,
+  getPageHref,
   onPageSizeChange,
 }: AdminRecruitersTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+  <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
     <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Accounts</h2>
@@ -38,56 +31,79 @@ export const AdminRecruitersTableCard = ({
       </div>
       <Badge>{recruiters.totalCount} total</Badge>
     </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
-          <tr>
-            <th className="px-6 py-3">Recruiter</th>
-            <th className="px-6 py-3">Company</th>
-            <th className="px-6 py-3">Jobs</th>
-            <th className="px-6 py-3">Upcoming Interviews</th>
-            <th className="px-6 py-3">Hires</th>
-            <th className="px-6 py-3">Status</th>
-            <th className="px-6 py-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-          {recruiters.items.map((recruiter) => (
-            <tr key={recruiter.userId}>
-              <td className="px-6 py-4">
-                <div className="font-medium text-zinc-900 dark:text-zinc-100">{recruiter.email}</div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Joined {createdAtFormatter.format(new Date(recruiter.createdAtUtc))}</div>
-              </td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.companyName}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.upcomingInterviews}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.totalHires}</td>
-              <td className="px-6 py-4">
-                <AdminStatusBadge isActive={recruiter.isActive} />
-              </td>
-              <td className="px-6 py-4 text-right">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={!canManageRecruiters || pendingActionId === recruiter.userId}
-                  onClick={() => void onToggleRecruiter(recruiter)}
-                >
-                  {pendingActionId === recruiter.userId ? 'Updating...' : recruiter.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <AdminTablePagination
-      pageNumber={recruiters.pageNumber}
+    <DataTable
+      data={recruiters.items}
+      getRowKey={(recruiter) => recruiter.userId}
+      surfaceClassName="border-0"
+      columns={[
+        {
+          id: 'recruiter',
+          header: 'Recruiter',
+          cell: (recruiter) => <IdentityCell name={recruiter.email} email={recruiter.companyName} />,
+          accessor: (recruiter) => recruiter.email,
+          sortable: true,
+          sortType: 'string',
+          widthClassName: 'min-w-[260px]',
+        },
+        {
+          id: 'jobs',
+          header: 'Jobs',
+          cell: (recruiter) => `${recruiter.activeJobs}/${recruiter.totalJobs}`,
+          accessor: (recruiter) => recruiter.activeJobs,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'upcoming-interviews',
+          header: 'Upcoming Interviews',
+          cell: (recruiter) => recruiter.upcomingInterviews,
+          accessor: (recruiter) => recruiter.upcomingInterviews,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'hires',
+          header: 'Hires',
+          cell: (recruiter) => recruiter.totalHires,
+          accessor: (recruiter) => recruiter.totalHires,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'status',
+          header: 'Status',
+          cell: (recruiter) => <AdminStatusBadge isActive={recruiter.isActive} />,
+          accessor: (recruiter) => (recruiter.isActive ? 'Active' : 'Inactive'),
+          sortable: true,
+          sortType: 'string',
+        },
+        {
+          id: 'action',
+          header: 'Action',
+          align: 'right',
+          cell: (recruiter) => (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!canManageRecruiters || pendingActionId === recruiter.userId}
+              onClick={() => void onToggleRecruiter(recruiter)}
+            >
+              {pendingActionId === recruiter.userId ? 'Updating...' : recruiter.isActive ? 'Deactivate' : 'Activate'}
+            </Button>
+          ),
+          cellClassName: 'w-[140px]',
+        },
+      ]}
+    />
+    <TablePagination
+      page={recruiters.pageNumber}
       totalPages={recruiters.totalPages}
       totalCount={recruiters.totalCount}
       pageSize={recruiters.pageSize}
-      previousHref={previousHref}
-      nextHref={nextHref}
-      onPageSizeChange={onPageSizeChange}
+      getPageHref={getPageHref}
+      onPageSizeChange={(pageSize) => onPageSizeChange(String(pageSize))}
+      itemLabel="recruiters"
+      className="px-6"
     />
-  </Card>
+  </section>
 );

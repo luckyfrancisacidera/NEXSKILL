@@ -7,6 +7,7 @@ export interface MetricCardProps {
   label: string;
   value: number;
   comparisonPercent: number;
+  valueDisplay?: string;
 }
 
 const formatCompactNumber = (value: number) => Intl.NumberFormat('en-US').format(value);
@@ -14,7 +15,7 @@ const formatCompactNumber = (value: number) => Intl.NumberFormat('en-US').format
 /**
  * Summary card used for high-level recruiter funnel metrics.
  */
-export const MetricCard = ({ icon: Icon, label, value, comparisonPercent }: MetricCardProps) => {
+export const MetricCard = ({ icon: Icon, label, value, comparisonPercent, valueDisplay }: MetricCardProps) => {
   const positive = comparisonPercent >= 0;
 
   return (
@@ -32,7 +33,7 @@ export const MetricCard = ({ icon: Icon, label, value, comparisonPercent }: Metr
         </p>
       </div>
 
-      <p className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{formatCompactNumber(value)}</p>
+      <p className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{valueDisplay ?? formatCompactNumber(value)}</p>
       <p className="text-xs text-zinc-500 dark:text-zinc-400">Compared with the previous matched period</p>
     </Card>
   );

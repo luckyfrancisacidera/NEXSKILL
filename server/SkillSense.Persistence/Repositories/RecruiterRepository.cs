@@ -193,6 +193,30 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
         return query.ToListAsync(ct);
     }
 
+    public Task<List<DashboardOfferMetricData>> GetLatestDashboardOffersAsync(IReadOnlyCollection<Guid> applicationIds, CancellationToken ct = default)
+    {
+        if (applicationIds.Count == 0)
+        {
+            return Task.FromResult(new List<DashboardOfferMetricData>());
+        }
+
+        return dbContext.JobOffers
+            .AsNoTracking()
+            .Where(offer => applicationIds.Contains(offer.ApplicationId))
+            .GroupBy(offer => offer.ApplicationId)
+            .Select(group => group
+                .OrderByDescending(offer => offer.CreatedAtUtc)
+                .Select(offer => new DashboardOfferMetricData
+                {
+                    ApplicationId = offer.ApplicationId,
+                    SalaryAmount = offer.SalaryAmount,
+                    SalaryType = offer.SalaryType,
+                    Currency = offer.Currency,
+                })
+                .First())
+            .ToListAsync(ct);
+    }
+
     public Task<Dictionary<Guid, (string Title, string Department)>> GetJobLookupAsync(Guid recruiterId, Guid companyId, CancellationToken ct = default)
         => dbContext.Jobs.AsNoTracking()
             .Where(j => j.RecruiterId == recruiterId && j.CompanyId == companyId)

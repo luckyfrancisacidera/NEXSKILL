@@ -1,6 +1,7 @@
 using System.Globalization;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Domain.Entities;
+using SkillSense.Persistence.Models;
 
 namespace SkillSense.Application.Common.Recruiter;
 
@@ -8,13 +9,19 @@ internal static class RecruiterDashboardComposer
 {
     public static RecruiterDashboardSummaryResponse BuildSummary(
         IReadOnlyCollection<ResumeSubmissionEntity> current,
-        IReadOnlyCollection<ResumeSubmissionEntity> previous)
+        IReadOnlyCollection<ResumeSubmissionEntity> previous,
+        IReadOnlyCollection<DashboardOfferMetricData> currentOffers,
+        IReadOnlyCollection<DashboardOfferMetricData> previousOffers)
         => new()
         {
             TotalApplicants = BuildMetric(current.Count, previous.Count),
             TotalShortlisted = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted), previous.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted)),
             TotalInterview = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Interview), previous.Count(x => x.Status == ResumeSubmissionStatus.Interview)),
-            TotalOffer = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Offer), previous.Count(x => x.Status == ResumeSubmissionStatus.Offer)),
+            TotalOffer = BuildOfferMetric(
+                currentOffers,
+                previousOffers,
+                current.Count(x => x.Status == ResumeSubmissionStatus.Offer),
+                previous.Count(x => x.Status == ResumeSubmissionStatus.Offer)),
             TotalHired = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Hired), previous.Count(x => x.Status == ResumeSubmissionStatus.Hired)),
         };
 
@@ -74,12 +81,43 @@ internal static class RecruiterDashboardComposer
     }
 
     private static MetricWithComparisonResponse BuildMetric(int current, int previous)
+        => BuildMetric((decimal)current, (decimal)previous);
+
+    private static MetricWithComparisonResponse BuildMetric(decimal current, decimal previous)
         => new()
         {
             Value = current,
             PreviousValue = previous,
-            ComparisonPercent = previous <= 0 ? 0 : Math.Round(((decimal)(current - previous) / previous) * 100, 2),
+            ComparisonPercent = previous <= 0 ? 0 : Math.Round(((current - previous) / previous) * 100, 2),
         };
+
+    private static MetricWithComparisonResponse BuildOfferMetric(
+        IReadOnlyCollection<DashboardOfferMetricData> currentOffers,
+        IReadOnlyCollection<DashboardOfferMetricData> previousOffers,
+        int currentOfferCount,
+        int previousOfferCount)
+    {
+        var current = currentOffers
+            .Select(offer => OfferCompensationNormalizer.NormalizeToAnnual(offer.SalaryAmount, offer.SalaryType, offer.Currency))
+            .Where(amount => amount.HasValue)
+            .Sum(amount => amount!.Value);
+        var previous = previousOffers
+            .Select(offer => OfferCompensationNormalizer.NormalizeToAnnual(offer.SalaryAmount, offer.SalaryType, offer.Currency))
+            .Where(amount => amount.HasValue)
+            .Sum(amount => amount!.Value);
+
+        var metric = new MetricWithComparisonResponse
+        {
+            Value = current,
+            PreviousValue = previous,
+            ComparisonPercent = previousOfferCount <= 0
+                ? 0
+                : Math.Round(((decimal)(currentOfferCount - previousOfferCount) / previousOfferCount) * 100, 2),
+        };
+        metric.Currency = OfferCompensationNormalizer.PhpCurrency;
+        metric.NormalizedUnit = OfferCompensationNormalizer.AnnualUnit;
+        return metric;
+    }
 
     private static TrendDatasetResponse CreateTrendDataset(
         string key,
