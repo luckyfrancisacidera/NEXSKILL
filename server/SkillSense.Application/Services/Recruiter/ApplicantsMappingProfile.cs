@@ -18,6 +18,10 @@ public sealed class ApplicantsMappingProfile : Profile
             .ForMember(dest => dest.JobseekerStage, opt => opt.MapFrom(src => RecruiterApplicantProjection.ResolveJobseekerStage(src.Status)))
             .ForMember(dest => dest.HasResume, opt => opt.MapFrom(src => src.HasResume))
             .ForMember(dest => dest.ResumeFileName, opt => opt.MapFrom(src => src.ResumeFileName))
+            .ForMember(dest => dest.OfferStatus, opt => opt.MapFrom(src => src.OfferStatus))
+            .ForMember(dest => dest.OfferSentAtUtc, opt => opt.MapFrom(src => src.OfferSentAtUtc))
+            .ForMember(dest => dest.LatestInterviewStatus, opt => opt.MapFrom(src => src.LatestInterviewStatus))
+            .ForMember(dest => dest.LatestInterviewScheduledDateTimeUtc, opt => opt.MapFrom(src => src.LatestInterviewScheduledDateTimeUtc))
             .ForMember(dest => dest.Offer, opt => opt.Ignore());
 
         CreateMap<ApplicantScoreItemResponse, ApplicantDetailResponse>()
