@@ -75,6 +75,18 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("offer")]
         public OfferResponse? Offer { get; set; }
+
+        [JsonPropertyName("offer_status")]
+        public string? OfferStatus { get; set; }
+
+        [JsonPropertyName("offer_sent_at_utc")]
+        public DateTime? OfferSentAtUtc { get; set; }
+
+        [JsonPropertyName("latest_interview_status")]
+        public string? LatestInterviewStatus { get; set; }
+
+        [JsonPropertyName("latest_interview_scheduled_date_time_utc")]
+        public DateTime? LatestInterviewScheduledDateTimeUtc { get; set; }
     }
 
     public sealed class ApplicantDetailResponse : ApplicantScoreItemResponse

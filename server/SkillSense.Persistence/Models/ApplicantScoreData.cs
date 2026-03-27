@@ -19,6 +19,9 @@ public sealed class ApplicantScoreData
     public bool HasResume { get; init; }
     public string? ResumeFileName { get; init; }
     public string? OfferStatus { get; init; }
+    public DateTime? OfferSentAtUtc { get; init; }
+    public string? LatestInterviewStatus { get; init; }
+    public DateTime? LatestInterviewScheduledDateTimeUtc { get; init; }
 }
 
 public sealed class EmployeeRecordData

@@ -427,6 +427,7 @@ export const CandidatesPage = () => {
       ) : (
         <CandidatesTable
           candidates={candidates}
+          stage={normalizedFilters.stage}
           isAllChecked={isAllChecked}
           selectedSet={selectedSet}
           onToggleAllRows={toggleAllRows}
