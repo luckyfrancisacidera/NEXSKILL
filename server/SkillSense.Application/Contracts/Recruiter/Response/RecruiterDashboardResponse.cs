@@ -47,13 +47,19 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
     public sealed class MetricWithComparisonResponse
     {
         [JsonPropertyName("value")]
-        public int Value { get; set; }
+        public decimal Value { get; set; }
 
         [JsonPropertyName("previous_value")]
-        public int PreviousValue { get; set; }
+        public decimal PreviousValue { get; set; }
 
         [JsonPropertyName("comparison_percent")]
         public decimal ComparisonPercent { get; set; }
+
+        [JsonPropertyName("currency")]
+        public string? Currency { get; set; }
+
+        [JsonPropertyName("normalized_unit")]
+        public string? NormalizedUnit { get; set; }
     }
 
     public sealed class RecruiterDashboardTrendsResponse

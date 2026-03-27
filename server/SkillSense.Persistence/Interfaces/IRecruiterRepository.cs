@@ -16,6 +16,7 @@ public interface IRecruiterRepository
     Task<RecruiterDashboardFilterData> GetDashboardFilterDataAsync(Guid recruiterId, Guid companyId, CancellationToken ct = default);
     Task<List<Guid>> GetDashboardJobIdsAsync(Guid recruiterId, Guid companyId, string? department, string? jobRole, CancellationToken ct = default);
     Task<List<ResumeSubmissionEntity>> GetDashboardApplicationsAsync(IReadOnlyCollection<Guid> jobIds, DateTime? startUtc, DateTime? endExclusiveUtc, CancellationToken ct = default);
+    Task<List<DashboardOfferMetricData>> GetLatestDashboardOffersAsync(IReadOnlyCollection<Guid> applicationIds, CancellationToken ct = default);
     Task<Dictionary<Guid, (string Title, string Department)>> GetJobLookupAsync(Guid recruiterId, Guid companyId, CancellationToken ct = default);
     Task<List<ApplicantScoreData>> GetApplicantScoreDataAsync(Guid recruiterId, Guid companyId, string? department, string? search, CancellationToken ct = default);
     Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);

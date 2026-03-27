@@ -4,7 +4,6 @@ import { Search, Sparkles } from "lucide-react";
 
 import { useToast } from "@app/providers/ToastProvider";
 import { useApplications } from "@features/jobseeker/hooks";
-import { ApplicationsPagination } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsPagination";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import type {
@@ -13,6 +12,7 @@ import type {
   JobseekerInterview,
 } from "@features/jobseeker/types";
 import { Card } from "@shared/components/Card";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
 
 import {
   OfferPipelineCard,
@@ -352,8 +352,8 @@ export const OffersPage = () => {
             ))}
           </div>
 
-          <ApplicationsPagination
-            pageNumber={data.pageNumber}
+          <TablePagination
+            page={data.pageNumber}
             pageSize={data.pageSize}
             totalCount={data.totalCount}
             totalPages={data.totalPages}
@@ -362,6 +362,7 @@ export const OffersPage = () => {
               setPageSize(value);
               setPageNumber(1);
             }}
+            itemLabel="applications"
           />
         </>
       )}

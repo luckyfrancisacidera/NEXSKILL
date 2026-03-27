@@ -13,9 +13,7 @@ import { useToast } from '@app/providers/ToastProvider';
 import { BulkActionsBar } from '@features/recruiter/pages/CandidatesPage/components/BulkActionsBar';
 import { CandidateStageTabs } from '@features/recruiter/pages/CandidatesPage/components/CandidateStageTabs';
 import { CandidatesFilters } from '@features/recruiter/pages/CandidatesPage/components/CandidatesFilters';
-import { CandidatesPagination } from '@features/recruiter/pages/CandidatesPage/components/CandidatesPagination';
 import { CandidatesTable } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTable';
-import { CandidatesTableSkeleton } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTableSkeleton';
 
 import type {
   BulkApplicantStageResponseDto,
@@ -27,6 +25,7 @@ import { canShortlistCandidate, getShortlistWarningMessage } from '@features/rec
 import { Card } from '@shared/components/Card';
 import { EmptyState } from '@shared/components/EmptyState';
 import type { DropdownOption } from '@shared/components/Dropdown';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 
 const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
@@ -256,7 +255,6 @@ export const CandidatesPage = () => {
     accentClassName: 'bg-violet-100 text-violet-700',
   }));
   const previousPageHref = buildCandidateQuery(normalizedFilters, Math.max(1, pagination.page - 1));
-  const nextPageHref = buildCandidateQuery(normalizedFilters, Math.min(pagination.totalPages, pagination.page + 1));
   const hasSearchOrFacetFilters =
     normalizedFilters.search.trim().length > 0 ||
     normalizedFilters.jobId !== 'all' ||
@@ -367,83 +365,87 @@ export const CandidatesPage = () => {
   };
 
   return (
-    <Card className="dark:border-zinc-800 dark:bg-zinc-950 bg-white">
-      <div className="mb-3">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Candidates</h2>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Review applications, filter by hiring stage, and move candidates forward.
-        </p>
-      </div>
+    <Card className="border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
+      <section className="border border-zinc-200 bg-white px-5 py-5 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
+        <div className="mb-3">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Candidates</h2>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Review applications, filter by hiring stage, and move candidates forward.
+          </p>
+        </div>
 
-      <CandidateStageTabs countByStage={countByStage} filters={normalizedFilters} />
+        <CandidateStageTabs countByStage={countByStage} filters={normalizedFilters} />
 
-      <CandidatesFilters
-        filters={normalizedFilters}
-        jobs={jobs}
-        departments={departments}
-        counts={counts}
-        isRecommendationFilterVisible={isRecommendationFilterVisible}
-        recommendedCutoffOptions={recommendedCutoffOptions}
-        formRef={filterFormRef}
-        onSubmitFilters={submitFilters}
-      />
+        <CandidatesFilters
+          filters={normalizedFilters}
+          jobs={jobs}
+          departments={departments}
+          counts={counts}
+          isRecommendationFilterVisible={isRecommendationFilterVisible}
+          recommendedCutoffOptions={recommendedCutoffOptions}
+          formRef={filterFormRef}
+          onSubmitFilters={submitFilters}
+        />
+      </section>
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
-        </p>
-        <BulkActionsBar
-          actions={bulkActions}
-          selectedCount={selectedIdsOnPage.length}
-          isSubmittingAction={isSubmittingAction}
-          onQueueAction={(action) => {
-            void queueBulkAction(action);
-          }}
-        />
-      </div>
+      <section className="mt-4 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800 sm:px-6">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
+          </p>
+          <BulkActionsBar
+            actions={bulkActions}
+            selectedCount={selectedIdsOnPage.length}
+            isSubmittingAction={isSubmittingAction}
+            onQueueAction={(action) => {
+              void queueBulkAction(action);
+            }}
+          />
+        </div>
 
-      {isLoadingList && candidates.length === 0 ? (
-        <CandidatesTableSkeleton />
-      ) : isEmptyPage ? (
-        <EmptyState
-          icon={FileSearch}
-          title="No results on this page"
-          description="There are candidates in this view, but this page has no results. Go back a page to continue reviewing them."
-          actionLabel="Go to previous page"
-          onAction={() => {
-            navigate(`/recruiter/candidates${previousPageHref}`);
-          }}
-        />
-      ) : candidates.length === 0 ? (
-        <EmptyState
-          icon={emptyStateContent.icon}
-          title={emptyStateContent.title}
-          description={
-            hasSearchOrFacetFilters
-              ? 'Try adjusting your search, job, or department filters to broaden the candidate list.'
-              : emptyStateContent.description
-          }
-        />
-      ) : (
-        <CandidatesTable
-          candidates={candidates}
-          stage={normalizedFilters.stage}
-          isAllChecked={isAllChecked}
-          selectedSet={selectedSet}
-          onToggleAllRows={toggleAllRows}
-          onToggleSingleRow={toggleSingleRow}
-        />
-      )}
+        {isEmptyPage ? (
+          <EmptyState
+            icon={FileSearch}
+            title="No results on this page"
+            description="There are candidates in this view, but this page has no results. Go back a page to continue reviewing them."
+            actionLabel="Go to previous page"
+            onAction={() => {
+              navigate(`/recruiter/candidates${previousPageHref}`);
+            }}
+          />
+        ) : candidates.length === 0 ? (
+          <EmptyState
+            icon={emptyStateContent.icon}
+            title={emptyStateContent.title}
+            description={
+              hasSearchOrFacetFilters
+                ? 'Try adjusting your search, job, or department filters to broaden the candidate list.'
+                : emptyStateContent.description
+            }
+          />
+        ) : (
+          <CandidatesTable
+            candidates={candidates}
+            stage={normalizedFilters.stage}
+            isAllChecked={isAllChecked}
+            selectedSet={selectedSet}
+            onToggleAllRows={toggleAllRows}
+            onToggleSingleRow={toggleSingleRow}
+            loading={isLoadingList}
+          />
+        )}
 
-      {(pagination.total > 0 || isEmptyPage) ? (
-        <CandidatesPagination
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          total={pagination.total}
-          previousHref={previousPageHref}
-          nextHref={nextPageHref}
-        />
-      ) : null}
+        {(pagination.total > 0 || isEmptyPage) ? (
+          <TablePagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalCount={pagination.total}
+            pageSize={pagination.pageSize}
+            itemLabel="candidates"
+            getPageHref={(page) => buildCandidateQuery(normalizedFilters, page)}
+          />
+        ) : null}
+      </section>
     </Card>
   );
 };

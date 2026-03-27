@@ -6,9 +6,8 @@ import { SearchField } from "@features/jobseeker/components";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApplicationsEmptyState } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsEmptyState";
-import { ApplicationsPagination } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsPagination";
 import { ApplicationsTable } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTable";
-import { ApplicationsTableSkeleton } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTableSkeleton";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
 
 const statusOptions = [
   { value: "", label: "All statuses" },
@@ -136,9 +135,7 @@ export const ApplicationsPage = () => {
             </div>
           ) : null}
 
-          {isLoading && data.items.length === 0 ? (
-            <ApplicationsTableSkeleton />
-          ) : data.items.length === 0 ? (
+          {data.items.length === 0 ? (
             <ApplicationsEmptyState hasFilters={hasFilters} />
           ) : (
             <>
@@ -156,14 +153,16 @@ export const ApplicationsPage = () => {
                 onDeleteHistory={(applicationId) => {
                   void deleteHistory(applicationId);
                 }}
+                loading={isLoading}
               />
-              <ApplicationsPagination
-                pageNumber={data.pageNumber}
+              <TablePagination
+                page={data.pageNumber}
                 pageSize={data.pageSize}
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
                 onPageChange={setPageNumber}
                 onPageSizeChange={handlePageSizeChange}
+                itemLabel="applications"
               />
             </>
           )}

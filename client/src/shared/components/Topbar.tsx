@@ -249,7 +249,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                 <Avatar
                   name={user?.email ?? "User"}
                   className="h-12 w-12 border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
-                  iconClassName="h-6 w-6"
+                  textClassName="text-xs"
                 />
                 <div className="min-w-0">
                   <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">

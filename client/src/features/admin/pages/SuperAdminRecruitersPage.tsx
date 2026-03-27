@@ -62,8 +62,7 @@ export const SuperAdminRecruitersPage = () => {
         canManageRecruiters={canManageRecruiters}
         pendingActionId={pendingActionId}
         onToggleRecruiter={runAction}
-        previousHref={buildQuery({ page: String(Math.max(1, data.recruiters.pageNumber - 1)) })}
-        nextHref={buildQuery({ page: String(Math.min(data.recruiters.totalPages, data.recruiters.pageNumber + 1)) })}
+        getPageHref={(page) => buildQuery({ page: String(page) })}
         onPageSizeChange={(nextPageSize) => navigate(buildQuery({ pageSize: nextPageSize, page: '1' }))}
       />
     </div>

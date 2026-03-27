@@ -1,7 +1,8 @@
 import { Badge } from '@shared/components/Badge';
 import { Button } from '@shared/components/Button';
-import { Card } from '@shared/components/Card';
-import { AdminTablePagination } from '@features/admin/components/AdminTablePagination';
+import { DataTable } from '@shared/components/ui/data-table/DataTable';
+import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { AdminStatusBadge } from '@features/admin/components/AdminStatusBadge';
 import type { AdminCompanyOverviewDto, Paged } from '@features/admin/types/admin.type';
 
@@ -16,8 +17,7 @@ interface AdminCompaniesTableCardProps {
   canManageCompanies: boolean;
   pendingActionId: string | null;
   onToggleCompany: (company: AdminCompanyOverviewDto) => Promise<void>;
-  previousHref: string;
-  nextHref: string;
+  getPageHref: (page: number) => string;
   onPageSizeChange: (nextPageSize: string) => void;
 }
 
@@ -26,11 +26,10 @@ export const AdminCompaniesTableCard = ({
   canManageCompanies,
   pendingActionId,
   onToggleCompany,
-  previousHref,
-  nextHref,
+  getPageHref,
   onPageSizeChange,
 }: AdminCompaniesTableCardProps) => (
-  <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-0 shadow-sm">
+  <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
     <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
       <div>
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Company Directory</h2>
@@ -38,56 +37,87 @@ export const AdminCompaniesTableCard = ({
       </div>
       <Badge>{companies.totalCount} total</Badge>
     </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-        <thead className="bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 text-left text-xs uppercase tracking-[0.18em] text-zinc-500">
-          <tr>
-            <th className="px-6 py-3">Company</th>
-            <th className="px-6 py-3">Recruiters</th>
-            <th className="px-6 py-3">Published Jobs</th>
-            <th className="px-6 py-3">Next 7 Days</th>
-            <th className="px-6 py-3">Status</th>
-            <th className="px-6 py-3">Updated</th>
-            <th className="px-6 py-3 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-          {companies.items.map((company) => (
-            <tr key={company.companyId} className="align-top">
-              <td className="px-6 py-4">
-              <div className="font-medium text-zinc-900 dark:text-zinc-100">{company.name}</div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{company.primaryEmail ?? 'No primary email'}</div>
-              </td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.recruiterCount}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.activeJobs}</td>
-              <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{company.upcomingInterviews}</td>
-              <td className="px-6 py-4">
-                <AdminStatusBadge isActive={company.isActive} />
-              </td>
-              <td className="px-6 py-4 text-zinc-500 dark:text-zinc-400">{updatedAtFormatter.format(new Date(company.updatedAtUtc))}</td>
-              <td className="px-6 py-4 text-right">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={!canManageCompanies || pendingActionId === company.companyId}
-                  onClick={() => void onToggleCompany(company)}
-                >
-                  {pendingActionId === company.companyId ? 'Updating...' : company.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <AdminTablePagination
-      pageNumber={companies.pageNumber}
+    <DataTable
+      data={companies.items}
+      getRowKey={(company) => company.companyId}
+      surfaceClassName="border-0"
+      columns={[
+        {
+          id: 'company',
+          header: 'Company',
+          cell: (company) => <IdentityCell name={company.name} email={company.primaryEmail} />,
+          accessor: (company) => company.name,
+          sortable: true,
+          sortType: 'string',
+          widthClassName: 'min-w-[260px]',
+        },
+        {
+          id: 'recruiters',
+          header: 'Recruiters',
+          cell: (company) => company.recruiterCount,
+          accessor: (company) => company.recruiterCount,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'published-jobs',
+          header: 'Published Jobs',
+          cell: (company) => company.activeJobs,
+          accessor: (company) => company.activeJobs,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'next-7-days',
+          header: 'Next 7 Days',
+          cell: (company) => company.upcomingInterviews,
+          accessor: (company) => company.upcomingInterviews,
+          sortable: true,
+          sortType: 'number',
+        },
+        {
+          id: 'status',
+          header: 'Status',
+          cell: (company) => <AdminStatusBadge isActive={company.isActive} />,
+          accessor: (company) => (company.isActive ? 'Active' : 'Inactive'),
+          sortable: true,
+          sortType: 'string',
+        },
+        {
+          id: 'updated',
+          header: 'Updated',
+          cell: (company) => updatedAtFormatter.format(new Date(company.updatedAtUtc)),
+          accessor: (company) => new Date(company.updatedAtUtc),
+          sortable: true,
+          sortType: 'date',
+        },
+        {
+          id: 'action',
+          header: 'Action',
+          align: 'right',
+          cell: (company) => (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!canManageCompanies || pendingActionId === company.companyId}
+              onClick={() => void onToggleCompany(company)}
+            >
+              {pendingActionId === company.companyId ? 'Updating...' : company.isActive ? 'Deactivate' : 'Activate'}
+            </Button>
+          ),
+          cellClassName: 'w-[140px]',
+        },
+      ]}
+    />
+    <TablePagination
+      page={companies.pageNumber}
       totalPages={companies.totalPages}
       totalCount={companies.totalCount}
       pageSize={companies.pageSize}
-      previousHref={previousHref}
-      nextHref={nextHref}
-      onPageSizeChange={onPageSizeChange}
+      getPageHref={getPageHref}
+      onPageSizeChange={(pageSize) => onPageSizeChange(String(pageSize))}
+      itemLabel="companies"
+      className="px-6"
     />
-  </Card>
+  </section>
 );

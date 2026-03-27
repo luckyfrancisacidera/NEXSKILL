@@ -5,9 +5,7 @@ import { useLoaderData, useNavigate, useNavigation, useRevalidator, useSearchPar
 import { useToast } from '@app/providers/ToastProvider';
 import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader';
 import { JobPostsFilters } from '@features/recruiter/pages/JobPostsPage/components/JobPostsFilters';
-import { JobPostsPagination } from '@features/recruiter/pages/JobPostsPage/components/JobPostsPagination';
 import { JobPostsTable } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTable';
-import { JobPostsTableSkeleton } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTableSkeleton';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import type { JobListItem, RecruiterJobsLoaderData } from '@features/recruiter/types';
@@ -20,9 +18,9 @@ import {
   toJobListItem,
   type RecruiterJobMutationPayload,
 } from '@features/recruiter/utils/jobMutationSync';
-import { Card } from '@shared/components/Card';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { normalizeSearchInput } from '@shared/utils/search';
 
@@ -238,12 +236,6 @@ export const JobPostsPage = () => {
     }
   };
 
-  const previousHref = `/recruiter/job-posts?${buildJobPostsQuery(searchParams, {
-    page: String(Math.max(1, loaderData.page - 1)),
-  })}`;
-  const nextHref = `/recruiter/job-posts?${buildJobPostsQuery(searchParams, {
-    page: String(Math.min(pageCount, loaderData.page + 1)),
-  })}`;
   const previousPageHref = `/recruiter/job-posts?${buildJobPostsQuery(searchParams, {
     page: String(Math.max(1, loaderData.page - 1)),
   })}`;
@@ -251,37 +243,45 @@ export const JobPostsPage = () => {
   return (
     <div className="space-y-6">
       <RecruiterHeader />
-      <Card className="dark:border-zinc-800 dark:bg-zinc-950 bg-white">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="space-y-4">
+        <section className="border border-zinc-200 bg-white px-5 py-5 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Job Posts</h2>
+          </div>
+
+          <JobPostsFilters
+            currentDepartment={currentDepartment}
+            currentSearch={searchDraft}
+            departments={departments}
+            onDepartmentChange={(department) => {
+              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, page: '1' })}`);
+            }}
+            onSearchChange={(value) => {
+              setSearchDraft(value);
+
+              const normalizedValue = normalizeSearchInput(value);
+              const normalizedCurrentSearch = normalizeSearchInput(loaderData.filters.search);
+              if (normalizedValue === normalizedCurrentSearch) {
+                return;
+              }
+
+              navigate(
+                `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: normalizedValue, page: '1' })}`,
+                { replace: true },
+              );
+            }}
+          />
+        </section>
+
+        <section className="border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="px-5 py-5 sm:px-6">
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Job Posts</h2>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Review active listings, update job metadata, and manage posting status.
+          </p>
         </div>
 
-        <JobPostsFilters
-          currentDepartment={currentDepartment}
-          currentSearch={searchDraft}
-          departments={departments}
-          onDepartmentChange={(department) => {
-            navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, page: '1' })}`);
-          }}
-          onSearchChange={(value) => {
-            setSearchDraft(value);
-
-            const normalizedValue = normalizeSearchInput(value);
-            const normalizedCurrentSearch = normalizeSearchInput(loaderData.filters.search);
-            if (normalizedValue === normalizedCurrentSearch) {
-              return;
-            }
-
-            navigate(
-              `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: normalizedValue, page: '1' })}`,
-              { replace: true },
-            );
-          }}
-        />
-
-        {isLoadingList && isEmptyJobs ? (
-          <JobPostsTableSkeleton />
-        ) : isEmptyPage ? (
+        {isEmptyPage ? (
           <EmptyState
             icon={FileSearch}
             title="No results on this page"
@@ -319,22 +319,25 @@ export const JobPostsPage = () => {
             isDuplicating={isDuplicating}
             onDelete={openDeleteFlow}
             onDuplicate={openDuplicateFlow}
+            loading={isLoadingList}
           />
         )}
 
         {(loaderData.total > 0 || isEmptyPage) ? (
-          <JobPostsPagination
+          <TablePagination
             page={loaderData.page}
-            pageCount={pageCount}
+            totalPages={pageCount}
+            totalCount={loaderData.total}
             pageSize={loaderData.pageSize}
             onPageSizeChange={(pageSize) => {
-              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize, page: '1' })}`);
+              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize: String(pageSize), page: '1' })}`);
             }}
-            previousHref={previousHref}
-            nextHref={nextHref}
+            itemLabel="jobs"
+            getPageHref={(page) => `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { page: String(page) })}`}
           />
         ) : null}
-      </Card>
+        </section>
+      </div>
 
       <HighRiskVerificationModal
         open={Boolean(selectedJob) && isVerificationOpen}

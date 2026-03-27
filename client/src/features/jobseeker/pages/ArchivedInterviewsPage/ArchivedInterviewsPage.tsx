@@ -2,14 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { ArchiveRestore, Loader2, Search } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
 
+import { ActionButton } from "@shared/components/ActionButton";
 import { Card } from "@shared/components/Card";
 import { RichTextContent } from "@shared/components/RichTextContent";
 import { SideDrawer } from "@shared/components/SideDrawer";
+import { DataTable } from "@shared/components/ui/data-table/DataTable";
+import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
 import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
-import { ApplicationsPagination } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsPagination";
 import { useArchivedInterviews } from "@features/jobseeker/hooks/useArchivedInterviews";
 import type {
   JobseekerArchivedInterviewsLoaderData,
@@ -71,6 +75,99 @@ export const ArchivedInterviewsPage = () => {
     () => search.trim().length > 0 || status.length > 0,
     [search, status],
   );
+
+  const columns: Array<DataTableColumn<JobseekerInterview>> = [
+    {
+      id: "interview",
+      header: "Interview",
+      cell: (interview) => (
+        <button
+          type="button"
+          onClick={() => setSelectedInterview(interview)}
+          className="space-y-1 text-left"
+        >
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {interview.jobTitle || interview.companyName || "Interview"}
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {interview.companyName || "Company unavailable"}
+          </p>
+        </button>
+      ),
+      accessor: (interview) => interview.jobTitle || interview.companyName || "Interview",
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[240px]",
+    },
+    {
+      id: "recruiter",
+      header: "Recruiter",
+      cell: (interview) => (
+        <IdentityCell
+          name={interview.recruiterName || "Recruiter"}
+          email={interview.recruiterEmail || "Contact unavailable"}
+        />
+      ),
+      accessor: (interview) => interview.recruiterName || interview.recruiterEmail || "",
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[220px]",
+    },
+    {
+      id: "scheduled",
+      header: "Scheduled",
+      cell: (interview) =>
+        new Date(interview.scheduledDate).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      accessor: (interview) => new Date(interview.scheduledDate),
+      sortable: true,
+      sortType: "date",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (interview) => (
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}
+        >
+          {interview.status}
+        </span>
+      ),
+      accessor: (interview) => interview.status,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "archived",
+      header: "Archived",
+      cell: (interview) => formatArchivedDate(interview.archivedAt),
+      accessor: (interview) => interview.archivedAt ? new Date(interview.archivedAt) : null,
+      sortable: true,
+      sortType: "date",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      cell: (interview) => {
+        const isRestoring = unarchivingId === interview.id;
+
+        return (
+          <ActionButton
+            icon={isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArchiveRestore className="h-4 w-4" />}
+            label="Unarchive interview"
+            iconOnly
+            disabled={isRestoring}
+            onClick={() => void handleUnarchive(interview)}
+          />
+        );
+      },
+      cellClassName: "w-[72px]",
+    },
+  ];
 
   const handleDownloadCalendar = async (id: string) => {
     try {
@@ -206,92 +303,17 @@ export const ArchivedInterviewsPage = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-fixed">
-                  <thead className="bg-zinc-50/80 dark:bg-zinc-900/70">
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                      <th className="w-[28%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Interview</th>
-                      <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Recruiter</th>
-                      <th className="w-[18%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Scheduled</th>
-                      <th className="w-[14%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Status</th>
-                      <th className="w-[12%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Archived</th>
-                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((interview) => {
-                      const isRestoring = unarchivingId === interview.id;
+              <DataTable
+                data={data.items}
+                columns={columns}
+                getRowKey={(interview) => interview.id}
+                loading={isLoading}
+                loadingRowCount={6}
+                surfaceClassName="border-0"
+              />
 
-                      return (
-                        <tr
-                          key={interview.id}
-                          className="border-b border-zinc-200 transition-colors hover:bg-zinc-50/80 dark:border-zinc-800 dark:hover:bg-zinc-900/60"
-                        >
-                          <td className="px-4 py-4 align-top">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedInterview(interview)}
-                              className="space-y-1 text-left"
-                            >
-                              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                                {interview.jobTitle || interview.companyName || "Interview"}
-                              </p>
-                              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                {interview.companyName || "Company unavailable"}
-                              </p>
-                            </button>
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                                {interview.recruiterName || "Recruiter"}
-                              </p>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                {interview.recruiterEmail || "Contact unavailable"}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 align-top text-sm text-zinc-700 dark:text-zinc-300">
-                            {new Date(interview.scheduledDate).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[interview.status]}`}
-                            >
-                              {interview.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 align-top text-sm text-zinc-700 dark:text-zinc-300">
-                            {formatArchivedDate(interview.archivedAt)}
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <button
-                              type="button"
-                              disabled={isRestoring}
-                              onClick={() => void handleUnarchive(interview)}
-                              className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                            >
-                              {isRestoring ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <ArchiveRestore className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">Unarchive interview</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <ApplicationsPagination
-                pageNumber={data.pageNumber}
+              <TablePagination
+                page={data.pageNumber}
                 pageSize={data.pageSize}
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
@@ -300,6 +322,7 @@ export const ArchivedInterviewsPage = () => {
                   setPageSize(value);
                   setPageNumber(1);
                 }}
+                itemLabel="archived interviews"
               />
             </>
           )}

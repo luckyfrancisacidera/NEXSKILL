@@ -6,6 +6,8 @@ export interface DashboardMetric {
   value: number;
   previous_value: number;
   comparison_percent: number;
+  currency?: string | null;
+  normalized_unit?: string | null;
 }
 
 export interface DashboardTrendDataset {

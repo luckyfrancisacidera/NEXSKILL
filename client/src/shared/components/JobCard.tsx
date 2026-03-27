@@ -57,7 +57,7 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = "Appl
   };
 
   return (
-    <Card className="h-full bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+    <Card className="h-full bg-white p-5 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.015] dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
