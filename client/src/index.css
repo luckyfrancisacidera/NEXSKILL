@@ -23,6 +23,15 @@ body {
   transition: background 300ms ease, color 300ms ease;
 }
 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 html.dark body {
   background: radial-gradient(circle at 20% 20%, #27272a 0%, #111827 38%, #020617 100%);
   color: #f4f4f5;
