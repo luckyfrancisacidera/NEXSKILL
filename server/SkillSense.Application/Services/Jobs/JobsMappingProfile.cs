@@ -16,11 +16,14 @@ public sealed class JobsMappingProfile : Profile
             .ForMember(dest => dest.WorkSetup, opt => opt.MapFrom(src => src.WorkSetup.ToString()))
             .ForMember(dest => dest.EmploymentType, opt => opt.MapFrom(src => src.EmploymentType.ToString()))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.CompanyNameSnapshot))
+            .ForMember(dest => dest.CompanyEmail, opt => opt.MapFrom(src => src.CompanyEmailSnapshot))
             .ForMember(dest => dest.Responsibilities, opt => opt.MapFrom(src => MappingJson.NormalizeMultiline(src.ResponsibilitiesText)))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => MappingJson.NormalizeMultiline(src.Description)))
             .ForMember(dest => dest.RequiredSkills, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.RequiredSkillsJson)))
             .ForMember(dest => dest.PreferredSkills, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.PreferredSkillsJson)))
-            .ForMember(dest => dest.MinEducation, opt => opt.MapFrom(src => src.Education));
+            .ForMember(dest => dest.MinEducation, opt => opt.MapFrom(src => src.Education))
+            .ForMember(dest => dest.RemainingVacancies, opt => opt.Ignore());
 
         CreateMap<JobEntity, JobResponse>()
             .ForMember(dest => dest.JobId, opt => opt.MapFrom(src => src.Id))
@@ -28,6 +31,7 @@ public sealed class JobsMappingProfile : Profile
 
         CreateMap<CreateJobRequest, JobEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
             .ForMember(dest => dest.RecruiterId, opt => opt.Ignore())
             .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()))
@@ -46,6 +50,9 @@ public sealed class JobsMappingProfile : Profile
             .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore());
 
         CreateMap<UpdateJobRequest, JobEntity>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
+            .ForMember(dest => dest.RecruiterId, opt => opt.Ignore())
             .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()))
             .ForMember(dest => dest.ResponsibilitiesText, opt => opt.MapFrom(src => MultilineTextNormalizer.Normalize(src.Responsibilities)))
@@ -54,6 +61,10 @@ public sealed class JobsMappingProfile : Profile
             .ForMember(dest => dest.JobDescriptionStructuredJson, opt => opt.Ignore())
             .ForMember(dest => dest.DescriptionEmbeddingJson, opt => opt.Ignore())
             .ForMember(dest => dest.Education, opt => opt.MapFrom(src => src.Education ?? src.MinEducation))
+            .ForMember(dest => dest.PostedDateUtc, opt => opt.Ignore())
+            .ForMember(dest => dest.CompanyNameSnapshot, opt => opt.Ignore())
+            .ForMember(dest => dest.CompanyEmailSnapshot, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore())
             .ForMember(dest => dest.Status, opt => opt.Ignore())
             .ForAllMembers(opt => opt.Condition((_, _, srcMember) => srcMember is not null));
     }

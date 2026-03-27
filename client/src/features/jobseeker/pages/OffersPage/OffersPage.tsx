@@ -18,6 +18,7 @@ import {
   OfferPipelineCard,
   type OfferPipelineCardData,
 } from "./components/OfferPipelineCard";
+import { OfferDetailsModal } from "./components/OfferDetailsModal";
 
 const statusOptions = [
   { value: "", label: "All stages" },
@@ -118,6 +119,7 @@ export const OffersPage = () => {
   const [legacyInterviews, setLegacyInterviews] = useState<JobseekerInterview[]>([]);
   const [interviewError, setInterviewError] = useState<string | null>(null);
   const [actingApplicationId, setActingApplicationId] = useState<string | null>(null);
+  const [selectedOfferCard, setSelectedOfferCard] = useState<OfferPipelineCardData | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -205,6 +207,7 @@ export const OffersPage = () => {
       });
     } finally {
       setActingApplicationId(null);
+      setSelectedOfferCard(null);
     }
   };
 
@@ -337,14 +340,11 @@ export const OffersPage = () => {
               <OfferPipelineCard
                 key={item.id}
                 item={item}
-                onAccept={(applicationId) => {
-                  void respondToOffer(applicationId, "accept");
-                }}
-                onDecline={(applicationId) => {
-                  void respondToOffer(applicationId, "decline");
-                }}
                 onDeleteHistory={(applicationId) => {
                   void deleteHistory(applicationId);
+                }}
+                onViewOffer={(card) => {
+                  setSelectedOfferCard(card);
                 }}
                 isActing={actingApplicationId === item.id}
                 isDeletingHistory={deletingHistoryId === item.id}
@@ -365,6 +365,22 @@ export const OffersPage = () => {
           />
         </>
       )}
+
+      {selectedOfferCard?.offer ? (
+        <OfferDetailsModal
+          item={selectedOfferCard}
+          isActing={actingApplicationId === selectedOfferCard.id}
+          onAccept={(applicationId) => {
+            void respondToOffer(applicationId, "accept");
+          }}
+          onDecline={(applicationId) => {
+            void respondToOffer(applicationId, "decline");
+          }}
+          onClose={() => {
+            setSelectedOfferCard(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 };

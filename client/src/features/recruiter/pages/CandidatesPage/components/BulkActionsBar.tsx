@@ -18,7 +18,7 @@ export const BulkActionsBar = ({ actions, selectedCount, isSubmittingAction, onQ
       const isDanger = action.accent === 'red';
       const isDisabled = selectedCount === 0 || isSubmittingAction || action.disabled;
       const disabledTitle = action.action === 'shortlist' && action.disabled
-        ? 'Candidates in Shortlisted, Interview, Offer, or Hire cannot be shortlisted again.'
+        ? 'Candidates in Shortlisted, Interview, Offer, or Hired cannot be shortlisted again.'
         : undefined;
       const label = action.action === 'remove-shortlist' && selectedCount > 1
         ? `Remove From Shortlist (${selectedCount})`

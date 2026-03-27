@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Data;
 using SkillSense.Persistence.Interfaces;
@@ -42,9 +43,9 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     public Task<JobEntity?> GetPublishedJobByIdAsync(Guid id, CancellationToken ct = default)
         => dbContext.Jobs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.Status == JobStatus.Published, ct);
 
-    public async Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+    public async Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default)
     {
-        var query = BuildApplicationsQuery(userId);
+        var query = BuildApplicationsQuery(userId, archivedOnly);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -83,21 +84,56 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
     }
 
     public Task<ApplicationListItemData?> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
-        => BuildApplicationsQuery(userId).FirstOrDefaultAsync(x => x.Id == applicationId, ct);
+        => BuildApplicationsQuery(userId, archivedOnly: false).FirstOrDefaultAsync(x => x.Id == applicationId, ct);
 
     public Task<ResumeSubmissionEntity?> GetApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.ResumeSubmissions.FirstOrDefaultAsync(x => x.JobSeekerUserId == userId && x.Id == applicationId, ct);
 
     public Task<ResumeSubmissionEntity?> GetVisibleApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.ResumeSubmissions.FirstOrDefaultAsync(
-            x => x.JobSeekerUserId == userId && x.Id == applicationId && !x.IsHiddenFromJobSeekerHistory,
+            x => x.JobSeekerUserId == userId
+                && x.Id == applicationId
+                && !x.IsHiddenFromJobSeekerHistory
+                && x.JobSeekerHistoryArchivedAtUtc == null
+                && x.JobSeekerHistoryDeletedAtUtc == null,
             ct);
+
+    public Task<ResumeSubmissionEntity?> GetArchivedApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions.FirstOrDefaultAsync(
+            x => x.JobSeekerUserId == userId
+                && x.Id == applicationId
+                && x.JobSeekerHistoryArchivedAtUtc != null
+                && x.JobSeekerHistoryDeletedAtUtc == null,
+            ct);
+
+    public Task<Guid?> GetApplicationCompanyIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(submission => submission.JobSeekerUserId == userId && submission.Id == applicationId)
+            .Join(
+                dbContext.Jobs,
+                submission => submission.JobId,
+                job => job.Id,
+                (_, job) => (Guid?)job.CompanyId)
+            .FirstOrDefaultAsync(ct);
 
     public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         => dbContext.JobOffers
             .Where(offer => offer.ApplicationId == applicationId && offer.Application.JobSeekerUserId == userId)
             .OrderByDescending(offer => offer.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
+
+    public Task<HireEntity?> GetHireByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        => dbContext.Hires
+            .FirstOrDefaultAsync(hire => hire.ApplicationId == applicationId && hire.JobSeekerId == userId, ct);
+
+    public Task<HireEntity?> GetHireByOfferIdAsync(Guid offerId, CancellationToken ct = default)
+        => dbContext.Hires.FirstOrDefaultAsync(hire => hire.OfferId == offerId, ct);
+
+    public Task AddHireAsync(HireEntity hire, CancellationToken ct = default)
+        => dbContext.Hires.AddAsync(hire, ct).AsTask();
+
+    public Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default)
+        => dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) => dbContext.SaveChangesAsync(ct);
 
@@ -172,6 +208,8 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
             .AsNoTracking()
             .Where(x => x.JobSeekerUserId == userId &&
                         !x.IsHiddenFromJobSeekerHistory &&
+                        x.JobSeekerHistoryArchivedAtUtc == null &&
+                        x.JobSeekerHistoryDeletedAtUtc == null &&
                         x.CreatedAtUtc >= start &&
                         x.CreatedAtUtc <= end);
 
@@ -222,10 +260,13 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
             .ToList();
     }
 
-    private IQueryable<ApplicationListItemData> BuildApplicationsQuery(Guid userId)
+    private IQueryable<ApplicationListItemData> BuildApplicationsQuery(Guid userId, bool archivedOnly)
         => from submission in dbContext.ResumeSubmissions.AsNoTracking()
            where submission.JobSeekerUserId == userId
-              && !submission.IsHiddenFromJobSeekerHistory
+              && submission.JobSeekerHistoryDeletedAtUtc == null
+              && (archivedOnly
+                  ? submission.JobSeekerHistoryArchivedAtUtc != null
+                  : !submission.IsHiddenFromJobSeekerHistory && submission.JobSeekerHistoryArchivedAtUtc == null)
            join job in dbContext.Jobs.AsNoTracking() on submission.JobId equals job.Id
            join recruiterUser in dbContext.Users.AsNoTracking() on job.RecruiterId equals recruiterUser.Id into recruiterUsers
            from recruiterUser in recruiterUsers.DefaultIfEmpty()
@@ -246,6 +287,10 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
                Status = submission.Status,
                CreatedAtUtc = submission.CreatedAtUtc,
                UpdatedAtUtc = submission.UpdatedAtUtc,
+               HireDateUtc = dbContext.Hires
+                   .Where(hire => hire.ApplicationId == submission.Id)
+                   .Select(hire => (DateTime?)hire.HiredAtUtc)
+                   .FirstOrDefault() ?? submission.HireDateUtc,
                OfferId = dbContext.JobOffers
                    .Where(offer => offer.ApplicationId == submission.Id)
                    .OrderByDescending(offer => offer.CreatedAtUtc)
@@ -261,20 +306,50 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
                    .OrderByDescending(offer => offer.CreatedAtUtc)
                    .Select(offer => offer.Message)
                    .FirstOrDefault(),
+               OfferBenefits = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.Benefits)
+                   .FirstOrDefault(),
                OfferSalaryText = dbContext.JobOffers
                    .Where(offer => offer.ApplicationId == submission.Id)
                    .OrderByDescending(offer => offer.CreatedAtUtc)
                    .Select(offer => offer.SalaryText)
+                   .FirstOrDefault(),
+               OfferSalaryAmount = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => (decimal?)offer.SalaryAmount)
+                   .FirstOrDefault(),
+               OfferSalaryType = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.SalaryType)
+                   .FirstOrDefault(),
+               OfferCurrency = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.Currency)
                    .FirstOrDefault(),
                OfferEmploymentType = dbContext.JobOffers
                    .Where(offer => offer.ApplicationId == submission.Id)
                    .OrderByDescending(offer => offer.CreatedAtUtc)
                    .Select(offer => offer.EmploymentType)
                    .FirstOrDefault(),
+               OfferWorkSetup = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.WorkSetup)
+                   .FirstOrDefault(),
                OfferStartDate = dbContext.JobOffers
                    .Where(offer => offer.ApplicationId == submission.Id)
                    .OrderByDescending(offer => offer.CreatedAtUtc)
                    .Select(offer => offer.StartDate)
+                   .FirstOrDefault(),
+               OfferEndDate = dbContext.JobOffers
+                   .Where(offer => offer.ApplicationId == submission.Id)
+                   .OrderByDescending(offer => offer.CreatedAtUtc)
+                   .Select(offer => offer.EndDate)
                    .FirstOrDefault(),
                OfferExpirationDate = dbContext.JobOffers
                    .Where(offer => offer.ApplicationId == submission.Id)
@@ -320,7 +395,7 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
             "shortlist" or "shortlisted" => [ResumeSubmissionStatus.Shortlisted],
             "interview" => [ResumeSubmissionStatus.Interview],
             "offer" => [ResumeSubmissionStatus.Offer],
-            "hire" or "hired" => [ResumeSubmissionStatus.Hire],
+            "hire" or "hired" => [ResumeSubmissionStatus.Hired],
             "rejected" => [ResumeSubmissionStatus.Rejected],
             "withdrawn" or "failed" => [ResumeSubmissionStatus.Failed],
             _ => []

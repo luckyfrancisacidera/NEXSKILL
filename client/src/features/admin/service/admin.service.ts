@@ -1,7 +1,9 @@
 import { http } from '@shared/api/http';
 import type {
   AdminCompanyAccountDto,
+  CompanyAdminCandidateDetailLoaderData,
   CompanyAdminDashboardDto,
+  CompanyAdminEmployeesDto,
   CreateCompanyAccountPayload,
   CreateManagedRecruiterPayload,
   SuperAdminDashboardDto,
@@ -24,6 +26,23 @@ export const adminService = {
     const response = await http.get<CompanyAdminDashboardDto>('/api/admin/company/dashboard', {
       params,
     });
+    return response.data;
+  },
+
+  async getCompanyEmployees(params: { page: number; pageSize: number; search?: string }): Promise<CompanyAdminEmployeesDto> {
+    const response = await http.get<CompanyAdminEmployeesDto>('/api/admin/company/employees', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getCompanyApplicantBySubmissionId(submissionId: string): Promise<CompanyAdminCandidateDetailLoaderData["candidate"]> {
+    const response = await http.get<CompanyAdminCandidateDetailLoaderData["candidate"]>(`/api/admin/company/applicants/${submissionId}`);
+    return response.data;
+  },
+
+  async getCompanyApplicantResumeDownload(submissionId: string): Promise<{ downloadUrl: string; fileName: string }> {
+    const response = await http.get<{ downloadUrl: string; fileName: string }>(`/api/admin/company/applicants/${submissionId}/resume/download`);
     return response.data;
   },
 

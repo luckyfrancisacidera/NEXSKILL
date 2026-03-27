@@ -375,6 +375,67 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("companies", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.HireEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("HiredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JobSeekerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OfferId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RecruiterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("JobSeekerId");
+
+                    b.HasIndex("OfferId")
+                        .IsUnique();
+
+                    b.HasIndex("RecruiterId");
+
+                    b.HasIndex("CompanyId", "Status", "HiredAtUtc");
+
+                    b.HasIndex("RecruiterId", "Status", "HiredAtUtc");
+
+                    b.ToTable("hires", (string)null);
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -618,13 +679,25 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Benefits")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
 
                     b.Property<string>("EmploymentType")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
 
                     b.Property<DateOnly?>("ExpirationDate")
                         .HasColumnType("date");
@@ -637,10 +710,19 @@ namespace SkillSense.Persistence.Migrations
                     b.Property<DateTime?>("RespondedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal>("SalaryAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<string>("SalaryText")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SalaryType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("SentAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -663,6 +745,11 @@ namespace SkillSense.Persistence.Migrations
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WorkSetup")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
@@ -937,6 +1024,9 @@ namespace SkillSense.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AcceptedOfferId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("AppliedJobPosition")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -971,6 +1061,12 @@ namespace SkillSense.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<DateTime?>("HireDateUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("HiredByRecruiterId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsHiddenFromJobSeekerHistory")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -978,6 +1074,12 @@ namespace SkillSense.Persistence.Migrations
 
                     b.Property<Guid>("JobId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("JobSeekerHistoryArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("JobSeekerHistoryDeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("JobSeekerUserId")
                         .HasColumnType("uuid");
@@ -1005,6 +1107,10 @@ namespace SkillSense.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AcceptedOfferId");
+
+                    b.HasIndex("HiredByRecruiterId");
 
                     b.HasIndex("JobId");
 
@@ -1100,6 +1206,57 @@ namespace SkillSense.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.HireEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.ResumeSubmissionEntity", "Application")
+                        .WithOne("Hire")
+                        .HasForeignKey("SkillSense.Domain.Entities.HireEntity", "ApplicationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.CompanyEntity", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.JobEntity", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "JobSeeker")
+                        .WithMany()
+                        .HasForeignKey("JobSeekerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.JobOfferEntity", "Offer")
+                        .WithOne("Hire")
+                        .HasForeignKey("SkillSense.Domain.Entities.HireEntity", "OfferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillSense.Domain.Entities.AppUser", "Recruiter")
+                        .WithMany()
+                        .HasForeignKey("RecruiterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Job");
+
+                    b.Navigation("JobSeeker");
+
+                    b.Navigation("Offer");
+
+                    b.Navigation("Recruiter");
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>
@@ -1266,8 +1423,15 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("RescheduleRequests");
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.JobOfferEntity", b =>
+                {
+                    b.Navigation("Hire");
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.ResumeSubmissionEntity", b =>
                 {
+                    b.Navigation("Hire");
+
                     b.Navigation("Offers");
                 });
 #pragma warning restore 612, 618

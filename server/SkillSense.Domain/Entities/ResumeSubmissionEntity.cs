@@ -19,11 +19,17 @@ public sealed class ResumeSubmissionEntity
     public ResumeSubmissionStatus Status { get; set; }
     public string ParsedResumeJson { get; set; } = "{}";
     public bool IsHiddenFromJobSeekerHistory { get; set; }
+    public DateTime? JobSeekerHistoryArchivedAtUtc { get; set; }
+    public DateTime? JobSeekerHistoryDeletedAtUtc { get; set; }
+    public DateTime? HireDateUtc { get; set; }
+    public Guid? HiredByRecruiterId { get; set; }
+    public Guid? AcceptedOfferId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 
     public AppUser? JobSeekerUser { get; set; }
     public ICollection<JobOfferEntity> Offers { get; set; } = [];
+    public HireEntity? Hire { get; set; }
 }
 
 public enum ResumeSubmissionStatus
@@ -35,6 +41,6 @@ public enum ResumeSubmissionStatus
     Shortlisted = 4,
     Interview = 5,
     Offer = 6,
-    Hire = 7,
+    Hired = 7,
     Rejected = 8,
 }

@@ -102,7 +102,6 @@ export const CandidatesPage = () => {
     Shortlisted: counts.shortlisted,
     Interview: counts.interview,
     Offer: counts.offer,
-    Hire: counts.hire,
   };
 
   const candidateIdsOnPage = useMemo(
@@ -346,7 +345,6 @@ export const CandidatesPage = () => {
     </Card>
   );
 };
-
 
 
 

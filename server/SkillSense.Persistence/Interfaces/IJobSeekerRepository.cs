@@ -3,15 +3,23 @@ using SkillSense.Persistence.Models;
 
 namespace SkillSense.Persistence.Interfaces
 {
+    using Microsoft.EntityFrameworkCore.Storage;
+
     public interface IJobSeekerRepository
     {
         Task<PagedData<JobEntity>> GetPublishedJobsAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default);
         Task<JobEntity?> GetPublishedJobByIdAsync(Guid id, CancellationToken ct = default);
-        Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default);
+        Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default);
         Task<ApplicationListItemData?> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task<ResumeSubmissionEntity?> GetApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task<ResumeSubmissionEntity?> GetVisibleApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<ResumeSubmissionEntity?> GetArchivedApplicationEntityAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<Guid?> GetApplicationCompanyIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<HireEntity?> GetHireByApplicationIdAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task<HireEntity?> GetHireByOfferIdAsync(Guid offerId, CancellationToken ct = default);
+        Task AddHireAsync(HireEntity hire, CancellationToken ct = default);
+        Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default);
         Task SaveChangesAsync(CancellationToken ct = default);
         Task<List<SavedJobData>> GetSavedJobsAsync(Guid userId, string? search, CancellationToken ct = default);
         Task<bool> IsJobSavedAsync(Guid userId, Guid jobId, CancellationToken ct = default);

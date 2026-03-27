@@ -4,7 +4,8 @@ export type InterviewStatus =
   | "Declined"
   | "RescheduleRequested"
   | "Rescheduled"
-  | "Cancelled";
+  | "Cancelled"
+  | "Completed";
 
 // Interview types stay explicit so the UI can validate the correct field
 // and the backend can generate consistent invites and calendar metadata.

@@ -15,11 +15,16 @@ public sealed class RecruiterStageTransitionTests
     [InlineData(ResumeSubmissionStatus.Shortlisted, "reject", ResumeSubmissionStatus.Rejected)]
     [InlineData(ResumeSubmissionStatus.Interview, "reject", ResumeSubmissionStatus.Rejected)]
     [InlineData(ResumeSubmissionStatus.Offer, "reject", ResumeSubmissionStatus.Rejected)]
-    [InlineData(ResumeSubmissionStatus.Hire, "reject", ResumeSubmissionStatus.Rejected)]
     public void Reject_FromAnyActiveStage_IsAllowed(ResumeSubmissionStatus current, string action, ResumeSubmissionStatus expected)
     {
         var next = InvokeResolveNextStatus(current, action);
         Assert.Equal(expected, next);
+    }
+
+    [Fact]
+    public void Reject_FromHired_IsRejected()
+    {
+        Assert.Throws<TargetInvocationException>(() => InvokeResolveNextStatus(ResumeSubmissionStatus.Hired, "reject"));
     }
 
     [Fact]

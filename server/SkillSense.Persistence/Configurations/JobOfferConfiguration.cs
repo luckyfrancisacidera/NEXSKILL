@@ -18,13 +18,31 @@ internal sealed class JobOfferConfiguration : IEntityTypeConfiguration<JobOfferE
         builder.Property(x => x.Message)
             .HasMaxLength(4000);
 
+        builder.Property(x => x.Benefits)
+            .HasMaxLength(4000);
+
         builder.Property(x => x.SalaryText)
             .IsRequired()
             .HasMaxLength(200);
 
+        builder.Property(x => x.SalaryAmount)
+            .HasPrecision(18, 2);
+
+        builder.Property(x => x.SalaryType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(x => x.Currency)
+            .IsRequired()
+            .HasMaxLength(8);
+
         builder.Property(x => x.EmploymentType)
             .IsRequired()
             .HasMaxLength(100);
+
+        builder.Property(x => x.WorkSetup)
+            .IsRequired()
+            .HasMaxLength(50);
 
         builder.Property(x => x.Status)
             .HasConversion<string>()

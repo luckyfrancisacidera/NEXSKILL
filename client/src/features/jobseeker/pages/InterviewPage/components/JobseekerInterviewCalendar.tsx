@@ -23,6 +23,7 @@ import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewSta
 
 interface JobseekerInterviewCalendarProps {
   interviews: JobseekerInterview[];
+  emptyStateMessage?: string;
   onSelectInterview: (interview: JobseekerInterview) => void;
 }
 
@@ -42,6 +43,7 @@ const STATUS_FILTERS: Array<{ key: "all" | JobseekerInterviewStatus; label: stri
   { key: "Rescheduled", label: "Rescheduled" },
   { key: "Declined", label: "Declined" },
   { key: "Cancelled", label: "Cancelled" },
+  { key: "Completed", label: "Completed" },
 ] as const;
 const EVENT_TONE_CLASS_BY_STATUS: Record<JobseekerInterviewStatus, string> = {
   Pending: "status-pending",
@@ -50,6 +52,7 @@ const EVENT_TONE_CLASS_BY_STATUS: Record<JobseekerInterviewStatus, string> = {
   RescheduleRequested: "status-reschedule-requested",
   Rescheduled: "status-rescheduled",
   Cancelled: "status-cancelled",
+  Completed: "status-completed",
 };
 
 const toDateOnly = (date: Date) =>
@@ -104,10 +107,10 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
       <div className="flex min-w-0 items-center gap-3 py-1.5">
         <span className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-current opacity-90" />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-zinc-900">
+          <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {interview.companyName || interview.recruiterName || "Interview"}
           </div>
-          <div className="truncate text-xs text-zinc-500">
+          <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             {interview.jobTitle || interview.recruiterName || "Interview schedule"}
           </div>
         </div>
@@ -117,11 +120,11 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="truncate text-xs font-semibold text-zinc-900">
+      <div className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
         {eventInfo.event.title}
       </div>
       {interview.jobTitle ? (
-        <div className="truncate text-[11px] text-zinc-600">{interview.jobTitle}</div>
+        <div className="truncate text-[11px] text-zinc-600 dark:text-zinc-300">{interview.jobTitle}</div>
       ) : null}
       <span
         className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusClassName}`}
@@ -134,6 +137,7 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
 
 export const JobseekerInterviewCalendar = ({
   interviews,
+  emptyStateMessage = "No interviews match the current filter yet.",
   onSelectInterview,
 }: JobseekerInterviewCalendarProps) => {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -147,11 +151,17 @@ export const JobseekerInterviewCalendar = ({
   );
   const [currentView, setCurrentView] = useState<(typeof VIEW_OPTIONS)[number]["key"]>("dayGridMonth");
   const [activeFilter, setActiveFilter] = useState<"all" | JobseekerInterviewStatus>("all");
-  const activeInterviews = interviews.filter((interview) => !interview.isArchived);
+  const activeInterviews = useMemo(
+    () => interviews.filter((interview) => !interview.isArchived),
+    [interviews],
+  );
   const visibleInterviews = activeFilter === "all"
     ? activeInterviews
     : activeInterviews.filter((interview) => interview.status === activeFilter);
-  const events = visibleInterviews.map(mapInterviewToEvent);
+  const events = useMemo(
+    () => visibleInterviews.filter((interview) => !interview.isArchived).map(mapInterviewToEvent),
+    [visibleInterviews],
+  );
   const miniCalendarDays = useMemo(
     () => buildMiniCalendarDays(focusedDate),
     [focusedDate],
@@ -371,6 +381,14 @@ export const JobseekerInterviewCalendar = ({
             </div>
           </div>
 
+          {activeInterviews.length === 0 ? (
+            <div className="border-b border-zinc-200/70 px-6 py-4 dark:border-zinc-800">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {emptyStateMessage}
+              </p>
+            </div>
+          ) : null}
+
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -412,7 +430,9 @@ export const JobseekerInterviewCalendar = ({
             }}
             noEventsContent={() => (
               <div className="px-6 py-8 text-sm text-zinc-500 dark:text-zinc-400">
-                No interviews match the current filter yet.
+                {activeInterviews.length === 0
+                  ? emptyStateMessage
+                  : "No interviews match the current filter yet."}
               </div>
             )}
           />

@@ -193,6 +193,7 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
     if (statusCode >= 500)
     {
         logger.LogError(error.Error, "Unhandled server exception. Inner exception: {InnerMessage}", error.Error.InnerException?.Message);
+        message = "Something went wrong while processing your request. Please try again.";
     }
 
     ctx.Response.StatusCode = statusCode;

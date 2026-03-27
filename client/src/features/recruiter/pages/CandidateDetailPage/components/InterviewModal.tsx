@@ -22,6 +22,9 @@ export interface InterviewModalProps {
   submitLabel?: string;
   errors?: Partial<Record<keyof InterviewFormValues | 'form', string>>;
   showCancelInterviewAction?: boolean;
+  secondaryActionLabel?: string;
+  secondaryActionDisabled?: boolean;
+  onSecondaryAction?: () => void | Promise<void>;
   onClose: () => void;
   onChange: (field: keyof InterviewFormValues, value: string) => void;
   onCancelInterview?: () => void | Promise<void>;
@@ -40,6 +43,9 @@ export const InterviewModal = ({
   submitLabel = 'Confirm Interview',
   errors,
   showCancelInterviewAction = false,
+  secondaryActionLabel,
+  secondaryActionDisabled = false,
+  onSecondaryAction,
   onClose,
   onChange,
   onCancelInterview,
@@ -69,7 +75,11 @@ export const InterviewModal = ({
         }}
         onSubmit={onSubmit}
       >
-        {errors?.form ? <p className="text-sm text-rose-600 dark:text-rose-400">{errors.form}</p> : null}
+        {errors?.form ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300">
+            {errors.form}
+          </div>
+        ) : null}
         <div className="grid grid-cols-1 gap-2">
           <div className="space-y-1">
             <input required type="date" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-zinc-200 dark:focus:ring-zinc-800" style={{ colorScheme: 'light dark' }} value={form.date} onChange={(event) => onChange('date', event.target.value)} />
@@ -175,6 +185,19 @@ export const InterviewModal = ({
           </div>
 
           <div className="flex justify-end gap-2">
+            {secondaryActionLabel && onSecondaryAction ? (
+              <button
+                type="button"
+                disabled={secondaryActionDisabled || isSubmitting}
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void onSecondaryAction();
+                }}
+              >
+                {secondaryActionLabel}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={isSubmitting}

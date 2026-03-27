@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLoaderData } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Card } from "@shared/components/Card";
 import { SearchField } from "@features/jobseeker/components";
@@ -28,12 +28,13 @@ export const ApplicationsPage = () => {
   const [status, setStatus] = useState("");
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
-  const { data, error, isLoading, withdrawingId, deletingHistoryId, withdraw, deleteHistory } = useApplications({
+  const { data, error, isLoading, withdrawingId, archivingId, deletingHistoryId, withdraw, archiveHistory, deleteHistory } = useApplications({
     initialData,
     pageNumber,
     pageSize,
     search,
     status,
+    archivedOnly: false,
   });
 
   const currentStatusOptions = useMemo(() => statusOptions, []);
@@ -68,6 +69,12 @@ export const ApplicationsPage = () => {
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Track your submitted applications, monitor status changes, and jump back into the jobs that matter.
           </p>
+          <Link
+            to="/applications/archived"
+            className="inline-flex text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+          >
+            View archived histories
+          </Link>
         </div>
 
         <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
@@ -138,9 +145,13 @@ export const ApplicationsPage = () => {
               <ApplicationsTable
                 items={data.items}
                 withdrawingId={withdrawingId}
+                archivingId={archivingId}
                 deletingHistoryId={deletingHistoryId}
                 onWithdraw={(applicationId) => {
                   void withdraw(applicationId);
+                }}
+                onArchiveHistory={(applicationId) => {
+                  void archiveHistory(applicationId);
                 }}
                 onDeleteHistory={(applicationId) => {
                   void deleteHistory(applicationId);

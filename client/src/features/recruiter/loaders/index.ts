@@ -13,3 +13,4 @@ export * from "@features/recruiter/loaders/candidateDetailLoader";
 export * from "@features/recruiter/loaders/interviewsLoader";
 export * from "@features/recruiter/loaders/interviewDetailLoader";
 export * from "@features/recruiter/loaders/settingsLoader";
+export * from "@features/recruiter/loaders/hiredEmployeesLoader";

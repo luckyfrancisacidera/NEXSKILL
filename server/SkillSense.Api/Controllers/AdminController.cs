@@ -4,6 +4,9 @@ using SkillSense.Api.Security;
 using SkillSense.Application.Contracts.Admin.Request;
 using SkillSense.Application.Contracts.Admin.Response;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Contracts.Employees;
+using SkillSense.Application.Contracts.Recruiter.Response;
+using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces.Admin;
 using SkillSense.Application.Interfaces.Auth;
 
@@ -119,6 +122,53 @@ public sealed class AdminController(
             ?? throw new UnauthorizedAccessException("Active company context is required.");
 
         return Ok(await _adminManagementService.GetCompanyAdminDashboardAsync(userId, companyId, page, pageSize, cancellationToken));
+    }
+
+    [HttpGet("company/employees")]
+    [Authorize(Roles = "CompanyAdmin")]
+    public async Task<ActionResult<PagedResult<EmployeeRecordResponse>>> GetCompanyEmployees(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        return Ok(await _adminManagementService.GetCompanyEmployeesAsync(userId, companyId, page, pageSize, search, cancellationToken));
+    }
+
+    [HttpGet("company/applicants/{submissionId:guid}")]
+    [Authorize(Roles = "CompanyAdmin")]
+    public async Task<ActionResult<ApplicantDetailResponse>> GetCompanyApplicantBySubmission(
+        Guid submissionId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        var item = await _adminManagementService.GetCompanyApplicantBySubmissionIdAsync(userId, companyId, submissionId, cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("company/applicants/{submissionId:guid}/resume/download")]
+    [Authorize(Roles = "CompanyAdmin")]
+    public async Task<ActionResult<ApplicantResumeDownloadResponse>> GetCompanyApplicantResumeDownload(
+        Guid submissionId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        var result = await _adminManagementService.GetCompanyApplicantResumeAccessAsync(userId, companyId, submissionId, cancellationToken);
+        return Ok(new ApplicantResumeDownloadResponse
+        {
+            DownloadUrl = result.DownloadUrl ?? string.Empty,
+            FileName = result.FileName,
+        });
     }
 
     [HttpPost("company/recruiters")]

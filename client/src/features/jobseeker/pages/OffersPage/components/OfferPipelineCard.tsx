@@ -1,4 +1,4 @@
-import { CalendarDays, CircleAlert, Eye, Loader2, Mail, Sparkles, Trash2 } from "lucide-react";
+import { CalendarDays, Eye, Loader2, Mail, Sparkles, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { JobseekerApplicationStage, JobseekerOfferDto } from "@features/jobseeker/types";
@@ -54,9 +54,9 @@ const resolveStatusMessage = (item: OfferPipelineCardData) => {
   }
 
   if (item.hasOffer) {
-    return item.offeredAtUtc
-      ? `Offer received on ${formatDate(item.offeredAtUtc)}`
-      : "An offer has been extended for this role.";
+    return item.offer?.status === "Pending"
+      ? "Your offer is ready for review."
+      : `Offer status: ${item.offer?.status ?? "Updated"}.`;
   }
 
   return `Current stage: ${item.currentStage}`;
@@ -82,10 +82,6 @@ const buildTimelineDates = (item: OfferPipelineCardData) => ({
 });
 
 const resolveNextAction = (item: OfferPipelineCardData) => {
-  if (item.offer?.can_accept || item.offer?.can_decline) {
-    return "Review and respond to the active offer.";
-  }
-
   switch (item.currentStage) {
     case "Applied":
       return "Your application has been received and is waiting for review.";
@@ -96,7 +92,7 @@ const resolveNextAction = (item: OfferPipelineCardData) => {
     case "Interview":
       return "Prepare for the interview and keep an eye on your inbox.";
     case "Offer":
-      return "Offer details are available below.";
+      return "Open the offer to review the full package and response options.";
     case "Hired":
       return "Hiring is complete for this application.";
     case "Rejected":
@@ -108,18 +104,24 @@ const resolveNextAction = (item: OfferPipelineCardData) => {
   }
 };
 
+const resolveOfferStatusBadgeLabel = (status?: string | null) => {
+  if (!status) {
+    return "Offer";
+  }
+
+  return `Offer ${status}`;
+};
+
 export const OfferPipelineCard = ({
   item,
-  onAccept,
-  onDecline,
   onDeleteHistory,
+  onViewOffer,
   isActing,
   isDeletingHistory,
 }: {
   item: OfferPipelineCardData;
-  onAccept: (applicationId: string) => void;
-  onDecline: (applicationId: string) => void;
   onDeleteHistory: (applicationId: string) => void;
+  onViewOffer: (item: OfferPipelineCardData) => void;
   isActing?: boolean;
   isDeletingHistory?: boolean;
 }) => {
@@ -138,7 +140,7 @@ export const OfferPipelineCard = ({
               {item.jobTitle}
             </h2>
             <StatusBadge status={item.currentStage} />
-            {item.offer ? <StatusBadge status={item.offer.status} /> : null}
+            {item.offer ? <StatusBadge status={item.offer.status} label={resolveOfferStatusBadgeLabel(item.offer.status)} /> : null}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
             <span className="max-w-full truncate font-medium text-zinc-700 dark:text-zinc-300" title={item.companyName}>
@@ -174,17 +176,26 @@ export const OfferPipelineCard = ({
           label="Salary"
           value={item.offer?.salary_text?.trim() || "Not specified"}
         />
+        {item.offer?.work_setup ? (
+          <CompactDetailChip label="Setup" value={item.offer.work_setup} />
+        ) : null}
         <CompactDetailChip
           label="Start"
           value={formatDate(item.offer?.start_date) || "Not specified"}
         />
+        {item.offer?.end_date ? (
+          <CompactDetailChip
+            label="End"
+            value={formatDate(item.offer.end_date) || "Not specified"}
+          />
+        ) : null}
         <CompactDetailChip
           label="Type"
           value={item.offer?.employment_type?.trim() || "Not specified"}
         />
         {item.offer?.expiration_date ? (
           <CompactDetailChip
-            label="Expires"
+            label="Offer Expires"
             value={formatDate(item.offer.expiration_date) || "Not specified"}
           />
         ) : null}
@@ -202,17 +213,19 @@ export const OfferPipelineCard = ({
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {resolveStatusMessage(item)}
           </p>
-          <p className="inline-flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-            <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
-            <span>{resolveNextAction(item)}</span>
-          </p>
-          {item.offer?.message ? (
-            <p className="line-clamp-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-              {item.offer.message}
-            </p>
-          ) : null}
+          <p className="text-sm text-zinc-600 dark:text-zinc-300">{resolveNextAction(item)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {item.offer ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isActing}
+              onClick={() => onViewOffer(item)}
+            >
+              View Offer
+            </Button>
+          ) : null}
           {item.jobId ? (
             <Link
               to={`/jobs/${item.jobId}`}
@@ -233,27 +246,6 @@ export const OfferPipelineCard = ({
               disabled={isDeletingHistory || isActing}
               onClick={() => onDeleteHistory(item.id)}
             />
-          ) : null}
-          {item.offer?.can_accept ? (
-            <Button
-              type="button"
-              disabled={isActing}
-              onClick={() => onAccept(item.id)}
-              className="min-w-[132px]"
-            >
-              {isActing ? "Updating..." : "Accept Offer"}
-            </Button>
-          ) : null}
-          {item.offer?.can_decline ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isActing}
-              onClick={() => onDecline(item.id)}
-              className="min-w-[120px]"
-            >
-              {isActing ? "Updating..." : "Decline"}
-            </Button>
           ) : null}
           {item.legacyHint ? (
             <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">

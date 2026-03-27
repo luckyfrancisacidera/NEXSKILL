@@ -62,9 +62,9 @@ namespace SkillSense.Application.Services.Jobseeker
             return response;
         }
 
-        public async Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default)
+        public async Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default)
         {
-            var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, search, status, startDate, endDate, ct);
+            var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, search, status, startDate, endDate, archivedOnly, ct);
             return new PagedResult<JobSeekerApplicationResponse>
             {
                 Items = pagedApplications.Items.Select(MapApplication).ToList(),
@@ -80,7 +80,7 @@ namespace SkillSense.Application.Services.Jobseeker
             var normalizedRange = (range ?? "this_week").Trim().ToLowerInvariant();
             var (start, end, granularity) = ResolveRange(normalizedRange);
             var analytics = await jobSeekerRepository.GetApplicationAnalyticsAsync(userId, start, end, granularity, ct);
-            var recentApps = await jobSeekerRepository.GetApplicationsByUserAsync(userId, 1, 5, null, null, null, null, ct);
+            var recentApps = await jobSeekerRepository.GetApplicationsByUserAsync(userId, 1, 5, null, null, null, null, false, ct);
             var recentApplicationResponses = recentApps.Items.Select(MapApplication).ToList();
             var savedJobs = await jobSeekerRepository.GetSavedJobsAsync(userId, null, ct);
 
@@ -207,12 +207,49 @@ namespace SkillSense.Application.Services.Jobseeker
             offer = await EnsureOfferExpirationStateAsync(offer, ct);
             ValidatePendingOfferResponse(offer);
 
+            await using var transaction = await jobSeekerRepository.BeginSerializableTransactionAsync(ct);
+            var now = dateTimeProvider.UtcNow;
             offer.Status = JobOfferStatus.Accepted;
-            offer.RespondedAtUtc = dateTimeProvider.UtcNow;
-            offer.UpdatedAtUtc = dateTimeProvider.UtcNow;
-            entity.Status = ResumeSubmissionStatus.Offer;
-            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            offer.RespondedAtUtc = now;
+            offer.UpdatedAtUtc = now;
+            var companyId = await jobSeekerRepository.GetApplicationCompanyIdAsync(userId, applicationId, ct)
+                ?? (entity.CompanyId != Guid.Empty ? (Guid?)entity.CompanyId : null)
+                ?? throw new InvalidOperationException("This offer is missing company information and cannot be accepted right now.");
+            var existingHire = await jobSeekerRepository.GetHireByOfferIdAsync(offer.Id, ct)
+                ?? await jobSeekerRepository.GetHireByApplicationIdAsync(userId, applicationId, ct);
+
+            entity.Status = ResumeSubmissionStatus.Hired;
+            entity.CompanyId = companyId;
+            entity.HireDateUtc = now;
+            entity.HiredByRecruiterId = offer.SentByUserId;
+            entity.AcceptedOfferId = offer.Id;
+            entity.UpdatedAtUtc = now;
+
+            if (existingHire is null)
+            {
+                if (!entity.JobSeekerUserId.HasValue)
+                {
+                    throw new InvalidOperationException("Application is not linked to a job seeker account.");
+                }
+
+                await jobSeekerRepository.AddHireAsync(new HireEntity
+                {
+                    Id = Guid.NewGuid(),
+                    CompanyId = companyId,
+                    RecruiterId = offer.SentByUserId,
+                    JobSeekerId = entity.JobSeekerUserId.Value,
+                    JobId = entity.JobId,
+                    OfferId = offer.Id,
+                    ApplicationId = entity.Id,
+                    HiredAtUtc = now,
+                    Status = HireStatus.Active,
+                    CreatedAtUtc = now,
+                    UpdatedAtUtc = now,
+                }, ct);
+            }
+
             await jobSeekerRepository.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             await notificationService.CreateNotificationAsync(new CreateNotificationRequest
             {
@@ -223,6 +260,8 @@ namespace SkillSense.Application.Services.Jobseeker
                 RelatedEntityId = entity.Id,
             }, ct);
 
+            cacheService.RemoveByPrefix("dashboard:recruiter:");
+            cacheService.RemoveByPrefix($"dashboard:jobseeker:{userId}");
             return MapOffer(offer);
         }
 
@@ -258,24 +297,43 @@ namespace SkillSense.Application.Services.Jobseeker
         public async Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
-            if (entity.Status is ResumeSubmissionStatus.Hire or ResumeSubmissionStatus.Rejected)
+            if (entity.Status is ResumeSubmissionStatus.Hired or ResumeSubmissionStatus.Rejected)
                 throw new InvalidOperationException("This application can no longer be withdrawn.");
             entity.Status = ResumeSubmissionStatus.Failed;
             entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
-        public async Task HideApplicationFromHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        public async Task ArchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct)
                 ?? throw new KeyNotFoundException("Application not found.");
 
-            if (entity.Status is not (ResumeSubmissionStatus.Failed or ResumeSubmissionStatus.Hire))
-            {
-                throw new InvalidOperationException("Only withdrawn or hired applications can be removed from your visible history.");
-            }
+            entity.IsHiddenFromJobSeekerHistory = true;
+            entity.JobSeekerHistoryArchivedAtUtc = dateTimeProvider.UtcNow;
+            entity.JobSeekerHistoryDeletedAtUtc = null;
+            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+        }
+
+        public async Task UnarchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var entity = await jobSeekerRepository.GetArchivedApplicationEntityAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Archived application not found.");
+
+            entity.IsHiddenFromJobSeekerHistory = false;
+            entity.JobSeekerHistoryArchivedAtUtc = null;
+            entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
+            await jobSeekerRepository.SaveChangesAsync(ct);
+        }
+
+        public async Task DeleteApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
+        {
+            var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
+                ?? throw new KeyNotFoundException("Application not found.");
 
             entity.IsHiddenFromJobSeekerHistory = true;
+            entity.JobSeekerHistoryDeletedAtUtc = dateTimeProvider.UtcNow;
             entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
@@ -283,8 +341,8 @@ namespace SkillSense.Application.Services.Jobseeker
         private JobSeekerApplicationResponse MapApplication(ApplicationListItemData item)
         {
             var currentStage = ResolveCurrentStage(item.Status);
-            var hasOffer = item.OfferId.HasValue || item.Status is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hire;
-            var isHired = item.Status == ResumeSubmissionStatus.Hire;
+            var hasOffer = item.OfferId.HasValue || item.Status is ResumeSubmissionStatus.Offer or ResumeSubmissionStatus.Hired;
+            var isHired = item.Status == ResumeSubmissionStatus.Hired;
 
             return new JobSeekerApplicationResponse
             {
@@ -302,7 +360,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 HasOffer = hasOffer,
                 IsHired = isHired,
                 OfferedAtUtc = item.Status == ResumeSubmissionStatus.Offer ? item.UpdatedAtUtc : null,
-                HiredAtUtc = item.Status == ResumeSubmissionStatus.Hire ? item.UpdatedAtUtc : null,
+                HiredAtUtc = item.Status == ResumeSubmissionStatus.Hired ? item.HireDateUtc ?? item.UpdatedAtUtc : null,
                 CreatedAtUtc = item.CreatedAtUtc,
                 UpdatedAtUtc = item.UpdatedAtUtc,
                 Offer = MapOffer(item),
@@ -316,7 +374,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 ResumeSubmissionStatus.Shortlisted => "Shortlisted",
                 ResumeSubmissionStatus.Interview => "Interview",
                 ResumeSubmissionStatus.Offer => "Offer",
-                ResumeSubmissionStatus.Hire => "Hired",
+                ResumeSubmissionStatus.Hired => "Hired",
                 ResumeSubmissionStatus.Rejected => "Rejected",
                 ResumeSubmissionStatus.Failed => "Withdrawn",
                 ResumeSubmissionStatus.Pending or ResumeSubmissionStatus.Processing => "Applied",
@@ -455,9 +513,15 @@ namespace SkillSense.Application.Services.Jobseeker
                 SentByUserId = offer.SentByUserId,
                 Title = offer.Title,
                 Message = offer.Message,
+                Benefits = offer.Benefits,
                 SalaryText = offer.SalaryText,
+                SalaryAmount = offer.SalaryAmount,
+                SalaryType = offer.SalaryType,
+                Currency = offer.Currency,
                 EmploymentType = offer.EmploymentType,
+                WorkSetup = offer.WorkSetup,
                 StartDate = offer.StartDate,
+                EndDate = offer.EndDate,
                 ExpirationDate = offer.ExpirationDate,
                 Status = effectiveStatus.ToString(),
                 SentAtUtc = offer.SentAtUtc,
@@ -491,9 +555,15 @@ namespace SkillSense.Application.Services.Jobseeker
                 SentByUserId = Guid.Empty,
                 Title = item.OfferTitle ?? string.Empty,
                 Message = item.OfferMessage ?? string.Empty,
+                Benefits = item.OfferBenefits,
                 SalaryText = item.OfferSalaryText ?? string.Empty,
+                SalaryAmount = item.OfferSalaryAmount ?? 0,
+                SalaryType = item.OfferSalaryType ?? string.Empty,
+                Currency = item.OfferCurrency ?? "PHP",
                 EmploymentType = item.OfferEmploymentType ?? string.Empty,
+                WorkSetup = item.OfferWorkSetup ?? string.Empty,
                 StartDate = item.OfferStartDate,
+                EndDate = item.OfferEndDate,
                 ExpirationDate = item.OfferExpirationDate,
                 Status = effectiveStatus.ToString(),
                 SentAtUtc = item.OfferSentAtUtc ?? item.UpdatedAtUtc,

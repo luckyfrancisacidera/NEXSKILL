@@ -4,14 +4,14 @@ export type JobseekerListAction = "view_job" | "withdraw" | "delete_history";
 export type JobseekerActionContext = "applications" | "offers";
 
 const applicationActionsByStatus: Record<string, JobseekerListAction[]> = {
-  applied: ["view_job", "withdraw"],
-  under_review: ["view_job", "withdraw"],
-  shortlisted: ["view_job", "withdraw"],
-  interview: ["view_job", "withdraw"],
-  offer: ["view_job", "withdraw"],
+  applied: ["view_job", "withdraw", "delete_history"],
+  under_review: ["view_job", "withdraw", "delete_history"],
+  shortlisted: ["view_job", "withdraw", "delete_history"],
+  interview: ["view_job", "withdraw", "delete_history"],
+  offer: ["view_job", "withdraw", "delete_history"],
   hire: ["view_job", "delete_history"],
   withdrawn: ["view_job", "delete_history"],
-  rejected: ["view_job"],
+  rejected: ["view_job", "delete_history"],
 };
 
 const offerActionsByStatus: Record<string, JobseekerListAction[]> = {

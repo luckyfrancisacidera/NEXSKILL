@@ -11,7 +11,7 @@ namespace SkillSense.Application.Interfaces.Jobseeker
         Task<PagedResult<JobListItemResponse>> GetPublicJobsAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default);
         Task<JobListItemResponse?> GetPublicJobAsync(Guid id, CancellationToken ct = default);
         Task<ResumeUploadResponse> ApplyAsync(Guid jobId, ApplyToJobRequest request, Stream fileStream, string fileName, string contentType, Guid? jobSeekerUserId, CancellationToken ct = default);
-        Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, CancellationToken ct = default);
+        Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default);
         Task<object> GetDashboardSummaryAsync(Guid userId, string range, CancellationToken ct = default);
         Task<IReadOnlyList<object>> GetSavedJobsAsync(Guid userId, string? search, CancellationToken ct = default);
         Task SaveJobAsync(Guid userId, Guid jobId, CancellationToken ct = default);
@@ -23,6 +23,8 @@ namespace SkillSense.Application.Interfaces.Jobseeker
         Task<OfferResponse> AcceptOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task<OfferResponse> DeclineOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
         Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
-        Task HideApplicationFromHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task ArchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task UnarchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
+        Task DeleteApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default);
     }
 }

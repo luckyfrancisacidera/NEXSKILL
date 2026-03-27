@@ -17,13 +17,18 @@ public sealed class ApplicantsMappingProfile : Profile
             .ForMember(dest => dest.SubmissionStatus, opt => opt.MapFrom<SubmissionStatusResolver>())
             .ForMember(dest => dest.JobseekerStage, opt => opt.MapFrom(src => RecruiterApplicantProjection.ResolveJobseekerStage(src.Status)))
             .ForMember(dest => dest.HasResume, opt => opt.MapFrom(src => src.HasResume))
-            .ForMember(dest => dest.ResumeFileName, opt => opt.MapFrom(src => src.ResumeFileName));
+            .ForMember(dest => dest.ResumeFileName, opt => opt.MapFrom(src => src.ResumeFileName))
+            .ForMember(dest => dest.Offer, opt => opt.Ignore());
 
-        CreateMap<ApplicantScoreItemResponse, ApplicantDetailResponse>();
+        CreateMap<ApplicantScoreItemResponse, ApplicantDetailResponse>()
+            .ForMember(dest => dest.ParsedResumeJson, opt => opt.Ignore())
+            .ForMember(dest => dest.CandidateExplanation, opt => opt.Ignore())
+            .ForMember(dest => dest.LatestInterview, opt => opt.Ignore());
 
         CreateMap<CandidateExplanationEntity, CandidateExplanationResponse>()
             .ForMember(dest => dest.Strengths, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.StrengthsJson)))
             .ForMember(dest => dest.Gaps, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)))
+            .ForMember(dest => dest.Risks, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)))
             .ForMember(dest => dest.Recommendation, opt => opt.MapFrom(src => src.Summary ?? src.ExplanationText));
     }
 }

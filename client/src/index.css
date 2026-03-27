@@ -41,6 +41,7 @@ html.dark body {
   --fc-today-bg-color: rgba(24, 24, 27, 0.05);
   --fc-event-bg-color: transparent;
   --fc-event-border-color: transparent;
+  --fc-now-indicator-color: rgb(24 24 27);
   font-family: var(--font-inter);
 }
 
@@ -53,6 +54,14 @@ html.dark body {
   padding: 0.7rem 0;
   background: rgb(255 255 255);
   border-top: 0;
+}
+
+.interview-calendar .fc .fc-daygrid-day-frame,
+.interview-calendar .fc .fc-timegrid-col-frame,
+.interview-calendar .fc .fc-timegrid-slot-lane,
+.interview-calendar .fc .fc-timegrid-axis,
+.interview-calendar .fc .fc-list-table td {
+  background: transparent;
 }
 
 .interview-calendar .fc .fc-col-header-cell-cushion,
@@ -84,6 +93,11 @@ html.dark body {
   background: rgba(24, 24, 27, 0.035);
 }
 
+.interview-calendar .fc .fc-timegrid-col.fc-day-today,
+.interview-calendar .fc .fc-timegrid-slot-lane.fc-day-today {
+  background: rgba(24, 24, 27, 0.03);
+}
+
 .interview-calendar .fc .fc-daygrid-more-link {
   color: rgb(82 82 91);
   font-size: 0.78rem;
@@ -104,6 +118,25 @@ html.dark body {
   border: 0;
   box-shadow: none;
   padding: 0.2rem 0.3rem;
+  color: rgb(24 24 27);
+}
+
+.interview-calendar .fc .fc-daygrid-event,
+.interview-calendar .fc .fc-timegrid-event,
+.interview-calendar .fc .fc-h-event,
+.interview-calendar .fc .fc-v-event {
+  border: 0;
+  border-radius: 0.75rem;
+  box-shadow: none;
+}
+
+.interview-calendar .fc .fc-timegrid-event-harness {
+  margin-inline: 0.2rem;
+}
+
+.interview-calendar .fc .fc-timegrid-event .fc-event-main,
+.interview-calendar .fc .fc-daygrid-event .fc-event-main {
+  padding: 0.15rem;
 }
 
 .interview-calendar .fc .recruiter-interview-event.status-pending {
@@ -125,6 +158,10 @@ html.dark body {
 
 .interview-calendar .fc .recruiter-interview-event.status-cancelled {
   background: rgb(244 244 245);
+}
+
+.interview-calendar .fc .recruiter-interview-event.status-completed {
+  background: rgb(239 246 255);
 }
 
 .interview-calendar .fc .fc-list {
@@ -158,6 +195,10 @@ html.dark body {
   padding: 0;
 }
 
+.interview-calendar .fc .fc-list-event td {
+  background: transparent;
+}
+
 .interview-calendar .fc .fc-list-event-dot {
   border-width: 5px;
   border-radius: 999px;
@@ -188,15 +229,21 @@ html.dark body {
   border-color: rgb(113 113 122);
 }
 
+.interview-calendar .fc .fc-list-event.status-completed .fc-list-event-dot {
+  border-color: rgb(37 99 235);
+}
+
 html.dark .interview-calendar .fc {
   --fc-border-color: rgba(63, 63, 70, 0.55);
   --fc-neutral-bg-color: rgba(24, 24, 27, 0.88);
   --fc-list-event-hover-bg-color: rgba(39, 39, 42, 0.72);
   --fc-today-bg-color: rgba(255, 255, 255, 0.045);
+  --fc-now-indicator-color: rgb(244 244 245);
 }
 
 html.dark .interview-calendar .fc .recruiter-interview-event {
   box-shadow: none;
+  color: rgb(244 244 245);
 }
 
 html.dark .interview-calendar .fc .fc-col-header-cell {
@@ -216,6 +263,11 @@ html.dark .interview-calendar .fc .fc-list-day-side-text {
 
 html.dark .interview-calendar .fc .fc-daygrid-day.fc-day-today {
   background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .interview-calendar .fc .fc-timegrid-col.fc-day-today,
+html.dark .interview-calendar .fc .fc-timegrid-slot-lane.fc-day-today {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 html.dark .interview-calendar .fc .recruiter-interview-event.status-pending {
@@ -239,8 +291,17 @@ html.dark .interview-calendar .fc .recruiter-interview-event.status-cancelled {
   background: rgba(63, 63, 70, 0.52);
 }
 
+html.dark .interview-calendar .fc .recruiter-interview-event.status-completed {
+  background: rgba(30, 64, 175, 0.36);
+}
+
 html.dark .interview-calendar .fc .fc-list-day-cushion {
   background: rgba(24, 24, 27, 0.94);
+}
+
+html.dark .interview-calendar .fc .fc-list-event td {
+  border-color: rgba(63, 63, 70, 0.55);
+  background: transparent;
 }
 
 .rich-text-toolbar {

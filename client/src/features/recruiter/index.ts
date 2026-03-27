@@ -7,6 +7,7 @@ export * from "@features/recruiter/pages/JobFormPage/JobFormPage";
 export * from "@features/recruiter/pages/JobDetailPage/JobDetailPage";
 export * from "@features/recruiter/pages/CandidatesPage/CandidatesPage";
 export * from "@features/recruiter/pages/CandidateDetailPage/CandidateDetailPage";
+export * from "@features/recruiter/pages/HiredEmployeesPage/HiredEmployeesPage";
 export * from "@features/recruiter/pages/InterviewsPage/InterviewsPage";
 export * from "@features/recruiter/pages/InterviewFormPage/InterviewFormPage";
 export * from "@features/recruiter/pages/RecruiterSettingsPage/RecruiterSettingsPage";

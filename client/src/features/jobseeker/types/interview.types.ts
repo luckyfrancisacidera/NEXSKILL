@@ -4,7 +4,8 @@ export type JobseekerInterviewStatus =
   | "Declined"
   | "RescheduleRequested"
   | "Rescheduled"
-  | "Cancelled";
+  | "Cancelled"
+  | "Completed";
 
 export interface JobseekerInterview {
   id: string;
@@ -18,7 +19,23 @@ export interface JobseekerInterview {
   status: JobseekerInterviewStatus;
   cancelReason?: string;
   isArchived?: boolean;
+  archivedAt?: string;
   recruiterName?: string;
   recruiterEmail?: string;
   companyName?: string;
+}
+
+export interface JobseekerArchivedInterviewsQueryParams {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  status?: string;
+}
+
+export interface JobseekerArchivedInterviewsLoaderData {
+  items: JobseekerInterview[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }

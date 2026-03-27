@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { Card } from "@shared/components/Card";
 import { RichTextContent } from "@shared/components/RichTextContent";
@@ -7,6 +8,10 @@ import type { JobseekerInterview } from "@features/jobseeker/types";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { emitNotification } from "@shared/utils/notifications";
 import { downloadInterviewICS } from "@shared/utils/calendar";
+import {
+  publishJobseekerInterviewMutation,
+  subscribeJobseekerInterviewMutations,
+} from "@features/jobseeker/utils/interviewMutationSync";
 import {
   interviewStatusChipClassName,
   isTerminalInterviewStatus,
@@ -18,6 +23,7 @@ export const InterviewPage = () => {
   const [interviews, setInterviews] = useState<JobseekerInterview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [drawerActionError, setDrawerActionError] = useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [selectedInterview, setSelectedInterview] = useState<JobseekerInterview | null>(null);
   const [showRescheduleForm, setShowRescheduleForm] = useState(false);
@@ -56,6 +62,34 @@ export const InterviewPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const unsubscribe = subscribeJobseekerInterviewMutations(() => {
+      void jobseekerInterviewService
+        .getJobseekerInterviews()
+        .then((data) => {
+          if (!cancelled) {
+            setInterviews(data);
+            setError(null);
+          }
+        })
+        .catch((nextError) => {
+          if (!cancelled) {
+            setError(
+              nextError instanceof Error
+                ? nextError.message
+                : "Unable to load interviews. Please try again.",
+            );
+          }
+        });
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
+
   const activeInterviews = useMemo(
     () => interviews.filter((interview) => !interview.isArchived),
     [interviews],
@@ -79,9 +113,14 @@ export const InterviewPage = () => {
   const closeDrawer = () => {
     setSelectedInterview(null);
     setShowRescheduleForm(false);
+    setDrawerActionError(null);
   };
 
+  const canArchiveInterview = (status: JobseekerInterview["status"]) =>
+    status === "Completed" || status === "Declined" || status === "Cancelled";
+
   const handleAccept = async (id: string) => {
+    setDrawerActionError(null);
     const confirmed = await confirm({
       title: "Accept interview",
       message: "Accept this interview invitation?",
@@ -105,6 +144,7 @@ export const InterviewPage = () => {
   };
 
   const handleDecline = async (id: string) => {
+    setDrawerActionError(null);
     const confirmed = await confirm({
       title: "Decline interview",
       message: "Decline this interview invitation? Declined interviews are terminal for scheduling.",
@@ -132,6 +172,7 @@ export const InterviewPage = () => {
     message: string,
     attachment?: File,
   ) => {
+    setDrawerActionError(null);
     const confirmed = await confirm({
       title: "Request reschedule",
       message: "Send this reschedule request to the recruiter?",
@@ -161,9 +202,22 @@ export const InterviewPage = () => {
   };
 
   const handleArchive = async (id: string) => {
+    const selectedMatches = selectedInterview?.id === id;
+    const interview = interviews.find((item) => item.id === id) ?? selectedInterview;
+    if (selectedMatches) {
+      setDrawerActionError(null);
+    }
+
+    if (interview && !canArchiveInterview(interview.status)) {
+      if (selectedMatches) {
+        setDrawerActionError("Only completed, declined, or cancelled interviews can be archived.");
+      }
+      return;
+    }
+
     const confirmed = await confirm({
       title: "Archive interview",
-      message: "Archive this declined or cancelled interview? It will be removed from active views.",
+      message: "Archive this completed, declined, or cancelled interview? It will be removed from active views.",
       confirmLabel: "Archive",
       accent: "violet",
     });
@@ -173,12 +227,24 @@ export const InterviewPage = () => {
     try {
       const updated = await jobseekerInterviewService.archiveInterview(id);
       updateInterview(updated);
+      publishJobseekerInterviewMutation({
+        type: "archived",
+        interview: updated,
+      });
       emitNotification({
         title: "Interview archived",
         description: "The interview has been removed from your active schedule.",
         actor: "jobseeker",
       });
       closeDrawer();
+    } catch (archiveError) {
+      if (selectedMatches) {
+        setDrawerActionError(
+          archiveError instanceof Error
+            ? archiveError.message
+            : "Unable to archive this interview right now.",
+        );
+      }
     } finally {
       setPendingActionId(null);
     }
@@ -219,8 +285,7 @@ export const InterviewPage = () => {
     !selectedIsTerminal;
   const canArchive =
     Boolean(selectedInterview) &&
-    !selectedIsPending &&
-    selectedIsTerminal;
+    !selectedIsPending;
 
   return (
     <div className="space-y-4">
@@ -231,6 +296,12 @@ export const InterviewPage = () => {
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Review upcoming interviews, respond to invitations, and request schedule changes from one calendar view.
         </p>
+        <Link
+          to="/jobseeker/interviews/archived"
+          className="mt-3 inline-flex text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+        >
+          View archived interviews
+        </Link>
       </Card>
 
       {error ? (
@@ -243,22 +314,18 @@ export const InterviewPage = () => {
         <Card className="space-y-4 border-0 bg-white py-8 shadow-[0_18px_50px_rgba(24,24,27,0.06)] dark:bg-zinc-950">
           <div className="h-6 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
           <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-            <div className="h-[520px] animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
-            <div className="h-[520px] animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
+            <div className="h-130 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
+            <div className="h-130 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
           </div>
-        </Card>
-      ) : activeInterviews.length === 0 ? (
-        <Card className="border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            You do not have any scheduled interviews yet.
-          </p>
         </Card>
       ) : (
         <JobseekerInterviewCalendar
-          interviews={interviews}
+          interviews={activeInterviews}
+          emptyStateMessage="No interviews scheduled yet."
           onSelectInterview={(interview) => {
             setSelectedInterview(interview);
             setShowRescheduleForm(false);
+            setDrawerActionError(null);
           }}
         />
       )}
@@ -350,6 +417,12 @@ export const InterviewPage = () => {
               </div>
             ) : null}
 
+            {drawerActionError ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
+                {drawerActionError}
+              </div>
+            ) : null}
+
             {showRescheduleForm && canRequestReschedule ? (
               <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="mb-4">
@@ -407,7 +480,8 @@ export const InterviewPage = () => {
                   {canArchive ? (
                     <button
                       type="button"
-                      className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                      className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                      disabled={selectedIsPending}
                       onClick={() => void handleArchive(selectedInterview.id)}
                     >
                       Archive
@@ -419,7 +493,7 @@ export const InterviewPage = () => {
 
             {selectedIsTerminal ? (
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Declined and cancelled interviews are terminal scheduling states. They can be archived, but they cannot be rescheduled in place.
+                Completed, declined, and cancelled interviews can be archived. Other interview states need to finish or be closed first.
               </p>
             ) : null}
           </div>

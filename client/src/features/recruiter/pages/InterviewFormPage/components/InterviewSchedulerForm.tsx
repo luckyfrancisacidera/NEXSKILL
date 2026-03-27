@@ -10,6 +10,15 @@ import { recruiterInterviewService } from "@features/recruiter/services/intervie
 import { RichTextField } from "@shared/components/RichTextField";
 import { sanitizeRichText } from "@shared/utils/richText";
 
+const buildScheduleConflictMessage = (message: string) => {
+  const normalizedMessage = message.trim();
+  if (/already has an interview scheduled at that time/i.test(normalizedMessage)) {
+    return "There is already an interview scheduled at this time. Please choose a different schedule.";
+  }
+
+  return normalizedMessage || "Unable to schedule the interview. Please try again.";
+};
+
 interface InterviewSchedulerFormProps {
   onSchedule: (input: ScheduleInterviewInput) => Promise<void> | void;
   defaultDate?: string;
@@ -303,6 +312,13 @@ export const InterviewSchedulerForm = ({
     try {
       await onSchedule(input);
       resetForm();
+    } catch (error) {
+      setErrors((current) => ({
+        ...current,
+        form: buildScheduleConflictMessage(
+          error instanceof Error ? error.message : "Unable to schedule the interview. Please try again.",
+        ),
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -565,7 +581,9 @@ export const InterviewSchedulerForm = ({
         />
 
         {errors.form ? (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.form}</p>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300">
+            {errors.form}
+          </div>
         ) : null}
 
         <div className="flex items-center justify-between pt-1">

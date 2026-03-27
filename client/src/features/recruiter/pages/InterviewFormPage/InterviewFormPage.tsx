@@ -31,6 +31,7 @@ export const InterviewFormPage = () => {
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
   const [isRescheduling, setIsRescheduling] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [rescheduleErrors, setRescheduleErrors] = useState<Partial<Record<keyof InterviewFormValues | "form", string>>>({});
   const [rescheduleForm, setRescheduleForm] = useState<InterviewFormValues>({
@@ -45,6 +46,11 @@ export const InterviewFormPage = () => {
   const revalidator = useRevalidator();
   const { showToast } = useToast();
   const confirm = useConfirmation();
+
+  const closeScheduleDrawer = () => {
+    setIsScheduleDrawerOpen(false);
+    setScheduleDrawerDate("");
+  };
 
   useEffect(() => {
     setInterviews(loaderData.interviews);
@@ -67,8 +73,7 @@ export const InterviewFormPage = () => {
       const scheduled = await recruiterInterviewService.scheduleInterview(input);
       addInterview(scheduled);
       setError(null);
-      setIsScheduleDrawerOpen(false);
-      setScheduleDrawerDate("");
+      closeScheduleDrawer();
       revalidator.revalidate();
       showToast({
         title: "Interview scheduled",
@@ -76,11 +81,6 @@ export const InterviewFormPage = () => {
         tone: "success",
       });
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to schedule the interview. Please try again.",
-      );
       throw err;
     }
   };
@@ -111,11 +111,11 @@ export const InterviewFormPage = () => {
   };
 
   const openRescheduleModal = (interview: Interview) => {
-    if (interview.status === "Declined" || interview.status === "Cancelled") {
+    if (interview.status === "Declined" || interview.status === "Cancelled" || interview.status === "Completed") {
       showToast({
         title: "Interview cannot be rescheduled",
         description:
-          "Declined and cancelled interviews are terminal scheduling states. Archive them or create a fresh interview instead.",
+          "Declined, cancelled, and completed interviews are terminal scheduling states. Create a fresh interview instead.",
         tone: "error",
       });
       return;
@@ -291,6 +291,47 @@ export const InterviewFormPage = () => {
     }
   };
 
+  const handleComplete = async (interview: Interview) => {
+    const confirmed = await confirm({
+      title: "Mark interview done",
+      message:
+        "Mark this accepted interview as completed? Once completed, the candidate can be rejected or moved to offer stage.",
+      confirmLabel: "Mark done",
+      accent: "green",
+    });
+    if (!confirmed) {
+      return false;
+    }
+
+    setIsCompleting(true);
+    try {
+      const updated = await recruiterInterviewService.completeInterview(interview.id);
+      updateInterview(updated);
+      setError(null);
+      revalidator.revalidate();
+      showToast({
+        title: "Interview marked done",
+        description: `${updated.candidateName} can now move to a post-interview decision.`,
+        tone: "success",
+      });
+      return true;
+    } catch (err) {
+      const description =
+        err instanceof Error
+          ? err.message
+          : "Unable to mark the interview as completed. Please try again.";
+      setError(description);
+      showToast({
+        title: "Completion failed",
+        description,
+        tone: "error",
+      });
+      return false;
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -318,19 +359,13 @@ export const InterviewFormPage = () => {
         open={isScheduleDrawerOpen}
         title="Add interview"
         description="Select a job, choose a shortlisted candidate, and send a polished interview invite."
-        onClose={() => {
-          setIsScheduleDrawerOpen(false);
-          setScheduleDrawerDate("");
-        }}
+        onClose={closeScheduleDrawer}
         widthClassName="sm:max-w-[500px]"
       >
         <InterviewSchedulerForm
           onSchedule={handleSchedule}
           defaultDate={scheduleDrawerDate}
-          onCancel={() => {
-            setIsScheduleDrawerOpen(false);
-            setScheduleDrawerDate("");
-          }}
+          onCancel={closeScheduleDrawer}
           showHeader={false}
           submitLabel="Schedule interview"
         />
@@ -346,8 +381,23 @@ export const InterviewFormPage = () => {
         showCancelInterviewAction={
           Boolean(selectedInterview) &&
           selectedInterview?.status !== "Cancelled" &&
-          selectedInterview?.status !== "Declined"
+          selectedInterview?.status !== "Declined" &&
+          selectedInterview?.status !== "Completed"
         }
+        secondaryActionLabel={selectedInterview?.status === "Accepted" ? (isCompleting ? "Marking done..." : "Mark Done") : undefined}
+        secondaryActionDisabled={isCompleting}
+        onSecondaryAction={selectedInterview?.status === "Accepted"
+          ? async () => {
+              if (!selectedInterview) {
+                return;
+              }
+
+              const didComplete = await handleComplete(selectedInterview);
+              if (didComplete) {
+                closeRescheduleModal();
+              }
+            }
+          : undefined}
         isCanceling={pendingActionId === selectedInterview?.id}
         onCancelInterview={async () => {
           if (!selectedInterview) {
