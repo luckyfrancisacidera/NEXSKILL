@@ -9,7 +9,6 @@ const stageTabs = [
   { key: 'Shortlisted', label: 'Shortlisted' },
   { key: 'Interview', label: 'Interview' },
   { key: 'Offer', label: 'Offer' },
-  { key: 'Hire', label: 'Hire' },
 ] as const;
 
 export interface CandidateStageTabsProps {

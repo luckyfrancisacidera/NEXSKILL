@@ -16,9 +16,15 @@ public sealed class JobOfferEntity
     public Guid SentByUserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    public string? Benefits { get; set; }
     public string SalaryText { get; set; } = string.Empty;
+    public decimal SalaryAmount { get; set; }
+    public string SalaryType { get; set; } = string.Empty;
+    public string Currency { get; set; } = "PHP";
     public string EmploymentType { get; set; } = string.Empty;
+    public string WorkSetup { get; set; } = string.Empty;
     public DateOnly? StartDate { get; set; }
+    public DateOnly? EndDate { get; set; }
     public DateOnly? ExpirationDate { get; set; }
     public JobOfferStatus Status { get; set; } = JobOfferStatus.Pending;
     public DateTime SentAtUtc { get; set; }
@@ -28,4 +34,5 @@ public sealed class JobOfferEntity
 
     public ResumeSubmissionEntity Application { get; set; } = null!;
     public AppUser SentByUser { get; set; } = null!;
+    public HireEntity? Hire { get; set; }
 }

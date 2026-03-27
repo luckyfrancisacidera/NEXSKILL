@@ -48,7 +48,11 @@ namespace SkillSense.Api.Controllers
 
         [HttpGet("applications")]
         public async Task<ActionResult<PagedResult<JobSeekerApplicationResponse>>> MyApplications([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? status = null, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, CancellationToken ct = default)
-            => Ok(await jobSeekerService.GetMyApplicationsAsync(CurrentUserContext.GetUserId(User), pageNumber, pageSize, search, status, startDate, endDate, ct));
+            => Ok(await jobSeekerService.GetMyApplicationsAsync(CurrentUserContext.GetUserId(User), pageNumber, pageSize, search, status, startDate, endDate, false, ct));
+
+        [HttpGet("applications/archived")]
+        public async Task<ActionResult<PagedResult<JobSeekerApplicationResponse>>> ArchivedApplications([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, [FromQuery] string? status = null, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null, CancellationToken ct = default)
+            => Ok(await jobSeekerService.GetMyApplicationsAsync(CurrentUserContext.GetUserId(User), pageNumber, pageSize, search, status, startDate, endDate, true, ct));
 
         [HttpGet("applications/{applicationId:guid}")]
         public async Task<IActionResult> GetApplication(Guid applicationId, CancellationToken ct = default)
@@ -73,10 +77,24 @@ namespace SkillSense.Api.Controllers
             return Ok(new { message = "Application withdrawn." });
         }
 
+        [HttpPost("applications/{applicationId:guid}/history/archive")]
+        public async Task<IActionResult> ArchiveHistory(Guid applicationId, CancellationToken ct = default)
+        {
+            await jobSeekerService.ArchiveApplicationHistoryAsync(CurrentUserContext.GetUserId(User), applicationId, ct);
+            return Ok(new { message = "Application archived." });
+        }
+
+        [HttpPost("applications/{applicationId:guid}/history/unarchive")]
+        public async Task<IActionResult> UnarchiveHistory(Guid applicationId, CancellationToken ct = default)
+        {
+            await jobSeekerService.UnarchiveApplicationHistoryAsync(CurrentUserContext.GetUserId(User), applicationId, ct);
+            return Ok(new { message = "Application restored to your active history." });
+        }
+
         [HttpDelete("applications/{applicationId:guid}/history")]
         public async Task<IActionResult> DeleteHistory(Guid applicationId, CancellationToken ct = default)
         {
-            await jobSeekerService.HideApplicationFromHistoryAsync(CurrentUserContext.GetUserId(User), applicationId, ct);
+            await jobSeekerService.DeleteApplicationHistoryAsync(CurrentUserContext.GetUserId(User), applicationId, ct);
             return NoContent();
         }
 
@@ -110,6 +128,24 @@ namespace SkillSense.Api.Controllers
         public async Task<ActionResult<IReadOnlyList<InterviewDto>>> GetInterviews(CancellationToken ct = default)
             => Ok(await interviewService.GetByJobSeekerAsync(CurrentUserContext.GetUserId(User), ct));
 
+        [HttpGet("interviews/archived")]
+        public async Task<ActionResult<PagedResult<InterviewDto>>> GetArchivedInterviews(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null,
+            CancellationToken ct = default)
+            => Ok(await interviewService.GetArchivedByJobSeekerAsync(
+                CurrentUserContext.GetUserId(User),
+                new ArchivedInterviewsQuery
+                {
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    Search = search,
+                    Status = status,
+                },
+                ct));
+
         [HttpPost("interviews/{interviewId:guid}/accept")]
         public async Task<ActionResult<InterviewDto>> AcceptInterview(Guid interviewId, CancellationToken ct = default)
             => Ok(await interviewService.AcceptInterviewAsync(interviewId, CurrentUserContext.GetUserId(User), ct));
@@ -133,6 +169,10 @@ namespace SkillSense.Api.Controllers
         [HttpPost("interviews/{interviewId:guid}/archive")]
         public async Task<ActionResult<InterviewDto>> ArchiveInterview(Guid interviewId, CancellationToken ct = default)
             => Ok(await interviewService.ArchiveInterviewAsync(interviewId, CurrentUserContext.GetUserId(User), ct));
+
+        [HttpPost("interviews/{interviewId:guid}/unarchive")]
+        public async Task<ActionResult<InterviewDto>> UnarchiveInterview(Guid interviewId, CancellationToken ct = default)
+            => Ok(await interviewService.UnarchiveInterviewAsync(interviewId, CurrentUserContext.GetUserId(User), ct));
 
         [HttpGet("interviews/{interviewId:guid}/ics")]
         public async Task<IActionResult> DownloadInterviewCalendar(Guid interviewId, CancellationToken ct = default)

@@ -11,6 +11,7 @@ import { PublicOnly, RequireAuth, RequireRole, getDefaultRouteByRole } from "@ap
 import { routeAccess, type AppRouteKey } from "@app/routes/route.config";
 import {
   ApplicationsPage,
+  ArchivedApplicationsPage,
   DashboardPage,
   JobsPage,
   ProfilePage,
@@ -22,7 +23,9 @@ import {
   jobDetailLoader,
   applyJobAction,
   InterviewPage,
+  ArchivedInterviewsPage,
   OffersPage,
+  archivedInterviewsLoader,
 } from "@features/jobseeker";
 import {
   CandidateDetailPage,
@@ -42,16 +45,21 @@ import {
   recruiterJobDetailLoader,
   recruiterJobsLoader,
   candidatesAction,
+  recruiterHiredEmployeesLoader,
   updateCandidateAction,
   updateJobStatusAction,
   upsertInterviewAction,
   upsertJobAction,
+  HiredEmployeesPage,
 } from "@features/recruiter";
 import {
   CompanyAdminDashboardPage,
+  CompanyAdminEmployeesPage,
+  companyAdminCandidateDetailLoader,
   SuperAdminCompanyAdminsPage,
   SuperAdminDashboardPage,
   SuperAdminRecruitersPage,
+  companyAdminEmployeesLoader,
   companyAdminDashboardLoader,
   superAdminCompanyAdminsLoader,
   superAdminDashboardLoader,
@@ -167,6 +175,12 @@ const sharedRoutes: AppRoute[] = [
     element: <ApplicationsPage />,
   }),
   protectedRoute({
+    path: "applications/archived",
+    access: "applications",
+    loader: applicationsLoader,
+    element: <ArchivedApplicationsPage />,
+  }),
+  protectedRoute({
     path: "offers",
     access: "offers",
     loader: applicationsLoader,
@@ -190,6 +204,12 @@ const sharedRoutes: AppRoute[] = [
     path: "jobseeker/interviews",
     access: "applications",
     element: <InterviewPage />,
+  }),
+  protectedRoute({
+    path: "jobseeker/interviews/archived",
+    access: "applications",
+    loader: archivedInterviewsLoader,
+    element: <ArchivedInterviewsPage />,
   }),
 ];
 
@@ -274,6 +294,21 @@ const recruiterRoutes: AppRoute = {
       ],
     },
     {
+      path: "offers",
+      element: <Navigate to="/recruiter/candidates?stage=Offer" replace />,
+    },
+    {
+      path: "hired",
+      children: [
+        protectedRoute({
+          index: true,
+          access: "recruiterHires",
+          loader: recruiterHiredEmployeesLoader,
+          element: <HiredEmployeesPage />,
+        }),
+      ],
+    },
+    {
       path: "interviews",
       element: <Outlet />,
       children: [
@@ -339,6 +374,18 @@ const adminRoutes: AppRoute = {
       access: "companyAdminDashboard",
       loader: companyAdminDashboardLoader,
       element: <CompanyAdminDashboardPage />,
+    }),
+    protectedRoute({
+      path: "company/employees",
+      access: "companyAdminEmployees",
+      loader: companyAdminEmployeesLoader,
+      element: <CompanyAdminEmployeesPage />,
+    }),
+    protectedRoute({
+      path: "company/candidates/:candidateId",
+      access: "companyAdminCandidates",
+      loader: companyAdminCandidateDetailLoader,
+      element: <CandidateDetailPage />,
     }),
   ],
 };

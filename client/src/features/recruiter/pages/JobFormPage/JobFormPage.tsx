@@ -21,11 +21,11 @@ import {
 
 import { RecruiterFieldLabel } from '@features/recruiter/components/RecruiterFieldLabel';
 import { RecruiterInputField } from '@features/recruiter/components/RecruiterInputField';
-import { PredictiveInput } from '@features/recruiter/pages/JobFormPage/components/PredictiveInput';
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import type { JobDto } from '@features/recruiter/types';
 import { Card } from '@shared/components/Card';
+import { PredictiveInput } from '@shared/components/PredictiveInput';
 import { RichTextField } from '@shared/components/RichTextField';
 import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
 

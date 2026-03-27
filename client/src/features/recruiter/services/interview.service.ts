@@ -124,6 +124,14 @@ export const recruiterInterviewService = {
     return mapInterview(response.data);
   },
 
+  async completeInterview(interviewId: string): Promise<Interview> {
+    const response = await http.post<RecruiterInterviewDto>(
+      `/api/recruiter/interviews/${interviewId}/complete`,
+      {},
+    );
+    return mapInterview(response.data);
+  },
+
   async archiveInterview(interviewId: string): Promise<Interview> {
     const response = await http.post<RecruiterInterviewDto>(
       `/api/recruiter/interviews/${interviewId}/archive`,

@@ -19,6 +19,7 @@ public interface IRecruiterRepository
     Task<Dictionary<Guid, (string Title, string Department)>> GetJobLookupAsync(Guid recruiterId, Guid companyId, CancellationToken ct = default);
     Task<List<ApplicantScoreData>> GetApplicantScoreDataAsync(Guid recruiterId, Guid companyId, string? department, string? search, CancellationToken ct = default);
     Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
+    Task<PagedData<EmployeeRecordData>> GetHiredEmployeeDataAsync(Guid recruiterId, Guid companyId, int pageNumber, int pageSize, string? search, CancellationToken ct = default);
     Task<List<JobFilterData>> GetJobFiltersAsync(Guid recruiterId, Guid companyId, string? department, CancellationToken ct = default);
     Task<string?> GetParsedResumeJsonAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
     Task<ApplicantStageContextData?> GetApplicantStageContextAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
@@ -26,6 +27,7 @@ public interface IRecruiterRepository
     Task<ResumeSubmissionEntity?> GetSubmissionForInterviewAsync(Guid recruiterId, Guid companyId, Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
     Task<ResumeSubmissionEntity?> GetSubmissionByIdForRecruiterAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct = default);
     Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid applicationId, CancellationToken ct = default);
+    Task<InterviewEntity?> GetLatestInterviewForSubmissionAsync(Guid recruiterId, Guid companyId, Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
     Task AddOfferAsync(JobOfferEntity offer, CancellationToken ct = default);
     Task<IDbContextTransaction> BeginSerializableTransactionAsync(CancellationToken ct = default);
 }

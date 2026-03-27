@@ -37,9 +37,15 @@ export interface JobseekerOfferDto {
   sent_by_user_id: string;
   title: string;
   message: string;
+  benefits?: string | null;
   salary_text: string;
+  salary_amount: number;
+  salary_type: string;
+  currency: string;
   employment_type: string;
+  work_setup: string;
   start_date?: string | null;
+  end_date?: string | null;
   expiration_date?: string | null;
   status: JobseekerOfferStatus;
   sent_at_utc: string;
@@ -77,6 +83,7 @@ export interface JobseekerApplicationsQueryParams {
   pageSize: number;
   search?: string;
   status?: string;
+  archivedOnly?: boolean;
 }
 
 export type JobseekerApplicationsResponse = Paged<JobseekerApplicationDto>;

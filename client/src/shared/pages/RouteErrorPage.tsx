@@ -53,7 +53,7 @@ export const RouteErrorPage = () => {
   const content = getErrorCopy(error);
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center p-4">
+    <div className="flex min-h-[60vh] items-center justify-center p-4 font-inter">
       <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
         <h1 className="text-2xl font-semibold text-zinc-900">{content.title}</h1>
         <p className="mt-2 text-zinc-500">{content.description}</p>

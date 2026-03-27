@@ -18,7 +18,6 @@ const getStageCount = (stage: string, source: ApplicantStageCounts) => {
   if (normalized === 'shortlisted') return source.shortlisted;
   if (normalized === 'interview') return source.interview;
   if (normalized === 'offer') return source.offer;
-  if (normalized === 'hire') return source.hire;
 
   return source.all_applicants;
 };

@@ -17,6 +17,27 @@ public interface IAdminManagementRepository
         int pageNumber,
         int pageSize,
         CancellationToken ct = default);
+    Task<PagedData<EmployeeRecordData>> GetCompanyEmployeesAsync(
+        Guid companyId,
+        int pageNumber,
+        int pageSize,
+        string? search,
+        CancellationToken ct = default);
+    Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default);
+    Task<string?> GetParsedResumeJsonAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default);
+    Task<ResumeSubmissionEntity?> GetSubmissionByIdForCompanyAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default);
+    Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken ct = default);
 
     Task<Guid?> GetCompanyIdByAdminUserIdAsync(Guid adminUserId, CancellationToken ct = default);
     Task<AdminRecruiterOverviewData?> GetRecruiterOverviewByUserIdAsync(Guid recruiterUserId, CancellationToken ct = default);

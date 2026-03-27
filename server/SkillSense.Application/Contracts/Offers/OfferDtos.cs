@@ -10,14 +10,32 @@ public sealed class SendOfferRequest
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
 
+    [JsonPropertyName("benefits")]
+    public string? Benefits { get; set; }
+
     [JsonPropertyName("salary_text")]
     public string SalaryText { get; set; } = string.Empty;
+
+    [JsonPropertyName("salary_amount")]
+    public decimal? SalaryAmount { get; set; }
+
+    [JsonPropertyName("salary_type")]
+    public string SalaryType { get; set; } = string.Empty;
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = "PHP";
 
     [JsonPropertyName("employment_type")]
     public string EmploymentType { get; set; } = string.Empty;
 
+    [JsonPropertyName("work_setup")]
+    public string WorkSetup { get; set; } = string.Empty;
+
     [JsonPropertyName("start_date")]
     public DateOnly? StartDate { get; set; }
+
+    [JsonPropertyName("end_date")]
+    public DateOnly? EndDate { get; set; }
 
     [JsonPropertyName("expiration_date")]
     public DateOnly? ExpirationDate { get; set; }
@@ -40,14 +58,32 @@ public sealed class OfferResponse
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
 
+    [JsonPropertyName("benefits")]
+    public string? Benefits { get; set; }
+
     [JsonPropertyName("salary_text")]
     public string SalaryText { get; set; } = string.Empty;
+
+    [JsonPropertyName("salary_amount")]
+    public decimal SalaryAmount { get; set; }
+
+    [JsonPropertyName("salary_type")]
+    public string SalaryType { get; set; } = string.Empty;
+
+    [JsonPropertyName("currency")]
+    public string Currency { get; set; } = "PHP";
 
     [JsonPropertyName("employment_type")]
     public string EmploymentType { get; set; } = string.Empty;
 
+    [JsonPropertyName("work_setup")]
+    public string WorkSetup { get; set; } = string.Empty;
+
     [JsonPropertyName("start_date")]
     public DateOnly? StartDate { get; set; }
+
+    [JsonPropertyName("end_date")]
+    public DateOnly? EndDate { get; set; }
 
     [JsonPropertyName("expiration_date")]
     public DateOnly? ExpirationDate { get; set; }

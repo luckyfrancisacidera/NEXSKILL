@@ -11,8 +11,6 @@ internal static class ApplicantStageTransitionPolicy
         ResumeSubmissionStatus.Shortlisted,
         ResumeSubmissionStatus.Interview,
         ResumeSubmissionStatus.Offer,
-        ResumeSubmissionStatus.Hire,
-        ResumeSubmissionStatus.Rejected,
     };
 
     private static readonly IReadOnlyDictionary<string, IReadOnlySet<ResumeSubmissionStatus>> AllowedTransitionsByAction =
@@ -29,12 +27,17 @@ internal static class ApplicantStageTransitionPolicy
             {
                 ResumeSubmissionStatus.Offer,
             },
-            ["reject"] = ActiveStatuses,
+            ["reject"] = new HashSet<ResumeSubmissionStatus>
+            {
+                ResumeSubmissionStatus.Completed,
+                ResumeSubmissionStatus.Shortlisted,
+                ResumeSubmissionStatus.Interview,
+                ResumeSubmissionStatus.Offer,
+            },
             ["remove-shortlist"] = new HashSet<ResumeSubmissionStatus>
             {
                 ResumeSubmissionStatus.Shortlisted,
                 ResumeSubmissionStatus.Interview,
-                ResumeSubmissionStatus.Rejected,
             },
         };
 
@@ -60,7 +63,7 @@ internal static class ApplicantStageTransitionPolicy
             ResumeSubmissionStatus.Shortlisted => "shortlist",
             ResumeSubmissionStatus.Interview => "set-interview",
             ResumeSubmissionStatus.Offer => "offer",
-            ResumeSubmissionStatus.Hire => "hire",
+            ResumeSubmissionStatus.Hired => "hire",
             ResumeSubmissionStatus.Rejected => "reject",
             _ => throw new ArgumentException("Invalid applicant status.")
         };
@@ -78,11 +81,10 @@ internal static class ApplicantStageTransitionPolicy
             "shortlist" => ResumeSubmissionStatus.Shortlisted,
             "set-interview" => ResumeSubmissionStatus.Interview,
             "offer" => ResumeSubmissionStatus.Offer,
-            "hire" => ResumeSubmissionStatus.Hire,
+            "hire" => ResumeSubmissionStatus.Hired,
             "reject" => ResumeSubmissionStatus.Rejected,
             "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Shortlisted => ResumeSubmissionStatus.Completed,
             "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Interview => ResumeSubmissionStatus.Interview,
-            "remove-shortlist" when currentStatus == ResumeSubmissionStatus.Rejected => ResumeSubmissionStatus.Completed,
             _ => throw new InvalidStageTransitionException(action, currentStatus.ToString()),
         };
     }

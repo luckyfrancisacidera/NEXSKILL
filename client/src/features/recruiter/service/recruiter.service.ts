@@ -8,6 +8,7 @@ import type {
   ApplicantScoresDto,
   BulkApplicantStageResponseDto,
   DashboardDto,
+  EmployeeRecordDto,
   JobDto,
   Paged,
   RecruiterProfileDto,
@@ -47,9 +48,15 @@ export interface UpdateApplicantStatusesPayload {
 export interface SendOfferPayload {
   title: string;
   message: string;
+  benefits?: string | null;
   salary_text: string;
+  salary_amount: number;
+  salary_type: string;
+  currency: string;
   employment_type: string;
+  work_setup: string;
   start_date?: string | null;
+  end_date?: string | null;
   expiration_date?: string | null;
 }
 
@@ -183,6 +190,13 @@ export const recruiterService = {
 
   async getDashboardStats(params: DashboardStatsQueryParams): Promise<DashboardDto> {
     const response = await http.get<DashboardDto>('/api/recruiter/dashboard', { params });
+    return response.data;
+  },
+
+  async getHiredEmployees(params: { page: number; pageSize: number; search?: string }): Promise<Paged<EmployeeRecordDto>> {
+    const response = await http.get<Paged<EmployeeRecordDto>>('/api/recruiter/employees', {
+      params,
+    });
     return response.data;
   },
 };

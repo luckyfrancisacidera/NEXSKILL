@@ -4,10 +4,10 @@ export type CandidateStage =
   | 'Shortlisted'
   | 'Interview'
   | 'Offer'
-  | 'Hire'
+  | 'Hired'
   | 'Rejected';
 
-export type JobSeekerStage = 'Applied' | 'Interview' | 'Offer' | 'Rejected';
+export type JobSeekerStage = 'Applied' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
 
 export type OfferStatus = 'Pending' | 'Accepted' | 'Declined' | 'Expired' | 'Cancelled';
 
@@ -17,9 +17,15 @@ export interface OfferDto {
   sent_by_user_id: string;
   title: string;
   message: string;
+  benefits?: string | null;
   salary_text: string;
+  salary_amount: number;
+  salary_type: string;
+  currency: string;
   employment_type: string;
+  work_setup: string;
   start_date?: string | null;
+  end_date?: string | null;
   expiration_date?: string | null;
   status: OfferStatus;
   sent_at_utc: string;
@@ -129,6 +135,11 @@ export interface ParsedResumeJsonDto {
 export interface ApplicantDetailDto extends ApplicantScoreItemDto {
   parsed_resume_json?: ParsedResumeJsonDto;
   candidate_explanation?: CandidateExplanationDto;
+  latest_interview?: {
+    id: string;
+    scheduled_date_time_utc: string;
+    status: import("@features/recruiter/types/interview.types").InterviewStatus;
+  } | null;
 }
 
 export interface ApplicantResumeDownloadDto {
@@ -145,7 +156,7 @@ export interface ApplicantJobFilterOption {
   shortlisted: number;
   interview: number;
   offer: number;
-  hire: number;
+  hired: number;
 }
 
 export interface ApplicantStageCounts {
@@ -154,7 +165,7 @@ export interface ApplicantStageCounts {
   shortlisted: number;
   interview: number;
   offer: number;
-  hire: number;
+  hired: number;
 }
 
 export interface ApplicantRecommendationDto {
@@ -216,6 +227,32 @@ export interface CandidatesLoaderData {
   recommendation: ApplicantRecommendationDto;
   pagination: CandidatePagination;
   filters: CandidateFilters;
+}
+
+export interface EmployeeRecordDto {
+  resume_submission_id: string;
+  job_id: string;
+  jobseeker_user_id?: string;
+  hired_by_recruiter_id?: string;
+  accepted_offer_id?: string;
+  employee_name: string;
+  employee_email: string;
+  recruiter_name: string;
+  recruiter_email?: string | null;
+  job_title: string;
+  department: string;
+  offer_title?: string | null;
+  offer_salary_text?: string | null;
+  hire_date_utc: string;
+}
+
+export interface HiredEmployeesLoaderData {
+  employees: EmployeeRecordDto[];
+  pagination: CandidatePagination;
+  filters: {
+    search: string;
+    pageSize: string;
+  };
 }
 
 export interface CandidateBulkAction {

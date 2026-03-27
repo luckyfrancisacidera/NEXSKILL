@@ -42,6 +42,14 @@ namespace SkillSense.Persistence.Configurations
             builder.Property(x => x.IsHiddenFromJobSeekerHistory)
                 .HasDefaultValue(false);
 
+            builder.Property(x => x.JobSeekerHistoryArchivedAtUtc);
+            builder.Property(x => x.JobSeekerHistoryDeletedAtUtc);
+
+            builder.Property(x => x.HireDateUtc);
+
+            builder.HasIndex(x => x.HiredByRecruiterId);
+            builder.HasIndex(x => x.AcceptedOfferId);
+
             builder.HasOne(x => x.JobSeekerUser)
                 .WithMany()
                 .HasForeignKey(x => x.JobSeekerUserId)

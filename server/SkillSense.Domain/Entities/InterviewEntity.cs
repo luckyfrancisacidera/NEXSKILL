@@ -11,6 +11,7 @@ public enum InterviewStatus
     RescheduleRequested = 3,
     Rescheduled = 4,
     Cancelled = 5,
+    Completed = 6,
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

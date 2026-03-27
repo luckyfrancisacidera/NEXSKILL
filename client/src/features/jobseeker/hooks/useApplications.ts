@@ -9,6 +9,7 @@ type UseApplicationsArgs = {
   pageSize: number;
   search: string;
   status: string;
+  archivedOnly?: boolean;
 };
 
 export const useApplications = ({
@@ -17,10 +18,13 @@ export const useApplications = ({
   pageSize,
   search,
   status,
+  archivedOnly = false,
 }: UseApplicationsArgs) => {
   const [data, setData] = useState<ApplicationsLoaderData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [unarchivingId, setUnarchivingId] = useState<string | null>(null);
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +38,7 @@ export const useApplications = ({
     setError(null);
 
     void jobseekerService
-      .getMyApplications({ pageNumber, pageSize, search, status })
+      .getMyApplications({ pageNumber, pageSize, search, status, archivedOnly })
       .then((nextData) => {
         if (isMounted) {
           setData(nextData);
@@ -54,7 +58,32 @@ export const useApplications = ({
     return () => {
       isMounted = false;
     };
-  }, [pageNumber, pageSize, search, status]);
+  }, [archivedOnly, pageNumber, pageSize, search, status]);
+
+  const refreshApplications = async () => {
+    let refreshed = await jobseekerService.getMyApplications({
+      pageNumber,
+      pageSize,
+      search,
+      status,
+      archivedOnly,
+    });
+
+    if (
+      refreshed.totalPages > 0 &&
+      refreshed.pageNumber > refreshed.totalPages
+    ) {
+      refreshed = await jobseekerService.getMyApplications({
+        pageNumber: refreshed.totalPages,
+        pageSize,
+        search,
+        status,
+        archivedOnly,
+      });
+    }
+
+    setData(refreshed);
+  };
 
   const withdraw = async (applicationId: string) => {
     setWithdrawingId(applicationId);
@@ -63,26 +92,7 @@ export const useApplications = ({
     try {
       await jobseekerService.withdrawApplication(applicationId);
 
-      let refreshed = await jobseekerService.getMyApplications({
-        pageNumber,
-        pageSize,
-        search,
-        status,
-      });
-
-      if (
-        refreshed.totalPages > 0 &&
-        refreshed.pageNumber > refreshed.totalPages
-      ) {
-        refreshed = await jobseekerService.getMyApplications({
-          pageNumber: refreshed.totalPages,
-          pageSize,
-          search,
-          status,
-        });
-      }
-
-      setData(refreshed);
+      await refreshApplications();
     } catch (nextError) {
       setError(
         nextError instanceof ApiError
@@ -94,6 +104,42 @@ export const useApplications = ({
     }
   };
 
+  const archiveHistory = async (applicationId: string) => {
+    setArchivingId(applicationId);
+    setError(null);
+
+    try {
+      await jobseekerService.archiveApplicationHistory(applicationId);
+      await refreshApplications();
+    } catch (nextError) {
+      setError(
+        nextError instanceof ApiError
+          ? nextError.message
+          : "Unable to archive this history entry right now.",
+      );
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const unarchiveHistory = async (applicationId: string) => {
+    setUnarchivingId(applicationId);
+    setError(null);
+
+    try {
+      await jobseekerService.unarchiveApplicationHistory(applicationId);
+      await refreshApplications();
+    } catch (nextError) {
+      setError(
+        nextError instanceof ApiError
+          ? nextError.message
+          : "Unable to restore this history entry right now.",
+      );
+    } finally {
+      setUnarchivingId(null);
+    }
+  };
+
   const deleteHistory = async (applicationId: string) => {
     setDeletingHistoryId(applicationId);
     setError(null);
@@ -101,26 +147,7 @@ export const useApplications = ({
     try {
       await jobseekerService.deleteApplicationHistory(applicationId);
 
-      let refreshed = await jobseekerService.getMyApplications({
-        pageNumber,
-        pageSize,
-        search,
-        status,
-      });
-
-      if (
-        refreshed.totalPages > 0 &&
-        refreshed.pageNumber > refreshed.totalPages
-      ) {
-        refreshed = await jobseekerService.getMyApplications({
-          pageNumber: refreshed.totalPages,
-          pageSize,
-          search,
-          status,
-        });
-      }
-
-      setData(refreshed);
+      await refreshApplications();
     } catch (nextError) {
       setError(
         nextError instanceof ApiError
@@ -142,6 +169,7 @@ export const useApplications = ({
         pageSize,
         search,
         status,
+        archivedOnly,
       });
       setData(refreshed);
     } catch {
@@ -156,8 +184,12 @@ export const useApplications = ({
     error,
     isLoading,
     withdrawingId,
+    archivingId,
+    unarchivingId,
     deletingHistoryId,
     withdraw,
+    archiveHistory,
+    unarchiveHistory,
     deleteHistory,
     refresh,
   };

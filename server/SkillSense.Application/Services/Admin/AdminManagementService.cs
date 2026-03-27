@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Identity;
+using AutoMapper;
 using SkillSense.Application.Contracts.Admin.Request;
 using SkillSense.Application.Contracts.Admin.Response;
 using SkillSense.Application.Contracts.Auth;
+using SkillSense.Application.Contracts.Employees;
+using SkillSense.Application.Contracts.Offers;
+using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Admin;
 using SkillSense.Application.Interfaces.Auth;
@@ -14,8 +19,11 @@ namespace SkillSense.Application.Services.Admin;
 
 public sealed class AdminManagementService(
     IAdminManagementRepository adminManagementRepository,
+    ICandidateExplanationRepository candidateExplanationRepository,
+    IObjectStorageService objectStorageService,
     IAuthService authService,
     IDateTimeProvider dateTimeProvider,
+    IMapper mapper,
     UserManager<AppUser> userManager) : IAdminManagementService
 {
     public async Task<SuperAdminDashboardResponse> GetSuperAdminDashboardAsync(
@@ -81,6 +89,94 @@ public sealed class AdminManagementService(
                 TotalHires = data.TotalHires,
             },
             Recruiters = MapPaged(data.Recruiters, MapRecruiter),
+        };
+    }
+
+    public async Task<PagedResult<EmployeeRecordResponse>> GetCompanyEmployeesAsync(
+        Guid adminUserId,
+        Guid companyId,
+        int pageNumber,
+        int pageSize,
+        string? search,
+        CancellationToken ct = default)
+    {
+        await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
+
+        var data = await adminManagementRepository.GetCompanyEmployeesAsync(
+            companyId,
+            pageNumber,
+            NormalizePageSize(pageSize),
+            search,
+            ct);
+
+        return MapPaged(data, MapEmployee);
+    }
+
+    public async Task<ApplicantDetailResponse?> GetCompanyApplicantBySubmissionIdAsync(
+        Guid adminUserId,
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default)
+    {
+        await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
+
+        var source = await adminManagementRepository.GetApplicantScoreBySubmissionIdAsync(companyId, submissionId, ct);
+        if (source is null)
+        {
+            return null;
+        }
+
+        var baseItem = mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = new HashSet<Guid>());
+        var parsedResumeJson = await adminManagementRepository.GetParsedResumeJsonAsync(companyId, submissionId, ct);
+        CandidateExplanationResponse? explanation = null;
+
+        if (baseItem.SubmissionStatus is "Shortlisted" or "Interview" or "Offer" or "Hired")
+        {
+            var explanationEntity = await candidateExplanationRepository.GetSucceededExplanationAsync(submissionId, ct);
+            if (explanationEntity is not null)
+            {
+                explanation = mapper.Map<CandidateExplanationResponse>(explanationEntity);
+            }
+        }
+
+        var detail = mapper.Map<ApplicantDetailResponse>(baseItem);
+        detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
+        detail.CandidateExplanation = explanation;
+        detail.Offer = await MapOfferAsync(submissionId, ct);
+        return detail;
+    }
+
+    public async Task<ApplicantResumeAccessResult> GetCompanyApplicantResumeAccessAsync(
+        Guid adminUserId,
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default)
+    {
+        await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
+
+        var submission = await adminManagementRepository.GetSubmissionByIdForCompanyAsync(companyId, submissionId, ct)
+            ?? throw new KeyNotFoundException("Candidate not found.");
+
+        if (string.IsNullOrWhiteSpace(submission.BlobObjectKey))
+        {
+            throw new KeyNotFoundException("Resume not found.");
+        }
+
+        if (!await objectStorageService.ExistsAsync(submission.BlobObjectKey, ct))
+        {
+            throw new KeyNotFoundException("Resume file not found.");
+        }
+
+        var fileName = string.IsNullOrWhiteSpace(submission.FileName) ? "resume" : submission.FileName;
+        var contentType = string.IsNullOrWhiteSpace(submission.ContentType) ? "application/octet-stream" : submission.ContentType;
+        var downloadUrl = await objectStorageService.GetDownloadUrlAsync(submission.BlobObjectKey, fileName, ct);
+
+        return new ApplicantResumeAccessResult
+        {
+            ObjectKey = submission.BlobObjectKey,
+            FileName = fileName,
+            ContentType = contentType,
+            DownloadUrl = downloadUrl,
         };
     }
 
@@ -321,4 +417,58 @@ public sealed class AdminManagementService(
             UpcomingInterviews = recruiter.UpcomingInterviews,
             TotalHires = recruiter.TotalHires,
         };
+
+    private static EmployeeRecordResponse MapEmployee(EmployeeRecordData employee)
+        => new()
+        {
+            HireId = employee.HireId,
+            ResumeSubmissionId = employee.ResumeSubmissionId,
+            JobId = employee.JobId,
+            JobSeekerUserId = employee.JobSeekerUserId,
+            HiredByRecruiterId = employee.HiredByRecruiterId,
+            AcceptedOfferId = employee.AcceptedOfferId,
+            HireStatus = employee.HireStatus,
+            EmployeeName = employee.EmployeeName,
+            EmployeeEmail = employee.EmployeeEmail,
+            RecruiterName = employee.RecruiterName,
+            RecruiterEmail = employee.RecruiterEmail,
+            JobTitle = employee.JobTitle,
+            Department = employee.Department,
+            OfferTitle = employee.OfferTitle,
+            OfferSalaryText = employee.OfferSalaryText,
+            HireDateUtc = employee.HireDateUtc,
+        };
+
+    private async Task<OfferResponse?> MapOfferAsync(Guid submissionId, CancellationToken ct)
+    {
+        var offer = await adminManagementRepository.GetLatestOfferByApplicationIdAsync(submissionId, ct);
+        if (offer is null)
+        {
+            return null;
+        }
+
+        return new OfferResponse
+        {
+            Id = offer.Id,
+            ApplicationId = offer.ApplicationId,
+            Title = offer.Title,
+            Message = offer.Message,
+            Benefits = offer.Benefits,
+            SalaryText = offer.SalaryText,
+            SalaryAmount = offer.SalaryAmount,
+            SalaryType = offer.SalaryType,
+            Currency = offer.Currency,
+            EmploymentType = offer.EmploymentType,
+            WorkSetup = offer.WorkSetup,
+            StartDate = offer.StartDate,
+            EndDate = offer.EndDate,
+            ExpirationDate = offer.ExpirationDate,
+            Status = offer.Status.ToString(),
+            SentAtUtc = offer.SentAtUtc,
+            RespondedAtUtc = offer.RespondedAtUtc,
+            CanAccept = offer.Status == JobOfferStatus.Pending,
+            CanDecline = offer.Status == JobOfferStatus.Pending,
+            CanMarkHired = false,
+        };
+    }
 }
