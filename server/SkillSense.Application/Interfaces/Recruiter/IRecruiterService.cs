@@ -2,6 +2,7 @@ using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Employees;
 using SkillSense.Application.Contracts.Offers;
 
 namespace SkillSense.Application.Interfaces.Recruiter;
@@ -39,6 +40,8 @@ public interface IRecruiterService
     Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default);
     Task<OfferResponse?> GetOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<OfferResponse?> GetOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
+    Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default);
+    Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid companyId, Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default);
     Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default);

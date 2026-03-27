@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using SkillSense.Domain.Entities;
+using SkillSense.Application.Contracts.Response;
 
 namespace SkillSense.Application.Contracts.Interviews;
 
@@ -23,6 +24,7 @@ public sealed class InterviewDto
     public InterviewStatus Status { get; init; }
     public string? CancelReason { get; init; }
     public bool IsArchived { get; init; }
+    public DateTime? ArchivedAtUtc { get; init; }
     public DateTime CreatedAtUtc { get; init; }
     public string? RecruiterName { get; init; }
     public string? RecruiterEmail { get; init; }
@@ -30,6 +32,21 @@ public sealed class InterviewDto
     public string? JobTitle { get; init; }
     public string? JobSeekerName { get; init; }
     public string? WarningMessage { get; set; }
+}
+
+public sealed class ArchivedInterviewsQuery
+{
+    public int PageNumber { get; init; } = 1;
+    public int PageSize { get; init; } = 10;
+    public string? Search { get; init; }
+    public string? Status { get; init; }
+}
+
+public sealed class CandidateInterviewSummaryDto
+{
+    public Guid Id { get; init; }
+    public DateTime ScheduledDateTimeUtc { get; init; }
+    public InterviewStatus Status { get; init; }
 }
 
 public sealed class ScheduleInterviewRequest

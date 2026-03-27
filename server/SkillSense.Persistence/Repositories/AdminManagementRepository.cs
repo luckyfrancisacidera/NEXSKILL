@@ -67,9 +67,9 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id && job.Status == JobStatus.Published),
                 UpcomingInterviews = dbContext.Interviews.Count(interview => interview.RecruiterId == joined.user.Id && interview.ScheduledDateTimeUtc >= now),
-                TotalHires = dbContext.ResumeSubmissions.Count(submission =>
-                    submission.Status == ResumeSubmissionStatus.Hire &&
-                    dbContext.Jobs.Any(job => job.Id == submission.JobId && job.RecruiterId == joined.user.Id)),
+                TotalHires = dbContext.Hires.Count(hire =>
+                    hire.Status == HireStatus.Active &&
+                    hire.RecruiterId == joined.user.Id),
             })
             .OrderByDescending(recruiter => recruiter.CreatedAtUtc);
 
@@ -132,9 +132,9 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == user.Id && job.Status == JobStatus.Published),
                 UpcomingInterviews = dbContext.Interviews.Count(interview => interview.RecruiterId == user.Id && interview.ScheduledDateTimeUtc >= now),
-                TotalHires = dbContext.ResumeSubmissions.Count(submission =>
-                    submission.Status == ResumeSubmissionStatus.Hire &&
-                    dbContext.Jobs.Any(job => job.Id == submission.JobId && job.RecruiterId == user.Id)),
+                TotalHires = dbContext.Hires.Count(hire =>
+                    hire.Status == HireStatus.Active &&
+                    hire.RecruiterId == user.Id),
             })
             .OrderByDescending(recruiter => recruiter.CreatedAtUtc);
 
@@ -154,10 +154,137 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 interview.ScheduledDateTimeUtc >= now &&
                 interview.ScheduledDateTimeUtc < nextWeek, ct),
             TotalOffers = await dbContext.ResumeSubmissions.CountAsync(submission => submission.CompanyId == companyId && submission.Status == ResumeSubmissionStatus.Offer, ct),
-            TotalHires = await dbContext.ResumeSubmissions.CountAsync(submission => submission.CompanyId == companyId && submission.Status == ResumeSubmissionStatus.Hire, ct),
+            TotalHires = await dbContext.Hires.CountAsync(hire => hire.CompanyId == companyId && hire.Status == HireStatus.Active, ct),
             Recruiters = pagedRecruiters,
         };
     }
+
+    public async Task<PagedData<EmployeeRecordData>> GetCompanyEmployeesAsync(
+        Guid companyId,
+        int pageNumber,
+        int pageSize,
+        string? search,
+        CancellationToken ct = default)
+    {
+        var normalizedPageNumber = Math.Max(1, pageNumber);
+        var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
+        var query =
+            from hire in dbContext.Hires.AsNoTracking()
+            where hire.CompanyId == companyId
+               && hire.Status == HireStatus.Active
+            join submission in dbContext.ResumeSubmissions.AsNoTracking() on hire.ApplicationId equals submission.Id
+            join job in dbContext.Jobs.AsNoTracking() on hire.JobId equals job.Id
+            join recruiterUser in dbContext.Users.AsNoTracking() on hire.RecruiterId equals recruiterUser.Id into recruiterUsers
+            from recruiterUser in recruiterUsers.DefaultIfEmpty()
+            select new EmployeeRecordData
+            {
+                HireId = hire.Id,
+                ResumeSubmissionId = hire.ApplicationId,
+                CompanyId = hire.CompanyId,
+                JobId = hire.JobId,
+                JobSeekerUserId = hire.JobSeekerId,
+                HiredByRecruiterId = hire.RecruiterId,
+                AcceptedOfferId = hire.OfferId,
+                HireStatus = hire.Status.ToString(),
+                EmployeeName = !string.IsNullOrWhiteSpace(submission.FullName) ? submission.FullName : submission.Email ?? "Unknown Applicant",
+                EmployeeEmail = submission.Email ?? "-",
+                RecruiterName = recruiterUser != null
+                    ? (!string.IsNullOrWhiteSpace(recruiterUser.FirstName) || !string.IsNullOrWhiteSpace(recruiterUser.LastName)
+                        ? $"{recruiterUser.FirstName} {recruiterUser.LastName}".Trim()
+                        : recruiterUser.Email ?? recruiterUser.UserName ?? "Unknown Recruiter")
+                    : "Unknown Recruiter",
+                RecruiterEmail = recruiterUser != null ? recruiterUser.Email : null,
+                JobTitle = job.Title,
+                Department = job.Department ?? "Unassigned",
+                OfferTitle = dbContext.JobOffers
+                    .Where(offer => offer.Id == hire.OfferId)
+                    .Select(offer => offer.Title)
+                    .FirstOrDefault(),
+                OfferSalaryText = dbContext.JobOffers
+                    .Where(offer => offer.Id == hire.OfferId)
+                    .Select(offer => offer.SalaryText)
+                    .FirstOrDefault(),
+                HireDateUtc = hire.HiredAtUtc,
+            };
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLowerInvariant();
+            query = query.Where(x =>
+                x.EmployeeName.ToLower().Contains(normalizedSearch)
+                || x.EmployeeEmail.ToLower().Contains(normalizedSearch)
+                || x.RecruiterName.ToLower().Contains(normalizedSearch)
+                || x.JobTitle.ToLower().Contains(normalizedSearch)
+                || x.Department.ToLower().Contains(normalizedSearch));
+        }
+
+        return await CreatePagedDataAsync(
+            query.OrderByDescending(x => x.HireDateUtc).ThenBy(x => x.EmployeeName),
+            normalizedPageNumber,
+            normalizedPageSize,
+            ct);
+    }
+
+    public Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Join(dbContext.Jobs.AsNoTracking(), submission => submission.JobId, job => job.Id, (submission, job) => new { submission, job })
+            .Where(x => x.job.CompanyId == companyId && x.submission.Id == submissionId)
+            .GroupJoin(
+                dbContext.ResumeScores.AsNoTracking(),
+                x => x.submission.Id,
+                score => score.ResumeSubmissionId,
+                (x, scores) => new { x.submission, x.job, scores })
+            .SelectMany(
+                x => x.scores.DefaultIfEmpty(),
+                (x, score) => new ApplicantScoreData
+                {
+                    ResumeSubmissionId = x.submission.Id,
+                    JobSeekerUserId = x.submission.JobSeekerUserId,
+                    JobId = x.job.Id,
+                    JobTitle = x.job.Title,
+                    JobDepartment = x.job.Department ?? "Unassigned",
+                    Status = x.submission.Status,
+                    Score = score != null ? (decimal)score.FinalWeightedScore : 0,
+                    CreatedAtUtc = x.submission.CreatedAtUtc,
+                    ApplicantName = x.submission.FullName,
+                    ApplicantEmail = x.submission.Email,
+                    PostalCode = x.submission.PostalCode,
+                    MatchSummary = score != null ? score.ScoreBreakdownJson : null,
+                    HasResume = !string.IsNullOrWhiteSpace(x.submission.BlobObjectKey),
+                    ResumeFileName = x.submission.FileName,
+                })
+            .FirstOrDefaultAsync(ct);
+
+    public Task<string?> GetParsedResumeJsonAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Where(s => s.Id == submissionId && s.CompanyId == companyId)
+            .Select(s => s.ParsedResumeJson)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<ResumeSubmissionEntity?> GetSubmissionByIdForCompanyAsync(
+        Guid companyId,
+        Guid submissionId,
+        CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .Where(submission => submission.Id == submissionId && submission.CompanyId == companyId)
+            .FirstOrDefaultAsync(ct);
+
+    public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken ct = default)
+        => dbContext.JobOffers
+            .AsNoTracking()
+            .Where(offer => offer.ApplicationId == applicationId)
+            .OrderByDescending(offer => offer.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
 
     public Task<Guid?> GetCompanyIdByAdminUserIdAsync(Guid adminUserId, CancellationToken ct = default)
         => dbContext.AdminProfiles
@@ -187,9 +314,9 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id && job.Status == JobStatus.Published),
                 UpcomingInterviews = dbContext.Interviews.Count(interview => interview.RecruiterId == joined.user.Id && interview.ScheduledDateTimeUtc >= now),
-                TotalHires = dbContext.ResumeSubmissions.Count(submission =>
-                    submission.Status == ResumeSubmissionStatus.Hire &&
-                    dbContext.Jobs.Any(job => job.Id == submission.JobId && job.RecruiterId == joined.user.Id)),
+                TotalHires = dbContext.Hires.Count(hire =>
+                    hire.Status == HireStatus.Active &&
+                    hire.RecruiterId == joined.user.Id),
             })
             .FirstOrDefaultAsync(ct);
     }

@@ -38,6 +38,7 @@ const STATUS_FILTERS: Array<{ key: "all" | InterviewStatus; label: string }> = [
   { key: "Accepted", label: "Accepted" },
   { key: "RescheduleRequested", label: "Reschedule requested" },
   { key: "Rescheduled", label: "Rescheduled" },
+  { key: "Completed", label: "Completed" },
   { key: "Declined", label: "Declined" },
   { key: "Cancelled", label: "Cancelled" },
 ];
@@ -48,6 +49,7 @@ const EVENT_TONE_CLASS_BY_STATUS: Record<InterviewStatus, string> = {
   RescheduleRequested: "status-reschedule-requested",
   Rescheduled: "status-rescheduled",
   Cancelled: "status-cancelled",
+  Completed: "status-completed",
 };
 
 const toDateOnly = (date: Date) =>

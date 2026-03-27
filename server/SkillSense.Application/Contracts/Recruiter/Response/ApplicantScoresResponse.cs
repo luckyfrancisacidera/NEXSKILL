@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Offers;
 
 namespace SkillSense.Application.Contracts.Recruiter.Response
@@ -83,6 +84,9 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
         [JsonPropertyName("candidate_explanation")]
         public CandidateExplanationResponse? CandidateExplanation { get; set; }
+
+        [JsonPropertyName("latest_interview")]
+        public CandidateInterviewSummaryDto? LatestInterview { get; set; }
     }
 
     public sealed class ApplicantScoreJobFilterResponse
@@ -111,8 +115,8 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("offer")]
         public int Offer { get; set; }
 
-        [JsonPropertyName("hire")]
-        public int Hire { get; set; }
+        [JsonPropertyName("hired")]
+        public int Hired { get; set; }
     }
 
     public sealed class ApplicantScoreCountsResponse
@@ -132,8 +136,8 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
         [JsonPropertyName("offer")]
         public int Offer { get; set; }
 
-        [JsonPropertyName("hire")]
-        public int Hire { get; set; }
+        [JsonPropertyName("hired")]
+        public int Hired { get; set; }
     }
 
     public sealed class RecommendationSettingsResponse

@@ -15,7 +15,7 @@ internal static class RecruiterDashboardComposer
             TotalShortlisted = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted), previous.Count(x => x.Status == ResumeSubmissionStatus.Shortlisted)),
             TotalInterview = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Interview), previous.Count(x => x.Status == ResumeSubmissionStatus.Interview)),
             TotalOffer = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Offer), previous.Count(x => x.Status == ResumeSubmissionStatus.Offer)),
-            TotalHired = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Hire), previous.Count(x => x.Status == ResumeSubmissionStatus.Hire)),
+            TotalHired = BuildMetric(current.Count(x => x.Status == ResumeSubmissionStatus.Hired), previous.Count(x => x.Status == ResumeSubmissionStatus.Hired)),
         };
 
     public static RecruiterDashboardTrendsResponse BuildTrends(
@@ -54,7 +54,7 @@ internal static class RecruiterDashboardComposer
             {
                 metric.Interview++;
             }
-            else if (application.Status == ResumeSubmissionStatus.Hire)
+            else if (application.Status == ResumeSubmissionStatus.Hired)
             {
                 metric.Hired++;
             }

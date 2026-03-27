@@ -48,7 +48,7 @@ internal static class RecruiterApplicantProjection
             ResumeSubmissionStatus.Shortlisted => "Applied",
             ResumeSubmissionStatus.Interview => "Interview",
             ResumeSubmissionStatus.Offer => "Offer",
-            ResumeSubmissionStatus.Hire => "Offer",
+            ResumeSubmissionStatus.Hired => "Hired",
             ResumeSubmissionStatus.Rejected => "Rejected",
             _ => "Applied",
         };
@@ -59,7 +59,7 @@ internal static class RecruiterApplicantProjection
             ResumeSubmissionStatus.Shortlisted => "Shortlisted",
             ResumeSubmissionStatus.Interview => "Interview",
             ResumeSubmissionStatus.Offer => "Offer",
-            ResumeSubmissionStatus.Hire => "Hire",
+            ResumeSubmissionStatus.Hired => "Hired",
             ResumeSubmissionStatus.Rejected => "Rejected",
             _ => isRecommended ? "Recommended" : "Applied",
         };

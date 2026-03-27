@@ -1,5 +1,9 @@
 import { http } from "@shared/api/http";
-import type { JobseekerInterview } from "@features/jobseeker/types/interview.types";
+import type {
+  JobseekerArchivedInterviewsLoaderData,
+  JobseekerArchivedInterviewsQueryParams,
+  JobseekerInterview,
+} from "@features/jobseeker/types/interview.types";
 import { sanitizeRichText } from "@shared/utils/richText";
 
 interface JobseekerInterviewDto {
@@ -13,6 +17,7 @@ interface JobseekerInterviewDto {
   status: JobseekerInterview["status"];
   cancelReason?: string | null;
   isArchived?: boolean;
+  archivedAtUtc?: string | null;
   recruiterName?: string | null;
   recruiterEmail?: string | null;
   companyName?: string | null;
@@ -34,6 +39,7 @@ const mapInterview = (dto: JobseekerInterviewDto): JobseekerInterview => {
     status: dto.status,
     cancelReason: dto.cancelReason ?? undefined,
     isArchived: dto.isArchived ?? false,
+    archivedAt: dto.archivedAtUtc ?? undefined,
     recruiterName: dto.recruiterName ?? undefined,
     recruiterEmail: dto.recruiterEmail ?? undefined,
     companyName: dto.companyName ?? undefined,
@@ -44,6 +50,35 @@ export const jobseekerInterviewService = {
   async getJobseekerInterviews(): Promise<JobseekerInterview[]> {
     const response = await http.get<JobseekerInterviewDto[]>("/api/jobseeker/interviews");
     return response.data.map(mapInterview);
+  },
+
+  async getArchivedJobseekerInterviews(): Promise<JobseekerInterview[]> {
+    const response = await http.get<JobseekerInterviewDto[]>("/api/jobseeker/interviews/archived");
+    return response.data.map(mapInterview);
+  },
+
+  async getArchivedJobseekerInterviewsPage(
+    params: JobseekerArchivedInterviewsQueryParams,
+  ): Promise<JobseekerArchivedInterviewsLoaderData> {
+    const response = await http.get<{
+      items: JobseekerInterviewDto[];
+      pageNumber: number;
+      pageSize: number;
+      totalCount: number;
+      totalPages: number;
+    }>("/api/jobseeker/interviews/archived", {
+      params: {
+        pageNumber: params.pageNumber,
+        pageSize: params.pageSize,
+        search: params.search,
+        status: params.status,
+      },
+    });
+
+    return {
+      ...response.data,
+      items: response.data.items.map(mapInterview),
+    };
   },
 
   async acceptInterview(interviewId: string): Promise<JobseekerInterview> {
@@ -89,6 +124,14 @@ export const jobseekerInterviewService = {
   async archiveInterview(interviewId: string): Promise<JobseekerInterview> {
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/archive`,
+      {},
+    );
+    return mapInterview(response.data);
+  },
+
+  async unarchiveInterview(interviewId: string): Promise<JobseekerInterview> {
+    const response = await http.post<JobseekerInterviewDto>(
+      `/api/jobseeker/interviews/${interviewId}/unarchive`,
       {},
     );
     return mapInterview(response.data);

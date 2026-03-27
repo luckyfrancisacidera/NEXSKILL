@@ -1,5 +1,6 @@
 using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Notifications;
+using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Exceptions;
@@ -20,6 +21,8 @@ public sealed class InterviewService(
     INotificationService notificationService,
     ILogger<InterviewService> logger) : IInterviewService
 {
+    private const int DefaultInterviewDurationMinutes = 60;
+
     public async Task<InterviewDto> ScheduleInterviewAsync(ScheduleInterviewRequest request, CancellationToken ct = default)
         => await ScheduleInterviewAsync(null, request, ct);
 
@@ -31,6 +34,7 @@ public sealed class InterviewService(
         ValidateScheduledDate(request.ScheduledDateTimeUtc, now);
         ValidateInterviewDetails(interviewType, request.LocationOrMeetingLink);
         await EnsureCandidateIsShortlistedAsync(request.JobId, request.JobSeekerId, ct);
+        await EnsureNoScheduleConflictsAsync(request.RecruiterId, request.JobSeekerId, request.ScheduledDateTimeUtc.ToUniversalTime(), null, ct);
 
         var entity = new InterviewEntity
         {
@@ -92,6 +96,7 @@ public sealed class InterviewService(
 
         EnsureCanReschedule(entity);
         ApplyReschedule(entity, request);
+        await EnsureNoScheduleConflictsAsync(entity.RecruiterId, entity.JobSeekerId, entity.ScheduledDateTimeUtc, entity.Id, ct);
         await SaveInterviewChangesAsync(interviewId, ct);
         var updatedInterview = await interviewRepository.GetByIdAsync(interviewId, ct)
             ?? throw new KeyNotFoundException("Interview not found.");
@@ -112,6 +117,7 @@ public sealed class InterviewService(
 
         EnsureCanReschedule(entity);
         ApplyReschedule(entity, request);
+        await EnsureNoScheduleConflictsAsync(entity.RecruiterId, entity.JobSeekerId, entity.ScheduledDateTimeUtc, entity.Id, ct);
         await SaveInterviewChangesAsync(interviewId, ct);
         var updatedInterview = companyId.HasValue && companyId.Value != Guid.Empty
             ? await interviewRepository.GetByIdForRecruiterAsync(interviewId, recruiterId, companyId.Value, ct)
@@ -252,6 +258,16 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    public async Task<InterviewDto> MarkInterviewCompletedAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
+        EnsureCanMarkCompleted(entity);
+
+        entity.Status = InterviewStatus.Completed;
+        await SaveInterviewChangesAsync(interviewId, ct);
+        return await MapAsync(entity, ct);
+    }
+
     public async Task<InterviewDto> ArchiveInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
@@ -270,6 +286,17 @@ public sealed class InterviewService(
 
         entity.IsArchived = true;
         entity.ArchivedAtUtc = dateTimeProvider.UtcNow;
+        await SaveInterviewChangesAsync(interviewId, ct);
+        return await MapAsync(entity, ct);
+    }
+
+    public async Task<InterviewDto> UnarchiveInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
+    {
+        var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
+        EnsureCanUnarchive(entity);
+
+        entity.IsArchived = false;
+        entity.ArchivedAtUtc = null;
         await SaveInterviewChangesAsync(interviewId, ct);
         return await MapAsync(entity, ct);
     }
@@ -294,6 +321,35 @@ public sealed class InterviewService(
     {
         var items = await interviewRepository.GetByJobSeekerAsync(jobSeekerId, ct);
         return await MapAsync(items, ct);
+    }
+
+    public async Task<IReadOnlyList<InterviewDto>> GetArchivedByJobSeekerAsync(Guid jobSeekerId, CancellationToken ct = default)
+    {
+        var items = await interviewRepository.GetArchivedByJobSeekerAsync(jobSeekerId, ct);
+        return await MapAsync(items, ct);
+    }
+
+    public async Task<PagedResult<InterviewDto>> GetArchivedByJobSeekerAsync(Guid jobSeekerId, ArchivedInterviewsQuery query, CancellationToken ct = default)
+    {
+        var normalizedPageNumber = Math.Max(1, query.PageNumber);
+        var normalizedPageSize = Math.Clamp(query.PageSize, 1, 100);
+        var result = await interviewRepository.GetArchivedByJobSeekerAsync(
+            jobSeekerId,
+            normalizedPageNumber,
+            normalizedPageSize,
+            query.Search,
+            query.Status,
+            ct);
+
+        var items = await MapAsync(result.Items, ct);
+        return new PagedResult<InterviewDto>
+        {
+            Items = items,
+            PageNumber = result.PageNumber,
+            PageSize = result.PageSize,
+            TotalCount = result.TotalCount,
+            TotalPages = result.TotalPages,
+        };
     }
 
     /// <summary>
@@ -413,6 +469,7 @@ public sealed class InterviewService(
                 Status = entity.Status,
                 CancelReason = entity.CancelReason,
                 IsArchived = entity.IsArchived,
+                ArchivedAtUtc = entity.ArchivedAtUtc,
                 CreatedAtUtc = entity.CreatedAtUtc,
                 RecruiterName = recruiterContext?.RecruiterName,
                 RecruiterEmail = recruiterContext?.RecruiterEmail,
@@ -628,6 +685,11 @@ public sealed class InterviewService(
         {
             throw new ArgumentException("Cancelled interviews cannot be rescheduled.");
         }
+
+        if (entity.Status == InterviewStatus.Completed)
+        {
+            throw new ArgumentException("Completed interviews cannot be rescheduled.");
+        }
     }
 
     private static void EnsureCanRespond(InterviewEntity entity)
@@ -640,6 +702,11 @@ public sealed class InterviewService(
         if (entity.Status == InterviewStatus.Cancelled)
         {
             throw new ArgumentException("Cancelled interviews cannot be updated.");
+        }
+
+        if (entity.Status == InterviewStatus.Completed)
+        {
+            throw new ArgumentException("Completed interviews cannot be updated.");
         }
     }
 
@@ -654,6 +721,11 @@ public sealed class InterviewService(
         {
             throw new ArgumentException("Interview is already cancelled.");
         }
+
+        if (entity.Status == InterviewStatus.Completed)
+        {
+            throw new ArgumentException("Completed interviews cannot be cancelled.");
+        }
     }
 
     private static void EnsureCanArchive(InterviewEntity entity)
@@ -663,9 +735,17 @@ public sealed class InterviewService(
             throw new ArgumentException("Interview is already archived.");
         }
 
-        if (entity.Status is not InterviewStatus.Declined and not InterviewStatus.Cancelled)
+        if (entity.Status is not InterviewStatus.Declined and not InterviewStatus.Cancelled and not InterviewStatus.Completed)
         {
-            throw new ArgumentException("Only declined or cancelled interviews can be archived.");
+            throw new ArgumentException("Only completed, declined, or cancelled interviews can be archived.");
+        }
+    }
+
+    private static void EnsureCanUnarchive(InterviewEntity entity)
+    {
+        if (!entity.IsArchived)
+        {
+            throw new ArgumentException("Interview is not archived.");
         }
     }
 
@@ -683,6 +763,50 @@ public sealed class InterviewService(
                 interviewId,
                 ex.InnerException?.Message);
             throw;
+        }
+    }
+
+    private static void EnsureCanMarkCompleted(InterviewEntity entity)
+    {
+        if (entity.IsArchived)
+        {
+            throw new ArgumentException("Archived interviews cannot be completed.");
+        }
+
+        if (entity.Status == InterviewStatus.Completed)
+        {
+            throw new ArgumentException("Interview is already marked as completed.");
+        }
+
+        if (entity.Status == InterviewStatus.Declined)
+        {
+            throw new ArgumentException("Declined interviews cannot be completed.");
+        }
+
+        if (entity.Status == InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Cancelled interviews cannot be completed.");
+        }
+
+        if (entity.Status != InterviewStatus.Accepted)
+        {
+            throw new ArgumentException("Only accepted interviews can be marked as completed.");
+        }
+    }
+
+    private async Task EnsureNoScheduleConflictsAsync(Guid recruiterId, Guid jobSeekerId, DateTime startsAtUtc, Guid? excludeInterviewId, CancellationToken ct)
+    {
+        var normalizedStart = startsAtUtc.ToUniversalTime();
+        var normalizedEnd = normalizedStart.AddMinutes(DefaultInterviewDurationMinutes);
+
+        if (await interviewRepository.HasRecruiterConflictAsync(recruiterId, normalizedStart, normalizedEnd, excludeInterviewId, ct))
+        {
+            throw new ArgumentException("This recruiter already has an interview scheduled at that time.");
+        }
+
+        if (await interviewRepository.HasJobSeekerConflictAsync(jobSeekerId, normalizedStart, normalizedEnd, excludeInterviewId, ct))
+        {
+            throw new ArgumentException("This candidate already has an interview scheduled at that time.");
         }
     }
 

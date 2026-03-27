@@ -305,6 +305,9 @@ public sealed class RecruiterServiceTests
         public Task<ApplicantScoreData?> GetApplicantScoreBySubmissionIdAsync(Guid recruiterIdInput, Guid companyIdInput, Guid submissionId, CancellationToken ct = default)
             => throw new NotImplementedException();
 
+        public Task<PagedData<EmployeeRecordData>> GetHiredEmployeeDataAsync(Guid recruiterIdInput, Guid companyIdInput, int pageNumber, int pageSize, string? search, CancellationToken ct = default)
+            => throw new NotImplementedException();
+
         public Task<List<JobFilterData>> GetJobFiltersAsync(Guid recruiterIdInput, Guid companyIdInput, string? department, CancellationToken ct = default)
             => throw new NotImplementedException();
 
@@ -325,6 +328,9 @@ public sealed class RecruiterServiceTests
 
         public Task<JobOfferEntity?> GetLatestOfferByApplicationIdAsync(Guid applicationId, CancellationToken ct = default)
             => throw new NotImplementedException();
+
+        public Task<InterviewEntity?> GetLatestInterviewForSubmissionAsync(Guid recruiterIdInput, Guid companyIdInput, Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult<InterviewEntity?>(null);
 
         public Task AddOfferAsync(JobOfferEntity offer, CancellationToken ct = default)
             => throw new NotImplementedException();

@@ -14,11 +14,13 @@ export const applicationsLoader = async ({
 }: LoaderFunctionArgs): Promise<ApplicationsLoaderData> => {
   try {
     const url = new URL(request.url);
+    const archivedOnly = url.pathname.endsWith("/archived");
     const params: JobseekerApplicationsQueryParams = {
       pageNumber: getPositiveNumber(url.searchParams.get("page"), 1),
       pageSize: getPositiveNumber(url.searchParams.get("pageSize"), 10),
       search: url.searchParams.get("search") ?? undefined,
       status: url.searchParams.get("status") ?? undefined,
+      archivedOnly,
     };
 
     return await jobseekerService.getMyApplications(params);

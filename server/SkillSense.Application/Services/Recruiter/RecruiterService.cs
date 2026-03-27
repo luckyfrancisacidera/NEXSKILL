@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SkillSense.Application.Common.Jobs;
 using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Text;
+using SkillSense.Application.Contracts.Employees;
 using SkillSense.Application.Contracts.Interviews;
 using SkillSense.Application.Contracts.Notifications;
 using SkillSense.Application.Contracts.Offers;
@@ -34,6 +35,32 @@ public sealed class RecruiterService(
     ILogger<RecruiterService> logger) : IRecruiterService
 {
     private static readonly Regex LeadingBulletPattern = new(@"^[\s\u2022\-\*\u00B7]+", RegexOptions.Compiled);
+    private static readonly IReadOnlySet<string> AllowedEmploymentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Full-time",
+        "Part-time",
+        "Contract",
+        "Internship",
+        "Temporary",
+    };
+    private static readonly IReadOnlySet<string> AllowedWorkSetups = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "On-site",
+        "Hybrid",
+        "Remote",
+    };
+    private static readonly IReadOnlySet<string> AllowedSalaryTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Monthly",
+        "Annual",
+        "Weekly",
+        "Daily",
+    };
+    private static readonly IReadOnlySet<string> AllowedCurrencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "PHP",
+        "USD",
+    };
 
     public async Task<RecruiterProfileResponse> GetProfileAsync(Guid recruiterId, CancellationToken ct = default)
     {
@@ -440,7 +467,7 @@ public sealed class RecruiterService(
                     Shortlisted = safeItems.Count(x => x.SubmissionStatus == "Shortlisted"),
                     Interview = safeItems.Count(x => x.SubmissionStatus == "Interview"),
                     Offer = safeItems.Count(x => x.SubmissionStatus == "Offer"),
-                    Hire = safeItems.Count(x => x.SubmissionStatus == "Hire"),
+                    Hired = 0,
                 };
             })
             .OrderBy(x => x.Title)
@@ -468,7 +495,7 @@ public sealed class RecruiterService(
                 Shortlisted = projectedForCounters.Count(x => x.SubmissionStatus == "Shortlisted"),
                 Interview = projectedForCounters.Count(x => x.SubmissionStatus == "Interview"),
                 Offer = projectedForCounters.Count(x => x.SubmissionStatus == "Offer"),
-                Hire = projectedForCounters.Count(x => x.SubmissionStatus == "Hire"),
+                Hired = 0,
             },
             Recommendation = new RecommendationSettingsResponse
             {
@@ -494,7 +521,7 @@ public sealed class RecruiterService(
 
         var parsedResumeJson = await recruiterRepository.GetParsedResumeJsonAsync(recruiterId, companyId, submissionId, ct);
         CandidateExplanationResponse? explanation = null;
-        var allowedStatusesForExplanation = new[] { "Shortlisted", "Interview", "Hire", "Offer" };
+        var allowedStatusesForExplanation = new[] { "Shortlisted", "Interview", "Hired", "Offer" };
         if (allowedStatusesForExplanation.Contains(baseItem.SubmissionStatus))
         {
             var explanationEntity = await candidateExplanationRepository.GetSucceededExplanationAsync(submissionId, ct);
@@ -508,6 +535,7 @@ public sealed class RecruiterService(
         detail.ParsedResumeJson = RecruiterApplicantProjection.ParseResumeJsonElement(parsedResumeJson);
         detail.CandidateExplanation = explanation;
         detail.Offer = await GetOfferAsync(companyId, recruiterId, submissionId, ct);
+        detail.LatestInterview = MapInterviewSummary(context: await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct));
         return detail;
     }
 
@@ -605,9 +633,9 @@ public sealed class RecruiterService(
         var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
         var latestOffer = await EnsureOfferExpirationStateAsync(context.LatestOffer, ct);
 
-        if (!CanSendOffer(context.Submission.Status, latestOffer))
+        if (!CanSendOffer(context, latestOffer))
         {
-            throw new InvalidOperationException("An offer can only be sent after interview stage, or after a previous offer has expired, been declined, or been cancelled.");
+            throw new InvalidOperationException("An offer can only be sent after the latest interview has been accepted and marked as completed.");
         }
 
         if (latestOffer?.Status == JobOfferStatus.Pending)
@@ -621,10 +649,16 @@ public sealed class RecruiterService(
             ApplicationId = submissionId,
             SentByUserId = recruiterId,
             Title = request.Title.Trim(),
-            Message = request.Message.Trim(),
-            SalaryText = request.SalaryText.Trim(),
-            EmploymentType = request.EmploymentType.Trim(),
+            Message = RichTextPlainTextNormalizer.Normalize(request.Message),
+            Benefits = string.IsNullOrWhiteSpace(request.Benefits) ? null : RichTextPlainTextNormalizer.Normalize(request.Benefits),
+            SalaryText = BuildSalaryText(request.SalaryAmount!.Value, request.Currency, request.SalaryType),
+            SalaryAmount = request.SalaryAmount!.Value,
+            SalaryType = NormalizeOfferOption(request.SalaryType, AllowedSalaryTypes),
+            Currency = NormalizeOfferOption(request.Currency, AllowedCurrencies),
+            EmploymentType = NormalizeOfferOption(request.EmploymentType, AllowedEmploymentTypes),
+            WorkSetup = NormalizeOfferOption(request.WorkSetup, AllowedWorkSetups),
             StartDate = request.StartDate,
+            EndDate = request.EndDate,
             ExpirationDate = request.ExpirationDate,
             Status = JobOfferStatus.Pending,
             SentAtUtc = now,
@@ -663,6 +697,27 @@ public sealed class RecruiterService(
         return latestOffer is null ? null : MapOffer(latestOffer);
     }
 
+    public async Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default)
+    {
+        var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
+        return await GetHiredEmployeesAsync(profile.CompanyId, recruiterId, pageNumber, pageSize, search, ct);
+    }
+
+    public async Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid companyId, Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default)
+    {
+        await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        var data = await recruiterRepository.GetHiredEmployeeDataAsync(recruiterId, companyId, pageNumber, pageSize, search, ct);
+
+        return new PagedResult<EmployeeRecordResponse>
+        {
+            Items = data.Items.Select(MapEmployee).ToList(),
+            PageNumber = data.PageNumber,
+            PageSize = data.PageSize,
+            TotalCount = data.TotalCount,
+            TotalPages = data.TotalPages,
+        };
+    }
+
     public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
@@ -671,7 +726,7 @@ public sealed class RecruiterService(
 
     public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
-        var updated = await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hire, ct);
+        var updated = await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hired, ct);
         var context = await GetApplicantStageContextForCompanyAsync(companyId, recruiterId, submissionId, ct);
         await NotifyCandidateHiredAsync(context.Submission, context.Job.Title, ct);
         updated.Offer = await GetOfferAsync(companyId, recruiterId, submissionId, ct);
@@ -735,7 +790,7 @@ public sealed class RecruiterService(
                         throw;
                     }
 
-                    if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
+                    if (nextStatus == ResumeSubmissionStatus.Hired && context.Submission.Status != ResumeSubmissionStatus.Hired)
                     {
                         if (!reservedHiresByJobId.TryGetValue(context.Job.Id, out var hiredCount))
                         {
@@ -754,6 +809,18 @@ public sealed class RecruiterService(
                    
                     context.Submission.Status = nextStatus;
                     context.Submission.UpdatedAtUtc = now;
+                    if (nextStatus == ResumeSubmissionStatus.Hired)
+                    {
+                        var latestOffer = await EnsureOfferExpirationStateAsync(context.LatestOffer, ct);
+                        if (latestOffer is null || latestOffer.Status != JobOfferStatus.Accepted)
+                        {
+                            throw new InvalidOperationException("An applicant can only be marked as hired after accepting an offer.");
+                        }
+
+                        context.Submission.HireDateUtc ??= now;
+                        context.Submission.HiredByRecruiterId ??= recruiterId;
+                        context.Submission.AcceptedOfferId ??= latestOffer.Id;
+                    }
 
                     if (nextStatus == ResumeSubmissionStatus.Shortlisted)
                     {
@@ -820,7 +887,7 @@ public sealed class RecruiterService(
                 Shortlisted = projectedForCounts.Count(x => x.SubmissionStatus == "Shortlisted"),
                 Interview = projectedForCounts.Count(x => x.SubmissionStatus == "Interview"),
                 Offer = projectedForCounts.Count(x => x.SubmissionStatus == "Offer"),
-                Hire = projectedForCounts.Count(x => x.SubmissionStatus == "Hire"),
+                Hired = 0,
             };
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
@@ -875,7 +942,9 @@ public sealed class RecruiterService(
 
         try
         {
-            return ResolveNextStatus(context.Submission.Status, action);
+            var nextStatus = ResolveNextStatus(context.Submission.Status, action);
+            EnsureInterviewFlowAllowsTransition(context, nextStatus, action);
+            return nextStatus;
         }
         catch (InvalidStageTransitionException ex)
         {
@@ -902,7 +971,9 @@ public sealed class RecruiterService(
             throw new InvalidOperationException("Use the send offer workflow to move an application into offer stage.");
         }
 
-        if (nextStatus == ResumeSubmissionStatus.Hire && context.Submission.Status != ResumeSubmissionStatus.Hire)
+        EnsureInterviewFlowAllowsTransition(context, nextStatus, nextStatus.ToString());
+
+        if (nextStatus == ResumeSubmissionStatus.Hired && context.Submission.Status != ResumeSubmissionStatus.Hired)
         {
             if (latestOffer is null || latestOffer.Status != JobOfferStatus.Accepted)
             {
@@ -919,6 +990,12 @@ public sealed class RecruiterService(
 
         context.Submission.Status = nextStatus;
         context.Submission.UpdatedAtUtc = dateTimeProvider.UtcNow;
+        if (nextStatus == ResumeSubmissionStatus.Hired)
+        {
+            context.Submission.HireDateUtc ??= dateTimeProvider.UtcNow;
+            context.Submission.HiredByRecruiterId ??= recruiterId;
+            context.Submission.AcceptedOfferId ??= latestOffer?.Id;
+        }
         await recruiterRepository.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
@@ -937,9 +1014,9 @@ public sealed class RecruiterService(
             throw new ArgumentException("Offer title is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.SalaryText))
+        if (!request.SalaryAmount.HasValue || request.SalaryAmount.Value <= 0)
         {
-            throw new ArgumentException("Compensation is required.");
+            throw new ArgumentException("Salary amount is required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.EmploymentType))
@@ -947,23 +1024,118 @@ public sealed class RecruiterService(
             throw new ArgumentException("Employment type is required.");
         }
 
-        if (request.ExpirationDate.HasValue && request.StartDate.HasValue && request.ExpirationDate.Value < request.StartDate.Value)
+        if (!AllowedEmploymentTypes.Contains(request.EmploymentType.Trim()))
+        {
+            throw new ArgumentException("Please select a valid employment type.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.WorkSetup) || !AllowedWorkSetups.Contains(request.WorkSetup.Trim()))
+        {
+            throw new ArgumentException("Please select a valid work setup.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.SalaryType) || !AllowedSalaryTypes.Contains(request.SalaryType.Trim()))
+        {
+            throw new ArgumentException("Please select a valid salary type.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Currency) || !AllowedCurrencies.Contains(request.Currency.Trim()))
+        {
+            throw new ArgumentException("Please select a valid currency.");
+        }
+
+        if (!request.StartDate.HasValue)
+        {
+            throw new ArgumentException("Start date is required.");
+        }
+
+        if (!request.ExpirationDate.HasValue)
+        {
+            throw new ArgumentException("Offer expiration date is required.");
+        }
+
+        var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow);
+        if (request.ExpirationDate.Value < today)
+        {
+            throw new ArgumentException("Expiration date must be later than today.");
+        }
+
+        if (request.ExpirationDate.Value < request.StartDate.Value)
         {
             throw new ArgumentException("Expiration date cannot be earlier than the start date.");
         }
+
+        var requiresEndDate = RequiresOfferEndDate(request.EmploymentType);
+        if (requiresEndDate && !request.EndDate.HasValue)
+        {
+            throw new ArgumentException($"End date is required for {request.EmploymentType.Trim().ToLowerInvariant()} offers.");
+        }
+
+        if (!requiresEndDate && request.EndDate.HasValue && request.EndDate.Value <= request.StartDate.Value)
+        {
+            throw new ArgumentException("End date must be after the start date.");
+        }
+
+        if (request.EndDate.HasValue && request.EndDate.Value <= request.StartDate.Value)
+        {
+            throw new ArgumentException("End date must be after the start date.");
+        }
     }
 
-    private bool CanSendOffer(ResumeSubmissionStatus submissionStatus, JobOfferEntity? latestOffer)
+    private bool CanSendOffer(ApplicantStageContextData context, JobOfferEntity? latestOffer)
     {
-        if (submissionStatus == ResumeSubmissionStatus.Interview)
+        if (!HasCompletedInterview(context))
+        {
+            return false;
+        }
+
+        if (context.Submission.Status == ResumeSubmissionStatus.Interview)
         {
             return true;
         }
 
-        return submissionStatus == ResumeSubmissionStatus.Offer
+        return context.Submission.Status == ResumeSubmissionStatus.Offer
             && latestOffer is not null
             && latestOffer.Status is JobOfferStatus.Declined or JobOfferStatus.Expired or JobOfferStatus.Cancelled;
     }
+
+    private void EnsureInterviewFlowAllowsTransition(ApplicantStageContextData context, ResumeSubmissionStatus nextStatus, string action)
+    {
+        if (nextStatus == ResumeSubmissionStatus.Offer)
+        {
+            if (!HasCompletedInterview(context))
+            {
+                throw new InvalidOperationException("An offer can only be sent after the latest interview has been accepted and marked as completed.");
+            }
+
+            return;
+        }
+
+        if (nextStatus == ResumeSubmissionStatus.Rejected && context.Submission.Status == ResumeSubmissionStatus.Interview && !HasCompletedInterview(context))
+        {
+            throw new InvalidOperationException("Candidates in interview stage can only be rejected after the latest accepted interview has been marked as completed.");
+        }
+
+        if (action.Equals("reject", StringComparison.OrdinalIgnoreCase)
+            && context.Submission.Status == ResumeSubmissionStatus.Interview
+            && !HasCompletedInterview(context))
+        {
+            throw new InvalidOperationException("Candidates in interview stage can only be rejected after the latest accepted interview has been marked as completed.");
+        }
+    }
+
+    private static bool HasCompletedInterview(ApplicantStageContextData context)
+        => context.LatestInterview?.Status == InterviewStatus.Completed;
+
+    private static CandidateInterviewSummaryDto? MapInterviewSummary(ApplicantStageContextData context)
+        => context.LatestInterview is null
+            ? null
+            : new CandidateInterviewSummaryDto
+            {
+                Id = context.LatestInterview.Id,
+                ScheduledDateTimeUtc = context.LatestInterview.ScheduledDateTimeUtc,
+                Status = context.LatestInterview.Status,
+            };
 
     private async Task<JobOfferEntity?> EnsureOfferExpirationStateAsync(JobOfferEntity? offer, CancellationToken ct)
     {
@@ -997,9 +1169,15 @@ public sealed class RecruiterService(
             Title = offer.Title,
             Message = offer.Message,
             SalaryText = offer.SalaryText,
+            SalaryAmount = offer.SalaryAmount,
+            SalaryType = offer.SalaryType,
+            Currency = offer.Currency,
             EmploymentType = offer.EmploymentType,
+            WorkSetup = offer.WorkSetup,
             StartDate = offer.StartDate,
+            EndDate = offer.EndDate,
             ExpirationDate = offer.ExpirationDate,
+            Benefits = offer.Benefits,
             Status = effectiveStatus.ToString(),
             SentAtUtc = offer.SentAtUtc,
             RespondedAtUtc = offer.RespondedAtUtc,
@@ -1007,7 +1185,7 @@ public sealed class RecruiterService(
             UpdatedAtUtc = offer.UpdatedAtUtc,
             CanAccept = canRespond,
             CanDecline = canRespond,
-            CanMarkHired = effectiveStatus == JobOfferStatus.Accepted,
+            CanMarkHired = false,
         };
     }
 
@@ -1019,6 +1197,21 @@ public sealed class RecruiterService(
         }
 
         return offer.Status;
+    }
+
+    private static bool RequiresOfferEndDate(string employmentType)
+        => employmentType.Trim().Equals("Contract", StringComparison.OrdinalIgnoreCase)
+            || employmentType.Trim().Equals("Internship", StringComparison.OrdinalIgnoreCase)
+            || employmentType.Trim().Equals("Temporary", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeOfferOption(string value, IReadOnlySet<string> allowedValues)
+        => allowedValues.First(option => option.Equals(value.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private static string BuildSalaryText(decimal amount, string currency, string salaryType)
+    {
+        var normalizedCurrency = NormalizeOfferOption(currency, AllowedCurrencies);
+        var normalizedSalaryType = NormalizeOfferOption(salaryType, AllowedSalaryTypes);
+        return $"{normalizedCurrency} {amount.ToString("N2", global::System.Globalization.CultureInfo.InvariantCulture)} / {normalizedSalaryType.ToLowerInvariant()}";
     }
 
     private async Task NotifyOfferSentAsync(ResumeSubmissionEntity submission, string jobTitle, JobOfferEntity offer, CancellationToken ct)
@@ -1169,6 +1362,27 @@ public sealed class RecruiterService(
         return dto;
     }
 
+    private static EmployeeRecordResponse MapEmployee(EmployeeRecordData employee)
+        => new()
+        {
+            HireId = employee.HireId,
+            ResumeSubmissionId = employee.ResumeSubmissionId,
+            JobId = employee.JobId,
+            JobSeekerUserId = employee.JobSeekerUserId,
+            HiredByRecruiterId = employee.HiredByRecruiterId,
+            AcceptedOfferId = employee.AcceptedOfferId,
+            HireStatus = employee.HireStatus,
+            EmployeeName = employee.EmployeeName,
+            EmployeeEmail = employee.EmployeeEmail,
+            RecruiterName = employee.RecruiterName,
+            RecruiterEmail = employee.RecruiterEmail,
+            JobTitle = employee.JobTitle,
+            Department = employee.Department,
+            OfferTitle = employee.OfferTitle,
+            OfferSalaryText = employee.OfferSalaryText,
+            HireDateUtc = employee.HireDateUtc,
+        };
+
     private List<ApplicantScoreItemResponse> BuildProjectedApplicants(List<ApplicantScoreData> sourceItems, int topPercent)
     {
         var recommendedIds = BuildRecommendedIds(sourceItems, topPercent);
@@ -1250,13 +1464,3 @@ public sealed class RecruiterService(
         cacheService.RemoveByPrefix("jobs:public:list:");
     }
 }
-
-
-
-
-
-
-
-
-
-

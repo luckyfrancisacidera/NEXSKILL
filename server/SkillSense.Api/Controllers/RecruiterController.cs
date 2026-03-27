@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillSense.Api.Security;
 using SkillSense.Application.Contracts.Interviews;
+using SkillSense.Application.Contracts.Employees;
 using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
@@ -265,6 +266,16 @@ public sealed class RecruiterController(
         return offer is null ? NotFound() : Ok(offer);
     }
 
+    [HttpGet("employees")]
+    public async Task<ActionResult<PagedResult<EmployeeRecordResponse>>> GetHiredEmployees([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+
+        return Ok(await recruiterService.GetHiredEmployeesAsync(companyId, userId, page, pageSize, search, ct));
+    }
+
     [HttpPost("applicants/{id:guid}/offer")]
     public async Task<ActionResult<ApplicantScoreItemResponse>> CreateOffer(Guid id, [FromBody] SendOfferRequest request, CancellationToken ct = default)
     {
@@ -355,6 +366,15 @@ public sealed class RecruiterController(
         {
             Reason = request.Reason,
         }, ct));
+    }
+
+    [HttpPost("interviews/{id:guid}/complete")]
+    public async Task<ActionResult<InterviewDto>> MarkInterviewCompleted(Guid id, CancellationToken ct = default)
+    {
+        var userId = CurrentUserContext.GetUserId(User);
+        var companyId = CurrentUserContext.GetActiveCompanyId(HttpContext)
+            ?? throw new UnauthorizedAccessException("Active company context is required.");
+        return Ok(await interviewService.MarkInterviewCompletedAsync(companyId, userId, id, ct));
     }
 
     [HttpPost("interviews/{id:guid}/archive")]

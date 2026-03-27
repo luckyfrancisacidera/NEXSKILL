@@ -30,6 +30,7 @@ namespace SkillSense.Persistence.Data
         public DbSet<InterviewRescheduleRequestEntity> InterviewRescheduleRequests => Set<InterviewRescheduleRequestEntity>();
         public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
         public DbSet<JobOfferEntity> JobOffers => Set<JobOfferEntity>();
+        public DbSet<HireEntity> Hires => Set<HireEntity>();
 
         #endregion
 

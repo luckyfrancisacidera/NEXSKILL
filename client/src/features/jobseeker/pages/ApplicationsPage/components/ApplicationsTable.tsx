@@ -1,4 +1,4 @@
-import { Eye, Loader2, Trash2, Undo2 } from "lucide-react";
+import { Archive, Eye, Loader2, Trash2, Undo2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { JobseekerApplicationDto } from "@features/jobseeker/types";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
@@ -8,8 +8,10 @@ import { ActionButton, actionButtonClassName } from "@shared/components/ActionBu
 type ApplicationsTableProps = {
   items: JobseekerApplicationDto[];
   withdrawingId: string | null;
+  archivingId: string | null;
   deletingHistoryId: string | null;
   onWithdraw: (applicationId: string) => void;
+  onArchiveHistory: (applicationId: string) => void;
   onDeleteHistory: (applicationId: string) => void;
 };
 
@@ -23,8 +25,10 @@ const formatAppliedDate = (value: string) =>
 export const ApplicationsTable = ({
   items,
   withdrawingId,
+  archivingId,
   deletingHistoryId,
   onWithdraw,
+  onArchiveHistory,
   onDeleteHistory,
 }: ApplicationsTableProps) => (
   <div className="overflow-x-auto">
@@ -49,6 +53,7 @@ export const ApplicationsTable = ({
         {items.map((item) => {
           const itemId = String(item.id);
           const isWithdrawing = withdrawingId === itemId;
+          const isArchiving = archivingId === itemId;
           const isDeletingHistory = deletingHistoryId === itemId;
           const actions = getJobseekerListActions(item.current_stage ?? item.status, "applications");
 
@@ -106,6 +111,13 @@ export const ApplicationsTable = ({
                       onClick={() => onWithdraw(itemId)}
                     />
                   ) : null}
+                  <ActionButton
+                    icon={isArchiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                    label="Archive history"
+                    iconOnly
+                    disabled={isArchiving || isDeletingHistory || isWithdrawing}
+                    onClick={() => onArchiveHistory(itemId)}
+                  />
                   {actions.includes("delete_history") ? (
                     <ActionButton
                       icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}

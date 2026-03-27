@@ -2,7 +2,9 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import { guardProtectedLoader } from "@app/routes/protectedLoader";
 import { adminService } from "@features/admin/service/admin.service";
 import type {
+  CompanyAdminCandidateDetailLoaderData,
   CompanyAdminDashboardDto,
+  CompanyAdminEmployeesDto,
   SuperAdminCompanyAdminsPageDto,
   SuperAdminDashboardDto,
   SuperAdminRecruitersPageDto,
@@ -94,4 +96,58 @@ export const companyAdminDashboardLoader = async ({ request }: LoaderFunctionArg
     page: getPositiveNumber(url.searchParams.get("page"), 1),
     pageSize: getPositiveNumber(url.searchParams.get("pageSize"), 10),
   });
+};
+
+export const companyAdminEmployeesLoader = async ({ request }: LoaderFunctionArgs): Promise<CompanyAdminEmployeesDto & { filters: { search: string } }> => {
+  const guard = await guardProtectedLoader({
+    allowedRoles: ["companyAdmin"],
+    fallback: () => ({
+      items: [],
+      pageNumber: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 1,
+      filters: { search: "" },
+    }),
+    requireCompany: true,
+  });
+
+  if (!guard.shouldLoad) {
+    return guard.data;
+  }
+
+  const url = new URL(request.url);
+  const search = url.searchParams.get("search") ?? "";
+  const data = await adminService.getCompanyEmployees({
+    search: search || undefined,
+    page: getPositiveNumber(url.searchParams.get("page"), 1),
+    pageSize: getPositiveNumber(url.searchParams.get("pageSize"), 10),
+  });
+
+  return {
+    ...data,
+    filters: {
+      search,
+    },
+  };
+};
+
+export const companyAdminCandidateDetailLoader = async ({ params }: LoaderFunctionArgs): Promise<CompanyAdminCandidateDetailLoaderData> => {
+  const guard = await guardProtectedLoader({
+    allowedRoles: ["companyAdmin"],
+    fallback: () => ({ candidate: null as never }),
+    requireCompany: true,
+  });
+
+  if (!guard.shouldLoad) {
+    return guard.data;
+  }
+
+  const submissionId = params.candidateId;
+  if (!submissionId) {
+    throw new Response("Candidate not found", { status: 404 });
+  }
+
+  const candidate = await adminService.getCompanyApplicantBySubmissionId(submissionId);
+  return { candidate };
 };

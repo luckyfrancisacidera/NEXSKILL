@@ -155,6 +155,12 @@ export const richTextToPlainText = (value?: string | null) => {
   return getNodeText(container.textContent);
 };
 
+export const richTextToDisplayLines = (value?: string | null) =>
+  richTextToPlainText(value)
+    .split(/\r?\n/)
+    .map((line) => getNodeText(line))
+    .filter(Boolean);
+
 export const arrayToRichTextList = (value?: string | string[] | null) => {
   const items = richTextToList(value);
   if (items.length === 0) {

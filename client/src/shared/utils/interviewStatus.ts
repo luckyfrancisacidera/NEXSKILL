@@ -4,7 +4,8 @@ export type DisplayInterviewStatus =
   | "Declined"
   | "RescheduleRequested"
   | "Rescheduled"
-  | "Cancelled";
+  | "Cancelled"
+  | "Completed";
 
 export const interviewStatusChipClassName: Record<DisplayInterviewStatus, string> = {
   Pending:
@@ -19,6 +20,8 @@ export const interviewStatusChipClassName: Record<DisplayInterviewStatus, string
     "bg-amber-50 text-amber-700 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900/70",
   Cancelled:
     "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80 dark:bg-zinc-900/50 dark:text-zinc-300 dark:ring-zinc-800",
+  Completed:
+    "bg-blue-50 text-blue-700 ring-1 ring-blue-200/70 dark:bg-blue-900/30 dark:text-blue-200 dark:ring-blue-900/70",
 };
 
 
@@ -29,7 +32,8 @@ export const interviewStatusCalendarPillClassName: Record<DisplayInterviewStatus
   RescheduleRequested: "bg-amber-50 text-amber-700",
   Rescheduled: "bg-amber-50 text-amber-700",
   Cancelled: "bg-zinc-100 text-zinc-600",
+  Completed: "bg-blue-50 text-blue-700",
 };
 
 export const isTerminalInterviewStatus = (status: DisplayInterviewStatus) =>
-  status === "Declined" || status === "Cancelled";
+  status === "Declined" || status === "Cancelled" || status === "Completed";

@@ -45,7 +45,6 @@ export const candidatesAction = async ({ request }: ActionFunctionArgs) => {
       "remove-shortlist",
       "set-interview",
       "offer",
-      "hire",
       "reject",
     ]);
 
@@ -102,6 +101,5 @@ export const candidatesAction = async ({ request }: ActionFunctionArgs) => {
     );
   }
 };
-
 
 

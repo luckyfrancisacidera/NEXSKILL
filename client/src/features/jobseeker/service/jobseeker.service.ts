@@ -72,10 +72,18 @@ export const jobseekerService = {
   async getMyApplications(
     params: JobseekerApplicationsQueryParams,
   ): Promise<JobseekerApplicationsResponse> {
+    const endpoint = params.archivedOnly
+      ? "/api/jobseeker/applications/archived"
+      : "/api/jobseeker/applications";
     const response = await http.get<JobseekerApplicationsResponse>(
-      "/api/jobseeker/applications",
+      endpoint,
       {
-        params,
+        params: {
+          pageNumber: params.pageNumber,
+          pageSize: params.pageSize,
+          search: params.search,
+          status: params.status,
+        },
       },
     );
     return response.data;
@@ -103,6 +111,14 @@ export const jobseekerService = {
 
   async withdrawApplication(id: string): Promise<void> {
     await http.patch(`/api/jobseeker/applications/${id}/withdraw`);
+  },
+
+  async archiveApplicationHistory(id: string): Promise<void> {
+    await http.post(`/api/jobseeker/applications/${id}/history/archive`);
+  },
+
+  async unarchiveApplicationHistory(id: string): Promise<void> {
+    await http.post(`/api/jobseeker/applications/${id}/history/unarchive`);
   },
 
   async deleteApplicationHistory(id: string): Promise<void> {

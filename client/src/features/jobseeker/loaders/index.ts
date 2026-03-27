@@ -1,4 +1,5 @@
 export * from "@features/jobseeker/loaders/applications.loader";
+export * from "@features/jobseeker/loaders/archived-interviews.loader";
 export * from "@features/jobseeker/loaders/dashboard.loader";
 export * from "@features/jobseeker/loaders/job-detail.loader";
 export * from "@features/jobseeker/loaders/jobs.loader";
