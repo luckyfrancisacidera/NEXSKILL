@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFetcher, useLoaderData, useRevalidator, useSubmit } from 'react-router-dom';
+import {
+  CalendarDays,
+  FileSearch,
+  Users,
+  UserRoundCheck,
+  UserRoundSearch,
+  UserX,
+} from 'lucide-react';
+import { useFetcher, useLoaderData, useNavigate, useNavigation, useRevalidator, useSubmit } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { BulkActionsBar } from '@features/recruiter/pages/CandidatesPage/components/BulkActionsBar';
@@ -7,6 +15,7 @@ import { CandidateStageTabs } from '@features/recruiter/pages/CandidatesPage/com
 import { CandidatesFilters } from '@features/recruiter/pages/CandidatesPage/components/CandidatesFilters';
 import { CandidatesPagination } from '@features/recruiter/pages/CandidatesPage/components/CandidatesPagination';
 import { CandidatesTable } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTable';
+import { CandidatesTableSkeleton } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTableSkeleton';
 
 import type {
   BulkApplicantStageResponseDto,
@@ -16,8 +25,9 @@ import type {
 } from '@features/recruiter/types';
 import { canShortlistCandidate, getShortlistWarningMessage } from '@features/recruiter/utils/candidateStageRules';
 import { Card } from '@shared/components/Card';
-import { useConfirmation } from '@shared/hooks/useConfirmation';
+import { EmptyState } from '@shared/components/EmptyState';
 import type { DropdownOption } from '@shared/components/Dropdown';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
 
 const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
 
@@ -36,6 +46,61 @@ const isActionAllowed = (action: string, submissionStatus: string) => {
 
 const buildCandidateQuery = (filters: CandidateFilters, page: number) =>
   `?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&recommendedTopPercent=${encodeURIComponent(filters.recommendedTopPercent)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=${page}&stage=${encodeURIComponent(filters.stage)}`;
+
+const stageEmptyStateMap: Record<
+  string,
+  {
+    title: string;
+    description: string;
+    icon: typeof Users;
+  }
+> = {
+  all: {
+    title: 'No candidates yet',
+    description: 'Candidates will appear here once applicants start applying to your open jobs.',
+    icon: Users,
+  },
+  Applied: {
+    title: 'No applications yet',
+    description: 'New applicants will appear here as soon as people apply to your jobs.',
+    icon: Users,
+  },
+  Recommended: {
+    title: 'No recommended candidates',
+    description: 'Recommended candidates will appear here once matching applicants are scored.',
+    icon: UserRoundSearch,
+  },
+  Shortlisted: {
+    title: 'No shortlisted candidates',
+    description: 'Shortlisted candidates will appear here after you move strong applicants forward.',
+    icon: UserRoundCheck,
+  },
+  Interview: {
+    title: 'No interviews scheduled',
+    description: 'Candidates in the interview stage will appear here once interviews are scheduled.',
+    icon: CalendarDays,
+  },
+  Offer: {
+    title: 'No offers sent',
+    description: 'Candidates will appear here after you send them an offer.',
+    icon: FileSearch,
+  },
+  Hire: {
+    title: 'No hired candidates yet',
+    description: 'Hired candidates will appear here after an offer has been accepted and marked hired.',
+    icon: UserRoundCheck,
+  },
+  Hired: {
+    title: 'No hired candidates yet',
+    description: 'Hired candidates will appear here after an offer has been accepted and marked hired.',
+    icon: UserRoundCheck,
+  },
+  Rejected: {
+    title: 'No rejected candidates',
+    description: 'Rejected candidates will appear here whenever applicants are closed out of the pipeline.',
+    icon: UserX,
+  },
+};
 
 const getBulkActionsForStage = (
   stage: string,
@@ -78,6 +143,8 @@ export const CandidatesPage = () => {
   const { candidates, jobs, departments, counts, filters, recommendation, pagination } =
     useLoaderData() as CandidatesLoaderData;
   const fetcher = useFetcher();
+  const navigate = useNavigate();
+  const navigation = useNavigation();
   const submit = useSubmit();
   const revalidator = useRevalidator();
   const { showToast } = useToast();
@@ -188,6 +255,15 @@ export const CandidatesPage = () => {
     label: `Top ${value}%`,
     accentClassName: 'bg-violet-100 text-violet-700',
   }));
+  const previousPageHref = buildCandidateQuery(normalizedFilters, Math.max(1, pagination.page - 1));
+  const nextPageHref = buildCandidateQuery(normalizedFilters, Math.min(pagination.totalPages, pagination.page + 1));
+  const hasSearchOrFacetFilters =
+    normalizedFilters.search.trim().length > 0 ||
+    normalizedFilters.jobId !== 'all' ||
+    normalizedFilters.department !== 'all';
+  const isEmptyPage = pagination.total > 0 && candidates.length === 0;
+  const isLoadingList = navigation.state === 'loading' && navigation.location?.pathname === '/recruiter/candidates';
+  const emptyStateContent = stageEmptyStateMap[normalizedFilters.stage] ?? stageEmptyStateMap.all;
 
   const toggleAllRows = () => {
     if (isAllChecked) {
@@ -326,25 +402,47 @@ export const CandidatesPage = () => {
         />
       </div>
 
-      <CandidatesTable
-        candidates={candidates}
-        isAllChecked={isAllChecked}
-        selectedSet={selectedSet}
-        onToggleAllRows={toggleAllRows}
-        onToggleSingleRow={toggleSingleRow}
-      />
+      {isLoadingList && candidates.length === 0 ? (
+        <CandidatesTableSkeleton />
+      ) : isEmptyPage ? (
+        <EmptyState
+          icon={FileSearch}
+          title="No results on this page"
+          description="There are candidates in this view, but this page has no results. Go back a page to continue reviewing them."
+          actionLabel="Go to previous page"
+          onAction={() => {
+            navigate(`/recruiter/candidates${previousPageHref}`);
+          }}
+        />
+      ) : candidates.length === 0 ? (
+        <EmptyState
+          icon={emptyStateContent.icon}
+          title={emptyStateContent.title}
+          description={
+            hasSearchOrFacetFilters
+              ? 'Try adjusting your search, job, or department filters to broaden the candidate list.'
+              : emptyStateContent.description
+          }
+        />
+      ) : (
+        <CandidatesTable
+          candidates={candidates}
+          isAllChecked={isAllChecked}
+          selectedSet={selectedSet}
+          onToggleAllRows={toggleAllRows}
+          onToggleSingleRow={toggleSingleRow}
+        />
+      )}
 
-      <CandidatesPagination
-        page={pagination.page}
-        totalPages={pagination.totalPages}
-        total={pagination.total}
-        previousHref={buildCandidateQuery(normalizedFilters, Math.max(1, pagination.page - 1))}
-        nextHref={buildCandidateQuery(normalizedFilters, Math.min(pagination.totalPages, pagination.page + 1))}
-      />
-
+      {(pagination.total > 0 || isEmptyPage) ? (
+        <CandidatesPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          previousHref={previousPageHref}
+          nextHref={nextPageHref}
+        />
+      ) : null}
     </Card>
   );
 };
-
-
-

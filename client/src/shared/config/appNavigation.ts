@@ -36,7 +36,6 @@ const recruiterItems: AppNavigationItem[] = [
   { label: "Dashboard", to: "/recruiter/dashboard", icon: LayoutDashboard },
   { label: "Job Posts", to: "/recruiter/job-posts", icon: BriefcaseBusiness },
   { label: "Candidates", to: "/recruiter/candidates", icon: Users },
-  { label: "Offers", to: "/recruiter/offers", icon: FileCheck2 },
   { label: "My Hires", to: "/recruiter/hired", icon: FileCheck2 },
   { label: "Interviews", to: "/recruiter/interviews", icon: CalendarClock },
 ];

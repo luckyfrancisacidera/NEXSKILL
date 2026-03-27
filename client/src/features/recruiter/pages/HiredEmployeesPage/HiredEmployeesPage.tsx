@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import { Link, useLoaderData, useSubmit } from "react-router-dom";
 
 import type { HiredEmployeesLoaderData } from "@features/recruiter/types";
@@ -76,9 +76,10 @@ export const HiredEmployeesPage = () => {
                   <td className="px-3 py-3">
                     <Link
                       to={`/recruiter/candidates/${employee.resume_submission_id}`}
-                      className={actionButtonClassName()}
+                      className={actionButtonClassName({ iconOnly: true })}
+                      title="View candidate"
                     >
-                      View Profile
+                       <Eye size={16} />
                     </Link>
                   </td>
                 </tr>

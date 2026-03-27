@@ -1,18 +1,22 @@
 import { Link, useLoaderData } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowUpRight,
   BarChart3,
   Bookmark,
+  BookmarkCheck,
   Briefcase,
   CalendarClock,
   FileClock,
-  Search,
   Sparkles,
+  MapPin,
+  Building2,
 } from "lucide-react";
 
 import { DashboardAreaChart } from "@shared/components/DashboardAreaChart";
 import { DashboardGreeting } from "@shared/components/DashboardGreeting";
 import { useAuth } from "@app/providers/AuthProvider";
+import { SavedJobsEmptyState } from "@features/jobseeker/components";
 import {
   DashboardEmptyState,
   DashboardListLink,
@@ -20,9 +24,7 @@ import {
   DashboardStatCard,
 } from "@shared/components/DashboardPrimitives";
 import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
-import { JobCard } from "@shared/components/JobCard";
 import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
-import type { Job } from "@shared/types";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { useDashboardData } from "@features/jobseeker/hooks";
@@ -272,55 +274,95 @@ export const DashboardPage = () => {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <DashboardSectionCard
           title="Saved Jobs"
-          description="Quick access to roles you want to revisit."
-          action={<span className="text-sm text-zinc-500 dark:text-zinc-400">{data.saved_jobs.length} jobs</span>}
+          description="Compact preview of the roles you bookmarked."
+          action={
+            <div className="flex items-center gap-3">
+              <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 px-2.5 text-xs font-semibold text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                {data.saved_jobs.length}
+              </span>
+              <DashboardListLink to="/saved">View all</DashboardListLink>
+            </div>
+          }
+          className="overflow-hidden"
+          contentClassName="p-0"
         >
           {hasSavedJobs ? (
-            <div className="grid gap-4 xl:grid-cols-2">
-              {data.saved_jobs.map((item) => {
-                const job: Job = {
-                  id: String(item.id),
-                  title: String(item.title),
-                  company: String(item.company),
-                  location: String(item.location),
-                  salaryMin: Number(item.salary_min ?? 0),
-                  salaryMax: Number(item.salary_max ?? 0),
-                  currency: String(item.currency ?? "PHP"),
-                  type: "Full-time",
-                  snippet: String(item.job_type ?? ""),
-                };
+            <div className="max-h-[420px] overflow-y-auto px-4 py-4 [scrollbar-gutter:stable]">
+              <div className="space-y-2.5 pr-1">
+                {data.saved_jobs.map((item) => (
+                  <div
+                    key={String(item.id)}
+                    className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-3.5 transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                            <BookmarkCheck className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <Link
+                              to={`/jobs/${String(item.id)}`}
+                              className="block truncate text-sm font-semibold text-zinc-950 transition hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
+                              title={String(item.title)}
+                            >
+                              {String(item.title)}
+                            </Link>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+                              <span className="inline-flex min-w-0 items-center gap-1 truncate">
+                                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{String(item.company)}</span>
+                              </span>
+                              <span className="inline-flex min-w-0 items-center gap-1 truncate">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{String(item.location)}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                return (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isSaved
-                    onToggleSave={(jobId, nextSavedState) =>
-                      nextSavedState
-                        ? jobseekerService.saveJob(jobId)
-                        : jobseekerService
-                            .removeSavedJob(jobId)
-                            .then(() => updateRange(range))
-                    }
-                  />
-                );
-              })}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                            {String(item.job_type ?? "Saved role")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void jobseekerService.removeSavedJob(String(item.id)).then(() => updateRange(range));
+                          }}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100"
+                          aria-label={`Remove ${String(item.title)} from saved jobs`}
+                          title="Remove saved job"
+                        >
+                          <Bookmark className="h-4 w-4" />
+                        </button>
+                        <Link
+                          to={`/jobs/${String(item.id)}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-800 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100"
+                          aria-label={`Open ${String(item.title)}`}
+                          title="View job"
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <DashboardEmptyState
-              icon={Bookmark}
-              title="No saved jobs yet"
-              description="Start exploring jobs and save the ones you want to compare later."
-              action={
-                <Link
-                  to="/jobs"
-                  className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
-                >
-                  <Search className="h-4 w-4" />
-                  Find Jobs
-                </Link>
-              }
-            />
+            <div className="p-4">
+              <SavedJobsEmptyState
+                compact
+                title="No saved jobs"
+                description="Saved posts will appear here."
+                className="min-h-0"
+              />
+            </div>
           )}
         </DashboardSectionCard>
 

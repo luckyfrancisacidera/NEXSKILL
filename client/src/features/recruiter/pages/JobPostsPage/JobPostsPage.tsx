@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BriefcaseBusiness, FileSearch } from 'lucide-react';
 import { useLoaderData, useNavigate, useNavigation, useRevalidator, useSearchParams } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
@@ -6,6 +7,7 @@ import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader'
 import { JobPostsFilters } from '@features/recruiter/pages/JobPostsPage/components/JobPostsFilters';
 import { JobPostsPagination } from '@features/recruiter/pages/JobPostsPage/components/JobPostsPagination';
 import { JobPostsTable } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTable';
+import { JobPostsTableSkeleton } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTableSkeleton';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
 import type { JobListItem, RecruiterJobsLoaderData } from '@features/recruiter/types';
@@ -19,8 +21,10 @@ import {
   type RecruiterJobMutationPayload,
 } from '@features/recruiter/utils/jobMutationSync';
 import { Card } from '@shared/components/Card';
+import { EmptyState } from '@shared/components/EmptyState';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
+import { normalizeSearchInput } from '@shared/utils/search';
 
 const buildJobPostsQuery = (searchParams: URLSearchParams, next: Record<string, string>) => {
   const merged = { ...Object.fromEntries(searchParams.entries()), ...next };
@@ -50,10 +54,15 @@ export const JobPostsPage = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [selectedJob, setSelectedJob] = useState<JobListItem | null>(null);
+  const [searchDraft, setSearchDraft] = useState(loaderData.filters.search);
 
   useEffect(() => {
     setJobs(loaderData.jobs);
   }, [loaderData.jobs]);
+
+  useEffect(() => {
+    setSearchDraft(loaderData.filters.search);
+  }, [loaderData.filters.search]);
 
   const applyMutationSync = useCallback((mutation: RecruiterJobMutationPayload, showHiddenFeedback: boolean) => {
     if (!mutation || handledMutationIdsRef.current.has(mutation.mutationId)) {
@@ -85,10 +94,12 @@ export const JobPostsPage = () => {
     return subscribeRecruiterJobMutations((mutation) => applyMutationSync(mutation, true));
   }, [applyMutationSync]);
 
-
-
   const pageCount = Math.max(1, loaderData.totalPages ?? Math.ceil(loaderData.total / loaderData.pageSize));
   const currentDepartment = loaderData.filters.department ?? 'all';
+  const isLoadingList = navigation.state === 'loading' && navigation.location?.pathname === '/recruiter/job-posts';
+  const hasActiveFilters = Boolean(loaderData.filters.search?.trim()) || currentDepartment !== 'all';
+  const isEmptyPage = loaderData.total > 0 && jobs.length === 0;
+  const isEmptyJobs = !jobs || jobs.length === 0;
 
   const departments = useMemo(() => {
     const fromList = loaderData.options?.departments ?? [];
@@ -233,6 +244,9 @@ export const JobPostsPage = () => {
   const nextHref = `/recruiter/job-posts?${buildJobPostsQuery(searchParams, {
     page: String(Math.min(pageCount, loaderData.page + 1)),
   })}`;
+  const previousPageHref = `/recruiter/job-posts?${buildJobPostsQuery(searchParams, {
+    page: String(Math.max(1, loaderData.page - 1)),
+  })}`;
 
   return (
     <div className="space-y-6">
@@ -244,38 +258,82 @@ export const JobPostsPage = () => {
 
         <JobPostsFilters
           currentDepartment={currentDepartment}
-          currentSearch={loaderData.filters.search}
+          currentSearch={searchDraft}
           departments={departments}
           onDepartmentChange={(department) => {
             navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, page: '1' })}`);
           }}
-          onSearchCommit={(value) => {
-            if (value === loaderData.filters.search) {
+          onSearchChange={(value) => {
+            setSearchDraft(value);
+
+            const normalizedValue = normalizeSearchInput(value);
+            const normalizedCurrentSearch = normalizeSearchInput(loaderData.filters.search);
+            if (normalizedValue === normalizedCurrentSearch) {
               return;
             }
 
-            navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: value, page: '1' })}`);
+            navigate(
+              `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: normalizedValue, page: '1' })}`,
+              { replace: true },
+            );
           }}
         />
 
-        <JobPostsTable
-          jobs={jobs}
-          isDeleting={isDeleting}
-          isDuplicating={isDuplicating}
-          onDelete={openDeleteFlow}
-          onDuplicate={openDuplicateFlow}
-        />
+        {isLoadingList && isEmptyJobs ? (
+          <JobPostsTableSkeleton />
+        ) : isEmptyPage ? (
+          <EmptyState
+            icon={FileSearch}
+            title="No results on this page"
+            description="There are job posts in this view, but this page is empty. Go back a page to keep browsing."
+            actionLabel="Go to previous page"
+            onAction={() => {
+              navigate(previousPageHref);
+            }}
+            className="mt-4"
+          />
+        ) : isEmptyJobs ? (
+          <EmptyState
+            icon={BriefcaseBusiness}
+            title={hasActiveFilters ? 'No matching job posts' : 'No job posts yet'}
+            description={
+              hasActiveFilters
+                ? 'Try adjusting your search or filters to see more openings.'
+                : 'Create your first job post to start receiving applications.'
+            }
+            actionLabel={hasActiveFilters ? 'Clear filters' : 'Create Job'}
+            onAction={() => {
+              if (hasActiveFilters) {
+                navigate('/recruiter/job-posts');
+                return;
+              }
 
-        <JobPostsPagination
-          page={loaderData.page}
-          pageCount={pageCount}
-          pageSize={loaderData.pageSize}
-          onPageSizeChange={(pageSize) => {
-            navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize, page: '1' })}`);
-          }}
-          previousHref={previousHref}
-          nextHref={nextHref}
-        />
+              navigate('/recruiter/job-posts/new');
+            }}
+            className="mt-4"
+          />
+        ) : (
+          <JobPostsTable
+            jobs={jobs}
+            isDeleting={isDeleting}
+            isDuplicating={isDuplicating}
+            onDelete={openDeleteFlow}
+            onDuplicate={openDuplicateFlow}
+          />
+        )}
+
+        {(loaderData.total > 0 || isEmptyPage) ? (
+          <JobPostsPagination
+            page={loaderData.page}
+            pageCount={pageCount}
+            pageSize={loaderData.pageSize}
+            onPageSizeChange={(pageSize) => {
+              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize, page: '1' })}`);
+            }}
+            previousHref={previousHref}
+            nextHref={nextHref}
+          />
+        ) : null}
       </Card>
 
       <HighRiskVerificationModal
