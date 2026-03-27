@@ -103,14 +103,14 @@ const SidebarContent = ({
               expanded || mobile ? "max-w-40 opacity-100 translate-x-0" : "max-w-8 opacity-100 translate-x-0",
             )}
           >
-            <p
+            <div
               className={cn(
                 "text-[11px] font-semibold text-zinc-500 dark:text-zinc-400",
                 expanded || mobile ? "uppercase tracking-[0.22em]" : "px-3.5 tracking-normal",
               )}
             >
-              {expanded || mobile ? eyebrow : <div className="h-0.5 w-3 bg-zinc-300"></div>}
-            </p>
+              {expanded || mobile ? eyebrow : <span className="block h-0.5 w-3 bg-zinc-300" />}
+            </div>
           </div>
         </div>
 
