@@ -1,2 +1,4 @@
+import { twMerge } from "tailwind-merge";
+
 export const cn = (...values: Array<string | undefined | false | null>) =>
-  values.filter(Boolean).join(' ');
+  twMerge(values.filter(Boolean).join(" "));
