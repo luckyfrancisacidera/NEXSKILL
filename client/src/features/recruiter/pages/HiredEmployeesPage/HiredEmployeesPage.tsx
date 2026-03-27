@@ -4,6 +4,12 @@ import { Link, useLoaderData, useSubmit } from "react-router-dom";
 import type { HiredEmployeesLoaderData } from "@features/recruiter/types";
 import { Card } from "@shared/components/Card";
 import { actionButtonClassName } from "@shared/components/ActionButton";
+import { DepartmentCell } from "@shared/components/DepartmentCell";
+import { JobTitleCell } from "@shared/components/JobTitleCell";
+import { DataTable } from "@shared/components/ui/data-table/DataTable";
+import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 
 export const HiredEmployeesPage = () => {
   const { employees, pagination, filters } = useLoaderData() as HiredEmployeesLoaderData;
@@ -18,8 +24,75 @@ export const HiredEmployeesPage = () => {
   const buildHref = (page: number) =>
     `?search=${encodeURIComponent(filters.search)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=${page}`;
 
+  const columns: Array<DataTableColumn<HiredEmployeesLoaderData["employees"][number]>> = [
+    {
+      id: "employee",
+      header: "Employee",
+      cell: (employee) => (
+        <IdentityCell name={employee.employee_name} email={employee.employee_email} />
+      ),
+      accessor: (employee) => employee.employee_name,
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[240px]",
+    },
+    {
+      id: "hire-date",
+      header: "Hire Date",
+      cell: (employee) => new Date(employee.hire_date_utc).toLocaleDateString(),
+      accessor: (employee) => new Date(employee.hire_date_utc),
+      sortable: true,
+      sortType: "date",
+    },
+    {
+      id: "job",
+      header: "Job",
+      cell: (employee) => (
+        <JobTitleCell
+          title={employee.job_title}
+          subtitle={employee.offer_title || undefined}
+        />
+      ),
+      accessor: (employee) => employee.job_title,
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[220px]",
+    },
+    {
+      id: "department",
+      header: "Department",
+      cell: (employee) => <DepartmentCell department={employee.department} />,
+      accessor: (employee) => employee.department,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "offer",
+      header: "Offer",
+      cell: (employee) => employee.offer_title || employee.offer_salary_text || "Accepted offer",
+      accessor: (employee) => employee.offer_title || employee.offer_salary_text || "Accepted offer",
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      cell: (employee) => (
+        <Link
+          to={`/recruiter/candidates/${employee.resume_submission_id}`}
+          className={actionButtonClassName({ iconOnly: true })}
+          title="View candidate"
+        >
+          <Eye size={16} />
+        </Link>
+      ),
+      cellClassName: "w-[72px]",
+    },
+  ];
+
   return (
-    <Card className="dark:border-zinc-800 dark:bg-zinc-950 bg-white">
+    <Card className="border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
       <div className="mb-5">
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">My Hires</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -51,62 +124,21 @@ export const HiredEmployeesPage = () => {
           No hires yet.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <table className="min-w-full text-sm">
-            <thead className="bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-              <tr>
-                {["Name", "Date", "Job", "Department", "Offer", "Actions"].map((column) => (
-                  <th key={column} className="px-3 py-3 text-left font-semibold">
-                    {column}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((employee, index) => (
-                <tr
-                  key={employee.resume_submission_id}
-                  className={`border-t border-zinc-100 dark:border-zinc-800 ${index % 2 ? "bg-zinc-50/60 dark:bg-zinc-900/40" : "bg-white dark:bg-zinc-950"}`}
-                >
-                  <td className="px-3 py-3 font-medium text-zinc-900 dark:text-zinc-100">{employee.employee_name}</td>
-                  <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{new Date(employee.hire_date_utc).toLocaleDateString()}</td>
-                  <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{employee.job_title}</td>
-                  <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{employee.department}</td>
-                  <td className="px-3 py-3 text-zinc-700 dark:text-zinc-400">{employee.offer_title || employee.offer_salary_text || "Accepted offer"}</td>
-                  <td className="px-3 py-3">
-                    <Link
-                      to={`/recruiter/candidates/${employee.resume_submission_id}`}
-                      className={actionButtonClassName({ iconOnly: true })}
-                      title="View candidate"
-                    >
-                       <Eye size={16} />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          data={employees}
+          columns={columns}
+          getRowKey={(employee) => employee.resume_submission_id}
+        />
       )}
 
-      <div className="mt-4 flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
-        <span>{pagination.total} total hires</span>
-        <div className="flex items-center gap-2">
-          <Link
-            to={buildHref(Math.max(1, pagination.page - 1))}
-            className={`rounded-lg border px-3 py-1.5 ${pagination.page <= 1 ? "pointer-events-none opacity-50" : "border-zinc-300 dark:border-zinc-700"}`}
-          >
-            Previous
-          </Link>
-          <span>Page {pagination.page} of {pagination.totalPages}</span>
-          <Link
-            to={buildHref(Math.min(pagination.totalPages, pagination.page + 1))}
-            className={`rounded-lg border px-3 py-1.5 ${pagination.page >= pagination.totalPages ? "pointer-events-none opacity-50" : "border-zinc-300 dark:border-zinc-700"}`}
-          >
-            Next
-          </Link>
-        </div>
-      </div>
+      <TablePagination
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        totalCount={pagination.total}
+        pageSize={pagination.pageSize}
+        itemLabel="hires"
+        getPageHref={buildHref}
+      />
     </Card>
   );
 };

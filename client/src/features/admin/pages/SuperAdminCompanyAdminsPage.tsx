@@ -62,8 +62,7 @@ export const SuperAdminCompanyAdminsPage = () => {
         canManageCompanies={canManageCompanies}
         pendingActionId={pendingActionId}
         onToggleCompanyAdmin={runAction}
-        previousHref={buildQuery({ page: String(Math.max(1, data.companyAdmins.pageNumber - 1)) })}
-        nextHref={buildQuery({ page: String(Math.min(data.companyAdmins.totalPages, data.companyAdmins.pageNumber + 1)) })}
+        getPageHref={(page) => buildQuery({ page: String(page) })}
         onPageSizeChange={(nextPageSize) => navigate(buildQuery({ pageSize: nextPageSize, page: '1' }))}
       />
     </div>

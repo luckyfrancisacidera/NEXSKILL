@@ -15,9 +15,12 @@ import {
   DashboardSectionCard,
   DashboardStatCard,
 } from '@shared/components/DashboardPrimitives';
+import { DataTable } from '@shared/components/ui/data-table/DataTable';
+import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
+import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
-import { AdminTablePagination } from '@features/admin/components/AdminTablePagination';
 import { CreateRecruiterModal } from '@features/admin/components/CreateRecruiterModal';
 import { adminService } from '@features/admin/service/admin.service';
 import type {
@@ -123,6 +126,76 @@ export const CompanyAdminDashboardPage = () => {
       setPendingUserId(null);
     }
   };
+
+  const recruiterColumns: Array<DataTableColumn<AdminRecruiterOverviewDto>> = [
+    {
+      id: 'recruiter',
+      header: 'Recruiter',
+      cell: (recruiter) => (
+        <IdentityCell
+          name={recruiter.email}
+          email={`Joined ${dateFormatter.format(new Date(recruiter.createdAtUtc))}`}
+        />
+      ),
+      accessor: (recruiter) => recruiter.email,
+      sortable: true,
+      sortType: 'string',
+      widthClassName: 'min-w-[260px]',
+    },
+    {
+      id: 'jobs',
+      header: 'Jobs',
+      cell: (recruiter) => `${recruiter.activeJobs}/${recruiter.totalJobs}`,
+      accessor: (recruiter) => recruiter.activeJobs,
+      sortable: true,
+      sortType: 'number',
+    },
+    {
+      id: 'upcoming-interviews',
+      header: 'Upcoming Interviews',
+      cell: (recruiter) => recruiter.upcomingInterviews,
+      accessor: (recruiter) => recruiter.upcomingInterviews,
+      sortable: true,
+      sortType: 'number',
+    },
+    {
+      id: 'hires',
+      header: 'Hires',
+      cell: (recruiter) => recruiter.totalHires,
+      accessor: (recruiter) => recruiter.totalHires,
+      sortable: true,
+      sortType: 'number',
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (recruiter) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(recruiter.isActive)}`}>
+          {recruiter.isActive ? 'Active' : 'Inactive'}
+        </span>
+      ),
+      accessor: (recruiter) => (recruiter.isActive ? 'Active' : 'Inactive'),
+      sortable: true,
+      sortType: 'string',
+    },
+    {
+      id: 'action',
+      header: 'Action',
+      align: 'right',
+      cell: (recruiter) => (
+        <Button
+          type="button"
+          variant="secondary"
+          className="min-w-28"
+          disabled={!canManageRecruiters || pendingUserId === recruiter.userId}
+          onClick={() => void handleRecruiterAction(recruiter)}
+        >
+          {pendingUserId === recruiter.userId ? 'Updating...' : recruiter.isActive ? 'Deactivate' : 'Activate'}
+        </Button>
+      ),
+      cellClassName: 'w-[140px]',
+    },
+  ];
 
   return (
     <>
@@ -231,7 +304,7 @@ export const CompanyAdminDashboardPage = () => {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Card className="rounded-3xl border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
             <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Management</h2>
@@ -239,57 +312,21 @@ export const CompanyAdminDashboardPage = () => {
               </div>
               <Badge>{data.recruiters.totalCount} recruiters</Badge>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
-                <thead className="bg-zinc-50 text-left text-xs uppercase tracking-[0.18em] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-200">
-                  <tr>
-                    <th className="px-6 py-3">Recruiter</th>
-                    <th className="px-6 py-3">Jobs</th>
-                    <th className="px-6 py-3">Upcoming Interviews</th>
-                    <th className="px-6 py-3">Hires</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {data.recruiters.items.map((recruiter) => (
-                    <tr key={recruiter.userId}>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-zinc-900 dark:text-zinc-100">{recruiter.email}</div>
-                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Joined {dateFormatter.format(new Date(recruiter.createdAtUtc))}</div>
-                      </td>
-                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.activeJobs}/{recruiter.totalJobs}</td>
-                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.upcomingInterviews}</td>
-                      <td className="px-6 py-4 text-zinc-700 dark:text-zinc-300">{recruiter.totalHires}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(recruiter.isActive)}`}>
-                          {recruiter.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          className="min-w-28"
-                          disabled={!canManageRecruiters || pendingUserId === recruiter.userId}
-                          onClick={() => void handleRecruiterAction(recruiter)}
-                        >
-                          {pendingUserId === recruiter.userId ? 'Updating...' : recruiter.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <AdminTablePagination
-              pageNumber={data.recruiters.pageNumber}
+            <DataTable
+              data={data.recruiters.items}
+              columns={recruiterColumns}
+              getRowKey={(recruiter) => recruiter.userId}
+              surfaceClassName="border-0"
+            />
+            <TablePagination
+              page={data.recruiters.pageNumber}
               totalPages={data.recruiters.totalPages}
               totalCount={data.recruiters.totalCount}
               pageSize={data.recruiters.pageSize}
-              previousHref={buildQuery({ page: String(Math.max(1, data.recruiters.pageNumber - 1)) })}
-              nextHref={buildQuery({ page: String(Math.min(data.recruiters.totalPages, data.recruiters.pageNumber + 1)) })}
-              onPageSizeChange={(nextPageSize) => navigate(buildQuery({ page: '1', pageSize: nextPageSize }))}
+              getPageHref={(page) => buildQuery({ page: String(page) })}
+              onPageSizeChange={(pageSize) => navigate(buildQuery({ page: '1', pageSize: String(pageSize) }))}
+              itemLabel="recruiters"
+              className="px-6"
             />
           </Card>
 

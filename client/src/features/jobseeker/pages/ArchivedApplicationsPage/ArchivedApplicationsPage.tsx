@@ -2,9 +2,13 @@ import { ArchiveRestore, Loader2, Search, Trash2 } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
 
 import { Card } from "@shared/components/Card";
+import { ActionButton } from "@shared/components/ActionButton";
+import { JobTitleCell } from "@shared/components/JobTitleCell";
+import { DataTable } from "@shared/components/ui/data-table/DataTable";
+import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
-import { ApplicationsPagination } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsPagination";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
 import { useEffect, useState } from "react";
 
@@ -34,6 +38,76 @@ export const ArchivedApplicationsPage = () => {
   useEffect(() => {
     setPageNumber(data.pageNumber);
   }, [data.pageNumber]);
+
+  const columns: Array<DataTableColumn<ApplicationsLoaderData["items"][number]>> = [
+    {
+      id: "job",
+      header: "Job",
+      cell: (item) => (
+        <JobTitleCell
+          title={item.job_title}
+          subtitle={item.company_name ?? item.company}
+        />
+      ),
+      accessor: (item) => item.job_title,
+      sortable: true,
+      sortType: "string",
+      widthClassName: "min-w-[240px]",
+    },
+    {
+      id: "applied",
+      header: "Applied",
+      cell: (item) => new Date(String(item.created_at_utc)).toLocaleDateString(),
+      accessor: (item) => new Date(String(item.created_at_utc)),
+      sortable: true,
+      sortType: "date",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (item) => <ApplicationStatusBadge status={String(item.status)} />,
+      accessor: (item) => item.status,
+      sortable: true,
+      sortType: "string",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      align: "right",
+      widthClassName: "min-w-[168px]",
+      cell: (item) => {
+        const itemId = String(item.id);
+        const isRestoring = unarchivingId === itemId;
+        const isDeleting = deletingHistoryId === itemId;
+
+        return (
+          <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+            <ActionButton
+              icon={isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArchiveRestore className="h-4 w-4" />}
+              label="Restore history"
+              iconOnly
+              disabled={isRestoring || isDeleting}
+              onClick={() => {
+                void unarchiveHistory(itemId);
+              }}
+            />
+            <ActionButton
+              icon={isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              label="Delete history"
+              destructive
+              iconOnly
+              disabled={isDeleting || isRestoring}
+              onClick={() => {
+                void deleteHistory(itemId);
+              }}
+            />
+          </div>
+        );
+      },
+      headerClassName: "w-[168px] whitespace-nowrap",
+      cellClassName: "w-[168px] whitespace-nowrap",
+    },
+  ];
 
   return (
     <Card className="min-h-screen rounded-none border-0 bg-transparent p-0 shadow-none">
@@ -124,71 +198,17 @@ export const ArchivedApplicationsPage = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-fixed">
-                  <thead className="bg-zinc-50/80 dark:bg-zinc-900/70">
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                      <th className="w-[40%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Job</th>
-                      <th className="w-[18%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Applied</th>
-                      <th className="w-[18%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Status</th>
-                      <th className="w-[24%] px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((item) => {
-                      const itemId = String(item.id);
-                      const isRestoring = unarchivingId === itemId;
-                      const isDeleting = deletingHistoryId === itemId;
+              <DataTable
+                data={data.items}
+                columns={columns}
+                getRowKey={(item) => String(item.id)}
+                loading={isLoading}
+                loadingRowCount={6}
+                surfaceClassName="border-0"
+              />
 
-                      return (
-                        <tr key={itemId} className="border-b border-zinc-200 transition-colors hover:bg-zinc-50/80 dark:border-zinc-800 dark:hover:bg-zinc-900/60">
-                          <td className="px-4 py-4 align-top">
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{item.job_title}</p>
-                              <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.company_name ?? item.company}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 align-top text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                            {new Date(String(item.created_at_utc)).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <ApplicationStatusBadge status={String(item.status)} />
-                          </td>
-                          <td className="px-4 py-4 align-top">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={isRestoring || isDeleting}
-                                onClick={() => {
-                                  void unarchiveHistory(itemId);
-                                }}
-                                className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                              >
-                                {isRestoring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArchiveRestore className="h-4 w-4" />}
-                                <span className="sr-only">Restore history</span>
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isDeleting || isRestoring}
-                                onClick={() => {
-                                  void deleteHistory(itemId);
-                                }}
-                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900/70 dark:bg-zinc-900 dark:text-rose-300 dark:hover:bg-rose-950/40"
-                              >
-                                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                <span className="sr-only">Delete history</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <ApplicationsPagination
-                pageNumber={data.pageNumber}
+              <TablePagination
+                page={data.pageNumber}
                 pageSize={data.pageSize}
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
@@ -197,6 +217,7 @@ export const ArchivedApplicationsPage = () => {
                   setPageSize(value);
                   setPageNumber(1);
                 }}
+                itemLabel="archived entries"
               />
             </>
           )}

@@ -30,6 +30,7 @@ import { DashboardGreeting } from '@shared/components/DashboardGreeting';
 import type { DashboardDto, DashboardGroupBy, DashboardQuickRange } from '@features/recruiter/types';
 import { DashboardEmptyState, DashboardSectionCard } from '@shared/components/DashboardPrimitives';
 import type { DropdownOption } from '@shared/components/Dropdown';
+import { formatOfferCompensation } from '@shared/utils/offerCompensation';
 
 const cards = [
   { key: 'total_applicants', label: 'Total Applicants', icon: Users },
@@ -261,6 +262,9 @@ export const RecruiterDashboardPage = () => {
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
         {summaryCards.map(({ key, label, icon }) => {
           const metric = data.summary[key];
+          const valueDisplay = key === 'total_offer'
+            ? formatOfferCompensation(metric.value, metric.normalized_unit)
+            : undefined;
 
           return (
             <MetricCard
@@ -269,6 +273,7 @@ export const RecruiterDashboardPage = () => {
               label={label}
               value={metric.value}
               comparisonPercent={metric.comparison_percent}
+              valueDisplay={valueDisplay}
             />
           );
         })}
