@@ -63,6 +63,10 @@ export interface ApplicantScoreItemDto {
   has_resume: boolean;
   resume_file_name?: string;
   offer?: OfferDto | null;
+  offer_status?: OfferStatus | null;
+  offer_sent_at_utc?: string | null;
+  latest_interview_status?: string | null;
+  latest_interview_scheduled_date_time_utc?: string | null;
 }
 
 export interface ParsedResumeProjectDto {

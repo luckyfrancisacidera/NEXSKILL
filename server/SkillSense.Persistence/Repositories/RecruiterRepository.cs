@@ -410,6 +410,37 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
                     .OrderByDescending(offer => offer.CreatedAtUtc)
                     .Select(offer => offer.Status.ToString())
                     .FirstOrDefault(),
+                OfferSentAtUtc = dbContext.JobOffers
+                    .Where(offer => offer.ApplicationId == x.submission.Id)
+                    .OrderByDescending(offer => offer.CreatedAtUtc)
+                    .Select(offer => (DateTime?)offer.SentAtUtc)
+                    .FirstOrDefault(),
+                LatestInterviewStatus = x.submission.JobSeekerUserId.HasValue
+                    ? dbContext.Interviews
+                        .Where(interview =>
+                            interview.CompanyId == companyId
+                            && interview.JobId == x.submission.JobId
+                            && interview.RecruiterId == recruiterId
+                            && interview.JobSeekerId == x.submission.JobSeekerUserId.Value
+                            && !interview.IsArchived)
+                        .OrderByDescending(interview => interview.CreatedAtUtc)
+                        .ThenByDescending(interview => interview.ScheduledDateTimeUtc)
+                        .Select(interview => interview.Status.ToString())
+                        .FirstOrDefault()
+                    : null,
+                LatestInterviewScheduledDateTimeUtc = x.submission.JobSeekerUserId.HasValue
+                    ? dbContext.Interviews
+                        .Where(interview =>
+                            interview.CompanyId == companyId
+                            && interview.JobId == x.submission.JobId
+                            && interview.RecruiterId == recruiterId
+                            && interview.JobSeekerId == x.submission.JobSeekerUserId.Value
+                            && !interview.IsArchived)
+                        .OrderByDescending(interview => interview.CreatedAtUtc)
+                        .ThenByDescending(interview => interview.ScheduledDateTimeUtc)
+                        .Select(interview => (DateTime?)interview.ScheduledDateTimeUtc)
+                        .FirstOrDefault()
+                    : null,
                 });
 
     private IQueryable<EmployeeRecordData> BuildEmployeeQuery(Guid companyId)
