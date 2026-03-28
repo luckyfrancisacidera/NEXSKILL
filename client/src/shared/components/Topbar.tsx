@@ -161,22 +161,29 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
             )}
           </button>
           {isNotificationsOpen && (
-            <div className="absolute right-0 top-12 z-20 w-80 rounded-xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="fixed inset-0 z-20 flex items-start justify-center p-4 sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:block sm:w-auto sm:p-0">
+              <button
+                type="button"
+                aria-label="Close notifications"
+                className="absolute inset-0 bg-zinc-950/45 sm:hidden"
+                onClick={() => setIsNotificationsOpen(false)}
+              />
+              <div className="relative flex max-h-[90vh] w-[90%] max-w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl md:w-[80%] lg:max-w-md dark:border-zinc-800 dark:bg-zinc-900 sm:w-80">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-3 sm:py-2">
+                <p className="break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Notifications
                 </p>
                 {notifications.length > 0 && (
                   <button
                     type="button"
                     onClick={markAllAsRead}
-                    className="text-xs font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    className="shrink-0 text-xs font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                   >
                     Mark all as read
                   </button>
                 )}
               </div>
-              <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+              <div className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-2 pb-2">
                 {notifications.length === 0 ? (
                   <p className="px-1 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
                     You&apos;re all caught up.
@@ -188,15 +195,15 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                       type="button"
                       onClick={() => void markNotificationAsRead(item.id)}
                       className={cn(
-                        "block w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                        "block w-full max-w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
                         item.read
                           ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
                           : "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700",
                       )}
                     >
-                      <p className="font-semibold">{item.title}</p>
+                      <p className="break-words font-semibold">{item.title}</p>
                       {item.description ? (
-                        <p className="mt-0.5 line-clamp-2">{item.description}</p>
+                        <p className="mt-0.5 break-words line-clamp-2">{item.description}</p>
                       ) : null}
                       <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-400">
                         {item.actor === "recruiter"
@@ -212,7 +219,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                   ))
                 )}
               </div>
-              <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+              <div className="border-t border-zinc-200 p-2 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => {
@@ -223,6 +230,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                 >
                   View all notifications
                 </button>
+              </div>
               </div>
             </div>
           )}
