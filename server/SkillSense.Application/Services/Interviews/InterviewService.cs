@@ -221,7 +221,6 @@ public sealed class InterviewService(
             InterviewId = entity.Id,
             JobSeekerId = jobSeekerId,
             Message = request.Message.Trim(),
-            AttachmentUrl = string.IsNullOrWhiteSpace(request.AttachmentFileName) ? null : request.AttachmentFileName.Trim(),
             CreatedAtUtc = dateTimeProvider.UtcNow,
         };
 

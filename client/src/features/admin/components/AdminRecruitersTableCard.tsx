@@ -23,8 +23,8 @@ export const AdminRecruitersTableCard = ({
   getPageHref,
   onPageSizeChange,
 }: AdminRecruitersTableCardProps) => (
-  <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-    <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6 py-4">
+  <section className="min-w-0 border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       <div>
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Accounts</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Paginated recruiter roster across all companies.</p>
@@ -103,7 +103,7 @@ export const AdminRecruitersTableCard = ({
       getPageHref={getPageHref}
       onPageSizeChange={(pageSize) => onPageSizeChange(String(pageSize))}
       itemLabel="recruiters"
-      className="px-6"
+      className="px-4 sm:px-6"
     />
   </section>
 );

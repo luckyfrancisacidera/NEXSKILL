@@ -23,9 +23,35 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="models\all-MiniLM-L6-v2\" />
     <Folder Include="storage\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeModelFiles Include="models\all-MiniLM-L6-v2\**\*" />
+    <RuntimeContentFiles Include="skill_aliases.json" />
+  </ItemGroup>
+
+  <Target Name="CopyRuntimeAssetsToOutput" AfterTargets="Build">
+    <Copy
+      SourceFiles="@(RuntimeModelFiles)"
+      DestinationFiles="@(RuntimeModelFiles->'$(OutDir)models\all-MiniLM-L6-v2\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(RuntimeContentFiles)"
+      DestinationFiles="@(RuntimeContentFiles->'$(OutDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyRuntimeAssetsToPublish" AfterTargets="Publish">
+    <Copy
+      SourceFiles="@(RuntimeModelFiles)"
+      DestinationFiles="@(RuntimeModelFiles->'$(PublishDir)models\all-MiniLM-L6-v2\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="@(RuntimeContentFiles)"
+      DestinationFiles="@(RuntimeContentFiles->'$(PublishDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 

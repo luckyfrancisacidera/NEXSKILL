@@ -156,7 +156,7 @@ export const ApplyModalWizard = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/70 p-3 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/70 p-2 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={(event) => {
         if (event.target === event.currentTarget) void handleClose();
       }}
@@ -166,7 +166,7 @@ export const ApplyModalWizard = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="apply-modal-title"
-        className="w-full max-w-5xl rounded-xl border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-6"
+        className="max-h-[calc(100vh-1rem)] w-full max-w-5xl overflow-y-auto rounded-xl border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:max-h-[calc(100vh-3rem)] sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 id="apply-modal-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -322,9 +322,9 @@ export const ApplyModalWizard = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            {step > 1 ? (
-              <button type="button" disabled={isSubmitting} onClick={goBack} className="rounded border border-zinc-300 bg-white px-4 py-2 text-zinc-700 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+        <div className="flex flex-col-reverse gap-2 border-t border-zinc-200 pt-4 sm:flex-row sm:items-center sm:justify-end dark:border-zinc-800">
+          {step > 1 ? (
+              <button type="button" disabled={isSubmitting} onClick={goBack} className="w-full rounded border border-zinc-300 bg-white px-4 py-2 text-zinc-700 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 sm:w-auto dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
                 Back
               </button>
             ) : null}
@@ -334,7 +334,7 @@ export const ApplyModalWizard = ({
                 type="button"
                 disabled={isSubmitting || (step === 1 && !isStep1Valid) || (step === 2 && !isStep2Valid)}
                 onClick={goNext}
-                className="rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="w-full rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 Next
               </button>
@@ -345,7 +345,7 @@ export const ApplyModalWizard = ({
                 onClick={() => {
                   allowSubmitRef.current = true;
                 }}
-                className="rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="w-full rounded bg-zinc-900 px-4 py-2 text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:opacity-60 sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 {isSubmitting ? "Uploading Resume..." : "Submit"}
               </button>

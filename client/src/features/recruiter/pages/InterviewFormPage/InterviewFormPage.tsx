@@ -69,20 +69,16 @@ export const InterviewFormPage = () => {
   };
 
   const handleSchedule = async (input: ScheduleInterviewInput) => {
-    try {
-      const scheduled = await recruiterInterviewService.scheduleInterview(input);
-      addInterview(scheduled);
-      setError(null);
-      closeScheduleDrawer();
-      revalidator.revalidate();
-      showToast({
-        title: "Interview scheduled",
-        description: `${scheduled.candidateName} has been invited.`,
-        tone: "success",
-      });
-    } catch (err) {
-      throw err;
-    }
+    const scheduled = await recruiterInterviewService.scheduleInterview(input);
+    addInterview(scheduled);
+    setError(null);
+    closeScheduleDrawer();
+    revalidator.revalidate();
+    showToast({
+      title: "Interview scheduled",
+      description: `${scheduled.candidateName} has been invited.`,
+      tone: "success",
+    });
   };
 
   const closeRescheduleModal = () => {

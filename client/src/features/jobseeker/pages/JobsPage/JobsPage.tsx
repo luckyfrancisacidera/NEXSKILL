@@ -232,16 +232,16 @@ export const JobsPage = () => {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white p-0 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="border-b border-zinc-200 bg-[radial-gradient(circle_at_top_right,_rgba(63,63,70,0.16),_transparent_35%),linear-gradient(135deg,#fafafa_0%,#f4f4f5_100%)] px-5 py-6 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(161,161,170,0.10),_transparent_35%),linear-gradient(135deg,#09090b_0%,#18181b_100%)]">
+        <div className="border-b border-zinc-200 bg-[radial-gradient(circle_at_top_right,_rgba(63,63,70,0.16),_transparent_35%),linear-gradient(135deg,#fafafa_0%,#f4f4f5_100%)] px-4 py-5 dark:border-zinc-800 dark:bg-[radial-gradient(circle_at_top_right,_rgba(161,161,170,0.10),_transparent_35%),linear-gradient(135deg,#09090b_0%,#18181b_100%)] sm:px-5 sm:py-6">
           <div className="space-y-5">
             <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Find Jobs</h2>
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">Find Jobs</h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Browse open roles with a compact overview, then jump into the details when something fits.
               </p>
             </div>
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_auto]">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_auto]">
               <div>
                 <label htmlFor="job-search" className={filterLabelClassName}>
                   Search
@@ -301,7 +301,7 @@ export const JobsPage = () => {
                 </select>
               </div>
 
-              <div className="flex items-end">
+              <div className="flex items-end md:col-span-2 xl:col-span-1">
                 <button
                   type="button"
                   onClick={clearFilters}
@@ -315,7 +315,7 @@ export const JobsPage = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 px-5 py-3 text-sm text-zinc-500 dark:text-zinc-400 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-2 px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400 sm:px-5 md:flex-row md:items-center md:justify-between">
           <span>
             Showing {showingFrom}-{showingTo} of {filteredJobs.length} open role{filteredJobs.length === 1 ? "" : "s"}
           </span>
@@ -325,7 +325,7 @@ export const JobsPage = () => {
         </div>
       </Card>
 
-      <Card className="rounded-[24px] border border-zinc-200 bg-zinc-50/70 px-4 py-3 text-sm text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
+      <Card className="rounded-[24px] border border-zinc-200 bg-zinc-50/70 px-4 py-3 text-sm leading-6 text-zinc-500 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
         Salary bands use monthly equivalents derived from the API&apos;s annual salary fields.
       </Card>
 
@@ -338,7 +338,7 @@ export const JobsPage = () => {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {paginatedJobs.map((job) => {
               const cardJob: Job = {
                 id: String(job.id),
@@ -397,12 +397,12 @@ export const JobsPage = () => {
               Page {safeCurrentPage} of {totalPages}
             </span>
 
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <button
                 type="button"
                 onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
                 disabled={safeCurrentPage <= 1}
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Prev
               </button>
@@ -410,7 +410,7 @@ export const JobsPage = () => {
                 type="button"
                 onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
                 disabled={safeCurrentPage >= totalPages}
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Next
               </button>

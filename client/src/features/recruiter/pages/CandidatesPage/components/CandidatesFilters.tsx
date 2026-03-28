@@ -25,7 +25,7 @@ export const CandidatesFilters = ({ filters, jobs, departments, counts, isRecomm
     method="get"
     ref={formRef}
     onChange={() => onSubmitFilters()}
-    className="mt-4 mb-5 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+    className="mt-4 mb-5 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5"
   >
     <SearchField label="Search" name="search" defaultValue={filters.search} placeholder="Search name or email" className="w-full min-w-0" />
 

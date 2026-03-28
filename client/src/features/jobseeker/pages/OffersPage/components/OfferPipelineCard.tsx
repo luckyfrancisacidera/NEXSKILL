@@ -134,7 +134,7 @@ export const OfferPipelineCard = ({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2
-              className="max-w-full truncate text-base font-semibold text-zinc-900 dark:text-zinc-100 md:text-lg"
+              className="max-w-full truncate text-[15px] font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base md:text-lg"
               title={item.jobTitle}
             >
               {item.jobTitle}
@@ -157,7 +157,7 @@ export const OfferPipelineCard = ({
             </span>
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 md:justify-end">
           {item.hasOffer ? (
             <Badge>Offer flow</Badge>
           ) : null}
@@ -221,6 +221,7 @@ export const OfferPipelineCard = ({
               type="button"
               variant="secondary"
               disabled={isActing}
+              className="w-full sm:w-auto"
               onClick={() => onViewOffer(item)}
             >
               View Offer
@@ -258,7 +259,7 @@ export const OfferPipelineCard = ({
           {item.recruiterEmail ? (
             <a
               href={`mailto:${item.recruiterEmail}`}
-              className="inline-flex items-center gap-1.5 text-xs text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="inline-flex w-full items-center gap-1.5 text-xs text-zinc-500 transition hover:text-zinc-800 sm:w-auto dark:text-zinc-400 dark:hover:text-zinc-200"
             >
               <Mail className="h-3.5 w-3.5" />
               Contact recruiter

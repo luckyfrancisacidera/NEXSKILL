@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { FormEvent, MouseEvent, ReactNode } from 'react';
 import { BriefcaseBusiness, CalendarDays, CircleDollarSign, Clock3, MessageSquareText, Sparkles, X } from 'lucide-react';
 

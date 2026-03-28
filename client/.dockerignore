@@ -1,0 +1,40 @@
+# Dependencies and caches
+node_modules/
+.pnpm-store/
+.pnp
+.pnp.js
+.vite/
+.cache/
+
+# Build output
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Secrets and local env files
+.env
+.env.*
+!.env.example
+
+# Logs and temp files
+*.log
+logs/
+tmp/
+temp/
+
+# Local tooling
+.git/
+.github/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Dev-only/docs
+docs/
+tests/
+__tests__/
+README.md
+.gitignore

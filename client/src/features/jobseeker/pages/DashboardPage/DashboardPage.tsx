@@ -106,7 +106,7 @@ export const DashboardPage = () => {
       <DashboardGreeting
         badge="Job search pulse"
         title={(
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Sparkles className="h-5 w-5 text-zinc-400" />
             <span>Hi, {firstName} ! </span>
           </div>
@@ -118,7 +118,7 @@ export const DashboardPage = () => {
         ]}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardStatCard
           label="Total Applications"
           value={totalApplications}
@@ -219,7 +219,7 @@ export const DashboardPage = () => {
                     key={interview.id}
                     className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
                           Upcoming interview
@@ -294,7 +294,7 @@ export const DashboardPage = () => {
                     key={String(item.id)}
                     className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-3.5 transition hover:border-zinc-300 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
@@ -328,7 +328,7 @@ export const DashboardPage = () => {
                         </div>
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
                         <button
                           type="button"
                           onClick={() => {

@@ -435,27 +435,29 @@ export const JobseekerInterviewCalendar = ({
                 </button>
               </div>
 
-              <h2 className="min-w-0 text-[1.2rem] font-semibold tracking-[-0.03em] text-zinc-800 sm:text-[1.45rem] md:text-[1.7rem] lg:text-[2rem] dark:text-zinc-100">
+              <h2 className="min-w-0 text-lg font-semibold tracking-[-0.03em] text-zinc-800 sm:text-[1.45rem] md:text-[1.7rem] lg:text-[2rem] dark:text-zinc-100">
                 {calendarTitle}
               </h2>
             </div>
 
-            <div className="flex w-full rounded-xl bg-zinc-100 p-1 md:inline-flex md:w-auto dark:bg-zinc-900">
-              {VIEW_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={cn(
-                    "flex-1 rounded-lg px-3 py-2 text-center text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm md:min-w-19.5 md:flex-none",
-                    currentView === option.key
-                      ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
-                      : "bg-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white",
-                  )}
-                  onClick={() => changeView(option.key)}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="w-full overflow-x-auto md:w-auto">
+              <div className="flex min-w-max rounded-xl bg-zinc-100 p-1 md:inline-flex dark:bg-zinc-900">
+                {VIEW_OPTIONS.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    className={cn(
+                      "min-w-18 flex-1 rounded-lg px-3 py-2 text-center text-xs font-medium transition sm:px-4 sm:py-2.5 sm:text-sm md:min-w-19.5 md:flex-none",
+                      currentView === option.key
+                        ? "bg-zinc-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
+                        : "bg-transparent text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white",
+                    )}
+                    onClick={() => changeView(option.key)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

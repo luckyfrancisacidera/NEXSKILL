@@ -1,0 +1,47 @@
+# VCS and editor metadata
+.git/
+.github/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.vs/
+
+# Build output
+**/bin/
+**/obj/
+**/[Dd]ebug/
+**/[Rr]elease/
+**/[Aa]rtifacts/
+**/TestResults/
+
+# Local user files
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.rsuser
+**/*.sln.docstates
+
+# Secrets and local config
+**/.env
+**/.env.*
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*.snk
+**/*.secrets.json
+**/secrets*.json
+
+# Logs and local runtime data
+**/*.log
+**/logs/
+SkillSense.Api/storage/
+
+# OS files and docs
+**/.DS_Store
+**/Thumbs.db
+README.md
+

@@ -60,42 +60,42 @@ export const DashboardGreeting = ({
   return (
     <section
       className={cn(
-        'relative overflow-hidden rounded-3xl border border-zinc-200/80 bg-[radial-gradient(circle_at_top_left,rgba(63,63,70,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(82,82,91,0.14),transparent_28%),linear-gradient(135deg,rgba(39,39,42,0.96),rgba(24,24,27,0.94))] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.16)] dark:border-zinc-700 dark:bg-[radial-gradient(circle_at_top_left,rgba(63,63,70,0.24),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(82,82,91,0.18),transparent_24%),linear-gradient(135deg,rgba(39,39,42,0.98),rgba(24,24,27,0.96))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.4)] md:p-8',
+        'relative overflow-hidden rounded-[28px] border border-zinc-200/80 bg-[radial-gradient(circle_at_top_left,rgba(63,63,70,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(82,82,91,0.14),transparent_28%),linear-gradient(135deg,rgba(39,39,42,0.96),rgba(24,24,27,0.94))] p-4 shadow-[0_18px_50px_rgba(15,23,42,0.16)] dark:border-zinc-700 dark:bg-[radial-gradient(circle_at_top_left,rgba(63,63,70,0.24),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(82,82,91,0.18),transparent_24%),linear-gradient(135deg,rgba(39,39,42,0.98),rgba(24,24,27,0.96))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-5 md:p-6 lg:p-8',
         className,
       )}
     >
       <div className="absolute inset-y-0 right-0 hidden w-40 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_65%)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_65%)] lg:block" />
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div className="relative flex flex-col gap-5 sm:gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-100 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-100 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 sm:px-3 sm:text-xs sm:tracking-[0.18em]">
             <Icon className="h-3.5 w-3.5" />
             {badge ?? 'Daily overview'}
           </div>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-50">
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-zinc-50 sm:mt-4 sm:text-2xl lg:text-3xl">
             {title ?? `Hi, ${displayName}`}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300 dark:text-zinc-400">{subtitle}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-5 text-zinc-300 dark:text-zinc-400 sm:mt-3 sm:leading-6">{subtitle}</p>
         </div>
 
-        <div className="flex flex-col gap-4 lg:min-w-70 lg:items-end">
+        <div className="flex flex-col gap-3 sm:gap-4 lg:min-w-70 lg:items-end">
           {stats.length > 0 ? (
-            <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
+            <div className="grid w-full gap-2.5 min-[440px]:grid-cols-2 sm:gap-3 lg:w-auto">
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5"
+                  className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 sm:px-4 sm:py-3"
                 >
-                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-300 dark:text-zinc-400">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-300 dark:text-zinc-400 sm:text-xs sm:tracking-[0.14em]">
                     {stat.label}
                   </p>
-                  <p className="mt-2 text-2xl font-semibold text-zinc-50">
+                  <p className="mt-1 text-lg font-semibold text-zinc-50 sm:mt-2 sm:text-2xl">
                     {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
                   </p>
                 </div>
               ))}
             </div>
           ) : null}
-          {action ? <div className="flex flex-wrap gap-3">{action}</div> : null}
+          {action ? <div className="flex w-full flex-wrap gap-2.5 sm:gap-3 lg:w-auto lg:justify-end">{action}</div> : null}
         </div>
       </div>
     </section>

@@ -121,7 +121,7 @@ export const SuperAdminDashboardPage = () => {
           ]}
         />
 
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardStatCard
             label="Total Companies"
             value={data.summary.totalCompanies}
@@ -228,11 +228,11 @@ export const SuperAdminDashboardPage = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total recruiters</p>
-                <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.summary.totalRecruiters}</p>
+                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.totalRecruiters}</p>
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Active recruiters</p>
-                <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.summary.activeRecruiters}</p>
+                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.activeRecruiters}</p>
               </div>
             </div>
           </DashboardSectionCard>
@@ -241,11 +241,11 @@ export const SuperAdminDashboardPage = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">All jobs</p>
-                <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.summary.totalJobs}</p>
+                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.totalJobs}</p>
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Published jobs</p>
-                <p className="mt-2 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.summary.activeJobs}</p>
+                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.activeJobs}</p>
               </div>
             </div>
           </DashboardSectionCard>

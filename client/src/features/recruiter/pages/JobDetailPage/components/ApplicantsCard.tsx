@@ -17,7 +17,7 @@ export const ApplicantsCard = ({ applicants }: ApplicantsCardProps) => (
     {applicants.length ? (
       <ul className="space-y-2">
         {applicants.map((candidate) => (
-          <li key={candidate.id} className="flex items-center justify-between rounded border border-zinc-200 bg-white p-2 text-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <li key={candidate.id} className="flex flex-col gap-2 rounded border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between">
             <Link className="text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300" to={`/recruiter/candidates/${candidate.id}`}>{candidate.name}</Link>
             <StatusBadge status={candidate.stage} />
           </li>

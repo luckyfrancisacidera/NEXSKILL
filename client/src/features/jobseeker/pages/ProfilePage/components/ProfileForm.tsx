@@ -31,7 +31,7 @@ export const ProfileForm = ({
   onSubmit,
   onReset,
 }: ProfileFormProps) => (
-  <form className="mt-8" onSubmit={onSubmit} noValidate>
+  <form className="mt-6 sm:mt-8" onSubmit={onSubmit} noValidate>
 
     <div className="grid gap-6 md:grid-cols-2">
       <label className="block">
@@ -65,11 +65,11 @@ export const ProfileForm = ({
       </div>
     ) : null}
 
-    <div className="mt-8 flex flex-wrap items-center gap-4">
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
       <Button
         type="submit"
         disabled={!canSave}
-        className={primaryButtonClassName}
+        className={`${primaryButtonClassName} w-full sm:w-auto`}
       >
         {isSaving ? "Saving..." : "Save changes"}
       </Button>
@@ -77,7 +77,7 @@ export const ProfileForm = ({
       <Button
         type="button"
         variant="secondary"
-        className={subtleButtonClassName}
+        className={`${subtleButtonClassName} w-full sm:w-auto`}
         onClick={onReset}
       >
         Reset

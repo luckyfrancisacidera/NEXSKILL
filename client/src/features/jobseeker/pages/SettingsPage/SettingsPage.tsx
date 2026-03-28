@@ -123,7 +123,7 @@ export const SettingsPage = () => {
             <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-white">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <h2 className="mt-4 text-2xl font-semibold text-zinc-900">
+            <h2 className="mt-4 text-xl font-semibold text-zinc-900 sm:text-2xl">
               Account security
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
@@ -236,7 +236,7 @@ export const SettingsPage = () => {
             <Button
               type="submit"
               disabled={isChangePasswordDisabled}
-              className="h-11 rounded-xl"
+              className="h-11 w-full rounded-xl sm:w-auto"
             >
               {isChangingPassword ? "Updating password..." : "Save new password"}
             </Button>

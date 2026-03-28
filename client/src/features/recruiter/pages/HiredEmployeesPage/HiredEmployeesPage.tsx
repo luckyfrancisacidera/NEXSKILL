@@ -94,7 +94,7 @@ export const HiredEmployeesPage = () => {
   return (
     <Card className="border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
       <div className="mb-5">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">My Hires</h2>
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">My Hires</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Candidates who accepted offers and are now part of your completed hires.
         </p>
@@ -107,7 +107,7 @@ export const HiredEmployeesPage = () => {
           submitSearch(event.currentTarget);
         }}
       >
-        <div className="relative max-w-md">
+        <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             name="search"

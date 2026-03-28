@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, type PropsWithChildren } from "react";
 import { X } from "lucide-react";
 import { cn } from "@shared/utils/cn";
@@ -95,7 +96,7 @@ export const SideDrawer = ({
         aria-modal="true"
         role="dialog"
         className={cn(
-          "absolute top-0 flex h-full w-full max-w-[92vw] flex-col bg-white font-inter shadow-2xl transition-transform duration-200 dark:bg-zinc-950",
+          "absolute top-0 flex h-full w-full max-w-full flex-col bg-white font-inter shadow-2xl transition-transform duration-200 dark:bg-zinc-950 sm:max-w-[92vw]",
           side === "right"
             ? "right-0 border-l border-zinc-200 dark:border-zinc-800"
             : "left-0 border-r border-zinc-200 dark:border-zinc-800",
@@ -107,7 +108,7 @@ export const SideDrawer = ({
               : "-translate-x-full",
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-5">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               {title}
@@ -128,7 +129,7 @@ export const SideDrawer = ({
           </button>
         </div>
 
-        <div className={cn("flex-1 overflow-y-auto px-5 py-5", contentClassName)}>
+        <div className={cn("flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5", contentClassName)}>
           {children}
         </div>
       </aside>

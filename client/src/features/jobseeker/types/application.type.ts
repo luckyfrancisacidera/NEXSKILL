@@ -92,4 +92,4 @@ export interface ApplyJobActionData {
   error?: string;
 }
 
-export interface ApplicationsLoaderData extends JobseekerApplicationsResponse {}
+export type ApplicationsLoaderData = JobseekerApplicationsResponse;

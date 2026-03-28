@@ -650,13 +650,13 @@ export const CandidateDetailPage = () => {
   };
 
   return (
-    <div className="grid gap-4 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 xl:grid-cols-[350px_minmax(0,1fr)]">
+    <div className="grid gap-4 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 xl:grid-cols-[minmax(300px,350px)_minmax(0,1fr)]">
       <Card className="h-fit overflow-hidden p-0">
-        <div className="bg-linear-to-b from-slate-50 to-white px-5 py-6 dark:from-zinc-900 dark:to-zinc-950">
+        <div className="bg-linear-to-b from-slate-50 to-white px-4 py-5 dark:from-zinc-900 dark:to-zinc-950 sm:px-5 sm:py-6">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">
             {getInitials(candidate.applicant_name)}
           </div>
-          <h2 className="mt-4 text-center text-md font-bold text-zinc-900 dark:text-zinc-100">{candidate.applicant_name}</h2>
+          <h2 className="mt-4 text-center text-lg font-bold text-zinc-900 dark:text-zinc-100">{candidate.applicant_name}</h2>
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">{personalInfo?.job_target || candidate.job_title}</p>
 
           <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
@@ -733,29 +733,29 @@ export const CandidateDetailPage = () => {
 
         <RecruiterSectionCard title="Application Info" variant="compact">
           <ul className="space-y-2 text-sm">
-            <li className="flex items-center justify-between">
+            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-zinc-500 dark:text-zinc-400">Applied:</span>
               <span className="font-semibold text-zinc-800 dark:text-zinc-100">
                 {new Date(candidate.created_at_utc).toLocaleDateString()}
               </span>
             </li>
-            <li className="flex items-center justify-between">
+            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-zinc-500 dark:text-zinc-400">Stage:</span>
               <StatusBadge status={candidate.submission_status} />
             </li>
-            <li className="flex items-center justify-between">
+            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-zinc-500 dark:text-zinc-400">ATS Score:</span>
               <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.score}</span>
             </li>
             {latestInterview ? (
               <li className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-zinc-500 dark:text-zinc-400">Latest interview:</span>
                   <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[latestInterview.status]}`}>
                     {latestInterview.status}
                   </span>
                 </div>
-                <p className="text-right text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">
                   {new Date(latestInterview.scheduled_date_time_utc).toLocaleString()}
                 </p>
               </li>
@@ -766,7 +766,7 @@ export const CandidateDetailPage = () => {
         <RecruiterSectionCard title="Offer Status" variant="compact">
           {candidate.offer ? (
             <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Current offer</span>
                 <StatusBadge status={candidate.offer.status} />
               </div>
