@@ -480,7 +480,7 @@ public sealed class RecruiterService(
                     Shortlisted = safeItems.Count(x => x.SubmissionStatus == "Shortlisted"),
                     Interview = safeItems.Count(x => x.SubmissionStatus == "Interview"),
                     Offer = safeItems.Count(x => x.SubmissionStatus == "Offer"),
-                    Hired = 0,
+                    Hired = safeItems.Count(x => x.SubmissionStatus == "Hired"),
                 };
             })
             .OrderBy(x => x.Title)
@@ -508,7 +508,7 @@ public sealed class RecruiterService(
                 Shortlisted = projectedForCounters.Count(x => x.SubmissionStatus == "Shortlisted"),
                 Interview = projectedForCounters.Count(x => x.SubmissionStatus == "Interview"),
                 Offer = projectedForCounters.Count(x => x.SubmissionStatus == "Offer"),
-                Hired = 0,
+                Hired = projectedForCounters.Count(x => x.SubmissionStatus == "Hired"),
             },
             Recommendation = new RecommendationSettingsResponse
             {
@@ -900,7 +900,7 @@ public sealed class RecruiterService(
                 Shortlisted = projectedForCounts.Count(x => x.SubmissionStatus == "Shortlisted"),
                 Interview = projectedForCounts.Count(x => x.SubmissionStatus == "Interview"),
                 Offer = projectedForCounts.Count(x => x.SubmissionStatus == "Offer"),
-                Hired = 0,
+                Hired = projectedForCounts.Count(x => x.SubmissionStatus == "Hired"),
             };
 
             cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");

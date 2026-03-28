@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "@shared/api/http";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import type {
@@ -63,7 +63,7 @@ export const useArchivedInterviews = ({
     };
   }, [pageNumber, pageSize, search, status]);
 
-  const refresh = async (preferredPageNumber = pageNumber) => {
+  const refresh = useCallback(async (preferredPageNumber = pageNumber) => {
     let refreshed = await jobseekerInterviewService.getArchivedJobseekerInterviewsPage({
       pageNumber: preferredPageNumber,
       pageSize,
@@ -82,7 +82,7 @@ export const useArchivedInterviews = ({
 
     setData(refreshed);
     return refreshed;
-  };
+  }, [pageNumber, pageSize, search, status]);
 
   useEffect(() => {
     const unsubscribe = subscribeJobseekerInterviewMutations(() => {
@@ -90,7 +90,7 @@ export const useArchivedInterviews = ({
     });
 
     return unsubscribe;
-  }, [pageNumber, pageSize, search, status]);
+  }, [refresh]);
 
   const unarchive = async (interviewId: string) => {
     setUnarchivingId(interviewId);

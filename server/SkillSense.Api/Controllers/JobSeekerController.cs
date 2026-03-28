@@ -155,14 +155,13 @@ namespace SkillSense.Api.Controllers
             => Ok(await interviewService.DeclineInterviewAsync(interviewId, CurrentUserContext.GetUserId(User), ct));
 
         [HttpPost("interviews/{interviewId:guid}/request-reschedule")]
-        public async Task<ActionResult<InterviewDto>> RequestReschedule(Guid interviewId, [FromForm] string message, [FromForm] IFormFile? attachment, CancellationToken ct = default)
+        public async Task<ActionResult<InterviewDto>> RequestReschedule(Guid interviewId, [FromForm] string message, CancellationToken ct = default)
             => Ok(await interviewService.RequestRescheduleAsync(
                 interviewId,
                 CurrentUserContext.GetUserId(User),
                 new RequestInterviewRescheduleRequest
                 {
                     Message = message,
-                    AttachmentFileName = attachment?.FileName,
                 },
                 ct));
 

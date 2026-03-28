@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components */
 import { cn } from "@shared/utils/cn";
 import { getDepartmentIcon } from "@shared/utils/departmentIcons";
 

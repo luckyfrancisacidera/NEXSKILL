@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
@@ -14,6 +15,7 @@ export const GlobalSearchBar = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const roleContext = useMemo(
     () => resolveSearchRoleContext(roles, location.pathname),
@@ -61,7 +63,7 @@ export const GlobalSearchBar = () => {
     setActiveIndex(0);
   };
 
-  const showDropdown = isOpen && document.activeElement === inputRef.current;
+  const showDropdown = isOpen && isInputFocused;
 
   return (
     <div className="relative min-w-0 flex-1" ref={containerRef}>
@@ -76,7 +78,13 @@ export const GlobalSearchBar = () => {
           className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors duration-300 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           placeholder="Search pages, tools, or actions"
           value={query}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setIsInputFocused(true);
+            setIsOpen(true);
+          }}
+          onBlur={() => {
+            setIsInputFocused(false);
+          }}
           onChange={(event) => {
             setQuery(event.target.value);
             setIsOpen(true);

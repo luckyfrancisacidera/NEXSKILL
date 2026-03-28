@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { JobDto, Paged } from "@features/recruiter/types";
 
 export type { JobDto, Paged };

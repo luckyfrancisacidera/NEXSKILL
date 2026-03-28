@@ -57,13 +57,13 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = "Appl
   };
 
   return (
-    <Card className="h-full bg-white p-5 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.015] dark:border-zinc-800 dark:bg-zinc-950">
+    <Card className="h-full bg-white p-4 transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.015] dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
       <div className="flex h-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start gap-2">
               <h3
-                className="max-w-full truncate text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+                className="max-w-full truncate text-base font-semibold text-zinc-900 dark:text-zinc-100 sm:text-lg"
                 title={job.title}
               >
                 {job.title}
@@ -122,8 +122,8 @@ export const JobCard = ({ job, isSaved = false, onToggleSave, applyLabel = "Appl
           {snippet}
         </p>
 
-        <div className="mt-auto flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-500">
+        <div className="mt-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
             Saved role
           </p>
           <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">

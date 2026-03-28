@@ -220,7 +220,7 @@ export const CompanyAdminDashboardPage = () => {
           ]}
         />
 
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardStatCard
             label="Recruiters"
             value={data.summary.totalRecruiters}
@@ -305,7 +305,7 @@ export const CompanyAdminDashboardPage = () => {
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+            <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Management</h2>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Create recruiter accounts and monitor team activity at a glance.</p>
@@ -326,7 +326,7 @@ export const CompanyAdminDashboardPage = () => {
               getPageHref={(page) => buildQuery({ page: String(page) })}
               onPageSizeChange={(pageSize) => navigate(buildQuery({ page: '1', pageSize: String(pageSize) }))}
               itemLabel="recruiters"
-              className="px-6"
+              className="px-4 sm:px-6"
             />
           </Card>
 

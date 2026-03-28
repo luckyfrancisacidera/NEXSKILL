@@ -25,7 +25,12 @@ public static class ApplicationServiceRegistration
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAutoMapper(_ => { }, typeof(ApplicationServiceRegistration).Assembly);
-        services.Configure<PasswordResetOptions>(configuration.GetSection(PasswordResetOptions.SectionName));
+        services.AddOptions<PasswordResetOptions>()
+            .Bind(configuration.GetSection(PasswordResetOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.FrontendBaseUrl), "PasswordReset:FrontendBaseUrl is required.")
+            .Validate(options => Uri.TryCreate(options.FrontendBaseUrl, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps), "PasswordReset:FrontendBaseUrl must be a valid absolute URL.")
+            .ValidateOnStart();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddScoped<IResumeScoringOrchestrator, ResumeEmbeddingScoringOrchestrator>();
         services.AddScoped<IResumeUploadService, ResumeUploadService>();

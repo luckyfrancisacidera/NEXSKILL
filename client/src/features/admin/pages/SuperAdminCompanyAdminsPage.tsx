@@ -40,20 +40,20 @@ export const SuperAdminCompanyAdminsPage = () => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#19191f,_#09090b)] p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Super Admin</p>
-        <h1 className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">Company admin account management</h1>
+      <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#19191f,_#09090b)] p-5 shadow-sm sm:p-6 lg:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 sm:text-sm sm:tracking-[0.24em]">Super Admin</p>
+        <h1 className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">Company admin account management</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           Review every tenant administrator in one place, keep account status aligned with company access, and handle activation changes without leaving the admin workspace.
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminMetricCard label="Total Companies" value={data.summary.totalCompanies} accent="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-400" />
         <AdminMetricCard label="Active Companies" value={data.summary.activeCompanies} accent="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-400" />
-        <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm">
+        <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-sm sm:p-6">
           <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Company Admin Accounts</p>
-          <p className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{data.companyAdmins.totalCount}</p>
+          <p className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.companyAdmins.totalCount}</p>
         </Card>
       </section>
 

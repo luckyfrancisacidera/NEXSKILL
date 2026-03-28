@@ -55,7 +55,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 throw new InvalidOperationException("You have already applied to this job.");
             }
 
-            var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, request.FullName, request.Email, request.PostalCode, request.Location, jobSeekerUserId, ct);
+            var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, companyId: job.CompanyId, fullName: request.FullName, email: request.Email, postalCode: request.PostalCode, location: request.Location, jobSeekerUserId: jobSeekerUserId, ct: ct);
             response.Message = "Application submitted successfully. We have started processing your resume.";
             cacheService.RemoveByPrefix("dashboard:recruiter:");
             cacheService.RemoveByPrefix($"dashboard:jobseeker:{jobSeekerUserId}");

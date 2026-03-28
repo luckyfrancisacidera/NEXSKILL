@@ -21,17 +21,52 @@ public static class ConfigureInfrastructureService
             throw new InvalidOperationException("Missing config: ResumeParser:BaseUrl");
         }
 
+        var normalizedResumeParserBaseUrl = baseUrl.Trim().TrimEnd('/') + "/";
+
         services.AddHttpClient<IResumeParserClient, ResumeParserClient>(http =>
         {
-            http.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+            http.BaseAddress = new Uri(normalizedResumeParserBaseUrl);
             http.Timeout = TimeSpan.FromSeconds(60);
         });
 
-        services.Configure<SbertOptions>(configuration.GetSection(SbertOptions.SectionName));
+        services.Configure<SbertOptions>(options =>
+        {
+            configuration.GetSection(SbertOptions.SectionName).Bind(options);
+            options.ModelPath = ResolveContentPath(environment, options.ModelPath);
+            options.VocabularyPath = ResolveContentPath(environment, options.VocabularyPath);
+        });
         services.AddSingleton<ITextEmbeddingService, SbertOnnxEmbeddingService>();
-        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(BuildGmailSmtpOptions(configuration)));
+        var gmailSmtpOptions = BuildGmailSmtpOptions(configuration);
+        if (gmailSmtpOptions.Required && (!gmailSmtpOptions.Enabled || !gmailSmtpOptions.IsConfigured()))
+        {
+            throw new InvalidOperationException(
+                "SMTP is marked as required, but the Gmail SMTP configuration is incomplete or disabled.");
+        }
 
-        services.Configure<GroqOptions>(configuration.GetSection(GroqOptions.SectionName));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(gmailSmtpOptions));
+        services.AddSingleton<IResumeProcessingMonitor, ResumeProcessingMonitor>();
+
+        services.Configure<GroqOptions>(options =>
+        {
+            configuration.GetSection(GroqOptions.SectionName).Bind(options);
+
+            var apiKey = GetSetting(configuration, "Groq:ApiKey", "GROQ_API_KEY");
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                options.ApiKey = apiKey;
+            }
+
+            var model = GetSetting(configuration, "Groq:Model", "GROQ_MODEL");
+            if (!string.IsNullOrWhiteSpace(model))
+            {
+                options.Model = model;
+            }
+
+            if (double.TryParse(GetSetting(configuration, "Groq:Temperature", "GROQ_TEMPERATURE"), out var temperature))
+            {
+                options.Temperature = temperature;
+            }
+        });
         services.AddHttpClient<IGenerativeExplanationProvider, GroqExplanationProvider>(http =>
         {
             http.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
@@ -117,10 +152,16 @@ public static class ConfigureInfrastructureService
     private static GmailSmtpOptions BuildGmailSmtpOptions(IConfiguration configuration)
         => new()
         {
-            Host = GetSetting(configuration, "GmailSmtp:Host", "GMAIL_SMTP_HOST") ?? "smtp.gmail.com",
+            Enabled = bool.TryParse(GetSetting(configuration, "GmailSmtp:Enabled", "GMAIL_SMTP_ENABLED"), out var enabled)
+                ? enabled
+                : false,
+            Required = bool.TryParse(GetSetting(configuration, "GmailSmtp:Required", "GMAIL_SMTP_REQUIRED"), out var required)
+                ? required
+                : false,
+            Host = GetSetting(configuration, "GmailSmtp:Host", "GMAIL_SMTP_HOST") ?? string.Empty,
             Port = int.TryParse(GetSetting(configuration, "GmailSmtp:Port", "GMAIL_SMTP_PORT"), out var port)
                 ? port
-                : 587,
+                : 0,
             Email = GetSetting(configuration, "GmailSmtp:Email", "GMAIL_SMTP_EMAIL") ?? string.Empty,
             AppPassword = GetSetting(configuration, "GmailSmtp:AppPassword", "GMAIL_SMTP_APP_PASSWORD") ?? string.Empty,
             FromEmail = GetSetting(configuration, "GmailSmtp:FromEmail", "GMAIL_SMTP_FROM_EMAIL") ?? string.Empty,
@@ -137,6 +178,18 @@ public static class ConfigureInfrastructureService
             && !string.IsNullOrWhiteSpace(options.BucketName);
 
     private static string? GetSetting(IConfiguration configuration, string sectionKey, string environmentKey)
-        => configuration[sectionKey] ?? configuration[environmentKey];
+        => configuration[environmentKey] ?? configuration[sectionKey];
+
+    private static string ResolveContentPath(IHostEnvironment environment, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return string.Empty;
+        }
+
+        return Path.IsPathRooted(path)
+            ? path
+            : Path.GetFullPath(Path.Combine(environment.ContentRootPath, path));
+    }
 }
 }

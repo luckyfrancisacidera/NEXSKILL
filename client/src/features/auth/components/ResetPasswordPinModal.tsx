@@ -4,7 +4,6 @@ import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, RefreshCcw, X } from "lucide
 import { authService } from "@features/auth/services/auth.service";
 import { ApiError } from "@shared/api/http";
 import { Button } from "@shared/components/Button";
-import { Card } from "@shared/components/Card";
 import { ModalOverlay } from "@shared/components/ModalOverlay";
 
 interface ResetPasswordPinModalProps {
@@ -209,8 +208,8 @@ export const ResetPasswordPinModal = ({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <Card className="w-full min-w-0 rounded-[30px] border border-zinc-200 bg-white p-0 shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:border-zinc-800 dark:bg-zinc-950 font-inter">
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 bg-zinc-50 px-6 py-5 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="w-full min-w-0 rounded-[30px] border border-zinc-200 bg-white p-6 font-inter shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:border-zinc-800 dark:bg-zinc-950 sm:p-7">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-4">
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900">
               {step === 3 ? <CheckCircle2 className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
@@ -243,7 +242,7 @@ export const ResetPasswordPinModal = ({
           </button>
         </div>
 
-        <div className="space-y-5 px-6 py-6">
+        <div className="mt-6 space-y-5">
           {step === 1 ? (
             <>
               <label className="block space-y-2">
@@ -383,7 +382,7 @@ export const ResetPasswordPinModal = ({
             </div>
           ) : null}
         </div>
-      </Card>
+      </div>
     </ModalOverlay>
   );
 };

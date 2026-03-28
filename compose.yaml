@@ -1,0 +1,159 @@
+name: nexskill
+
+x-json-logging: &json_logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *json_logging
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-skillsense}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app_net
+
+  parser:
+    build:
+      context: ./services/resume_parsing_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging: *json_logging
+    environment:
+      DATA_DIR: ${PARSER_DATA_DIR:-/app/data}
+      EXPERIENCE_CSV: ${PARSER_EXPERIENCE_CSV:-/app/data/experience.csv}
+      EDUCATION_CSV: ${PARSER_EDUCATION_CSV:-/app/data/education.csv}
+      JZ_SKILLS_JSONL: ${PARSER_JZ_SKILLS_JSONL:-/app/data/jz_skill_patterns.jsonl}
+      DEFAULT_PARSER_VERSION: ${PARSER_DEFAULT_VERSION:-v2}
+      GROQ_API_KEY: ${PARSER_GROQ_API_KEY:-}
+      GROQ_MODEL: ${PARSER_GROQ_MODEL:-llama-3.3-70b-versatile}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_net
+
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: "no"
+    logging: *json_logging
+    depends_on:
+      db:
+        condition: service_healthy
+      parser:
+        condition: service_healthy
+    environment: &api_environment
+      ASPNETCORE_ENVIRONMENT: Production
+      LOGGING__LOGLEVEL__DEFAULT: ${LOGGING__LOGLEVEL__DEFAULT:-Information}
+      LOGGING__LOGLEVEL__MICROSOFT: ${LOGGING__LOGLEVEL__MICROSOFT:-Warning}
+      LOGGING__LOGLEVEL__MICROSOFT__ASPNETCORE: ${LOGGING__LOGLEVEL__MICROSOFT__ASPNETCORE:-Warning}
+      LOGGING__LOGLEVEL__MICROSOFT__HOSTING__LIFETIME: ${LOGGING__LOGLEVEL__MICROSOFT__HOSTING__LIFETIME:-Information}
+      LOGGING__LOGLEVEL__MICROSOFT__ENTITYFRAMEWORKCORE__DATABASE__COMMAND: ${LOGGING__LOGLEVEL__MICROSOFT__ENTITYFRAMEWORKCORE__DATABASE__COMMAND:-Warning}
+      CONNECTIONSTRINGS__POSTGRESQL: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      JWT__KEY: ${JWT__KEY}
+      JWT__ISSUER: ${JWT__ISSUER}
+      JWT__AUDIENCE: ${JWT__AUDIENCE}
+      CLIENT_ALLOWED_ORIGINS: ${CLIENT_ALLOWED_ORIGINS}
+      PASSWORDRESET__FRONTENDBASEURL: ${PASSWORDRESET__FRONTENDBASEURL}
+      RESUMEPARSER__BASEURL: http://parser:8000
+      STORAGE_DRIVER: ${STORAGE_DRIVER}
+      LOCAL_STORAGE_ROOT_PATH: ${LOCAL_STORAGE_ROOT_PATH}
+      RESUME_DOWNLOAD_URL_EXPIRY_SECONDS: ${RESUME_DOWNLOAD_URL_EXPIRY_SECONDS}
+      GMAIL_SMTP_HOST: ${GMAIL_SMTP_HOST}
+      GMAIL_SMTP_PORT: ${GMAIL_SMTP_PORT}
+      GMAIL_SMTP_ENABLED: ${GMAIL_SMTP_ENABLED}
+      GMAIL_SMTP_REQUIRED: ${GMAIL_SMTP_REQUIRED}
+      GMAIL_SMTP_EMAIL: ${GMAIL_SMTP_EMAIL}
+      GMAIL_SMTP_APP_PASSWORD: ${GMAIL_SMTP_APP_PASSWORD}
+      GMAIL_SMTP_FROM_EMAIL: ${GMAIL_SMTP_FROM_EMAIL}
+      GMAIL_SMTP_FROM_NAME: ${GMAIL_SMTP_FROM_NAME}
+      GMAIL_SMTP_ENABLE_SSL: ${GMAIL_SMTP_ENABLE_SSL}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL}
+      GROQ_TEMPERATURE: ${GROQ_TEMPERATURE}
+      CLOUDFLARE_R2_ACCOUNT_ID: ${CLOUDFLARE_R2_ACCOUNT_ID}
+      CLOUDFLARE_R2_ACCESS_KEY_ID: ${CLOUDFLARE_R2_ACCESS_KEY_ID}
+      CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY}
+      CLOUDFLARE_R2_BUCKET_NAME: ${CLOUDFLARE_R2_BUCKET_NAME}
+      CLOUDFLARE_R2_PUBLIC_BASE_URL: ${CLOUDFLARE_R2_PUBLIC_BASE_URL}
+      APPLY_MIGRATIONS_ON_STARTUP: "true"
+      ENABLE_IDENTITY_SEEDING: "false"
+      RUN_MIGRATIONS_ONLY: "true"
+      BOOTSTRAP_SUPERADMIN_EMAIL: ${BOOTSTRAP_SUPERADMIN_EMAIL}
+      BOOTSTRAP_SUPERADMIN_PASSWORD: ${BOOTSTRAP_SUPERADMIN_PASSWORD}
+      BOOTSTRAP_SUPERADMIN_FIRST_NAME: ${BOOTSTRAP_SUPERADMIN_FIRST_NAME}
+      BOOTSTRAP_SUPERADMIN_LAST_NAME: ${BOOTSTRAP_SUPERADMIN_LAST_NAME}
+      BOOTSTRAP_RECRUITER_EMAIL: ${BOOTSTRAP_RECRUITER_EMAIL}
+      BOOTSTRAP_RECRUITER_PASSWORD: ${BOOTSTRAP_RECRUITER_PASSWORD}
+      BOOTSTRAP_RECRUITER_FIRST_NAME: ${BOOTSTRAP_RECRUITER_FIRST_NAME}
+      BOOTSTRAP_RECRUITER_LAST_NAME: ${BOOTSTRAP_RECRUITER_LAST_NAME}
+      BOOTSTRAP_RECRUITER_COMPANY_ID: ${BOOTSTRAP_RECRUITER_COMPANY_ID}
+    volumes:
+      - api_storage:/app/storage
+    networks:
+      - app_net
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    logging: *json_logging
+    depends_on:
+      db:
+        condition: service_healthy
+      parser:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *api_environment
+      APPLY_MIGRATIONS_ON_STARTUP: "false"
+      RUN_MIGRATIONS_ONLY: "false"
+    ports:
+      - "${API_PORT:-5062}:8080"
+    volumes:
+      - api_storage:/app/storage
+    networks:
+      - app_net
+
+  web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    restart: unless-stopped
+    logging: *json_logging
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    networks:
+      - app_net
+
+volumes:
+  postgres_data:
+  api_storage:
+
+networks:
+  app_net:

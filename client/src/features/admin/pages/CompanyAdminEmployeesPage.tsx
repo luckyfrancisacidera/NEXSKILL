@@ -90,21 +90,21 @@ export const CompanyAdminEmployeesPage = () => {
 
   return (
     <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
-        <h2 className="text-xl font-semibold text-zinc-950 dark:text-zinc-100">Employees</h2>
+      <div className="border-b border-zinc-200 px-4 py-5 dark:border-zinc-800 sm:px-6">
+        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100 sm:text-xl">Employees</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Confirmed hires across your company, sourced directly from hired applications.
         </p>
       </div>
 
-      <div className="px-6 py-4">
+      <div className="px-4 py-4 sm:px-6">
         <form
           onSubmit={(event) => {
             event.preventDefault();
             submitSearch(event.currentTarget);
           }}
         >
-          <div className="relative max-w-md">
+          <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               name="search"
@@ -135,7 +135,7 @@ export const CompanyAdminEmployeesPage = () => {
         pageSize={data.pageSize}
         getPageHref={buildHref}
         itemLabel="employees"
-        className="px-6"
+        className="px-4 sm:px-6"
       />
     </Card>
   );

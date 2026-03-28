@@ -3,7 +3,7 @@ import { RichTextField } from "@shared/components/RichTextField";
 import { sanitizeRichText, stripRichText } from "@shared/utils/richText";
 
 interface RescheduleRequestFormProps {
-  onSubmit: (message: string, attachment?: File) => Promise<void> | void;
+  onSubmit: (message: string) => Promise<void> | void;
   onCancel?: () => void;
   submitLabel?: string;
 }
@@ -14,7 +14,6 @@ export const RescheduleRequestForm = ({
   submitLabel = "Send request",
 }: RescheduleRequestFormProps) => {
   const [message, setMessage] = useState("");
-  const [attachment, setAttachment] = useState<File | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,9 +26,8 @@ export const RescheduleRequestForm = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(sanitizeRichText(message), attachment);
+      await onSubmit(sanitizeRichText(message));
       setMessage("");
-      setAttachment(undefined);
       setError("");
     } finally {
       setIsSubmitting(false);
@@ -52,17 +50,6 @@ export const RescheduleRequestForm = ({
           minHeightClassName="min-h-[170px]"
           error={error}
         />
-        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-          Attachment (optional)
-          <input
-            type="file"
-            className="mt-1 block w-full text-xs text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-zinc-800 dark:text-zinc-300 dark:file:bg-zinc-100 dark:file:text-zinc-900 dark:hover:file:bg-zinc-200"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              setAttachment(file ?? undefined);
-            }}
-          />
-        </label>
       </div>
 
       <div className="flex justify-end gap-2 pt-1">

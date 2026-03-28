@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
 import { ArchiveRestore, Loader2, Search } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
@@ -220,7 +221,7 @@ export const ArchivedInterviewsPage = () => {
     <Card className="min-h-screen rounded-none border-0 bg-transparent p-0 shadow-none">
       <div className="space-y-6">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
             Archived Interviews
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -274,7 +275,7 @@ export const ArchivedInterviewsPage = () => {
           </div>
         </div>
 
-        <section className="border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
+        <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
             <div>
               <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">

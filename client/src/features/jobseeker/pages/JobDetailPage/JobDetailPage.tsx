@@ -110,7 +110,7 @@ export const JobDetailPage = () => {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">
                     Job overview
                   </p>
-                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+                  <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl lg:text-3xl">
                     {job.title}
                   </h1>
                 </div>
@@ -130,7 +130,7 @@ export const JobDetailPage = () => {
                 </div>
               </div>
 
-              <div className="grid gap-3 rounded-3xl border border-zinc-200 bg-white/85 p-4 shadow-sm backdrop-blur sm:grid-cols-2 lg:min-w-[320px] lg:grid-cols-1 dark:border-zinc-800 dark:bg-zinc-950/80">
+              <div className="grid gap-3 rounded-3xl border border-zinc-200 bg-white/85 p-4 shadow-sm backdrop-blur sm:grid-cols-2 lg:min-w-[280px] lg:grid-cols-1 dark:border-zinc-800 dark:bg-zinc-950/80">
                 <div className="flex items-start gap-3">
                   <div className="rounded-2xl bg-zinc-900 p-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
                     <BriefcaseBusiness className="h-4 w-4" />
@@ -175,7 +175,7 @@ export const JobDetailPage = () => {
             </div>
           </header>
 
-          <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
             <div className="space-y-4 pt-4">
               <DetailBlock title="About the Role">
                 <RichTextContent
@@ -194,7 +194,7 @@ export const JobDetailPage = () => {
                 </ul>
               </DetailBlock>
 
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <DetailBlock title="Required Skills">
                   <div className="flex flex-wrap gap-2">
                     {requiredSkills.length > 0 ? (
@@ -234,7 +234,7 @@ export const JobDetailPage = () => {
                 </DetailBlock>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <DetailBlock title="Qualifications">
                   <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                     <li>
@@ -295,7 +295,7 @@ export const JobDetailPage = () => {
               </DetailBlock>
             </div>
 
-            <aside className="space-y-3 pt-4 lg:sticky lg:top-4 lg:self-start">
+            <aside className="space-y-3 pt-1 lg:sticky lg:top-4 lg:self-start lg:pt-4">
               <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                   Ready to apply?
@@ -304,51 +304,53 @@ export const JobDetailPage = () => {
                   Submit your resume to start the screening process. You will get immediate feedback if anything needs attention.
                 </p>
               </div>
-              <button
-                type="button"
-                disabled={isApplying}
-                onClick={() => setIsModalOpen(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-base font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              >
-                {isApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                <span>{isApplying ? "Uploading Resume..." : "Apply Now"}</span>
-              </button>
-              <button
-                type="button"
-                disabled={isSavingJob}
-                onClick={() => {
-                  if (isSavingJob) {
-                    return;
-                  }
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <button
+                  type="button"
+                  disabled={isApplying}
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-base font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                >
+                  {isApplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  <span>{isApplying ? "Uploading Resume..." : "Apply Now"}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingJob}
+                  onClick={() => {
+                    if (isSavingJob) {
+                      return;
+                    }
 
-                  setIsSavingJob(true);
+                    setIsSavingJob(true);
 
-                  const request = isSaved
-                    ? jobseekerService.removeSavedJob(job.id)
-                    : jobseekerService.saveJob(job.id);
+                    const request = isSaved
+                      ? jobseekerService.removeSavedJob(job.id)
+                      : jobseekerService.saveJob(job.id);
 
-                  void request
-                    .then(() => setIsSaved((prev) => !prev))
-                    .finally(() => setIsSavingJob(false));
-                }}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                  isSaved
-                    ? "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                    : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {isSavingJob ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isSaved ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Bookmark className="h-4 w-4" />
-                )}
+                    void request
+                      .then(() => setIsSaved((prev) => !prev))
+                      .finally(() => setIsSavingJob(false));
+                  }}
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-base font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isSaved
+                      ? "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                      : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {isSavingJob ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isSaved ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
 
-                <span>
-                  {isSavingJob ? "Saving..." : isSaved ? "Saved" : "Save Job"}
-                </span>
-              </button>
+                  <span>
+                    {isSavingJob ? "Saving..." : isSaved ? "Saved" : "Save Job"}
+                  </span>
+                </button>
+              </div>
             </aside>
           </div>
         </div>

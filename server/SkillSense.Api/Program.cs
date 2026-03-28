@@ -2,18 +2,35 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
 using SkillSense.Api;
+using SkillSense.Api.Health;
 using SkillSense.Application.Common;
 using SkillSense.Application;
 using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces.Auth;
 using SkillSense.Infrastructure;
+using SkillSense.Infrastructure.Options;
 using SkillSense.Persistence;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
+var configuration = builder.Configuration;
+var environment = builder.Environment;
+
+var jwtKey = GetRequiredConfigurationValue(configuration, "Jwt:Key");
+var jwtIssuer = GetRequiredConfigurationValue(configuration, "Jwt:Issuer");
+var jwtAudience = GetRequiredConfigurationValue(configuration, "Jwt:Audience");
+var allowedOrigins = GetAllowedOrigins(configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
@@ -33,18 +50,14 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var key = builder.Configuration["Jwt:Key"] ?? "super-secret-dev-key-change-me";
-        var issuer = builder.Configuration["Jwt:Issuer"] ?? "SkillSense";
-        var audience = builder.Configuration["Jwt:Audience"] ?? "SkillSense.Client";
-
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = jwtIssuer,
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudience = jwtAudience,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
         };
@@ -81,6 +94,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddHttpClient("resume-parser-health", http =>
+{
+    http.BaseAddress = new Uri(GetRequiredConfigurationValue(configuration, "ResumeParser:BaseUrl").TrimEnd('/') + "/");
+    http.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", failureStatus: HealthStatus.Unhealthy, tags: ["ready"])
+    .AddCheck<ResumeParserHealthCheck>("resume_parser", failureStatus: HealthStatus.Degraded, tags: ["ready"])
+    .AddCheck<ResumeProcessingHealthCheck>("resume_processing", failureStatus: HealthStatus.Unhealthy, tags: ["ready"]);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -150,18 +173,30 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("client", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173" // Vite
-            )
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
     });
 });
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 var app = builder.Build();
 
+LogEmailConfigurationStatus(app);
+
 await app.ApplyMigrationsSafelyAsync();
+
+if (ShouldRunMigrationsOnly(configuration))
+{
+    app.Logger.LogInformation("RUN_MIGRATIONS_ONLY is enabled. Exiting after startup migration phase.");
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -201,6 +236,7 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 
 }));
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors("client");
 
@@ -208,5 +244,93 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = WriteHealthResponseAsync,
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponseAsync,
+});
 app.MapControllers();
 app.Run();
+
+static string GetRequiredConfigurationValue(IConfiguration configuration, string key)
+{
+    var value = configuration[key]?.Trim();
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException($"Missing required configuration value: {key}");
+    }
+
+    return value;
+}
+
+static string[] GetAllowedOrigins(IConfiguration configuration)
+{
+    var configuredOrigins = configuration.GetSection("Client:AllowedOrigins").Get<string[]>()?
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Select(origin => origin.Trim().TrimEnd('/'))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (configuredOrigins is { Length: > 0 })
+    {
+        return configuredOrigins;
+    }
+
+    var envOrigins = configuration["CLIENT_ALLOWED_ORIGINS"]?
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(origin => origin.TrimEnd('/'))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (envOrigins is { Length: > 0 })
+    {
+        return envOrigins;
+    }
+
+    throw new InvalidOperationException("At least one client origin must be configured under Client:AllowedOrigins or CLIENT_ALLOWED_ORIGINS.");
+}
+
+static bool ShouldRunMigrationsOnly(IConfiguration configuration)
+    => bool.TryParse(configuration["RUN_MIGRATIONS_ONLY"], out var enabled) && enabled;
+
+static void LogEmailConfigurationStatus(WebApplication app)
+{
+    var smtpOptions = app.Services.GetRequiredService<IOptions<GmailSmtpOptions>>().Value;
+    if (!smtpOptions.Enabled)
+    {
+        app.Logger.LogWarning("SMTP delivery is disabled for this environment. Password resets, interview invites, and email notifications will not be delivered.");
+        return;
+    }
+
+    if (!smtpOptions.IsConfigured())
+    {
+        app.Logger.LogWarning("SMTP delivery is enabled but incomplete. Email-sending flows will log warnings and skip delivery until configuration is fixed.");
+        return;
+    }
+
+    app.Logger.LogInformation("SMTP delivery is enabled and configured for host {Host}:{Port}.", smtpOptions.Host, smtpOptions.Port);
+}
+
+static Task WriteHealthResponseAsync(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+    return context.Response.WriteAsJsonAsync(new
+    {
+        status = report.Status.ToString(),
+        totalDuration = report.TotalDuration,
+        checks = report.Entries.ToDictionary(
+            entry => entry.Key,
+            entry => new
+            {
+                status = entry.Value.Status.ToString(),
+                description = entry.Value.Description,
+                duration = entry.Value.Duration,
+                error = entry.Value.Exception?.Message,
+            }),
+    });
+}

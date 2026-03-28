@@ -765,7 +765,7 @@ public sealed class AuthService(
     {
         if (string.IsNullOrWhiteSpace(frontendBaseUrl))
         {
-            return "http://localhost:5173";
+            throw new InvalidOperationException("Password reset frontend base URL is not configured.");
         }
 
         return frontendBaseUrl.Trim().TrimEnd('/');

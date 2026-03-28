@@ -226,7 +226,7 @@ export const RecruiterDashboardPage = () => {
   const hasActivity = totalSummaryValue > 0 || data.trends.datasets.some((dataset) => dataset.data.some((value) => value > 0));
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <RecruiterHeader />
 
       <DashboardGreeting
@@ -259,7 +259,7 @@ export const RecruiterDashboardPage = () => {
         />
       </DashboardSectionCard>
 
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map(({ key, label, icon }) => {
           const metric = data.summary[key];
           const valueDisplay = key === 'total_offer'
@@ -349,17 +349,17 @@ export const RecruiterDashboardPage = () => {
         >
           {hasActivity ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60 sm:p-5">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Hired Candidates</p>
-                <p className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">{hiredMetric.value}</p>
+                <p className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{hiredMetric.value}</p>
                 <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                   {hiredMetric.comparison_percent >= 0 ? '+' : ''}
                   {hiredMetric.comparison_percent.toFixed(0)}% versus the previous period.
                 </p>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-5 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60 sm:p-5">
                 <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Department Filters</p>
-                <p className="mt-3 text-3xl font-semibold text-zinc-950 dark:text-zinc-100">
+                <p className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">
                   {data.filters.departments.length}
                 </p>
                 <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -384,13 +384,13 @@ export const RecruiterDashboardPage = () => {
           <div className="space-y-3">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Departments in scope</p>
-              <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+              <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">
                 {data.filters.departments.length}
               </p>
             </div>
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Job roles in scope</p>
-              <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">
+              <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">
                 {availableJobRoles.length}
               </p>
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">

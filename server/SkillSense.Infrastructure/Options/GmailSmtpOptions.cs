@@ -4,9 +4,13 @@ public sealed class GmailSmtpOptions
 {
     public const string SectionName = "GmailSmtp";
 
-    public string Host { get; set; } = "smtp.gmail.com";
+    public bool Enabled { get; set; }
 
-    public int Port { get; set; } = 587;
+    public bool Required { get; set; }
+
+    public string Host { get; set; } = string.Empty;
+
+    public int Port { get; set; }
 
     public string Email { get; set; } = string.Empty;
 
@@ -17,4 +21,11 @@ public sealed class GmailSmtpOptions
     public string FromName { get; set; } = string.Empty;
 
     public bool EnableSsl { get; set; } = true;
+
+    public bool IsConfigured()
+        => !string.IsNullOrWhiteSpace(Host)
+            && Port > 0
+            && !string.IsNullOrWhiteSpace(Email)
+            && !string.IsNullOrWhiteSpace(AppPassword)
+            && (!string.IsNullOrWhiteSpace(FromEmail) || !string.IsNullOrWhiteSpace(Email));
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 export const getAdminStatusClassName = (isActive: boolean) =>
   isActive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400';
 

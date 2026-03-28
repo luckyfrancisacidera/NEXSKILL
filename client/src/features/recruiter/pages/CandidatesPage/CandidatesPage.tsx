@@ -366,9 +366,9 @@ export const CandidatesPage = () => {
 
   return (
     <Card className="border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
-      <section className="border border-zinc-200 bg-white px-5 py-5 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
+      <section className="border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
         <div className="mb-3">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Candidates</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Candidates</h2>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Review applications, filter by hiring stage, and move candidates forward.
           </p>
@@ -388,9 +388,9 @@ export const CandidatesPage = () => {
         />
       </section>
 
-      <section className="mt-4 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800 sm:px-6">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <section className="mt-4 min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+          <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
           </p>
           <BulkActionsBar

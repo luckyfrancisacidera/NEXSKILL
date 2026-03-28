@@ -39,7 +39,7 @@ const buildPageItems = (page: number, totalPages: number) => {
 };
 
 const paginationButtonClassName =
-  "inline-flex h-8 min-w-8 items-center justify-center border border-zinc-200 bg-white px-2.5 text-sm text-zinc-600 transition hover:bg-zinc-50 disabled:pointer-events-none disabled:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:disabled:text-zinc-700";
+  "inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white px-2.5 text-sm text-zinc-600 transition hover:bg-zinc-50 disabled:pointer-events-none disabled:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:disabled:text-zinc-700";
 
 const renderPageButton = (
   page: number,
@@ -131,11 +131,11 @@ export const TablePagination = ({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 border-t border-zinc-200 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 border-t border-zinc-200 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between sm:px-6",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <span>
           {startResult !== undefined && endResult !== undefined && totalCount !== undefined
             ? `Showing ${startResult} to ${endResult} of ${totalCount} ${itemLabel}`
@@ -146,7 +146,7 @@ export const TablePagination = ({
             <span>Rows</span>
             <select
               value={pageSize}
-              className="h-8 border border-zinc-200 bg-white px-2.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:focus:border-zinc-600"
+              className="h-8 rounded-md border border-zinc-200 bg-white px-2.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:focus:border-zinc-600"
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
             >
               {pageSizeOptions.map((size) => (
@@ -159,18 +159,20 @@ export const TablePagination = ({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1">
-        {renderPrevNext("prev")}
-        {pageItems.map((item, index) =>
-          item === "ellipsis" ? (
-            <span key={`ellipsis-${index}`} className="px-2 text-zinc-400 dark:text-zinc-600">
-              ...
-            </span>
-          ) : (
-            renderPageButton(item, page, onPageChange, getPageHref)
-          ),
-        )}
-        {renderPrevNext("next")}
+      <div className="w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+        <div className="flex min-w-max items-center gap-1">
+          {renderPrevNext("prev")}
+          {pageItems.map((item, index) =>
+            item === "ellipsis" ? (
+              <span key={`ellipsis-${index}`} className="px-2 text-zinc-400 dark:text-zinc-600">
+                ...
+              </span>
+            ) : (
+              renderPageButton(item, page, onPageChange, getPageHref)
+            ),
+          )}
+          {renderPrevNext("next")}
+        </div>
       </div>
     </div>
   );

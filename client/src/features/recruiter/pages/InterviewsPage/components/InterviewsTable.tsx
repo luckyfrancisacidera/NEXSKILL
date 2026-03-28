@@ -5,8 +5,8 @@ import { DataTable } from '@shared/components/ui/data-table/DataTable';
 import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
 import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
 
-export interface InterviewListItem
-  extends Pick<RecruiterInterview, 'id' | 'candidateId' | 'jobId' | 'interviewer' | 'startsAt' | 'status' | 'location'> {}
+export type InterviewListItem =
+  Pick<RecruiterInterview, 'id' | 'candidateId' | 'jobId' | 'interviewer' | 'startsAt' | 'status' | 'location'>;
 
 export interface InterviewsTableProps {
   interviews: InterviewListItem[];

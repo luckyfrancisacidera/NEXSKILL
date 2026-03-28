@@ -13,7 +13,7 @@ export const ApplicantsTrendCard = ({ trend }: ApplicantsTrendCardProps) => (
   <Card>
     <h3 className="mb-2 font-semibold text-zinc-900 dark:text-zinc-100">Applicants trend</h3>
     {trend.length ? (
-      <div className="h-50">
+      <div className="h-[18rem] sm:h-64">
         <DashboardAreaChart
           labels={trend.map((item) => item.day)}
           datasets={[

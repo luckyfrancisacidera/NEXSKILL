@@ -186,11 +186,11 @@ export const JobDetailPage = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <Card className="bg-zinc-50/60 p-3 dark:bg-zinc-950 sm:p-5">
         <div className="space-y-5">
           <header className="space-y-4 border-b border-zinc-200 pb-4 dark:border-zinc-800">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-3xl">{job.title}</h1>
+            <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl lg:text-3xl">{job.title}</h1>
             <div className="flex flex-wrap gap-2">
               <span className={`rounded-lg border px-3 py-1 text-sm font-medium ${statusAccent.className}`}>
                 {statusAccent.label}

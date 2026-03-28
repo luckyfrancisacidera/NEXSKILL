@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using SkillSense.Domain.Entities;
 
 namespace SkillSense.Persistence.Seed;
 
 public static class IdentitySeeder
 {
-    private const string DefaultPassword = "P@ssword123";
-
+    public const string LegacyDefaultPassword = "P@ssword123";
     private static readonly SeedRole[] Roles =
     [
         new("SuperAdmin"),
@@ -30,12 +31,30 @@ public static class IdentitySeeder
             "Recruiter"),
     ];
 
+    public static IReadOnlyList<(Guid Id, string Email, string RoleName)> LegacySeedUsers =>
+        Users.Select(user => (user.Id, user.Email, user.RoleName)).ToArray();
+
     public static async Task SeedAsync(
         UserManager<AppUser> userManager,
-        RoleManager<IdentityRole<Guid>> roleManager)
+        RoleManager<IdentityRole<Guid>> roleManager,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(userManager);
         ArgumentNullException.ThrowIfNull(roleManager);
+        ArgumentNullException.ThrowIfNull(environment);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        if (!environment.IsDevelopment())
+        {
+            throw new InvalidOperationException("Default identity seeding is only allowed in development.");
+        }
+
+        var seedPassword = configuration["Seed:DefaultPassword"] ?? configuration["SEED_DEFAULT_PASSWORD"];
+        if (string.IsNullOrWhiteSpace(seedPassword))
+        {
+            throw new InvalidOperationException("Development identity seeding requires Seed:DefaultPassword or SEED_DEFAULT_PASSWORD.");
+        }
 
         foreach (var role in Roles)
         {
@@ -44,7 +63,7 @@ public static class IdentitySeeder
 
         foreach (var user in Users)
         {
-            var appUser = await EnsureUserAsync(userManager, user);
+            var appUser = await EnsureUserAsync(userManager, user, seedPassword);
             await EnsureRoleAssignmentAsync(userManager, appUser, user.RoleName);
         }
     }
@@ -69,7 +88,8 @@ public static class IdentitySeeder
 
     private static async Task<AppUser> EnsureUserAsync(
         UserManager<AppUser> userManager,
-        SeedUser seedUser)
+        SeedUser seedUser,
+        string password)
     {
         var existingUser = await userManager.FindByEmailAsync(seedUser.Email);
         if (existingUser is not null)
@@ -87,7 +107,7 @@ public static class IdentitySeeder
             EmailConfirmed = true,
         };
 
-        var result = await userManager.CreateAsync(user, DefaultPassword);
+        var result = await userManager.CreateAsync(user, password);
         EnsureSuccess(result, $"seed user '{seedUser.Email}'");
 
         return user;
