@@ -10,6 +10,19 @@ let isReadinessProbePending = false;
 let isBackendWarm = false;
 let lastBackendSuccessAt: number | null = null;
 const listeners = new Set<Listener>();
+let snapshot: BackendWakeSnapshot = {
+  isReadinessProbePending,
+  isBackendWarm,
+  lastBackendSuccessAt,
+};
+
+const syncSnapshot = () => {
+  snapshot = {
+    isReadinessProbePending,
+    isBackendWarm,
+    lastBackendSuccessAt,
+  };
+};
 
 const notifyListeners = () => {
   listeners.forEach((listener) => listener());
@@ -22,6 +35,7 @@ export const beginBackendReadinessProbe = () => {
   }
 
   isReadinessProbePending = true;
+  syncSnapshot();
   notifyListeners();
   return true;
 };
@@ -45,15 +59,12 @@ export const completeBackendReadinessProbe = ({
   }
 
   if (didChange) {
+    syncSnapshot();
     notifyListeners();
   }
 };
 
-export const getBackendWakeSnapshot = (): BackendWakeSnapshot => ({
-  isReadinessProbePending,
-  isBackendWarm,
-  lastBackendSuccessAt,
-});
+export const getBackendWakeSnapshot = (): BackendWakeSnapshot => snapshot;
 
 export const subscribeToBackendWake = (listener: Listener) => {
   listeners.add(listener);
