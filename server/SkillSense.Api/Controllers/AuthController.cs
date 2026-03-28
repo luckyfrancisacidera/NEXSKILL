@@ -191,8 +191,8 @@ public sealed class AuthController(
     [Authorize]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("access_token", new CookieOptions { Path = "/" });
-        Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/" });
+        Response.Cookies.Delete("access_token", BuildCookieDeletionOptions());
+        Response.Cookies.Delete("refresh_token", BuildCookieDeletionOptions());
         return Ok(new { message = "Logout successful." });
     }
 
@@ -239,17 +239,8 @@ public sealed class AuthController(
 
     private void WriteAccessCookie(string token, bool isPersistent)
     {
-        var isProduction = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsProduction();
         var expiryMinutes = int.TryParse(_configuration["Jwt:AccessTokenExpiryMinutes"], out var minutes) ? minutes : 30;
-
-        var options = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = isProduction,
-            SameSite = SameSiteMode.Lax,
-            Path = "/",
-            IsEssential = true,
-        };
+        var options = BuildCookieOptions();
 
         if (isPersistent)
         {
@@ -261,17 +252,8 @@ public sealed class AuthController(
 
     private void WriteRefreshCookie(string token, bool isPersistent)
     {
-        var isProduction = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsProduction();
         var expiryDays = int.TryParse(_configuration["Jwt:RefreshTokenExpiryDays"], out var days) ? days : 7;
-
-        var options = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = isProduction,
-            SameSite = SameSiteMode.Lax,
-            Path = "/",
-            IsEssential = true,
-        };
+        var options = BuildCookieOptions();
 
         if (isPersistent)
         {
@@ -279,5 +261,57 @@ public sealed class AuthController(
         }
 
         Response.Cookies.Append("refresh_token", token, options);
+    }
+
+    private CookieOptions BuildCookieOptions()
+    {
+        var environment = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+        var configuredDomain = _configuration["AuthCookies:Domain"]?.Trim();
+        var sameSite = ParseSameSite(
+            _configuration["AuthCookies:SameSite"],
+            environment.IsProduction() ? SameSiteMode.None : SameSiteMode.Lax);
+        var secure = bool.TryParse(_configuration["AuthCookies:Secure"], out var configuredSecure)
+            ? configuredSecure
+            : environment.IsProduction();
+
+        var options = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = secure,
+            SameSite = sameSite,
+            Path = "/",
+            IsEssential = true,
+        };
+
+        if (!string.IsNullOrWhiteSpace(configuredDomain))
+        {
+            options.Domain = configuredDomain;
+        }
+
+        return options;
+    }
+
+    private CookieOptions BuildCookieDeletionOptions()
+    {
+        var cookieOptions = BuildCookieOptions();
+        cookieOptions.Expires = DateTimeOffset.UnixEpoch;
+        return cookieOptions;
+    }
+
+    private static SameSiteMode ParseSameSite(string? configuredValue, SameSiteMode fallback)
+    {
+        if (string.IsNullOrWhiteSpace(configuredValue))
+        {
+            return fallback;
+        }
+
+        return configuredValue.Trim().ToLowerInvariant() switch
+        {
+            "none" => SameSiteMode.None,
+            "strict" => SameSiteMode.Strict,
+            "lax" => SameSiteMode.Lax,
+            "unspecified" => SameSiteMode.Unspecified,
+            _ => fallback,
+        };
     }
 }
