@@ -77,7 +77,7 @@ export const CreateRecruiterModal = ({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div className="flex max-h-[90vh] w-[90%] max-w-full flex-col overflow-y-auto overflow-x-hidden rounded-[28px] border border-zinc-200 bg-white px-4 py-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 md:w-[80%] md:px-6 md:py-6 lg:max-w-lg">
+      <div className="scrollbar-thin-stable flex max-h-[90vh] w-full max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[28px] border border-zinc-200 bg-white px-4 py-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:w-[90%] md:w-[80%] md:px-6 md:py-6 lg:w-full lg:max-w-lg xl:max-w-xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm dark:text-zinc-100 font-semibold uppercase tracking-[0.24em] text-zinc-500">Company Admin</p>
