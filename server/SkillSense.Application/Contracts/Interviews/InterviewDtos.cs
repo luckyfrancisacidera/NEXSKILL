@@ -71,7 +71,6 @@ public sealed class RescheduleInterviewRequest
 public sealed class RequestInterviewRescheduleRequest
 {
     public string Message { get; init; } = string.Empty;
-    public string? AttachmentFileName { get; init; }
 }
 
 public sealed class CancelInterviewRequest

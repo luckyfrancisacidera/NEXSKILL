@@ -241,12 +241,12 @@ export const JobPostsPage = () => {
   })}`;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <RecruiterHeader />
       <div className="space-y-4">
-        <section className="border border-zinc-200 bg-white px-5 py-5 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6">
+        <section className="border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Job Posts</h2>
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Job Posts</h2>
           </div>
 
           <JobPostsFilters
@@ -273,7 +273,7 @@ export const JobPostsPage = () => {
           />
         </section>
 
-        <section className="border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
 
         {isEmptyPage ? (
           <EmptyState

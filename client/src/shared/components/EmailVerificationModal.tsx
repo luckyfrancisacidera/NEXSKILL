@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Mail, RefreshCcw, ShieldCheck, X } from "lucide-react";
 

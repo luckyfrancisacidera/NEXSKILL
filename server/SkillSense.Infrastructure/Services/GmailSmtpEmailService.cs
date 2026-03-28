@@ -16,10 +16,20 @@ public sealed class GmailSmtpEmailService(
 
     public async Task SendEmailAsync(EmailMessage message, CancellationToken ct = default)
     {
-        if (!HasRequiredSettings(_settings))
+        if (!_settings.Enabled)
         {
-            logger.LogError("Gmail SMTP is not fully configured. Email delivery to {Email} was skipped.", message.ToEmail);
-            throw new InvalidOperationException("Gmail SMTP is not fully configured.");
+            logger.LogWarning(
+                "SMTP delivery is disabled by configuration. Email delivery to {Email} was skipped.",
+                message.ToEmail);
+            throw new InvalidOperationException("Email delivery is disabled for this environment.");
+        }
+
+        if (!_settings.IsConfigured())
+        {
+            logger.LogError(
+                "SMTP is enabled but not fully configured. Email delivery to {Email} was skipped.",
+                message.ToEmail);
+            throw new InvalidOperationException("SMTP is enabled but not fully configured.");
         }
 
         using var mailMessage = BuildMailMessage(message, _settings);
@@ -71,11 +81,4 @@ public sealed class GmailSmtpEmailService(
 
         return mailMessage;
     }
-
-    private static bool HasRequiredSettings(GmailSmtpOptions settings)
-        => !string.IsNullOrWhiteSpace(settings.Host)
-            && settings.Port > 0
-            && !string.IsNullOrWhiteSpace(settings.Email)
-            && !string.IsNullOrWhiteSpace(settings.AppPassword)
-            && (!string.IsNullOrWhiteSpace(settings.FromEmail) || !string.IsNullOrWhiteSpace(settings.Email));
 }

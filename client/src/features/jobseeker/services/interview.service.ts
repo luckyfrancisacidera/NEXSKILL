@@ -100,22 +100,10 @@ export const jobseekerInterviewService = {
   async requestReschedule(
     interviewId: string,
     message: string,
-    attachment?: File,
   ): Promise<JobseekerInterview> {
-    const formData = new FormData();
-    formData.append("message", sanitizeRichText(message));
-    if (attachment) {
-      formData.append("attachment", attachment);
-    }
-
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/request-reschedule`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      },
+      { message: sanitizeRichText(message) },
     );
 
     return mapInterview(response.data);

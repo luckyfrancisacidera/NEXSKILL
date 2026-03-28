@@ -10,6 +10,7 @@ namespace SkillSense.Infrastructure.BackgroundJobs;
 public sealed class ResumeProcessingWorker(
     IServiceScopeFactory scopeFactory,
     IOptions<ResumeProcessingWorkerOptions> workerOptions,
+    IResumeProcessingMonitor processingMonitor,
     ILogger<ResumeProcessingWorker> logger) : BackgroundService
 {
     private readonly ResumeProcessingWorkerOptions _options = workerOptions.Value;
@@ -22,6 +23,7 @@ public sealed class ResumeProcessingWorker(
             _options.BatchSize,
             _options.InitialBackoff,
             _options.MaxBackoff);
+        processingMonitor.RecordWorkerStarted();
 
         var currentBackoff = _options.InitialBackoff;
 
@@ -29,6 +31,7 @@ public sealed class ResumeProcessingWorker(
         {
             try
             {
+                processingMonitor.RecordWorkerHeartbeat();
                 logger.LogDebug("Polling for pending resume submissions.");
 
                 using var scope = scopeFactory.CreateScope();
@@ -38,6 +41,7 @@ public sealed class ResumeProcessingWorker(
                 if (processedCount > 0)
                 {
                     logger.LogInformation("Processed {ProcessedCount} resume submission(s).", processedCount);
+                    processingMonitor.RecordWorkerHeartbeat();
                     currentBackoff = _options.InitialBackoff;
                     continue;
                 }
@@ -53,6 +57,7 @@ public sealed class ResumeProcessingWorker(
             }
             catch (Exception ex)
             {
+                processingMonitor.RecordWorkerFailure(ex);
                 logger.LogError(ex, "Error while processing resume queue. Retrying after {Delay}.", currentBackoff);
 
                 try

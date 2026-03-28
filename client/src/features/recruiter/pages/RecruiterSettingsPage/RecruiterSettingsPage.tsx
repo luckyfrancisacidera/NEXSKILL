@@ -26,8 +26,8 @@ export const RecruiterSettingsPage = () => {
   const { settings } = useLoaderData() as RecruiterSettingsLoaderData;
 
   return (
-    <Card>
-      <h2 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-100">Schedule Settings</h2>
+    <Card className="min-w-0 p-4 sm:p-6">
+      <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Schedule Settings</h2>
       <Form method="post" className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
           <RecruiterLabeledField label="Timezone">
@@ -52,7 +52,7 @@ export const RecruiterSettingsPage = () => {
           <h3 className="mb-2 font-medium text-zinc-900 dark:text-zinc-100">Available days and working hours</h3>
           <div className="space-y-2">
             {Object.entries(settings.hoursByDay).map(([day, hours]) => (
-              <div key={day} className="grid items-center gap-2 md:grid-cols-4">
+              <div key={day} className="grid items-center gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 cursor-pointer">
                   <input type="checkbox" name={`${day}-enabled`} defaultChecked={hours.enabled} className="appearance-none h-4 w-4 rounded bg-zinc-900 checked:bg-zinc-100 border border-zinc-300 dark:border-zinc-600 cursor-pointer focus:ring-2 focus:ring-violet-500 dark:focus:ring-violet-600 focus:ring-offset-1 dark:focus:ring-offset-zinc-950" /> {day}
                 </label>
@@ -75,10 +75,9 @@ export const RecruiterSettingsPage = () => {
           </label>
         </div>
 
-        <button className="rounded-lg bg-zinc-900 dark:bg-violet-600 dark:hover:bg-violet-700 px-4 py-2 text-white hover:bg-zinc-800 font-semibold transition" type="submit">Save settings</button>
+        <button className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-white hover:bg-zinc-800 font-semibold transition dark:bg-violet-600 dark:hover:bg-violet-700 sm:w-auto" type="submit">Save settings</button>
       </Form>
     </Card>
   );
 };
-
 

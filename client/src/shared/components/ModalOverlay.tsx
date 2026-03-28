@@ -24,7 +24,7 @@ export const ModalOverlay = ({ onClose, children, containerClassName = "max-w-lg
   }, []);
 
   return (
-    <div className="fixed inset-0 z-80 flex items-center justify-center p-4 font-inter">
+    <div className="fixed inset-0 z-80 flex items-end justify-center p-2 font-inter sm:items-center sm:p-4">
       <button
         type="button"
         onClick={onClose}
@@ -32,7 +32,7 @@ export const ModalOverlay = ({ onClose, children, containerClassName = "max-w-lg
         className="absolute inset-0 bg-zinc-950/45 backdrop-blur-[3px]"
       />
       <div
-        className={`relative z-81 w-full ${containerClassName}`}
+        className={`relative z-81 max-h-[calc(100vh-1rem)] w-full ${containerClassName} sm:max-h-[calc(100vh-2rem)]`}
         onClick={(event: MouseEvent<HTMLDivElement>) => {
           event.stopPropagation();
         }}

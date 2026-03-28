@@ -17,7 +17,7 @@ import type {
 } from "@features/jobseeker/types/types";
 
 const pageCardClassName =
-  "rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:p-8 lg:p-10";
+  "rounded-2xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 lg:p-8";
 
 const inputClassName =
   "h-11 w-full rounded-xl border border-zinc-300 bg-white px-4 pr-11 text-sm text-zinc-800 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-800";
@@ -385,7 +385,7 @@ export const ProfilePage = () => {
   return (
     <div className="mx-auto flex w-full max-w-10xl flex-col gap-6">
       <Card className={pageCardClassName}>
-        <h1 className="text-[1.95rem] font-semibold text-zinc-800 dark:text-zinc-100">
+        <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100 sm:text-[1.95rem]">
           Profile Information
         </h1>
         <ProfileForm
@@ -406,11 +406,11 @@ export const ProfilePage = () => {
       </Card>
 
       <Card className={pageCardClassName}>
-        <h2 className="text-[1.95rem] font-semibold text-zinc-800 dark:text-zinc-100">
+        <h2 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100 sm:text-[1.95rem]">
           Change Password
         </h2>
 
-        <form className="mt-8" onSubmit={handleChangePassword} noValidate>
+        <form className="mt-6 sm:mt-8" onSubmit={handleChangePassword} noValidate>
           <PasswordField
             id="current-password"
             label="Current Password"
@@ -482,11 +482,11 @@ export const ProfilePage = () => {
             </div>
           ) : null}
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <Button
               type="submit"
               disabled={!canSavePassword}
-              className={primaryButtonClassName}
+              className={`${primaryButtonClassName} w-full sm:w-auto`}
             >
               {isChangingPassword ? "Saving..." : "Save changes"}
             </Button>
@@ -494,7 +494,7 @@ export const ProfilePage = () => {
             <Button
               type="button"
               variant="secondary"
-              className={subtleButtonClassName}
+              className={`${subtleButtonClassName} w-full sm:w-auto`}
               onClick={handleResetPassword}
             >
               Reset

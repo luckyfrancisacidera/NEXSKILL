@@ -24,6 +24,7 @@ public sealed class ResumeProcessingService(
     IResumeEmbeddingRepository resumeEmbeddingRepository,
     IResumeScoringOrchestrator scoringOrchestrator,
     IAppCacheService cacheService,
+    IResumeProcessingMonitor processingMonitor,
     ILogger<ResumeProcessingService> logger) : IResumeProcessingService
 {
     /// <summary>
@@ -51,6 +52,14 @@ public sealed class ResumeProcessingService(
     private async Task ProcessSubmissionAsync(ResumeSubmissionEntity submission, CancellationToken ct)
     {
         var totalTimer = global::System.Diagnostics.Stopwatch.StartNew();
+        var stage = "claim";
+        processingMonitor.RecordSubmissionStage(submission.Id, stage);
+        logger.LogInformation(
+            "Resume submission {SubmissionId} entering pipeline. JobId={JobId} BlobKey={BlobObjectKey} FileName={FileName}",
+            submission.Id,
+            submission.JobId,
+            submission.BlobObjectKey,
+            submission.FileName);
         submission.Status = ResumeSubmissionStatus.Processing;
         submission.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -60,12 +69,17 @@ public sealed class ResumeProcessingService(
 
         try
         {
+            stage = "load_job";
+            processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var jobTimer = global::System.Diagnostics.Stopwatch.StartNew();
             var job = await jobRepository.GetByIdAsync(submission.JobId, ct)
                 ?? throw new InvalidOperationException($"Job '{submission.JobId}' not found.");
             var normalizedJob = await GetNormalizedJobDescriptionAsync(job, submission.AppliedJobPosition, ct);
             jobTimer.Stop();
+            logger.LogInformation("Resume submission {SubmissionId} loaded job context in {ElapsedMs} ms.", submission.Id, jobTimer.ElapsedMilliseconds);
 
+            stage = "parse";
+            processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var parseTimer = global::System.Diagnostics.Stopwatch.StartNew();
             await using var fileStream = await objectStorageService.DownloadAsync(submission.BlobObjectKey, ct);
             var parserVersion = Environment.GetEnvironmentVariable("DEFAULT_PARSER_VERSION");
@@ -73,11 +87,25 @@ public sealed class ResumeProcessingService(
             var parsed = parsedEnvelope.ParsedResume;
             submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
             parseTimer.Stop();
+            logger.LogInformation(
+                "Resume submission {SubmissionId} parsed successfully in {ElapsedMs} ms. ParserVersion={ParserVersion}",
+                submission.Id,
+                parseTimer.ElapsedMilliseconds,
+                parsedEnvelope.ParserVersion);
 
+            stage = "score";
+            processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var scoreTimer = global::System.Diagnostics.Stopwatch.StartNew();
             var result = await scoringOrchestrator.BuildAsync(submission.Id, parsed, normalizedJob, ct);
             scoreTimer.Stop();
+            logger.LogInformation(
+                "Resume submission {SubmissionId} scored successfully in {ElapsedMs} ms. FinalScore={FinalScore}",
+                submission.Id,
+                scoreTimer.ElapsedMilliseconds,
+                result.Score.FinalScore);
 
+            stage = "persist";
+            processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var persistTimer = global::System.Diagnostics.Stopwatch.StartNew();
             if (result.Embeddings.Count > 0)
             {
@@ -91,6 +119,7 @@ public sealed class ResumeProcessingService(
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             persistTimer.Stop();
             totalTimer.Stop();
+            processingMonitor.RecordSubmissionSucceeded(submission.Id);
 
             logger.LogInformation(
                 "Resume submission {SubmissionId} processed in {TotalMs} ms (claim={ClaimMs} ms, job={JobMs} ms, parse={ParseMs} ms, score={ScoreMs} ms, persist={PersistMs} ms).",
@@ -108,11 +137,15 @@ public sealed class ResumeProcessingService(
             submission.UpdatedAtUtc = DateTime.UtcNow;
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             totalTimer.Stop();
+            processingMonitor.RecordSubmissionFailed(submission.Id, stage, ex);
             logger.LogError(
                 ex,
-                "Resume submission {SubmissionId} failed after {ElapsedMs} ms.",
+                "Resume submission {SubmissionId} failed at stage {Stage} after {ElapsedMs} ms. JobId={JobId} BlobKey={BlobObjectKey}",
                 submission.Id,
-                totalTimer.ElapsedMilliseconds);
+                stage,
+                totalTimer.ElapsedMilliseconds,
+                submission.JobId,
+                submission.BlobObjectKey);
             throw;
         }
     }

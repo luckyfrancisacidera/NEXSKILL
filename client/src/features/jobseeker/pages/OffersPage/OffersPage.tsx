@@ -212,14 +212,14 @@ export const OffersPage = () => {
   };
 
   return (
-    <div className="space-y-4">
-        <div className="bg-[radial-gradient(circle_at_top_right,rgba(82,82,91,0.18),transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-5 py-5 text-white md:px-6 md:py-6 rounded-2xl">
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-[radial-gradient(circle_at_top_right,rgba(82,82,91,0.18),transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-4 py-5 text-white sm:px-5 md:px-6 md:py-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-300">
                 Application tracking
               </p>
-              <h1 className="mt-2 text-xl font-semibold md:text-2xl">
+              <h1 className="mt-2 text-lg font-semibold sm:text-xl md:text-2xl">
                 Follow every submission from applied to final outcome.
               </h1>
               <p className="mt-2 text-sm leading-6 text-zinc-200">
@@ -227,22 +227,22 @@ export const OffersPage = () => {
               </p>
             </div>
 
-            <div className="grid min-w-55 gap-2 sm:grid-cols-2">
+            <div className="grid w-full gap-2 sm:w-auto sm:min-w-55 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
                 <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Tracked</p>
-                <p className="mt-1.5 text-2xl font-semibold">{data.totalCount}</p>
+                <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{data.totalCount}</p>
               </div>
               <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
                 <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Offers</p>
-                <p className="mt-1.5 text-2xl font-semibold">{stageSummary.Offer ?? 0}</p>
+                <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{stageSummary.Offer ?? 0}</p>
               </div>
             </div>
           </div>
         </div>
 
       <Card className="rounded-3xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_180px]">
-          <div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_180px]">
+          <div className="md:col-span-2 xl:col-span-1">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
               Search
             </label>

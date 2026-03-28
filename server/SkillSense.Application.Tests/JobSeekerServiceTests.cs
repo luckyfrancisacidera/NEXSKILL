@@ -262,7 +262,7 @@ public sealed class JobSeekerServiceTests
 
     private sealed class NoOpResumeUploadService : IResumeUploadService
     {
-        public Task<ResumeUploadResponse> EnqueueUploadAsync(Stream fileStream, string fileName, string contentType, Guid jobId, string appliedJobPosition, string? fullName = null, string? email = null, string? postalCode = null, string? location = null, Guid? jobSeekerUserId = null, CancellationToken ct = default)
+        public Task<ResumeUploadResponse> EnqueueUploadAsync(Stream fileStream, string fileName, string contentType, Guid jobId, string appliedJobPosition, Guid companyId = default, string? fullName = null, string? email = null, string? postalCode = null, string? location = null, Guid? jobSeekerUserId = null, CancellationToken ct = default)
             => throw new NotImplementedException();
 
         public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)

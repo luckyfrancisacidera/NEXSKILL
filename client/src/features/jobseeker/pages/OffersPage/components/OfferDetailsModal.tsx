@@ -84,15 +84,15 @@ export const OfferDetailsModal = ({
   return (
     <ModalOverlay onClose={onClose} containerClassName="max-w-3xl">
       <div className="flex max-h-[min(88vh,900px)] w-full flex-col overflow-hidden rounded-[30px] border border-zinc-200 bg-white shadow-2xl ring-1 ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:ring-zinc-700">
-        <div className="border-b border-zinc-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
-          <div className="flex items-start justify-between gap-4">
+        <div className="border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95 sm:px-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Offer Details
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{offer.title || item.jobTitle}</h3>
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">{offer.title || item.jobTitle}</h3>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
                   <span className="font-medium text-zinc-700 dark:text-zinc-200">{item.companyName}</span>
                   <span>{item.recruiterName}</span>
@@ -109,7 +109,7 @@ export const OfferDetailsModal = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <StatusBadge status={item.currentStage} label={resolveApplicationStatusLabel(item.currentStage)} />
               <StatusBadge status={offer.status} label={resolveOfferStatusLabel(offer.status)} />
               <button
@@ -124,7 +124,7 @@ export const OfferDetailsModal = ({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
           <section className="grid gap-3 rounded-[24px] border border-zinc-200 bg-zinc-50/80 p-4 sm:grid-cols-2 dark:border-zinc-700 dark:bg-zinc-950/60">
             <div className="space-y-1">
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
@@ -180,7 +180,7 @@ export const OfferDetailsModal = ({
           </section>
         </div>
 
-        <div className="border-t border-zinc-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95">
+        <div className="border-t border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95 sm:px-5">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="secondary" onClick={onClose}>
               Back

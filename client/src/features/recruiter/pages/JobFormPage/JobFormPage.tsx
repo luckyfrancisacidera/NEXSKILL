@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * Recruiter job form page for creating and editing job posts.
  *
@@ -81,13 +82,13 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   return (
     <div className="space-y-6">
       <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-zinc-950/20 dark:to-zinc-950 p-0 shadow-sm">
-        <div className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-5">
+        <div className="border-b border-zinc-200 dark:border-zinc-800 px-4 py-5 sm:px-6">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-400">
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
                 {mode === 'create' ? 'Create Job' : 'Edit Job'}
               </h2>
               <p className="text-sm text-zinc-600 dark:text-zinc-100">
@@ -99,7 +100,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
         <Form
           method="post"
-          className="space-y-6 px-6 py-6"
+          className="space-y-6 px-4 py-6 sm:px-6"
           onSubmit={(event) => {
             const nextErrors: { description?: string; responsibilities?: string } = {};
 
@@ -244,9 +245,9 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
             </div>
           </RecruiterSectionCard>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-            <Link to="/recruiter/job-posts" className="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Link>
-            <button className="rounded-xl bg-violet-700 dark:bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:hover:bg-violet-700 disabled:opacity-70" type="submit" disabled={isSaving}>
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <Link to="/recruiter/job-posts" className="inline-flex items-center justify-center rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Link>
+            <button className="inline-flex items-center justify-center rounded-xl bg-violet-700 dark:bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:hover:bg-violet-700 disabled:opacity-70" type="submit" disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>

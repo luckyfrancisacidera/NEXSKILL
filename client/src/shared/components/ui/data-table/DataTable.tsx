@@ -142,9 +142,9 @@ export const DataTable = <T,>({
         surfaceClassName,
       )}
     >
-      {toolbar ? <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">{toolbar}</div> : null}
-      <div className="overflow-x-auto">
-        <table className={cn("min-w-full table-auto", tableClassName)}>
+      {toolbar ? <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-5">{toolbar}</div> : null}
+      <div className="w-full overflow-x-auto overscroll-x-contain">
+        <table className={cn("min-w-max w-full table-auto", tableClassName)}>
           <thead className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
             <tr>
               {columns.map((column) => {
@@ -156,7 +156,7 @@ export const DataTable = <T,>({
                     scope="col"
                     aria-sort={column.sortable ? getAriaSort(column.id, sortState) : undefined}
                     className={cn(
-                      "px-4 py-4.5 align-middle text-[11px] font-medium uppercase leading-4 text-zinc-500 first:pl-5 last:pr-6 dark:text-zinc-400 sm:first:pl-6 sm:last:pr-7",
+                      "px-3 py-3.5 align-middle text-[10px] font-medium uppercase leading-4 text-zinc-500 first:pl-4 last:pr-4 dark:text-zinc-400 sm:px-4 sm:py-4.5 sm:text-[11px] sm:first:pl-6 sm:last:pr-7",
                       alignClassName,
                       column.widthClassName,
                       column.headerClassName,
@@ -187,7 +187,7 @@ export const DataTable = <T,>({
                   {columns.map((column) => (
                       <td
                         key={column.id}
-                        className="border-b border-zinc-200 px-4 py-4.5 align-middle first:pl-5 last:pr-6 dark:border-zinc-800 sm:first:pl-6 sm:last:pr-7"
+                        className="border-b border-zinc-200 px-3 py-3.5 align-middle first:pl-4 last:pr-4 dark:border-zinc-800 sm:px-4 sm:py-4.5 sm:first:pl-6 sm:last:pr-7"
                       >
                         {renderSkeletonCell(column.id)}
                       </td>
@@ -222,7 +222,7 @@ export const DataTable = <T,>({
                           <td
                             key={column.id}
                             className={cn(
-                              "border-b border-zinc-200 px-4 py-4.5 align-middle text-[12px] leading-5 text-zinc-700 first:pl-5 last:pr-6 dark:border-zinc-800 dark:text-zinc-300 sm:first:pl-6 sm:last:pr-7",
+                              "border-b border-zinc-200 px-3 py-3.5 align-middle text-[12px] leading-5 text-zinc-700 first:pl-4 last:pr-4 dark:border-zinc-800 dark:text-zinc-300 sm:px-4 sm:py-4.5 sm:first:pl-6 sm:last:pr-7",
                               alignClassName,
                               column.widthClassName,
                               cellClassName,
