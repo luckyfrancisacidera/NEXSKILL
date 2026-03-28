@@ -1,0 +1,59 @@
+import {
+  beginBackendReadinessProbe,
+  completeBackendReadinessProbe,
+  getBackendWakeSnapshot,
+} from "@shared/api/backendWakeStore";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const BACKEND_READINESS_PATH = "/health/ready";
+
+let readinessPromise: Promise<void> | null = null;
+
+const getBackendReadinessUrl = () => {
+  const normalizedBaseUrl = API_BASE_URL.replace(/\/$/, "");
+  return normalizedBaseUrl
+    ? `${normalizedBaseUrl}${BACKEND_READINESS_PATH}`
+    : BACKEND_READINESS_PATH;
+};
+
+export const ensureBackendReadiness = () => {
+  const snapshot = getBackendWakeSnapshot();
+
+  if (snapshot.isBackendWarm) {
+    return Promise.resolve();
+  }
+
+  if (readinessPromise) {
+    return readinessPromise;
+  }
+
+  const shouldStartProbe = beginBackendReadinessProbe();
+  if (!shouldStartProbe) {
+    return Promise.resolve();
+  }
+
+  // Probe readiness explicitly so the ATS wake UI is not tied to normal request traffic.
+  readinessPromise = fetch(getBackendReadinessUrl(), {
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Backend readiness probe failed with status ${response.status}`);
+      }
+    })
+    .then(() => {
+      completeBackendReadinessProbe({ wasSuccessful: true });
+    })
+    .catch((error) => {
+      completeBackendReadinessProbe({ wasSuccessful: false });
+      throw error;
+    })
+    .finally(() => {
+      readinessPromise = null;
+    });
+
+  return readinessPromise;
+};
