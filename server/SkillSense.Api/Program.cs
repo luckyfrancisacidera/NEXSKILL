@@ -27,6 +27,12 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 var configuration = builder.Configuration;
 var environment = builder.Environment;
 
+var renderPort = configuration["PORT"]?.Trim();
+if (!string.IsNullOrWhiteSpace(renderPort))
+{
+    builder.WebHost.UseUrls($"http://+:{renderPort}");
+}
+
 var jwtKey = GetRequiredConfigurationValue(configuration, "Jwt:Key");
 var jwtIssuer = GetRequiredConfigurationValue(configuration, "Jwt:Issuer");
 var jwtAudience = GetRequiredConfigurationValue(configuration, "Jwt:Audience");
@@ -181,7 +187,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });

@@ -6,6 +6,8 @@
 - `services/resume_parsing_service`: FastAPI parser used by the API for resume extraction.
 - `PostgreSQL`: primary data store.
 
+For the split-cloud deployment target (Vercel + Render + Supabase), see [DEPLOYMENT.md](/D:/NEXSKILL/DEPLOYMENT.md).
+
 ## Local Docker bring-up
 1. Copy [`.env.example`](/D:/NEXSKILL/.env.example) to `.env` and fill in real values.
 2. Set the required values first: `CONNECTIONSTRINGS__POSTGRESQL`, `JWT__KEY`, `CLIENT_ALLOWED_ORIGINS`, `PASSWORDRESET__FRONTENDBASEURL`, `RESUMEPARSER__BASEURL`, and at least one bootstrap admin account.
