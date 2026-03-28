@@ -78,16 +78,16 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
+      <div className="flex max-h-[90vh] w-[90%] max-w-full flex-col overflow-y-auto overflow-x-hidden rounded-[28px] border border-zinc-200 bg-white px-4 py-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 md:w-[80%] md:px-6 md:py-6 lg:max-w-lg">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Super Admin</p>
             <h2 className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100">Create company account</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+            <p className="mt-2 break-words text-sm leading-6 text-zinc-500 dark:text-zinc-400">
               Add a company tenant and provision the initial company admin in one flow.
             </p>
           </div>
-          <Button type="button" variant="secondary" onClick={onClose}>Close</Button>
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">Close</Button>
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -149,8 +149,8 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
 
           {error ? <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</div> : null}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Creating company...' : 'Create company'}
             </Button>
@@ -160,4 +160,3 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
     </ModalOverlay>
   );
 };
-
