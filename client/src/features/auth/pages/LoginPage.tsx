@@ -59,7 +59,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="grid min-h-screen w-full bg-zinc-800 text-white font-inter md:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
+    <div className="grid min-h-screen w-full bg-zinc-800 font-inter text-white md:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
       {/* Left panel */}
       <div className="hidden p-4 sm:p-8 md:block">
         <div
@@ -84,9 +84,9 @@ const LoginPage = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
-        <AuthRouteTransition className="w-full max-w-md">
-          <div className="min-h-124">
+      <div className="flex min-h-screen overflow-y-auto bg-zinc-800 p-4 sm:p-6 md:items-center md:justify-center md:p-8">
+        <AuthRouteTransition className="my-auto w-full max-w-md">
+          <div className="min-h-0 py-4 md:min-h-124 md:py-0">
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-wider text-white">
                 Welcome back
