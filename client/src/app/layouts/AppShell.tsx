@@ -1,9 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigation } from 'react-router-dom';
 
+import { AtsWakeLoaderSurface } from '@shared/components/AtsWakeLoaderSurface';
 import { Sidebar } from '@shared/components/Sidebar';
 import { Topbar } from '@shared/components/Topbar';
+import { isAtsWakeRoute } from '@shared/config/backendWakeRoutes';
+import { useBackendWakeIndicator } from '@shared/hooks/useBackendWakeIndicator';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import {
   getNavigationContext,
@@ -13,6 +16,7 @@ import {
 
 export const AppShell = () => {
   const location = useLocation();
+  const navigation = useNavigation();
   const { isSuperAdmin, isCompanyAdmin, isRecruiter } = usePermissions();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarHovered, setIsDesktopSidebarHovered] = useState(false);
@@ -21,6 +25,9 @@ export const AppShell = () => {
   const navigationContext = getNavigationContext(section);
   const pageTitle = getNavigationPageTitle(location.pathname, navigationContext);
   const isDesktopSidebarExpanded = isDesktopSidebarHovered;
+  const wakeTargetPath = navigation.location?.pathname ?? location.pathname;
+  const shouldUseWakeLoader = isAtsWakeRoute(wakeTargetPath);
+  const { isVisible: showWakeLoader } = useBackendWakeIndicator(shouldUseWakeLoader);
 
   useEffect(() => {
     setIsMobileSidebarOpen(false);
@@ -62,6 +69,8 @@ export const AppShell = () => {
         <div className="min-w-0 flex min-h-screen flex-col">
           <Topbar onMenuToggle={() => setIsMobileSidebarOpen(true)} pageTitle={pageTitle} />
           <main className="min-w-0 flex-1 bg-zinc-50 p-4 transition-colors duration-300 sm:p-6 lg:p-8 dark:bg-zinc-950">
+            {/* Shared delayed wake-up affordance for ATS-heavy routes. */}
+            {showWakeLoader ? <AtsWakeLoaderSurface /> : null}
             <Outlet />
           </main>
         </div>
