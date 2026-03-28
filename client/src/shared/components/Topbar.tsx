@@ -161,14 +161,8 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
             )}
           </button>
           {isNotificationsOpen && (
-            <div className="fixed inset-0 z-20 flex items-start justify-center p-4 sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:block sm:w-auto sm:p-0">
-              <button
-                type="button"
-                aria-label="Close notifications"
-                className="absolute inset-0 bg-zinc-950/45 sm:hidden"
-                onClick={() => setIsNotificationsOpen(false)}
-              />
-              <div className="relative flex max-h-[90vh] w-[90%] max-w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl md:w-[80%] lg:max-w-md dark:border-zinc-800 dark:bg-zinc-900 sm:w-80">
+            <div className="absolute right-0 top-[calc(100%+0.75rem)] z-20 w-[90vw] max-w-[calc(100vw-2rem)] md:w-[80vw] lg:w-[28rem] lg:max-w-lg">
+              <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-3 sm:py-2">
                 <p className="break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Notifications

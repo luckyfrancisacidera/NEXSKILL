@@ -208,7 +208,7 @@ export const ResetPasswordPinModal = ({
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div className="flex max-h-[90vh] w-[90%] min-w-0 max-w-full flex-col overflow-y-auto overflow-x-hidden rounded-[30px] border border-zinc-200 bg-white px-4 py-4 font-inter shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:border-zinc-800 dark:bg-zinc-950 md:w-[80%] md:px-6 md:py-6 lg:max-w-md sm:p-7">
+      <div className="scrollbar-thin-stable flex max-h-[90vh] w-full min-w-0 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[30px] border border-zinc-200 bg-white px-4 py-4 font-inter shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:border-zinc-800 dark:bg-zinc-950 sm:w-[90%] sm:p-7 md:w-[80%] md:px-6 md:py-6 lg:w-full lg:max-w-lg">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-4">
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900">

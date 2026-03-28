@@ -84,8 +84,8 @@ const LoginPage = () => {
       </div>
 
       {/* Right panel */}
-      <div className="flex min-h-screen overflow-y-auto bg-zinc-800 p-4 sm:p-6 md:items-center md:justify-center md:p-8">
-        <AuthRouteTransition className="my-auto w-full max-w-md">
+      <div className="scrollbar-thin-stable flex min-h-screen overflow-y-auto bg-zinc-800 p-4 sm:p-6 md:items-center md:justify-center md:p-8">
+        <AuthRouteTransition className="my-auto w-full max-w-md lg:max-w-lg xl:max-w-xl">
           <div className="min-h-0 py-4 md:min-h-124 md:py-0">
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-wider text-white">
