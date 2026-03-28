@@ -276,17 +276,6 @@ static string GetRequiredConfigurationValue(IConfiguration configuration, string
 
 static string[] GetAllowedOrigins(IConfiguration configuration)
 {
-    var configuredOrigins = configuration.GetSection("Client:AllowedOrigins").Get<string[]>()?
-        .Where(origin => !string.IsNullOrWhiteSpace(origin))
-        .Select(origin => origin.Trim().TrimEnd('/'))
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToArray();
-
-    if (configuredOrigins is { Length: > 0 })
-    {
-        return configuredOrigins;
-    }
-
     var envOrigins = configuration["CLIENT_ALLOWED_ORIGINS"]?
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(origin => origin.TrimEnd('/'))
@@ -296,6 +285,17 @@ static string[] GetAllowedOrigins(IConfiguration configuration)
     if (envOrigins is { Length: > 0 })
     {
         return envOrigins;
+    }
+
+    var configuredOrigins = configuration.GetSection("Client:AllowedOrigins").Get<string[]>()?
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .Select(origin => origin.Trim().TrimEnd('/'))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (configuredOrigins is { Length: > 0 })
+    {
+        return configuredOrigins;
     }
 
     throw new InvalidOperationException("At least one client origin must be configured under Client:AllowedOrigins or CLIENT_ALLOWED_ORIGINS.");
