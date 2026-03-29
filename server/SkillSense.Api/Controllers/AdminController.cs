@@ -54,6 +54,14 @@ public sealed class AdminController(
             pageSize,
             cancellationToken));
 
+    [HttpGet("super/users")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<ActionResult<SuperAdminUsersPageResponse>> GetSuperAdminUsers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+        => Ok(await _adminManagementService.GetSuperAdminUsersAsync(page, pageSize, cancellationToken));
+
     [HttpPost("super/companies")]
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<ActionResult<AdminCompanyAccountResponse>> CreateCompanyAccount([FromBody] CreateCompanyAccountRequest request, CancellationToken cancellationToken)
@@ -107,6 +115,24 @@ public sealed class AdminController(
     public async Task<IActionResult> DeactivateRecruiterBySuperAdmin(Guid recruiterUserId, CancellationToken cancellationToken)
     {
         await _adminManagementService.DeactivateRecruiterAsync(recruiterUserId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/users/{userId:guid}/activate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ActivateUser(Guid userId, CancellationToken cancellationToken)
+    {
+        var actorUserId = CurrentUserContext.GetUserId(User);
+        await _adminManagementService.ActivateUserAsync(actorUserId, userId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("super/users/{userId:guid}/deactivate")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> DeactivateUser(Guid userId, CancellationToken cancellationToken)
+    {
+        var actorUserId = CurrentUserContext.GetUserId(User);
+        await _adminManagementService.DeactivateUserAsync(actorUserId, userId, cancellationToken);
         return NoContent();
     }
 

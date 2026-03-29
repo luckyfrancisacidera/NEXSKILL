@@ -140,7 +140,7 @@ export const DataTable = <T,>({
         surfaceClassName,
       )}
     >
-      {toolbar ? <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-5">{toolbar}</div> : null}
+      {toolbar ? <div className="border-b border-zinc-200 px-3 py-3 dark:border-zinc-800 sm:px-4 sm:py-4">{toolbar}</div> : null}
       <div className="w-full overflow-x-auto overscroll-x-contain">
         <table className={cn("w-full min-w-full table-auto", tableClassName)}>
           <thead className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
@@ -154,7 +154,7 @@ export const DataTable = <T,>({
                     scope="col"
                     aria-sort={column.sortable ? getAriaSort(column.id, sortState) : undefined}
                     className={cn(
-                      "px-3 py-3.5 align-middle text-[10px] font-medium uppercase leading-4 text-zinc-500 first:pl-4 last:pr-4 dark:text-zinc-400 sm:px-4 sm:py-4.5 sm:text-[11px] sm:first:pl-6 sm:last:pr-7",
+                      "px-2.5 py-2.5 align-middle text-[9px] font-medium uppercase leading-4 text-zinc-500 first:pl-3 last:pr-3 dark:text-zinc-400 min-[420px]:text-[10px] sm:px-3 sm:py-3 sm:text-[11px] sm:first:pl-4 sm:last:pr-4",
                       alignClassName,
                       column.widthClassName,
                       column.headerClassName,
@@ -185,7 +185,7 @@ export const DataTable = <T,>({
                   {columns.map((column) => (
                       <td
                         key={column.id}
-                        className="border-b border-zinc-200 px-3 py-3.5 align-middle first:pl-4 last:pr-4 dark:border-zinc-800 sm:px-4 sm:py-4.5 sm:first:pl-6 sm:last:pr-7"
+                        className="border-b border-zinc-200 px-2.5 py-2.5 align-middle first:pl-3 last:pr-3 dark:border-zinc-800 sm:px-3 sm:py-3 sm:first:pl-4 sm:last:pr-4"
                       >
                         {renderSkeletonCell(column.id)}
                       </td>
@@ -220,7 +220,7 @@ export const DataTable = <T,>({
                           <td
                             key={column.id}
                             className={cn(
-                              "border-b border-zinc-200 px-3 py-3.5 align-middle text-[12px] leading-5 text-zinc-700 first:pl-4 last:pr-4 dark:border-zinc-800 dark:text-zinc-300 sm:px-4 sm:py-4.5 sm:first:pl-6 sm:last:pr-7",
+                              "border-b border-zinc-200 px-2.5 py-2.5 align-middle text-[11px] leading-[1.125rem] text-zinc-700 first:pl-3 last:pr-3 dark:border-zinc-800 dark:text-zinc-300 min-[420px]:text-[12px] sm:px-3 sm:py-3 sm:leading-5 sm:first:pl-4 sm:last:pr-4",
                               alignClassName,
                               column.widthClassName,
                               cellClassName,

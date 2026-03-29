@@ -11,6 +11,10 @@ public interface IAdminManagementRepository
         int recruitersPageNumber,
         int pageSize,
         CancellationToken ct = default);
+    Task<SuperAdminUsersPageData> GetSuperAdminUsersAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default);
 
     Task<CompanyAdminDashboardData?> GetCompanyAdminDashboardAsync(
         Guid companyId,
@@ -42,6 +46,7 @@ public interface IAdminManagementRepository
     Task<Guid?> GetCompanyIdByAdminUserIdAsync(Guid adminUserId, CancellationToken ct = default);
     Task<AdminRecruiterOverviewData?> GetRecruiterOverviewByUserIdAsync(Guid recruiterUserId, CancellationToken ct = default);
     Task<AdminCompanyAdminOverviewData?> GetCompanyAdminOverviewByUserIdAsync(Guid adminUserId, CancellationToken ct = default);
+    Task<AdminUserOverviewData?> GetUserOverviewByUserIdAsync(Guid userId, CancellationToken ct = default);
     Task<CompanyEntity?> GetCompanyByIdAsync(Guid companyId, CancellationToken ct = default);
     Task<bool> CompanyNameExistsAsync(string companyName, CancellationToken ct = default);
     Task AddCompanyAsync(CompanyEntity company, CancellationToken ct = default);

@@ -13,7 +13,7 @@ import { cn } from "@shared/utils/cn";
 import { formatNotificationTimestamp } from "@shared/utils/notifications";
 
 const topbarControlClassName =
-  "inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white/80 px-3 py-2 text-sm text-zinc-700 shadow-sm transition-colors duration-300 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500";
+  "inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white/80 px-2.5 py-1.5 text-xs text-zinc-700 shadow-sm transition-colors duration-300 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500 sm:px-3 sm:py-2 sm:text-sm";
 
 const topbarIconButtonClassName = cn(
   topbarControlClassName,
@@ -101,29 +101,29 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-zinc-200 bg-white/90 px-4 py-4 pt-4 backdrop-blur-md transition-colors duration-300 sm:mx-6 sm:mt-6 sm:px-6 lg:mx-8 lg:mt-7 dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-zinc-200 bg-white/90 px-3 py-3 backdrop-blur-md transition-colors duration-300 sm:mx-6 sm:mt-6 sm:px-5 sm:py-3.5 lg:mx-8 lg:mt-7 dark:border-zinc-800 dark:bg-zinc-950/90">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <button
             type="button"
             className={cn(topbarIconButtonClassName, "lg:hidden")}
             aria-label="Open sidebar"
             onClick={onMenuToggle}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <div className="min-w-0 lg:hidden">
-            <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">
               {pageTitle ?? "SkillSense ATS"}
             </p>
           </div>
-          <div className="hidden min-w-0 flex-1 flex-col text-left text-xs text-zinc-500 dark:text-zinc-400 xl:flex">
+          <div className="hidden min-w-0 flex-1 flex-col text-left text-[11px] text-zinc-500 dark:text-zinc-400 xl:flex">
             {currentCompany ? (
               <>
                 <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                   {currentCompany.name}
                 </span>
                 {currentCompany.primaryEmail && (
-                  <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
                     {currentCompany.primaryEmail}
                   </span>
                 )}
@@ -145,7 +145,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
           title={themeToggleLabel}
           onClick={toggleTheme}
         >
-          <ThemeIcon className="h-5 w-5" />
+          <ThemeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
         <button
           type="button"
@@ -153,7 +153,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
           aria-label="Open global search"
           onClick={() => setIsMobileSearchOpen(true)}
         >
-          <Search className="h-5 w-5" />
+          <Search className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
         <div className="relative" ref={notificationsRef}>
           <button
@@ -163,9 +163,9 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
             aria-expanded={isNotificationsOpen}
             onClick={toggleNotifications}
           >
-            <Bell className="h-5 w-5" />
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 inline-flex min-h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-semibold text-white shadow-sm">
+              <span className="absolute -right-1 -top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white shadow-sm sm:-right-1.5 sm:-top-1.5 sm:min-h-[1.125rem] sm:min-w-[1.125rem] sm:text-[11px]">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
@@ -173,7 +173,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
           {isNotificationsOpen && (
             <div className="absolute -right-12.5 top-[calc(100%+0.75rem)] z-20 w-screen max-w-[calc(100vw-2rem)] md:w-[80vw] lg:w-md lg:max-w-lg">
               <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-3 sm:py-2">
+              <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:py-2">
                 <p className="wrap-break-word text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Notifications
                 </p>
@@ -199,7 +199,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                       type="button"
                       onClick={() => void markNotificationAsRead(item.id)}
                       className={cn(
-                        "block w-full max-w-full rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                        "block w-full max-w-full rounded-lg px-3 py-2 text-left text-[11px] transition-colors sm:text-xs",
                         item.read
                           ? "bg-zinc-50 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
                           : "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700",
@@ -216,7 +216,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                             ? "Jobseeker"
                             : "System"}
                       </p>
-                      <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      <p className="mt-1 text-[10px] text-zinc-400 dark:text-zinc-500 sm:text-[11px]">
                         {formatNotificationTimestamp(item.createdAt)}
                       </p>
                     </button>
@@ -230,7 +230,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                     setIsNotificationsOpen(false);
                     navigate("/notifications");
                   }}
-                  className="w-full rounded-lg px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  className="w-full rounded-lg px-3 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 sm:text-sm"
                 >
                   View all notifications
                 </button>
@@ -253,21 +253,21 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
 
           {isUserMenuOpen && (
             <div
-              className="absolute right-0 top-12 z-20 w-70 overflow-hidden rounded-[26px] border border-zinc-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)] transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-900"
+              className="absolute right-0 top-11 z-20 w-64 overflow-hidden rounded-[22px] border border-zinc-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)] transition-colors duration-300 dark:border-zinc-700 dark:bg-zinc-900 sm:w-70"
               role="menu"
               aria-label="User menu"
             >
-              <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
+              <div className="flex items-center gap-3 border-b border-zinc-200 px-3.5 py-3.5 dark:border-zinc-800 sm:px-4 sm:py-4">
                 <Avatar
                   name={user?.email ?? "User"}
-                  className="h-12 w-12 border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800"
-                  textClassName="text-xs"
+                  className="h-10 w-10 border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 sm:h-12 sm:w-12"
+                  textClassName="text-[11px] sm:text-xs"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base">
                     {displayName}
                   </p>
-                  <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
                     {roleLabel}
                   </p>
                 </div>
@@ -276,14 +276,14 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
               <div className="p-2">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[15px] font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
                   role="menuitem"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     navigate("/profile");
                   }}
                 >
-                  <UserRound className="h-4 w-4" />
+                  <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   My Profile
                 </button>
               </div>
@@ -291,11 +291,11 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
               <div className="border-t border-zinc-200 p-2 dark:border-zinc-800">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[15px] font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
                   role="menuitem"
                   onClick={onLogout}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Log Out
                 </button>
               </div>

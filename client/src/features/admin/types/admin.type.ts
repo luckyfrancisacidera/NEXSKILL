@@ -30,6 +30,11 @@ export interface SuperAdminRecruitersPageDto {
   recruiters: Paged<AdminRecruiterOverviewDto>;
 }
 
+export interface SuperAdminUsersPageDto {
+  summary: SuperAdminDashboardDto['summary'];
+  users: Paged<AdminUserOverviewDto>;
+}
+
 export interface CompanyAdminDashboardDto {
   company: {
     id: string;
@@ -110,6 +115,16 @@ export interface AdminRecruiterOverviewDto {
   activeJobs: number;
   upcomingInterviews: number;
   totalHires: number;
+}
+
+export interface AdminUserOverviewDto {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  applicationCount: number;
+  joinedAtUtc: string;
 }
 
 export interface CreateManagedRecruiterPayload {

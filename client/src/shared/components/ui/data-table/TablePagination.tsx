@@ -2,18 +2,20 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { cn } from "@shared/utils/cn";
+import { TablePageSizeControl, type TablePageSizeOption } from "@shared/components/ui/data-table/TablePageSizeControl";
 
 interface TablePaginationProps {
   page: number;
   totalPages: number;
   totalCount?: number;
-  pageSize?: number;
-  pageSizeOptions?: number[];
+  pageSize?: number | string;
+  pageSizeOptions?: Array<number | string | TablePageSizeOption>;
   onPageChange?: (page: number) => void;
   getPageHref?: (page: number) => string;
   onPageSizeChange?: (pageSize: number) => void;
   itemLabel?: string;
   className?: string;
+  showPageSizeSelector?: boolean;
 }
 
 const buildPageItems = (page: number, totalPages: number) => {
@@ -39,7 +41,7 @@ const buildPageItems = (page: number, totalPages: number) => {
 };
 
 const paginationButtonClassName =
-  "inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white px-2.5 text-sm text-zinc-600 transition hover:bg-zinc-50 disabled:pointer-events-none disabled:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:disabled:text-zinc-700";
+  "inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white px-2 text-xs text-zinc-600 transition hover:bg-zinc-50 disabled:pointer-events-none disabled:text-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:disabled:text-zinc-700 sm:h-8 sm:min-w-8 sm:px-2.5 sm:text-sm";
 
 const renderPageButton = (
   page: number,
@@ -91,10 +93,13 @@ export const TablePagination = ({
   onPageSizeChange,
   itemLabel = "entries",
   className,
+  showPageSizeSelector = true,
 }: TablePaginationProps) => {
+  const numericPageSize = pageSize !== undefined ? Number(pageSize) : undefined;
+  const hasValidPageSize = numericPageSize !== undefined && Number.isFinite(numericPageSize) && numericPageSize > 0;
   const pageItems = buildPageItems(page, totalPages);
-  const startResult = totalCount && pageSize ? (totalCount === 0 ? 0 : (page - 1) * pageSize + 1) : undefined;
-  const endResult = totalCount && pageSize ? Math.min(page * pageSize, totalCount) : undefined;
+  const startResult = totalCount !== undefined && hasValidPageSize ? (totalCount === 0 ? 0 : (page - 1) * numericPageSize + 1) : undefined;
+  const endResult = totalCount !== undefined && hasValidPageSize ? Math.min(page * numericPageSize, totalCount) : undefined;
 
   const renderPrevNext = (direction: "prev" | "next") => {
     const isPrevious = direction === "prev";
@@ -131,40 +136,31 @@ export const TablePagination = ({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 border-t border-zinc-200 px-4 py-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between sm:px-6",
+        "flex items-center justify-between gap-2 border-t border-zinc-200 px-3 py-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 max-[399px]:flex-wrap sm:px-4 sm:py-3.5 sm:text-sm",
         className,
       )}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-        <span>
+      <div className="flex min-w-0 shrink items-center gap-2 overflow-hidden">
+        <span className="truncate whitespace-nowrap">
           {startResult !== undefined && endResult !== undefined && totalCount !== undefined
             ? `Showing ${startResult} to ${endResult} of ${totalCount} ${itemLabel}`
             : `Page ${page} of ${totalPages}`}
         </span>
-        {pageSize !== undefined && onPageSizeChange ? (
-          <label className="flex items-center gap-2">
-            <span>Rows</span>
-            <select
-              value={pageSize}
-              className="h-8 rounded-md border border-zinc-200 bg-white px-2.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-700 dark:focus:border-zinc-600"
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
+        {showPageSizeSelector && pageSize !== undefined && onPageSizeChange ? (
+          <TablePageSizeControl
+            value={pageSize}
+            options={pageSizeOptions}
+            onChange={onPageSizeChange}
+          />
         ) : null}
       </div>
 
-      <div className="w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
-        <div className="flex min-w-max items-center gap-1">
+      <div className="w-auto max-w-full overflow-x-auto pb-0.5">
+        <div className="flex min-w-max items-center gap-0.5 sm:gap-1">
           {renderPrevNext("prev")}
           {pageItems.map((item, index) =>
             item === "ellipsis" ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-zinc-400 dark:text-zinc-600">
+              <span key={`ellipsis-${index}`} className="px-1.5 text-zinc-400 dark:text-zinc-600">
                 ...
               </span>
             ) : (

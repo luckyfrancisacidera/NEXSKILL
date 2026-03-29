@@ -10,6 +10,7 @@ import { SideDrawer } from "@shared/components/SideDrawer";
 import { DataTable } from "@shared/components/ui/data-table/DataTable";
 import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { downloadInterviewICS } from "@shared/utils/calendar";
@@ -288,6 +289,14 @@ export const ArchivedInterviewsPage = () => {
             {isLoading ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Updating results...</p>
             ) : null}
+            <TablePageSizeControl
+              value={data.pageSize}
+              onChange={(value) => {
+                setPageSize(value);
+                setPageNumber(1);
+              }}
+              className="ml-auto"
+            />
           </div>
 
           {error ? (
@@ -319,11 +328,8 @@ export const ArchivedInterviewsPage = () => {
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
                 onPageChange={setPageNumber}
-                onPageSizeChange={(value) => {
-                  setPageSize(value);
-                  setPageNumber(1);
-                }}
                 itemLabel="archived interviews"
+                showPageSizeSelector={false}
               />
             </>
           )}

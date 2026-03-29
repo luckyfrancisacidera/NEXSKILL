@@ -9,6 +9,7 @@ import { JobTitleCell } from "@shared/components/JobTitleCell";
 import { DataTable } from "@shared/components/ui/data-table/DataTable";
 import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 
 export const HiredEmployeesPage = () => {
@@ -17,6 +18,14 @@ export const HiredEmployeesPage = () => {
 
   const submitSearch = (form: HTMLFormElement) => {
     const formData = new FormData(form);
+    formData.set("page", "1");
+    submit(formData, { method: "get", action: "/recruiter/hired" });
+  };
+
+  const submitFilters = (searchValue: string, pageSizeValue: number | string) => {
+    const formData = new FormData();
+    formData.set("search", searchValue);
+    formData.set("pageSize", String(pageSizeValue));
     formData.set("page", "1");
     submit(formData, { method: "get", action: "/recruiter/hired" });
   };
@@ -107,13 +116,19 @@ export const HiredEmployeesPage = () => {
           submitSearch(event.currentTarget);
         }}
       >
-        <div className="relative w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            name="search"
-            defaultValue={filters.search}
-            placeholder="Search hires by name, job, or department"
-            className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative w-full max-w-md flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input
+              name="search"
+              defaultValue={filters.search}
+              placeholder="Search hires by name, job, or department"
+              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+            />
+          </div>
+          <TablePageSizeControl
+            value={pagination.pageSize}
+            onChange={(pageSize) => submitFilters(filters.search, pageSize)}
           />
           <input type="hidden" name="pageSize" value={filters.pageSize} />
         </div>
@@ -138,6 +153,7 @@ export const HiredEmployeesPage = () => {
         pageSize={pagination.pageSize}
         itemLabel="hires"
         getPageHref={buildHref}
+        showPageSizeSelector={false}
       />
     </Card>
   );

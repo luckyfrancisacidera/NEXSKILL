@@ -89,7 +89,7 @@ export default function Dropdown({
           type="button"
           onClick={() => setOpen((prev) => !prev)}
           className={`flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-violet-600 dark:focus:ring-violet-900 ${
-            compactOnMobile ? "h-10 px-3 text-[13px] sm:h-11 sm:px-3.5 sm:text-sm" : "h-11 px-3.5 text-sm"
+            compactOnMobile ? "h-9 px-2.5 text-xs sm:h-10 sm:px-3 sm:text-sm" : "h-10 px-3 text-sm"
           } ${buttonClassName}`}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -108,7 +108,7 @@ export default function Dropdown({
           </div>
 
           <ChevronDown
-            className={`ml-3 h-4 w-4 shrink-0 text-zinc-500 transition-transform dark:text-zinc-500 ${
+            className={`ml-2 h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform dark:text-zinc-500 sm:h-4 sm:w-4 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -124,8 +124,8 @@ export default function Dropdown({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left ${
-                    compactOnMobile ? "text-[13px] sm:py-2.5 sm:text-sm" : "py-2.5 text-sm"
+                  className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left ${
+                    compactOnMobile ? "text-xs sm:py-2.5 sm:text-sm" : "py-2.5 text-sm"
                   } transition ${
                     isSelected
                       ? "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400"
@@ -147,7 +147,7 @@ export default function Dropdown({
                   </div>
 
                   {isSelected ? (
-                    <Check className="ml-2 h-4 w-4 shrink-0" />
+                    <Check className="ml-2 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                   ) : null}
                 </button>
               );

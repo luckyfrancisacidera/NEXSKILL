@@ -14,6 +14,10 @@ public interface IAdminManagementService
         int recruitersPage,
         int pageSize,
         CancellationToken ct = default);
+    Task<SuperAdminUsersPageResponse> GetSuperAdminUsersAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default);
 
     Task<CompanyAdminDashboardResponse> GetCompanyAdminDashboardAsync(
         Guid adminUserId,
@@ -47,6 +51,8 @@ public interface IAdminManagementService
     Task DeactivateCompanyAdminAsync(Guid adminUserId, CancellationToken ct = default);
     Task ActivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default);
     Task DeactivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default);
+    Task ActivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default);
+    Task DeactivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default);
     Task ActivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default);
     Task DeactivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default);
 }

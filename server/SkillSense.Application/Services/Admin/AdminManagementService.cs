@@ -59,6 +59,31 @@ public sealed class AdminManagementService(
         };
     }
 
+    public async Task<SuperAdminUsersPageResponse> GetSuperAdminUsersAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        var data = await adminManagementRepository.GetSuperAdminUsersAsync(
+            pageNumber,
+            NormalizePageSize(pageSize),
+            ct);
+
+        return new SuperAdminUsersPageResponse
+        {
+            Summary = new SuperAdminDashboardSummaryResponse
+            {
+                TotalCompanies = data.TotalCompanies,
+                ActiveCompanies = data.ActiveCompanies,
+                TotalRecruiters = data.TotalRecruiters,
+                ActiveRecruiters = data.ActiveRecruiters,
+                TotalJobs = data.TotalJobs,
+                ActiveJobs = data.ActiveJobs,
+            },
+            Users = MapPaged(data.Users, MapUser),
+        };
+    }
+
     public async Task<CompanyAdminDashboardResponse> GetCompanyAdminDashboardAsync(
         Guid adminUserId,
         Guid companyId,
@@ -294,6 +319,12 @@ public sealed class AdminManagementService(
     public Task DeactivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default)
         => SetRecruiterActiveStatusAsync(recruiterUserId, null, false, ct);
 
+    public Task ActivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default)
+        => SetManagedUserActiveStatusAsync(actorUserId, userId, true, ct);
+
+    public Task DeactivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default)
+        => SetManagedUserActiveStatusAsync(actorUserId, userId, false, ct);
+
     public async Task ActivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
@@ -340,6 +371,24 @@ public sealed class AdminManagementService(
         }
 
         await SetIdentityAccountActiveStatusAsync(recruiter.UserId, "Recruiter", isActive);
+    }
+
+    private async Task SetManagedUserActiveStatusAsync(Guid actorUserId, Guid userId, bool isActive, CancellationToken ct)
+    {
+        if (actorUserId == userId)
+        {
+            throw new InvalidOperationException("You cannot change your own account status.");
+        }
+
+        var user = await adminManagementRepository.GetUserOverviewByUserIdAsync(userId, ct)
+            ?? throw new KeyNotFoundException("User account not found.");
+
+        if (user.Role is "Admin" or "SuperAdmin")
+        {
+            throw new InvalidOperationException("Admin accounts must be managed through protected bootstrap flows.");
+        }
+
+        await SetIdentityAccountActiveStatusAsync(user.UserId, user.Role, isActive);
     }
 
     private async Task SetIdentityAccountActiveStatusAsync(Guid userId, string requiredRole, bool isActive)
@@ -430,6 +479,18 @@ public sealed class AdminManagementService(
             TotalHires = recruiter.TotalHires,
         };
 
+    private static AdminUserOverviewResponse MapUser(AdminUserOverviewData user)
+        => new()
+        {
+            UserId = user.UserId,
+            Name = ResolveUserDisplayName(user),
+            Email = user.Email,
+            Role = user.Role,
+            IsActive = user.IsActive,
+            ApplicationCount = user.ApplicationCount,
+            JoinedAtUtc = user.JoinedAtUtc,
+        };
+
     private static EmployeeRecordResponse MapEmployee(EmployeeRecordData employee)
         => new()
         {
@@ -482,5 +543,29 @@ public sealed class AdminManagementService(
             CanDecline = offer.Status == JobOfferStatus.Pending,
             CanMarkHired = false,
         };
+    }
+
+    private static string ResolveUserDisplayName(AdminUserOverviewData user)
+    {
+        var firstName = user.FirstName?.Trim();
+        var lastName = user.LastName?.Trim();
+        var fullName = string.Join(" ", new[] { firstName, lastName }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            return fullName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.ProfileFullName))
+        {
+            return user.ProfileFullName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            return user.Email.Split('@')[0].Replace('.', ' ').Replace('_', ' ').Trim();
+        }
+
+        return "User";
     }
 }
