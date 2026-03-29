@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigation } from 'react-router-dom';
 
+import { useAuth } from '@app/providers/AuthProvider';
 import { AtsWakeLoaderSurface } from '@shared/components/AtsWakeLoaderSurface';
 import { RouteNavigationFeedback } from '@shared/components/RouteNavigationFeedback';
 import { Sidebar } from '@shared/components/Sidebar';
@@ -18,6 +19,7 @@ import {
 export const AppShell = () => {
   const location = useLocation();
   const navigation = useNavigation();
+  const { clearAppTransition } = useAuth();
   const { isSuperAdmin, isCompanyAdmin, isRecruiter } = usePermissions();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDesktopSidebarHovered, setIsDesktopSidebarHovered] = useState(false);
@@ -29,6 +31,10 @@ export const AppShell = () => {
   const wakeTargetPath = navigation.location?.pathname ?? location.pathname;
   const shouldUseWakeLoader = isAtsWakeRoute(wakeTargetPath);
   const { isVisible: showWakeLoader } = useBackendWakeIndicator(shouldUseWakeLoader);
+
+  useEffect(() => {
+    clearAppTransition();
+  }, [clearAppTransition, location.pathname, location.search]);
 
   useEffect(() => {
     setIsMobileSidebarOpen(false);

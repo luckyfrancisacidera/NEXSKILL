@@ -5,11 +5,12 @@ import { useSavedJobs } from "@features/jobseeker/hooks";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import { Card } from "@shared/components/Card";
 import { JobCard } from "@shared/components/JobCard";
+import { JobListSkeleton } from "@shared/components/skeletons/JobListSkeleton";
 import type { Job } from "@shared/types";
 
 export const SavedJobsPage = () => {
   const [search, setSearch] = useState("");
-  const { load, saved } = useSavedJobs(search);
+  const { isLoading, load, saved } = useSavedJobs(search);
 
   return (
     <div className="space-y-6">
@@ -31,7 +32,9 @@ export const SavedJobsPage = () => {
         </div>
       </Card>
 
-      {saved.length === 0 ? (
+      {isLoading ? (
+        <JobListSkeleton />
+      ) : saved.length === 0 ? (
         <SavedJobsEmptyState />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

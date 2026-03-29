@@ -32,6 +32,9 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refreshMe: () => Promise<Role[]>;
   isHydrating: boolean;
+  isAppTransitioning: boolean;
+  startAppTransition: () => void;
+  clearAppTransition: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [isHydrating, setIsHydrating] = useState(true);
+  const [isAppTransitioning, setIsAppTransitioning] = useState(false);
 
   const refreshMe = useCallback(async (): Promise<Role[]> => {
     try {
@@ -155,6 +159,15 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
     setUser(null);
     setRoles([]);
+    setIsAppTransitioning(false);
+  }, []);
+
+  const startAppTransition = useCallback(() => {
+    setIsAppTransitioning(true);
+  }, []);
+
+  const clearAppTransition = useCallback(() => {
+    setIsAppTransitioning(false);
   }, []);
 
   useEffect(() => {
@@ -176,8 +189,22 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       logout,
       refreshMe,
       isHydrating,
+      isAppTransitioning,
+      startAppTransition,
+      clearAppTransition,
     }),
-    [user, roles, login, logout, refreshMe, isHydrating, register],
+    [
+      clearAppTransition,
+      isAppTransitioning,
+      isHydrating,
+      login,
+      logout,
+      refreshMe,
+      register,
+      roles,
+      startAppTransition,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

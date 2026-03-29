@@ -28,6 +28,8 @@ import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
 import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { useDashboardData } from "@features/jobseeker/hooks";
+import { DashboardStatsSkeleton } from "@features/jobseeker/pages/DashboardPage/components/DashboardStatsSkeleton";
+import { SkeletonBlock } from "@shared/components/skeletons/SkeletonBlock";
 import type { DashboardLoaderData, JobseekerInterview } from "@features/jobseeker/types";
 
 const ranges: DropdownOption[] = [
@@ -42,7 +44,7 @@ const ranges: DropdownOption[] = [
 export const DashboardPage = () => {
   const { user } = useAuth();
   const initialData = useLoaderData() as DashboardLoaderData;
-  const { data, range, updateRange } = useDashboardData(initialData);
+  const { data, isLoading, range, updateRange } = useDashboardData(initialData);
   const [interviews, setInterviews] = useState<JobseekerInterview[]>([]);
   const [isLoadingInterviews, setIsLoadingInterviews] = useState(true);
 
@@ -118,6 +120,10 @@ export const DashboardPage = () => {
         ]}
       />
 
+      {isLoading ? (
+        <DashboardStatsSkeleton />
+      ) : (
+        <>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardStatCard
           label="Total Applications"
@@ -148,7 +154,6 @@ export const DashboardPage = () => {
           iconClassName="bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"
         />
       </section>
-
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
         <DashboardSectionCard
           title="Application Analytics"
@@ -199,8 +204,25 @@ export const DashboardPage = () => {
         >
           {isLoadingInterviews ? (
             <div className="space-y-3">
-              <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
-              <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
+              {Array.from({ length: 2 }, (_, index) => (
+                <div
+                  key={`upcoming-interview-skeleton-${index}`}
+                  className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <SkeletonBlock className="h-3 w-24" />
+                        <SkeletonBlock className="h-5 w-32" />
+                        <SkeletonBlock className="h-3 w-28" />
+                      </div>
+                      <SkeletonBlock className="h-5 w-18 rounded-full" />
+                    </div>
+                    <SkeletonBlock className="h-3 w-40" />
+                    <SkeletonBlock className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : upcomingInterviews.length === 0 ? (
             <DashboardEmptyState
@@ -397,6 +419,8 @@ export const DashboardPage = () => {
           )}
         </DashboardSectionCard>
       </section>
+        </>
+      )}
     </div>
   );
 };

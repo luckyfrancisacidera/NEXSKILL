@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import Skeleton from "react-loading-skeleton";
 
 import { SortableHeader } from "@shared/components/ui/data-table/SortableHeader";
 import type {
@@ -129,10 +130,7 @@ export const DataTable = <T,>({
   };
 
   const renderSkeletonCell = (columnId: string) => (
-    <div
-      key={columnId}
-      className="h-4 w-full max-w-[160px] animate-pulse rounded bg-zinc-200/80 dark:bg-zinc-800"
-    />
+    <Skeleton key={columnId} className="h-4 w-full max-w-[160px] rounded" containerClassName="block max-w-[160px]" />
   );
 
   return (
