@@ -7,7 +7,7 @@ import { SetupProvider } from '@app/providers/SetupProvider';
 import { CurrentCompanyProvider } from '@app/providers/CurrentCompanyProvider';
 import { CurrentRecruiterProvider } from '@app/providers/CurrentRecruiterProvider';
 import { NotificationsProvider } from '@app/providers/NotificationsProvider';
-import { AtsWakeLoaderSurface } from '@shared/components/AtsWakeLoaderSurface';
+import { AtsWakeLoaderSurface } from '@shared/pages/AtsWakeLoaderSurface';
 import { isAtsWakeRoute } from '@shared/config/backendWakeRoutes';
 import { useBackendWakeIndicator } from '@shared/hooks/useBackendWakeIndicator';
 import { ToastProvider } from './providers/ToastProvider';
@@ -57,7 +57,7 @@ const InitialAtsWakeGate = () => {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[120]">
+    <div className="pointer-events-none fixed inset-0 z-120">
       <AtsWakeLoaderSurface fullPage />
     </div>
   );

@@ -28,6 +28,7 @@
     "dompurify": "^3.3.3",
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.12.17",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^0.574.0",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.1",
