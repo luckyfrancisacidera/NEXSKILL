@@ -1,5 +1,6 @@
 import type { FormEvent, MouseEvent } from 'react';
 
+import { Button } from '@shared/components/Button';
 import { SideDrawer } from '@shared/components/SideDrawer';
 import { RichTextField } from '@shared/components/RichTextField';
 
@@ -170,38 +171,43 @@ export const InterviewModal = ({
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           <div>
             {showCancelInterviewAction && onCancelInterview ? (
-              <button
+              <Button
                 type="button"
-                disabled={isSubmitting || isCanceling}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
+                variant="secondary"
+                loading={isCanceling}
+                loadingText="Cancelling"
+                disabled={isSubmitting}
+                className="rounded-lg border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
                 onClick={(event) => {
                   event.stopPropagation();
                   void onCancelInterview();
                 }}
               >
-                {isCanceling ? 'Cancelling...' : 'Cancel Interview'}
-              </button>
+                Cancel Interview
+              </Button>
             ) : null}
           </div>
 
           <div className="flex justify-end gap-2">
             {secondaryActionLabel && onSecondaryAction ? (
-              <button
+              <Button
                 type="button"
                 disabled={secondaryActionDisabled || isSubmitting}
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                variant="secondary"
+                className="rounded-lg"
                 onClick={(event) => {
                   event.stopPropagation();
                   void onSecondaryAction();
                 }}
               >
                 {secondaryActionLabel}
-              </button>
+              </Button>
             ) : null}
-            <button
+            <Button
               type="button"
               disabled={isSubmitting}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              variant="secondary"
+              className="rounded-lg"
               onClick={(event) => {
                 // Stop propagation so cancel only closes the active modal.
                 event.stopPropagation();
@@ -209,14 +215,15 @@ export const InterviewModal = ({
               }}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              loading={isSubmitting}
+              loadingText="Saving"
+              className="rounded-lg"
             >
-              {isSubmitting ? 'Saving...' : submitLabel}
-            </button>
+              {submitLabel}
+            </Button>
           </div>
         </div>
       </form>

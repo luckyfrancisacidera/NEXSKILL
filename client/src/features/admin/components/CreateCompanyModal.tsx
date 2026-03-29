@@ -151,8 +151,8 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
 
           <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating company...' : 'Create company'}
+            <Button type="submit" loading={isSubmitting} loadingText="Creating company">
+              Create company
             </Button>
           </div>
         </form>

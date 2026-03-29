@@ -16,6 +16,7 @@ type DropdownProps = {
   onChange?: (e: { target: { name: string; value: string } }) => void;
   className?: string;
   buttonClassName?: string;
+  compactOnMobile?: boolean;
 };
 
 export default function Dropdown({
@@ -26,6 +27,7 @@ export default function Dropdown({
   onChange,
   className = "",
   buttonClassName = "",
+  compactOnMobile = true,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
@@ -86,7 +88,9 @@ export default function Dropdown({
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className={`flex h-11 w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-violet-600 dark:focus:ring-violet-900 ${buttonClassName}`}
+          className={`flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-violet-600 dark:focus:ring-violet-900 ${
+            compactOnMobile ? "h-10 px-3 text-[13px] sm:h-11 sm:px-3.5 sm:text-sm" : "h-11 px-3.5 text-sm"
+          } ${buttonClassName}`}
         >
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate">{selectedOption?.label}</span>
@@ -120,7 +124,9 @@ export default function Dropdown({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left ${
+                    compactOnMobile ? "text-[13px] sm:py-2.5 sm:text-sm" : "py-2.5 text-sm"
+                  } transition ${
                     isSelected
                       ? "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400"
                       : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"

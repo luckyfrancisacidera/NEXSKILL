@@ -287,7 +287,7 @@ export const DashboardPage = () => {
           contentClassName="p-0"
         >
           {hasSavedJobs ? (
-            <div className="max-h-[420px] overflow-y-auto px-4 py-4 [scrollbar-gutter:stable]">
+            <div className="max-h-105 overflow-y-auto px-4 py-4 [scrollbar-gutter:stable]">
               <div className="space-y-2.5 pr-1">
                 {data.saved_jobs.map((item) => (
                   <div

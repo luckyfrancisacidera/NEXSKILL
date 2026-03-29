@@ -187,10 +187,12 @@ export const CompanyAdminDashboardPage = () => {
           type="button"
           variant="secondary"
           className="min-w-28"
-          disabled={!canManageRecruiters || pendingUserId === recruiter.userId}
+          disabled={!canManageRecruiters}
+          loading={pendingUserId === recruiter.userId}
+          loadingText="Updating"
           onClick={() => void handleRecruiterAction(recruiter)}
         >
-          {pendingUserId === recruiter.userId ? 'Updating...' : recruiter.isActive ? 'Deactivate' : 'Activate'}
+          {recruiter.isActive ? 'Deactivate' : 'Activate'}
         </Button>
       ),
       cellClassName: 'w-[140px]',
@@ -199,7 +201,7 @@ export const CompanyAdminDashboardPage = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         <DashboardPageHeader
           eyebrow="Company Admin"
           title={data.company.name}
@@ -303,7 +305,7 @@ export const CompanyAdminDashboardPage = () => {
           </DashboardSectionCard>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">
           <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
             <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>

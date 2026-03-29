@@ -7,6 +7,7 @@ import type {
 import type { JobDto } from "@features/recruiter/types";
 import { recruiterService } from "@features/recruiter/service/recruiter.service";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
+import { Button } from "@shared/components/Button";
 import { RichTextField } from "@shared/components/RichTextField";
 import { sanitizeRichText } from "@shared/utils/richText";
 
@@ -592,22 +593,25 @@ export const InterviewSchedulerForm = ({
           </p>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             {onCancel ? (
-              <button
+              <Button
                 type="button"
-                className="w-full rounded-xl border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 sm:w-auto dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                variant="secondary"
+                className="w-full rounded-xl px-4 py-2 text-xs sm:w-auto"
                 onClick={onCancel}
                 disabled={isSubmitting}
               >
                 Cancel
-              </button>
+              </Button>
             ) : null}
-            <button
+            <Button
               type="submit"
-              className="w-full rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80 sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              disabled={isSubmitting || isLoadingJobs}
+              className="w-full rounded-xl px-4 py-2 text-xs sm:w-auto"
+              disabled={isLoadingJobs}
+              loading={isSubmitting}
+              loadingText="Scheduling"
             >
-              {isSubmitting ? "Scheduling..." : submitLabel}
-            </button>
+              {submitLabel}
+            </Button>
           </div>
         </div>
       </form>

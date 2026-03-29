@@ -36,7 +36,7 @@ export const SideDrawer = ({
     }
 
     setIsVisible(false);
-    const timeout = window.setTimeout(() => setIsMounted(false), 220);
+    const timeout = window.setTimeout(() => setIsMounted(false), 320);
     return () => window.clearTimeout(timeout);
   }, [open]);
 
@@ -86,7 +86,7 @@ export const SideDrawer = ({
         type="button"
         aria-label="Close drawer"
         className={cn(
-          "absolute inset-0 bg-zinc-950/45 backdrop-blur-[2px] transition-opacity duration-200",
+          "absolute inset-0 bg-zinc-950/45 backdrop-blur-[2px] transition-opacity duration-300 ease-out",
           isVisible ? "opacity-100" : "opacity-0",
         )}
         onClick={closeOnBackdrop ? onClose : undefined}
@@ -96,16 +96,16 @@ export const SideDrawer = ({
         aria-modal="true"
         role="dialog"
         className={cn(
-          "absolute top-0 flex h-full w-full max-w-full flex-col bg-white font-inter shadow-2xl transition-transform duration-200 dark:bg-zinc-950 sm:max-w-[92vw]",
+          "absolute top-0 flex h-full w-full max-w-full flex-col bg-white font-inter shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-zinc-950 sm:max-w-[92vw]",
           side === "right"
             ? "right-0 border-l border-zinc-200 dark:border-zinc-800"
             : "left-0 border-r border-zinc-200 dark:border-zinc-800",
           widthClassName ?? "sm:max-w-[460px]",
           isVisible
-            ? "translate-x-0"
+            ? "translate-x-0 opacity-100"
             : side === "right"
-              ? "translate-x-full"
-              : "-translate-x-full",
+              ? "translate-x-full opacity-0"
+              : "-translate-x-full opacity-0",
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-5">

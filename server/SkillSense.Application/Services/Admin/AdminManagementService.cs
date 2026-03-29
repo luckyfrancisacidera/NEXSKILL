@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using AutoMapper;
+using Microsoft.Extensions.Logging;
 using SkillSense.Application.Contracts.Admin.Request;
 using SkillSense.Application.Contracts.Admin.Response;
 using SkillSense.Application.Contracts.Auth;
@@ -24,7 +25,8 @@ public sealed class AdminManagementService(
     IAuthService authService,
     IDateTimeProvider dateTimeProvider,
     IMapper mapper,
-    UserManager<AppUser> userManager) : IAdminManagementService
+    UserManager<AppUser> userManager,
+    ILogger<AdminManagementService> logger) : IAdminManagementService
 {
     public async Task<SuperAdminDashboardResponse> GetSuperAdminDashboardAsync(
         int companiesPage,
@@ -312,6 +314,11 @@ public sealed class AdminManagementService(
         company.IsActive = isActive;
         company.UpdatedAtUtc = dateTimeProvider.UtcNow;
         await adminManagementRepository.SaveChangesAsync(ct);
+
+        logger.LogInformation(
+            "Updated company {CompanyId} active status to {IsActive}.",
+            companyId,
+            isActive);
     }
 
     private async Task SetCompanyAdminActiveStatusAsync(Guid adminUserId, bool isActive, CancellationToken ct)
@@ -345,14 +352,19 @@ public sealed class AdminManagementService(
             throw new InvalidOperationException($"User is not assigned to the {requiredRole} role.");
         }
 
-        user.LockoutEnabled = true;
-        user.LockoutEnd = isActive ? null : DateTimeOffset.MaxValue;
+        user.IsActive = isActive;
 
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
             throw new InvalidOperationException(result.Errors.FirstOrDefault()?.Description ?? $"Could not update {requiredRole} status.");
         }
+
+        logger.LogInformation(
+            "Updated {Role} account {UserId} active status to {IsActive}.",
+            requiredRole,
+            userId,
+            isActive);
     }
 
     private async Task EnsureCompanyAdminAccessAsync(Guid adminUserId, Guid companyId, CancellationToken ct)

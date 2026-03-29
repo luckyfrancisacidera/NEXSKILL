@@ -6,6 +6,7 @@ import { useAuth } from "@app/providers/AuthProvider";
 import { NotAuthorized } from "@shared/pages/NotAuthorized";
 import { NotificationsPage } from "@shared/pages/NotificationsPage";
 import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
+import { RouteNavigationFeedback } from "@shared/components/RouteNavigationFeedback";
 import { ScrollToTop } from "@shared/components/ScrollToTop";
 import { PublicOnly, RequireAuth, RequireRole, getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { routeAccess, type AppRouteKey } from "@app/routes/route.config";
@@ -100,6 +101,7 @@ type ActionOnlyRouteOptions = Omit<ProtectedRouteOptions, "element"> & {
 const withPageScroll = (element: ReactElement) => (
   <>
     <ScrollToTop />
+    <RouteNavigationFeedback />
     {element}
   </>
 );

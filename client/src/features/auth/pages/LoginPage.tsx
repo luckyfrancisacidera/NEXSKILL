@@ -11,6 +11,7 @@ import { getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { ApiError } from "@shared/api/http";
+import { Button } from "@shared/components/Button";
 import { Checkbox } from "@shared/components/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 
@@ -23,6 +24,7 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
 
   const openRegister = () => {
@@ -34,6 +36,7 @@ const LoginPage = () => {
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+    setIsSubmitting(true);
 
     try {
       const userRoles = await login(email.trim(), password, rememberMe);
@@ -55,6 +58,8 @@ const LoginPage = () => {
       }
 
       setError("Invalid email or password.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -84,15 +89,15 @@ const LoginPage = () => {
       </div>
 
       {/* Right panel */}
-      <div className="scrollbar-thin-stable flex min-h-screen overflow-y-auto bg-zinc-800 p-4 sm:p-6 md:items-center md:justify-center md:p-8">
-        <AuthRouteTransition className="my-auto w-full max-w-md lg:max-w-lg xl:max-w-xl">
-          <div className="min-h-0 py-4 md:min-h-124 md:py-0">
+      <div className="scrollbar-thin-stable flex min-h-screen items-center justify-center overflow-y-auto bg-zinc-800 p-6 sm:p-8">
+        <AuthRouteTransition className="w-full max-w-md">
+          <div className="py-4">
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-wider text-white">
                 Welcome back
               </h1>
               <p className="mt-2 text-sm text-zinc-400">
-                Let&apos;s get you back to learning
+                Let's get you back to work
               </p>
             </div>
 
@@ -166,9 +171,14 @@ const LoginPage = () => {
               </div>
 
               <div className="flex flex-col gap-4 w-full pt-1">
-                <button className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  loadingText="Signing in"
+                  className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 hover:bg-zinc-200 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
+                >
                   Sign in
-                </button>
+                </Button>
 
                 <div className="flex items-center gap-4 py-1 w-full">
                   <div className="flex-1 bg-zinc-700 h-px"></div>

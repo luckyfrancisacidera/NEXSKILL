@@ -106,14 +106,18 @@ public static class DatabaseStartupExtensions
 
             foreach (var user in users)
             {
+                if (!IdentitySeeder.IsLegacySeedUser(user))
+                {
+                    continue;
+                }
+
                 var verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash!, IdentitySeeder.LegacyDefaultPassword);
                 if (verificationResult == PasswordVerificationResult.Failed)
                 {
                     continue;
                 }
 
-                user.LockoutEnabled = true;
-                user.LockoutEnd = DateTimeOffset.MaxValue;
+                user.IsActive = false;
                 await userManager.UpdateSecurityStampAsync(user);
 
                 var updateResult = await userManager.UpdateAsync(user);
@@ -126,7 +130,10 @@ public static class DatabaseStartupExtensions
                     continue;
                 }
 
-                logger.LogWarning("Locked account {Email} because it still used the legacy default password.", user.Email);
+                logger.LogWarning(
+                    "Deactivated legacy seeded account {Email} ({UserId}) because it still used the legacy default password.",
+                    user.Email,
+                    user.Id);
             }
 
             var bootstrapSuperAdmin = await EnsureBootstrapUserAsync(
@@ -216,10 +223,10 @@ public static class DatabaseStartupExtensions
                 NormalizedEmail = normalizedEmail.ToUpperInvariant(),
                 NormalizedUserName = normalizedEmail.ToUpperInvariant(),
                 EmailConfirmed = true,
+                IsActive = true,
                 FirstName = firstName,
                 LastName = lastName,
-                LockoutEnabled = false,
-                LockoutEnd = null,
+                LockoutEnabled = true,
             };
 
             var createResult = await userManager.CreateAsync(bootstrapUser, password);
@@ -256,8 +263,7 @@ public static class DatabaseStartupExtensions
             }
 
             bootstrapUser.EmailConfirmed = true;
-            bootstrapUser.LockoutEnabled = false;
-            bootstrapUser.LockoutEnd = null;
+            bootstrapUser.IsActive = true;
             bootstrapUser.FirstName = firstName;
             bootstrapUser.LastName = lastName;
 

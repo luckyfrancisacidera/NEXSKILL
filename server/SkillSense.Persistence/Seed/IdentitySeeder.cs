@@ -34,6 +34,15 @@ public static class IdentitySeeder
     public static IReadOnlyList<(Guid Id, string Email, string RoleName)> LegacySeedUsers =>
         Users.Select(user => (user.Id, user.Email, user.RoleName)).ToArray();
 
+    public static bool IsLegacySeedUser(AppUser user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        return Users.Any(seedUser =>
+            seedUser.Id == user.Id ||
+            string.Equals(seedUser.Email, user.Email, StringComparison.OrdinalIgnoreCase));
+    }
+
     public static async Task SeedAsync(
         UserManager<AppUser> userManager,
         RoleManager<IdentityRole<Guid>> roleManager,
@@ -105,6 +114,8 @@ public static class IdentitySeeder
             Email = seedUser.Email,
             NormalizedEmail = seedUser.Email.ToUpperInvariant(),
             EmailConfirmed = true,
+            IsActive = true,
+            LockoutEnabled = true,
         };
 
         var result = await userManager.CreateAsync(user, password);

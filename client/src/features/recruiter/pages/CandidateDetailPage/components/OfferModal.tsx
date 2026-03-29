@@ -4,6 +4,7 @@ import { BriefcaseBusiness, CalendarDays, CircleDollarSign, Clock3, MessageSquar
 
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import { recruiterInputClassName } from '@features/recruiter/components/recruiterForm.shared';
+import { Button } from '@shared/components/Button';
 import { ModalOverlay } from '@shared/components/ModalOverlay';
 import { PredictiveInput } from '@shared/components/PredictiveInput';
 import { RichTextField } from '@shared/components/RichTextField';
@@ -366,23 +367,25 @@ export const OfferModal = ({
 
         <div className="border-t border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5 lg:px-6 dark:border-zinc-700 dark:bg-zinc-900/95">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
+            <Button
               type="button"
-              className="rounded-2xl border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              variant="secondary"
+              className="rounded-2xl px-4 py-2.5"
               onClick={(event) => {
                 event.stopPropagation();
                 onClose();
               }}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              loading={isSubmitting}
+              loadingText="Sending"
+              className="rounded-2xl px-4 py-2.5"
             >
-              {isSubmitting ? 'Sending...' : 'Send Offer'}
-            </button>
+              Send Offer
+            </Button>
           </div>
         </div>
       </form>
