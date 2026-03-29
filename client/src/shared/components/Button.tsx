@@ -19,7 +19,7 @@ export const Button = ({
 }: ButtonProps) => (
   <button
     className={cn(
-      'relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-60',
+      'relative inline-flex min-h-[2.125rem] items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-9 sm:px-3.5 sm:py-2 sm:text-sm',
       variant === 'primary'
         ? 'bg-zinc-900 text-zinc-50 hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'
         : 'border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800',
@@ -34,7 +34,7 @@ export const Button = ({
     </span>
     {loading ? (
       <span className="absolute inset-0 inline-flex items-center justify-center gap-2">
-        <LoaderCircle className="h-4 w-4 animate-spin" />
+        <LoaderCircle className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
         {loadingText ? <span>{loadingText}</span> : null}
       </span>
     ) : null}

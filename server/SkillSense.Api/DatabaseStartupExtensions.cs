@@ -226,7 +226,7 @@ public static class DatabaseStartupExtensions
                 IsActive = true,
                 FirstName = firstName,
                 LastName = lastName,
-                LockoutEnabled = true,
+                LockoutEnabled = false,
             };
 
             var createResult = await userManager.CreateAsync(bootstrapUser, password);
@@ -264,6 +264,7 @@ public static class DatabaseStartupExtensions
 
             bootstrapUser.EmailConfirmed = true;
             bootstrapUser.IsActive = true;
+            bootstrapUser.LockoutEnabled = false;
             bootstrapUser.FirstName = firstName;
             bootstrapUser.LastName = lastName;
 

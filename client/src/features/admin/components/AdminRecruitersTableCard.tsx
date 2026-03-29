@@ -3,6 +3,7 @@ import { Button } from '@shared/components/Button';
 import { DataTable } from '@shared/components/ui/data-table/DataTable';
 import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
 import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
+import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
 import { AdminStatusBadge } from '@features/admin/components/AdminStatusBadge';
 import type { AdminRecruiterOverviewDto, Paged } from '@features/admin/types/admin.type';
 
@@ -24,12 +25,15 @@ export const AdminRecruitersTableCard = ({
   onPageSizeChange,
 }: AdminRecruitersTableCardProps) => (
   <section className="min-w-0 border-y border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-    <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div>
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-6">
+      <div className="min-w-0 flex-1">
         <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Accounts</h2>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-200">Paginated recruiter roster across all companies.</p>
       </div>
-      <Badge>{recruiters.totalCount} total</Badge>
+      <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+        <Badge>{recruiters.totalCount} total</Badge>
+        <TablePageSizeControl value={recruiters.pageSize} onChange={(pageSize) => onPageSizeChange(String(pageSize))} />
+      </div>
     </div>
     <DataTable
       data={recruiters.items}
@@ -101,9 +105,9 @@ export const AdminRecruitersTableCard = ({
       totalCount={recruiters.totalCount}
       pageSize={recruiters.pageSize}
       getPageHref={getPageHref}
-      onPageSizeChange={(pageSize) => onPageSizeChange(String(pageSize))}
       itemLabel="recruiters"
       className="px-4 sm:px-6"
+      showPageSizeSelector={false}
     />
   </section>
 );

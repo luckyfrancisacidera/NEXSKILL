@@ -69,7 +69,7 @@ const CompactDetailChip = ({
   label: string;
   value: string;
 }) => (
-  <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+  <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium leading-4 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 sm:px-2.5 sm:py-1 sm:text-[11px]">
     <span className="text-zinc-400 dark:text-zinc-500">{label}</span>
     <span className="truncate text-zinc-700 dark:text-zinc-200">{value}</span>
   </span>
@@ -128,145 +128,122 @@ export const OfferPipelineCard = ({
   const actions = getJobseekerListActions(item.currentStage, "offers");
 
   return (
-    <Card className="rounded-[22px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
-      <div className="space-y-3">
-      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2
-              className="max-w-full truncate text-[15px] font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base md:text-lg"
-              title={item.jobTitle}
-            >
-              {item.jobTitle}
-            </h2>
-            <StatusBadge status={item.currentStage} />
-            {item.offer ? <StatusBadge status={item.offer.status} label={resolveOfferStatusBadgeLabel(item.offer.status)} /> : null}
+    <Card className="rounded-[20px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
+      <div className="space-y-3 sm:space-y-3.5">
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <h2
+                className="max-w-full truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 sm:text-base md:text-lg"
+                title={item.jobTitle}
+              >
+                {item.jobTitle}
+              </h2>
+              <StatusBadge status={item.currentStage} />
+              {item.offer ? <StatusBadge status={item.offer.status} label={resolveOfferStatusBadgeLabel(item.offer.status)} /> : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
+              <span className="max-w-full truncate font-medium text-zinc-700 dark:text-zinc-300" title={item.companyName}>
+                {item.companyName}
+              </span>
+              <span className="hidden text-zinc-300 dark:text-zinc-700 md:inline">•</span>
+              <span className="truncate">Recruiter: {item.recruiterName}</span>
+              <span className="hidden text-zinc-300 dark:text-zinc-700 md:inline">•</span>
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                Applied {formatDate(item.createdAtUtc)}
+              </span>
+            </div>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-            <span className="max-w-full truncate font-medium text-zinc-700 dark:text-zinc-300" title={item.companyName}>
-              {item.companyName}
-            </span>
-            <span className="hidden text-zinc-300 dark:text-zinc-700 md:inline">•</span>
-            <span className="truncate">
-              Recruiter: {item.recruiterName}
-            </span>
-            <span className="hidden text-zinc-300 dark:text-zinc-700 md:inline">•</span>
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Applied {formatDate(item.createdAtUtc)}
-            </span>
+          <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:max-w-[42%] lg:justify-end">
+            {item.hasOffer ? <Badge>Offer flow</Badge> : null}
+            {item.updatedAtUtc ? (
+              <CompactDetailChip label="Updated" value={formatDate(item.updatedAtUtc) ?? "Recently"} />
+            ) : null}
+            {item.recruiterEmail ? (
+              <CompactDetailChip label="Contact" value={item.recruiterEmail} />
+            ) : null}
           </div>
         </div>
-        <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 md:justify-end">
-          {item.hasOffer ? (
-            <Badge>Offer flow</Badge>
-          ) : null}
-          {item.updatedAtUtc ? (
-            <CompactDetailChip label="Updated" value={formatDate(item.updatedAtUtc) ?? "Recently"} />
-          ) : null}
-          {item.recruiterEmail ? (
-            <CompactDetailChip label="Contact" value={item.recruiterEmail} />
-          ) : null}
-        </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <CompactDetailChip label="Stage" value={item.currentStage} />
-        <CompactDetailChip
-          label="Salary"
-          value={item.offer?.salary_text?.trim() || "Not specified"}
-        />
-        {item.offer?.work_setup ? (
-          <CompactDetailChip label="Setup" value={item.offer.work_setup} />
-        ) : null}
-        <CompactDetailChip
-          label="Start"
-          value={formatDate(item.offer?.start_date) || "Not specified"}
-        />
-        {item.offer?.end_date ? (
-          <CompactDetailChip
-            label="End"
-            value={formatDate(item.offer.end_date) || "Not specified"}
-          />
-        ) : null}
-        <CompactDetailChip
-          label="Type"
-          value={item.offer?.employment_type?.trim() || "Not specified"}
-        />
-        {item.offer?.expiration_date ? (
-          <CompactDetailChip
-            label="Offer Expires"
-            value={formatDate(item.offer.expiration_date) || "Not specified"}
-          />
-        ) : null}
-      </div>
-
-      <div className="rounded-[20px] border border-zinc-200 bg-zinc-50 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/70">
-        <OfferStageTimeline
-          activeStage={item.currentStage}
-          stageDates={buildTimelineDates(item)}
-        />
-      </div>
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            {resolveStatusMessage(item)}
-          </p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">{resolveNextAction(item)}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          {item.offer ? (
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isActing}
-              className="w-full sm:w-auto"
-              onClick={() => onViewOffer(item)}
-            >
-              View Offer
-            </Button>
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <CompactDetailChip label="Stage" value={item.currentStage} />
+          <CompactDetailChip label="Salary" value={item.offer?.salary_text?.trim() || "Not specified"} />
+          {item.offer?.work_setup ? <CompactDetailChip label="Setup" value={item.offer.work_setup} /> : null}
+          <CompactDetailChip label="Start" value={formatDate(item.offer?.start_date) || "Not specified"} />
+          {item.offer?.end_date ? (
+            <CompactDetailChip label="End" value={formatDate(item.offer.end_date) || "Not specified"} />
           ) : null}
-          {item.jobId ? (
-            <Link
-              to={`/jobs/${item.jobId}`}
-              title="View job"
-              aria-label="View job"
-              className={actionButtonClassName({ iconOnly: true })}
-            >
-              <Eye className="h-4 w-4" />
-              <span className="sr-only">View job</span>
-            </Link>
-          ) : null}
-          {actions.includes("delete_history") ? (
-            <ActionButton
-              icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              label="Delete history"
-              destructive
-              iconOnly
-              disabled={isDeletingHistory || isActing}
-              onClick={() => onDeleteHistory(item.id)}
+          <CompactDetailChip label="Type" value={item.offer?.employment_type?.trim() || "Not specified"} />
+          {item.offer?.expiration_date ? (
+            <CompactDetailChip
+              label="Offer Expires"
+              value={formatDate(item.offer.expiration_date) || "Not specified"}
             />
           ) : null}
-          {item.legacyHint ? (
-            <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-              <p className="flex items-center gap-1.5 font-semibold">
-                <Sparkles className="h-3.5 w-3.5" /> Legacy fallback in use
-              </p>
-              <p className="mt-1 leading-5">{item.legacyHint}</p>
-            </div>
-          ) : null}
-          {item.recruiterEmail ? (
-            <a
-              href={`mailto:${item.recruiterEmail}`}
-              className="inline-flex w-full items-center gap-1.5 text-xs text-zinc-500 transition hover:text-zinc-800 sm:w-auto dark:text-zinc-400 dark:hover:text-zinc-200"
-            >
-              <Mail className="h-3.5 w-3.5" />
-              Contact recruiter
-            </a>
-          ) : null}
         </div>
-      </div>
+
+        <div className="rounded-[18px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/70 sm:px-3 sm:py-3">
+          <OfferStageTimeline activeStage={item.currentStage} stageDates={buildTimelineDates(item)} />
+        </div>
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{resolveStatusMessage(item)}</p>
+            <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-300 sm:text-sm">{resolveNextAction(item)}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            {item.offer ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isActing}
+                className="h-9 w-full px-3 text-xs sm:w-auto sm:text-sm"
+                onClick={() => onViewOffer(item)}
+              >
+                View Offer
+              </Button>
+            ) : null}
+            {item.jobId ? (
+              <Link
+                to={`/jobs/${item.jobId}`}
+                title="View job"
+                aria-label="View job"
+                className={actionButtonClassName({ iconOnly: true })}
+              >
+                <Eye className="h-4 w-4" />
+                <span className="sr-only">View job</span>
+              </Link>
+            ) : null}
+            {actions.includes("delete_history") ? (
+              <ActionButton
+                icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                label="Delete history"
+                destructive
+                iconOnly
+                disabled={isDeletingHistory || isActing}
+                onClick={() => onDeleteHistory(item.id)}
+              />
+            ) : null}
+            {item.legacyHint ? (
+              <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 sm:text-xs">
+                <p className="flex items-center gap-1.5 font-semibold">
+                  <Sparkles className="h-3.5 w-3.5" /> Legacy fallback in use
+                </p>
+                <p className="mt-1 leading-5">{item.legacyHint}</p>
+              </div>
+            ) : null}
+            {item.recruiterEmail ? (
+              <a
+                href={`mailto:${item.recruiterEmail}`}
+                className="inline-flex w-full items-center gap-1.5 text-[11px] text-zinc-500 transition hover:text-zinc-800 sm:w-auto sm:text-xs dark:text-zinc-400 dark:hover:text-zinc-200"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                Contact recruiter
+              </a>
+            ) : null}
+          </div>
+        </div>
       </div>
     </Card>
   );

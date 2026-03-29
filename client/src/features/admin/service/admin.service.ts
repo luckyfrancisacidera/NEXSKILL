@@ -7,6 +7,7 @@ import type {
   CreateCompanyAccountPayload,
   CreateManagedRecruiterPayload,
   SuperAdminDashboardDto,
+  SuperAdminUsersPageDto,
 } from '@features/admin/types/admin.type';
 
 export const adminService = {
@@ -24,6 +25,13 @@ export const adminService = {
 
   async getCompanyAdminDashboard(params: { page: number; pageSize: number }): Promise<CompanyAdminDashboardDto> {
     const response = await http.get<CompanyAdminDashboardDto>('/api/admin/company/dashboard', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getSuperAdminUsers(params: { page: number; pageSize: number }): Promise<SuperAdminUsersPageDto> {
+    const response = await http.get<SuperAdminUsersPageDto>('/api/admin/super/users', {
       params,
     });
     return response.data;
@@ -73,6 +81,14 @@ export const adminService = {
 
   async deactivateRecruiterBySuperAdmin(recruiterUserId: string) {
     await http.post(`/api/admin/super/recruiters/${recruiterUserId}/deactivate`);
+  },
+
+  async activateUser(userId: string) {
+    await http.post(`/api/admin/super/users/${userId}/activate`);
+  },
+
+  async deactivateUser(userId: string) {
+    await http.post(`/api/admin/super/users/${userId}/deactivate`);
   },
 
   async createCompanyRecruiter(payload: CreateManagedRecruiterPayload) {

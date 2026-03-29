@@ -26,6 +26,7 @@ import { canShortlistCandidate, getShortlistWarningMessage } from '@features/rec
 import { Card } from '@shared/components/Card';
 import { EmptyState } from '@shared/components/EmptyState';
 import type { DropdownOption } from '@shared/components/Dropdown';
+import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
 import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 
@@ -390,18 +391,26 @@ export const CandidatesPage = () => {
       </section>
 
       <section className="mt-4 min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex flex-col gap-3 border-b border-zinc-200 px-3 py-4 dark:border-zinc-800 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-          <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-            ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
-          </p>
-          <BulkActionsBar
-            actions={bulkActions}
-            selectedCount={selectedIdsOnPage.length}
-            isSubmittingAction={isSubmittingAction}
-            onQueueAction={(action) => {
-              void queueBulkAction(action);
-            }}
-          />
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-3 py-4 dark:border-zinc-800 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
+            </p>
+          </div>
+          <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+            <BulkActionsBar
+              actions={bulkActions}
+              selectedCount={selectedIdsOnPage.length}
+              isSubmittingAction={isSubmittingAction}
+              onQueueAction={(action) => {
+                void queueBulkAction(action);
+              }}
+            />
+            <TablePageSizeControl
+              value={pagination.pageSize}
+              onChange={(pageSize) => navigate(buildCandidateQuery({ ...normalizedFilters, pageSize: String(pageSize) }, 1))}
+            />
+          </div>
         </div>
 
         {isLoadingList ? (
@@ -446,6 +455,7 @@ export const CandidatesPage = () => {
             pageSize={pagination.pageSize}
             itemLabel="candidates"
             getPageHref={(page) => buildCandidateQuery(normalizedFilters, page)}
+            showPageSizeSelector={false}
           />
         ) : null}
       </section>

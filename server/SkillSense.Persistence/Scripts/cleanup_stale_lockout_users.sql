@@ -1,4 +1,5 @@
--- Review first:
+-- Review suspicious legacy lockout rows first. This script does NOT use
+-- LockoutEnd to infer business inactivity.
 SELECT
     "Id",
     "Email",
@@ -10,12 +11,12 @@ FROM users
 WHERE "LockoutEnd" >= TIMESTAMPTZ '9999-01-01 00:00:00+00'
 ORDER BY "Email";
 
--- Reactivate accounts that were unintentionally marked inactive by the old
--- LockoutEnd-based activation logic. Keep the WHERE clause targeted if you
--- need to exclude intentionally deactivated accounts.
+-- Optional cleanup for suspicious legacy security lockouts. This only clears
+-- the security lockout fields and preserves business status in IsActive.
 UPDATE users
 SET
-    "IsActive" = TRUE,
     "LockoutEnd" = NULL,
     "AccessFailedCount" = 0
-WHERE "LockoutEnd" >= TIMESTAMPTZ '9999-01-01 00:00:00+00';
+WHERE "LockoutEnabled" = TRUE
+  AND "IsActive" = TRUE
+  AND "LockoutEnd" >= TIMESTAMPTZ '9999-01-01 00:00:00+00';

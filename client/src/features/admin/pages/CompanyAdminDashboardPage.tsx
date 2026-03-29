@@ -18,6 +18,7 @@ import {
 import { DataTable } from '@shared/components/ui/data-table/DataTable';
 import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
 import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
+import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
 import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
@@ -40,6 +41,11 @@ const getStatusClassName = (isActive: boolean) =>
 
 const getRecruiterScore = (recruiter: AdminRecruiterOverviewDto) =>
   recruiter.totalHires * 100 + recruiter.activeJobs * 10 + recruiter.upcomingInterviews;
+const getEmailDisplayName = (email: string) =>
+  email
+    .split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (value) => value.toUpperCase());
 
 export const CompanyAdminDashboardPage = () => {
   const data = useLoaderData() as CompanyAdminDashboardDto;
@@ -271,10 +277,11 @@ export const CompanyAdminDashboardPage = () => {
                   <DashboardRankItem
                     key={recruiter.userId}
                     rank={index + 1}
-                    avatar={<Avatar name={recruiter.email} />}
-                    title={recruiter.email}
-                    subtitle={`Joined ${dateFormatter.format(new Date(recruiter.createdAtUtc))}`}
+                    avatar={<Avatar name={recruiter.email} email={recruiter.email} className="h-9 w-9 sm:h-10 sm:w-10" />}
+                    title={getEmailDisplayName(recruiter.email)}
+                    subtitle={recruiter.email}
                     meta={[
+                      `Joined ${dateFormatter.format(new Date(recruiter.createdAtUtc))}`,
                       `${recruiter.totalHires} hires`,
                       `${recruiter.activeJobs}/${recruiter.totalJobs} jobs`,
                       `${recruiter.upcomingInterviews} interviews`,
@@ -307,12 +314,18 @@ export const CompanyAdminDashboardPage = () => {
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-6">
           <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-6">
+              <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100">Recruiter Management</h2>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Create recruiter accounts and monitor team activity at a glance.</p>
               </div>
-              <Badge>{data.recruiters.totalCount} recruiters</Badge>
+              <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                <Badge>{data.recruiters.totalCount} recruiters</Badge>
+                <TablePageSizeControl
+                  value={data.recruiters.pageSize}
+                  onChange={(pageSize) => navigate(buildQuery({ page: '1', pageSize: String(pageSize) }))}
+                />
+              </div>
             </div>
             <DataTable
               data={data.recruiters.items}
@@ -326,9 +339,9 @@ export const CompanyAdminDashboardPage = () => {
               totalCount={data.recruiters.totalCount}
               pageSize={data.recruiters.pageSize}
               getPageHref={(page) => buildQuery({ page: String(page) })}
-              onPageSizeChange={(pageSize) => navigate(buildQuery({ page: '1', pageSize: String(pageSize) }))}
               itemLabel="recruiters"
               className="px-4 sm:px-6"
+              showPageSizeSelector={false}
             />
           </Card>
 

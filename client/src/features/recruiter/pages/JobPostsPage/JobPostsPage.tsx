@@ -21,6 +21,7 @@ import {
 } from '@features/recruiter/utils/jobMutationSync';
 import { EmptyState } from '@shared/components/EmptyState';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
+import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
 import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -280,6 +281,17 @@ export const JobPostsPage = () => {
         </section>
 
         <section className="min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-6">
+          <div className="min-w-0 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
+            {loaderData.total} total job posts
+          </div>
+          <TablePageSizeControl
+            value={loaderData.pageSize}
+            onChange={(pageSize) => {
+              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize: String(pageSize), page: '1' })}`);
+            }}
+          />
+        </div>
 
         {isLoadingList ? (
           <JobListSkeleton />
@@ -331,11 +343,9 @@ export const JobPostsPage = () => {
             totalPages={pageCount}
             totalCount={loaderData.total}
             pageSize={loaderData.pageSize}
-            onPageSizeChange={(pageSize) => {
-              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize: String(pageSize), page: '1' })}`);
-            }}
             itemLabel="jobs"
             getPageHref={(page) => `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { page: String(page) })}`}
+            showPageSizeSelector={false}
           />
         ) : null}
         </section>

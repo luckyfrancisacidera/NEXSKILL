@@ -19,8 +19,8 @@ namespace SkillSense.Persistence.Migrations
 
             migrationBuilder.Sql("""
                 UPDATE users
-                SET "IsActive" = FALSE
-                WHERE "LockoutEnd" >= TIMESTAMPTZ '9999-01-01 00:00:00+00';
+                SET "IsActive" = TRUE
+                WHERE "IsActive" IS DISTINCT FROM TRUE;
                 """);
         }
 

@@ -20,7 +20,7 @@ export interface ActionButtonProps
 }
 
 const neutralBaseClassName =
-  'inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:border-zinc-600 hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-medium text-zinc-100 shadow-sm transition hover:border-zinc-600 hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[2.125rem] sm:px-3 sm:py-2 sm:text-sm';
 
 const destructiveClassName =
   'border-rose-700 dark:bg-rose-950/60 bg-rose-100 dark:text-rose-200 text-rose-500 hover:border-rose-600 hover:bg-rose-400/70 focus-visible:ring-rose-500';
@@ -33,8 +33,8 @@ export const actionButtonClassName = ({
   cn(
     neutralBaseClassName,
     destructive && destructiveClassName,
-    iconOnly && 'h-10 w-10 px-0',
-    fullWidth && 'flex w-full px-4 py-3 text-base font-semibold',
+    iconOnly && 'h-8 w-8 px-0 sm:h-9 sm:w-9',
+    fullWidth && 'flex w-full px-3 py-2 text-sm font-semibold sm:px-4 sm:py-2.5',
   );
 
 export const ActionButton = ({
@@ -82,7 +82,7 @@ export const ActionButton = ({
       </span>
       {loading ? (
         <span className="absolute inset-0 inline-flex items-center justify-center gap-2">
-          <LoaderCircle className="h-4 w-4 animate-spin" />
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
           {!iconOnly ? <span>{loadingLabel ?? accessibleLabel ?? 'Loading'}</span> : null}
         </span>
       ) : null}

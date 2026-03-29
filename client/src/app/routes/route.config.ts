@@ -15,6 +15,7 @@ export type AppRouteKey =
   | "superAdminDashboard"
   | "superAdminCompanyAdmins"
   | "superAdminRecruiters"
+  | "superAdminUsers"
   | "companyAdminDashboard"
   | "companyAdminEmployees"
   | "companyAdminCandidates";
@@ -34,6 +35,7 @@ export const routeAccess: Record<AppRouteKey, Role[]> = {
   superAdminDashboard: ["admin", "superAdmin"],
   superAdminCompanyAdmins: ["admin", "superAdmin"],
   superAdminRecruiters: ["admin", "superAdmin"],
+  superAdminUsers: ["admin", "superAdmin"],
   companyAdminDashboard: ["companyAdmin"],
   companyAdminEmployees: ["companyAdmin"],
   companyAdminCandidates: ["companyAdmin"],

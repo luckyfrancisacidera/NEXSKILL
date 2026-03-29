@@ -12,6 +12,7 @@ import type {
   JobseekerInterview,
 } from "@features/jobseeker/types";
 import { Card } from "@shared/components/Card";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
 
 import {
@@ -240,8 +241,8 @@ export const OffersPage = () => {
           </div>
         </div>
 
-      <Card className="rounded-3xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 md:p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_180px]">
+      <Card className="rounded-[24px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
+        <div className="grid gap-3 sm:gap-3.5 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_160px]">
           <div className="md:col-span-2 xl:col-span-1">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
               Search
@@ -282,20 +283,17 @@ export const OffersPage = () => {
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
               Page size
             </label>
-            <select
+            <TablePageSizeControl
               value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
+              options={[5, 10, 20]}
+              label="Rows"
+              className="w-full justify-between"
+              selectClassName="min-w-0"
+              onChange={(value) => {
+                setPageSize(value);
                 setPageNumber(1);
               }}
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-            >
-              {[5, 10, 20].map((option) => (
-                <option key={option} value={option}>
-                  {option} per page
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
       </Card>
@@ -335,7 +333,7 @@ export const OffersPage = () => {
         </Card>
       ) : (
         <>
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 sm:space-y-3">
             {cards.map((item) => (
               <OfferPipelineCard
                 key={item.id}
@@ -362,6 +360,7 @@ export const OffersPage = () => {
               setPageSize(value);
               setPageNumber(1);
             }}
+            pageSizeOptions={[5, 10, 20]}
             itemLabel="applications"
           />
         </>

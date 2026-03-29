@@ -87,6 +87,52 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
         };
     }
 
+    public async Task<SuperAdminUsersPageData> GetSuperAdminUsersAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        var jobSeekerUserIds = GetExclusiveJobSeekerUserIdsQuery();
+        var usersQuery = dbContext.Users
+            .AsNoTracking()
+            .Where(user => jobSeekerUserIds.Contains(user.Id))
+            .Select(user => new AdminUserOverviewData
+            {
+                UserId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileFullName = dbContext.JobSeekerProfiles
+                    .Where(profile => profile.UserId == user.Id)
+                    .Select(profile => profile.FullName)
+                    .FirstOrDefault(),
+                Email = user.Email ?? string.Empty,
+                Role = "JobSeeker",
+                IsActive = user.IsActive,
+                ApplicationCount = dbContext.ResumeSubmissions.Count(submission => submission.JobSeekerUserId == user.Id),
+                JoinedAtUtc =
+                    dbContext.JobSeekerProfiles
+                        .Where(profile => profile.UserId == user.Id)
+                        .Select(profile => (DateTime?)profile.CreatedAtUtc)
+                        .FirstOrDefault()
+                    ?? DateTime.UnixEpoch,
+            })
+            .OrderByDescending(user => user.JoinedAtUtc)
+            .ThenBy(user => user.Email);
+
+        return new SuperAdminUsersPageData
+        {
+            TotalCompanies = await dbContext.Companies.CountAsync(ct),
+            ActiveCompanies = await dbContext.Companies.CountAsync(company => company.IsActive, ct),
+            TotalRecruiters = await dbContext.RecruiterProfiles.CountAsync(ct),
+            ActiveRecruiters = await dbContext.RecruiterProfiles
+                .Join(dbContext.Users, profile => profile.UserId, user => user.Id, (_, user) => user)
+                .CountAsync(user => user.IsActive, ct),
+            TotalJobs = await dbContext.Jobs.CountAsync(ct),
+            ActiveJobs = await dbContext.Jobs.CountAsync(job => job.Status == JobStatus.Published, ct),
+            Users = await CreatePagedDataAsync(usersQuery, pageNumber, pageSize, ct),
+        };
+    }
+
     public async Task<CompanyAdminDashboardData?> GetCompanyAdminDashboardAsync(
         Guid companyId,
         int pageNumber,
@@ -333,6 +379,32 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
             .FirstOrDefaultAsync(ct);
     }
 
+    public Task<AdminUserOverviewData?> GetUserOverviewByUserIdAsync(Guid userId, CancellationToken ct = default)
+        => dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Id == userId && GetExclusiveJobSeekerUserIdsQuery().Contains(user.Id))
+            .Select(user => new AdminUserOverviewData
+            {
+                UserId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                ProfileFullName = dbContext.JobSeekerProfiles
+                    .Where(profile => profile.UserId == user.Id)
+                    .Select(profile => profile.FullName)
+                    .FirstOrDefault(),
+                Email = user.Email ?? string.Empty,
+                Role = "JobSeeker",
+                IsActive = user.IsActive,
+                ApplicationCount = dbContext.ResumeSubmissions.Count(submission => submission.JobSeekerUserId == user.Id),
+                JoinedAtUtc =
+                    dbContext.JobSeekerProfiles
+                        .Where(profile => profile.UserId == user.Id)
+                        .Select(profile => (DateTime?)profile.CreatedAtUtc)
+                        .FirstOrDefault()
+                    ?? DateTime.UnixEpoch,
+            })
+            .FirstOrDefaultAsync(ct);
+
     public Task<CompanyEntity?> GetCompanyByIdAsync(Guid companyId, CancellationToken ct = default)
         => dbContext.Companies.FirstOrDefaultAsync(company => company.Id == companyId, ct);
 
@@ -347,6 +419,26 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => dbContext.SaveChangesAsync(ct);
+
+    private IQueryable<Guid> GetExclusiveJobSeekerUserIdsQuery()
+        => GetUserIdsInRoleQuery("JobSeeker")
+            .Except(
+                GetUserIdsInRoleQuery("Recruiter")
+                    .Concat(GetUserIdsInRoleQuery("CompanyAdmin"))
+                    .Concat(GetUserIdsInRoleQuery("Admin"))
+                    .Concat(GetUserIdsInRoleQuery("SuperAdmin")));
+
+    private IQueryable<Guid> GetUserIdsInRoleQuery(string roleName)
+        => dbContext.UserRoles
+            .AsNoTracking()
+            .Join(
+                dbContext.Roles
+                    .AsNoTracking()
+                    .Where(role => role.Name == roleName),
+                userRole => userRole.RoleId,
+                role => role.Id,
+                (userRole, _) => userRole.UserId)
+            .Distinct();
 
     private static async Task<PagedData<T>> CreatePagedDataAsync<T>(IQueryable<T> query, int pageNumber, int pageSize, CancellationToken ct)
     {

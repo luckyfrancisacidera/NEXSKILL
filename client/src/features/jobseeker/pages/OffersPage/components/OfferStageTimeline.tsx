@@ -36,7 +36,7 @@ export const OfferStageTimeline = ({
 
   return (
     <div className="overflow-x-auto pb-1 [scrollbar-width:thin]">
-      <div className="flex min-w-max items-stretch gap-2.5 snap-x snap-mandatory scroll-smooth">
+      <div className="flex min-w-max items-stretch gap-1.5 snap-x snap-mandatory scroll-smooth sm:gap-2 md:gap-2.5">
         {timelineStages.map((stage, index) => {
           const isComplete = index <= activeIndex;
           const isCurrent = index === activeIndex;
@@ -53,10 +53,10 @@ export const OfferStageTimeline = ({
                 : "Pending";
 
           return (
-            <div key={stage} className="flex shrink-0 items-center gap-2">
+            <div key={stage} className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div
                 className={[
-                  "min-w-[140px] snap-start rounded-2xl border px-3 py-2.5 transition",
+                  "min-w-[112px] snap-start rounded-xl border px-2 py-2 transition sm:min-w-[128px] sm:px-2.5 sm:py-2.5 md:min-w-[140px] md:rounded-2xl md:px-3",
                   isCurrent
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950"
                     : isComplete
@@ -67,7 +67,7 @@ export const OfferStageTimeline = ({
                 <div className="flex items-center gap-2">
                   <span
                     className={[
-                      "flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition",
+                      "flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold transition sm:h-6 sm:w-6 sm:text-[11px] md:h-7 md:w-7",
                       isCurrent
                         ? "border-white/30 bg-white/10 text-white dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-950"
                         : isComplete
@@ -76,18 +76,18 @@ export const OfferStageTimeline = ({
                     ].join(" ")}
                   >
                     {isCurrent ? (
-                      <CircleDot className="h-3.5 w-3.5" />
+                      <CircleDot className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     ) : isComplete ? (
-                      <CircleCheck className="h-3.5 w-3.5" />
+                      <CircleCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     ) : (
                       index + 1
                     )}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{stage}</p>
+                    <p className="truncate text-[11px] font-semibold leading-4 sm:text-xs md:text-sm">{stage}</p>
                     <p
                       className={[
-                        "mt-0.5 text-[11px]",
+                        "mt-0.5 text-[10px] leading-4 sm:text-[11px]",
                         isCurrent
                           ? "text-zinc-200 dark:text-zinc-700"
                           : "text-zinc-500 dark:text-zinc-400",
@@ -101,7 +101,7 @@ export const OfferStageTimeline = ({
               {index < timelineStages.length - 1 ? (
                 <div
                   className={[
-                    "h-px w-6 shrink-0 rounded-full",
+                    "h-px w-4 shrink-0 rounded-full sm:w-5 md:w-6",
                     isComplete
                       ? "bg-zinc-400 dark:bg-zinc-600"
                       : "bg-zinc-200 dark:bg-zinc-800",
