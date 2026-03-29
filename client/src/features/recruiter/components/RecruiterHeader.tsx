@@ -8,7 +8,7 @@ export const RecruiterHeader = () => (
     </div>
     <div className="flex w-full flex-col gap-2 text-sm sm:w-auto sm:flex-row">
       <Link className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 hover:bg-zinc-200 dark:bg-black" to="/recruiter/job-posts/new">Add Job</Link>
-      <Link className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 hover:bg-zinc-100 dark:bg-black" to="/recruiter/interviews/new">Schedule Interview</Link>
+      <Link className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 hover:bg-zinc-100 dark:bg-black" to="/recruiter/interviews">Schedule Interview</Link>
     </div>
   </div>
 );

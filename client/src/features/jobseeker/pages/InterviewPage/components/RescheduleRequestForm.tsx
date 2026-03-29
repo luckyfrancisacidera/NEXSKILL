@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Button } from "@shared/components/Button";
 import { RichTextField } from "@shared/components/RichTextField";
 import { sanitizeRichText, stripRichText } from "@shared/utils/richText";
 
@@ -54,22 +55,24 @@ export const RescheduleRequestForm = ({
 
       <div className="flex justify-end gap-2 pt-1">
         {onCancel ? (
-          <button
+          <Button
             type="button"
-            className="rounded-full border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+            variant="secondary"
+            className="rounded-full px-4 py-1.5 text-xs"
             onClick={onCancel}
             disabled={isSubmitting}
           >
             Cancel
-          </button>
+          </Button>
         ) : null}
-        <button
+        <Button
           type="submit"
-          className="rounded-full bg-zinc-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-80 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          disabled={isSubmitting}
+          className="rounded-full px-4 py-1.5 text-xs"
+          loading={isSubmitting}
+          loadingText="Sending"
         >
-          {isSubmitting ? "Sending..." : submitLabel}
-        </button>
+          {submitLabel}
+        </Button>
       </div>
     </form>
   );

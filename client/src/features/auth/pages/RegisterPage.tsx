@@ -9,6 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@app/providers/AuthProvider";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ApiError } from "@shared/api/http";
+import { Button } from "@shared/components/Button";
 import { Checkbox } from "@shared/components/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 import { hasAnyAllowedRole } from "@shared/utils/permissions";
@@ -27,6 +28,7 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const openLogin = () => {
     runViewTransition(() => {
@@ -62,6 +64,7 @@ const RegisterPage = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const roles = await register({
         first_name: normalizedFirstName,
@@ -81,6 +84,8 @@ const RegisterPage = () => {
       }
 
       setError("Unable to create account.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -94,11 +99,11 @@ const RegisterPage = () => {
         >
           <div className="grid grid-rows-2 w-full h-full">
             <div className="w-full h-full">
-              <img src={LightLogo} alt="LightLogo.png" className="w-[3.75rem]" />
+              <img src={LightLogo} alt="LightLogo.png" className="w-15" />
             </div>
 
             <div className="flex w-full h-full p-12 items-end justify-center">
-              <h2 className="text-5xl text-center font-bold tracking-widest leading-[3.75rem]">
+              <h2 className="text-5xl text-center font-bold tracking-widest leading-15">
                 Hire Smarter. Match Faster.
               </h2>
             </div>
@@ -109,7 +114,7 @@ const RegisterPage = () => {
       {/* Right panel */}
       <div className="flex items-center justify-center bg-zinc-800 p-6 sm:p-8">
         <AuthRouteTransition className="w-full max-w-md">
-          <div className="min-h-[35rem]">
+          <div className="min-h-140">
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-tight text-white">
                 Create an account
@@ -250,9 +255,14 @@ const RegisterPage = () => {
               {error && <p className="text-xs text-red-400">{error}</p>}
 
               <div className="flex flex-col gap-4 w-full pt-1">
-                <button className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800">
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  loadingText="Creating account"
+                  className="h-12 w-full rounded-2xl bg-white text-sm font-semibold text-zinc-900 hover:bg-zinc-200 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-800"
+                >
                   Create account
-                </button>
+                </Button>
 
                 <div className="flex items-center gap-4 py-1 w-full">
                   <div className="flex-1 bg-zinc-700 h-px"></div>

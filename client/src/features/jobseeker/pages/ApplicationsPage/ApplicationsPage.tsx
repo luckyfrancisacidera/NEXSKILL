@@ -89,7 +89,7 @@ export const ApplicationsPage = () => {
                 placeholder="Search job title or company"
                 value={search}
                 onChange={handleSearchChange}
-                className="h-11 w-full min-w-0 border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 xl:col-span-4"
+                className="h-11 w-full min-w-0 border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 xl:col-span-4"
               />
             </div>
           </div>

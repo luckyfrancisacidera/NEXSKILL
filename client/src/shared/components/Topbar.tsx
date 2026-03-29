@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Bell, LogOut, Menu, Moon, Sun, UserRound } from "lucide-react";
+import { Bell, LogOut, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@shared/components/Avatar";
+import { SideDrawer } from "@shared/components/SideDrawer";
 import { useAuth } from "@app/providers/AuthProvider";
 import { useNotifications } from "@app/providers/NotificationsProvider";
 import { useTheme } from "@app/providers/ThemeProvider";
@@ -39,6 +40,7 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
   } = useNotifications();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const ThemeIcon = theme === "dark" ? Sun : Moon;
@@ -145,6 +147,14 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
         >
           <ThemeIcon className="h-5 w-5" />
         </button>
+        <button
+          type="button"
+          className={cn(topbarIconButtonClassName, "md:hidden")}
+          aria-label="Open global search"
+          onClick={() => setIsMobileSearchOpen(true)}
+        >
+          <Search className="h-5 w-5" />
+        </button>
         <div className="relative" ref={notificationsRef}>
           <button
             type="button"
@@ -161,10 +171,10 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
             )}
           </button>
           {isNotificationsOpen && (
-            <div className="absolute right-0 top-[calc(100%+0.75rem)] z-20 w-[90vw] max-w-[calc(100vw-2rem)] md:w-[80vw] lg:w-[28rem] lg:max-w-lg">
+            <div className="absolute -right-12.5 top-[calc(100%+0.75rem)] z-20 w-screen max-w-[calc(100vw-2rem)] md:w-[80vw] lg:w-md lg:max-w-lg">
               <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-3 sm:py-2">
-                <p className="break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <p className="wrap-break-word text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                   Notifications
                 </p>
                 {notifications.length > 0 && (
@@ -195,9 +205,9 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                           : "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700",
                       )}
                     >
-                      <p className="break-words font-semibold">{item.title}</p>
+                      <p className="wrap-break-word font-semibold">{item.title}</p>
                       {item.description ? (
-                        <p className="mt-0.5 break-words line-clamp-2">{item.description}</p>
+                        <p className="mt-0.5 wrap-break-word line-clamp-2">{item.description}</p>
                       ) : null}
                       <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-400">
                         {item.actor === "recruiter"
@@ -293,6 +303,21 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
           )}
         </div>
       </header>
+      <SideDrawer
+        open={isMobileSearchOpen}
+        title="Search"
+        description="Search pages, tools, and actions across the app."
+        onClose={() => setIsMobileSearchOpen(false)}
+        widthClassName="max-w-full sm:max-w-[92vw]"
+        contentClassName="px-4 py-4"
+      >
+        <GlobalSearchBar
+          autoFocus
+          compact
+          inlineResults
+          onSelect={() => setIsMobileSearchOpen(false)}
+        />
+      </SideDrawer>
     </>
   );
 };

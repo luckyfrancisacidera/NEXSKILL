@@ -38,6 +38,7 @@ public sealed class AuthService(
     private const string AuthenticationFailedMessage = "Authentication failed.";
     private const string InvalidCredentialsError = "Invalid email or password.";
     private const string InactiveAccountError = "Your account is inactive. Please contact your administrator.";
+    private const string LockedOutAccountError = "Your account is temporarily locked due to failed login attempts. Please try again later.";
     private const string InactiveCompanyError = "Your company account is inactive. Please contact your administrator.";
 
     private readonly UserManager<AppUser> _userManager = userManager;
@@ -80,6 +81,8 @@ public sealed class AuthService(
             NormalizedEmail = email.ToUpperInvariant(),
             NormalizedUserName = email.ToUpperInvariant(),
             EmailConfirmed = true,
+            IsActive = true,
+            LockoutEnabled = true,
             FirstName = firstName,
             LastName = lastName
         };
@@ -108,10 +111,44 @@ public sealed class AuthService(
         var password = _sanitizer.Sanitize(request.Password);
 
         var user = await _userManager.FindByEmailAsync(email);
-        if (user is null) return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+        if (user is null)
+        {
+            _logger.LogInformation("Login failed because no user exists for email {Email}.", email);
+            return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+        }
 
         var valid = await _userManager.CheckPasswordAsync(user, password);
-        if (!valid) return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+        if (!valid)
+        {
+            var accessFailedResult = await _userManager.AccessFailedAsync(user);
+            if (!accessFailedResult.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to record an invalid login attempt for user {UserId}: {Errors}",
+                    user.Id,
+                    string.Join("; ", accessFailedResult.Errors.Select(error => error.Description)));
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                _logger.LogWarning(
+                    "Login blocked for user {UserId} because the account is temporarily locked out after failed attempts.",
+                    user.Id);
+                return AuthResult.Failure(AuthenticationFailedMessage, LockedOutAccountError);
+            }
+
+            _logger.LogInformation("Login failed because credentials were invalid for user {UserId}.", user.Id);
+            return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+        }
+
+        var resetAccessFailedCountResult = await _userManager.ResetAccessFailedCountAsync(user);
+        if (!resetAccessFailedCountResult.Succeeded)
+        {
+            _logger.LogWarning(
+                "Failed to reset access failed count for user {UserId}: {Errors}",
+                user.Id,
+                string.Join("; ", resetAccessFailedCountResult.Errors.Select(error => error.Description)));
+        }
 
         var blockedResult = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
         if (blockedResult is not null)
@@ -119,6 +156,9 @@ public sealed class AuthService(
             return blockedResult;
         }
 
+        _logger.LogInformation(
+            "Login succeeded for user {UserId}. Roles and company access will be encoded into a fresh session.",
+            user.Id);
         return await CreateSuccessAuthResultAsync(user, "Login successful.", request.RememberMe, cancellationToken);
     }
 
@@ -130,12 +170,16 @@ public sealed class AuthService(
         var refreshTokenValidation = await _tokenService.ValidateRefreshTokenAsync(refreshToken, cancellationToken);
         if (refreshTokenValidation is null)
         {
+            _logger.LogInformation("Refresh failed because the provided refresh token could not be validated.");
             return AuthResult.Failure("Invalid refresh token.");
         }
 
         var user = await _userManager.FindByIdAsync(refreshTokenValidation.UserId.ToString());
         if (user is null)
         {
+            _logger.LogInformation(
+                "Refresh failed because user {UserId} from the refresh token no longer exists.",
+                refreshTokenValidation.UserId);
             return AuthResult.Failure("Invalid refresh token.");
         }
 
@@ -145,6 +189,7 @@ public sealed class AuthService(
             return blockedResult;
         }
 
+        _logger.LogInformation("Refresh succeeded for user {UserId}.", user.Id);
         return await CreateSuccessAuthResultAsync(user, "Token refreshed.", refreshTokenValidation.IsPersistent, cancellationToken);
     }
 
@@ -153,10 +198,22 @@ public sealed class AuthService(
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
+            _logger.LogInformation("Session validation failed because user {UserId} no longer exists.", userId);
             return false;
         }
 
-        return await GetBlockedAuthenticationResultAsync(user, cancellationToken) is null;
+        var blocked = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
+        if (blocked is null)
+        {
+            _logger.LogDebug("Session is active for user {UserId}.", userId);
+            return true;
+        }
+
+        _logger.LogInformation(
+            "Session is inactive for user {UserId}. Reason: {Reason}.",
+            userId,
+            string.Join(" | ", blocked.Errors));
+        return false;
     }
 
     /// <summary>
@@ -171,7 +228,16 @@ public sealed class AuthService(
         var existing = await _userManager.FindByEmailAsync(email);
         if (existing is not null) return AuthResult.Failure("Create user failed.", "Unable to create user with provided credentials.");
 
-        var user = new AppUser { UserName = email, Email = email, NormalizedEmail = email.ToUpperInvariant(), NormalizedUserName = email.ToUpperInvariant(), EmailConfirmed = true };
+        var user = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            IsActive = true,
+            LockoutEnabled = true,
+        };
         var passwordValidation = await ValidatePasswordAsync(user, password);
         if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
 
@@ -683,24 +749,41 @@ public sealed class AuthService(
 
     private async Task<AuthResult?> GetBlockedAuthenticationResultAsync(AppUser user, CancellationToken cancellationToken)
     {
-        if (IsIdentityAccountInactive(user))
+        if (!user.IsActive)
         {
+            _logger.LogWarning(
+                "Blocking authentication for user {UserId} because IsActive is false.",
+                user.Id);
             return AuthResult.Failure(AuthenticationFailedMessage, InactiveAccountError);
+        }
+
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            _logger.LogWarning(
+                "Blocking authentication for user {UserId} because the account is temporarily locked out. LockoutEnd={LockoutEndUtc}.",
+                user.Id,
+                user.LockoutEnd);
+            return AuthResult.Failure(AuthenticationFailedMessage, LockedOutAccountError);
         }
 
         var companyAccess = await _authRepository.GetUserCompanyAccessAsync(user.Id, cancellationToken);
         if (companyAccess is not null && !companyAccess.CompanyIsActive)
         {
+            _logger.LogWarning(
+                "Blocking authentication for user {UserId} because company {CompanyId} is inactive.",
+                user.Id,
+                companyAccess.CompanyId);
             return AuthResult.Failure(AuthenticationFailedMessage, InactiveCompanyError);
         }
 
+        _logger.LogDebug(
+            "Authentication eligibility passed for user {UserId}. IsActive={IsActive}, LockoutEnd={LockoutEndUtc}, HasCompanyAccess={HasCompanyAccess}, CompanyIsActive={CompanyIsActive}.",
+            user.Id,
+            user.IsActive,
+            user.LockoutEnd,
+            companyAccess is not null,
+            companyAccess?.CompanyIsActive);
         return null;
-    }
-
-    private bool IsIdentityAccountInactive(AppUser user)
-    {
-        var now = new DateTimeOffset(DateTime.SpecifyKind(_dateTimeProvider.UtcNow, DateTimeKind.Utc));
-        return user.LockoutEnd.HasValue && user.LockoutEnd > now;
     }
 
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)

@@ -61,7 +61,7 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task LoginAsync_BlocksInactiveRecruiter()
     {
-        var recruiter = CreateUser("recruiter@company.com", lockoutEnd: DateTimeOffset.UtcNow.AddYears(1));
+        var recruiter = CreateUser("recruiter@company.com", isActive: false);
         var service = CreateService(
             userManager: CreateUserManager((recruiter, true, ["Recruiter"])),
             authRepository: new TestAuthRepository());
@@ -76,7 +76,7 @@ public sealed class AuthServiceTests
     [Fact]
     public async Task LoginAsync_BlocksInactiveCompanyAdmin()
     {
-        var admin = CreateUser("admin@company.com", lockoutEnd: DateTimeOffset.UtcNow.AddYears(1));
+        var admin = CreateUser("admin@company.com", isActive: false);
         var service = CreateService(
             userManager: CreateUserManager((admin, true, ["CompanyAdmin"])),
             authRepository: new TestAuthRepository());
@@ -85,6 +85,22 @@ public sealed class AuthServiceTests
 
         Assert.False(result.Succeeded);
         Assert.Contains("Your account is inactive. Please contact your administrator.", result.Errors);
+    }
+
+    [Fact]
+    public async Task LoginAsync_BlocksTemporarilyLockedOutUser()
+    {
+        var lockedUser = CreateUser(
+            "locked@company.com",
+            lockoutEnd: DateTimeOffset.UtcNow.AddMinutes(30));
+        var service = CreateService(
+            userManager: CreateUserManager((lockedUser, true, ["Recruiter"])),
+            authRepository: new TestAuthRepository());
+
+        var result = await service.LoginAsync(new LoginRequest { Email = lockedUser.Email!, Password = "Password123!" }, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Your account is temporarily locked due to failed login attempts. Please try again later.", result.Errors);
     }
 
     [Fact]
@@ -248,7 +264,11 @@ public sealed class AuthServiceTests
         return userManager;
     }
 
-    private static AppUser CreateUser(string email, DateTimeOffset? lockoutEnd = null)
+    private static AppUser CreateUser(
+        string email,
+        bool isActive = true,
+        DateTimeOffset? lockoutEnd = null,
+        bool lockoutEnabled = true)
         => new()
         {
             Id = Guid.NewGuid(),
@@ -256,6 +276,8 @@ public sealed class AuthServiceTests
             UserName = email,
             NormalizedEmail = email.ToUpperInvariant(),
             NormalizedUserName = email.ToUpperInvariant(),
+            IsActive = isActive,
+            LockoutEnabled = lockoutEnabled,
             LockoutEnd = lockoutEnd,
         };
 
@@ -269,7 +291,15 @@ public sealed class AuthServiceTests
         public TestUserManager()
             : base(
                 new TestUserStore(),
-                Microsoft.Extensions.Options.Options.Create(new IdentityOptions()),
+                Microsoft.Extensions.Options.Options.Create(new IdentityOptions
+                {
+                    Lockout =
+                    {
+                        AllowedForNewUsers = true,
+                        MaxFailedAccessAttempts = 5,
+                        DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15),
+                    }
+                }),
                 new PasswordHasher<AppUser>(),
                 [],
                 [],
@@ -296,6 +326,26 @@ public sealed class AuthServiceTests
 
         public override Task<bool> CheckPasswordAsync(AppUser user, string password)
             => Task.FromResult(_passwordValidity.TryGetValue(user.Id, out var isValid) && isValid);
+
+        public override Task<IdentityResult> AccessFailedAsync(AppUser user)
+        {
+            user.AccessFailedCount++;
+            if (user.LockoutEnabled && user.AccessFailedCount >= Options.Lockout.MaxFailedAccessAttempts)
+            {
+                user.LockoutEnd = DateTimeOffset.UtcNow.Add(Options.Lockout.DefaultLockoutTimeSpan);
+            }
+
+            return Task.FromResult(IdentityResult.Success);
+        }
+
+        public override Task<IdentityResult> ResetAccessFailedCountAsync(AppUser user)
+        {
+            user.AccessFailedCount = 0;
+            return Task.FromResult(IdentityResult.Success);
+        }
+
+        public override Task<bool> IsLockedOutAsync(AppUser user)
+            => Task.FromResult(user.LockoutEnabled && user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow);
 
         public override Task<IList<string>> GetRolesAsync(AppUser user)
             => Task.FromResult(_rolesByUserId.TryGetValue(user.Id, out var roles) ? roles : (IList<string>)[]);
