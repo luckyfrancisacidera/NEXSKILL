@@ -1,0 +1,496 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+.ats-offline,
+.ats-offline * {
+  box-sizing: border-box;
+}
+
+.ats-offline {
+  --ats-offline-zinc-950: #09090b;
+  --ats-offline-zinc-900: #18181b;
+  --ats-offline-zinc-800: #27272a;
+  --ats-offline-zinc-700: #3f3f46;
+  --ats-offline-zinc-600: #52525b;
+  --ats-offline-zinc-400: #a1a1aa;
+  --ats-offline-zinc-300: #d4d4d8;
+  --ats-offline-zinc-200: #e4e4e7;
+  --ats-offline-sky-500: #0ea5e9;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--ats-offline-zinc-950);
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.ats-offline__grid,
+.ats-offline__gradient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ats-offline__grid {
+  background-image:
+    linear-gradient(rgba(63, 63, 70, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63, 63, 70, 0.18) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: ats-offline-grid-scroll 12s linear infinite;
+}
+
+.ats-offline__gradient {
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(14, 165, 233, 0.05) 0%, transparent 70%);
+}
+
+.ats-offline__card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 520px;
+  padding: 40px 44px 44px;
+  border: 1px solid var(--ats-offline-zinc-700);
+  border-radius: 20px;
+  background: var(--ats-offline-zinc-900);
+  box-shadow:
+    0 0 0 1px rgba(63, 63, 70, 0.4),
+    0 32px 80px -12px rgba(0, 0, 0, 0.7),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: ats-offline-float-card 6s ease-in-out infinite;
+}
+
+.ats-offline__card-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.ats-offline__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 28px;
+  padding: 4px 12px 4px 8px;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 999px;
+  background: rgba(244, 63, 94, 0.1);
+  color: #fb7185;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ats-offline__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f43f5e;
+  box-shadow: 0 0 8px #f43f5e;
+  animation: ats-offline-pulse-node 2s ease-in-out infinite;
+}
+
+.ats-offline__illustration {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.ats-offline__network {
+  overflow: visible;
+  max-width: 100%;
+}
+
+.ats-offline__edge {
+  animation-name: ats-offline-dash-flow;
+  animation-duration: var(--ats-offline-edge-duration, 2.2s);
+  animation-delay: var(--ats-offline-edge-delay, 0s);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.ats-offline__broken-edge {
+  animation: ats-offline-broken-flicker 3.5s ease-in-out infinite;
+  animation-delay: var(--ats-offline-broken-delay, 0s);
+}
+
+.ats-offline__signal-ring {
+  opacity: 0;
+  animation: ats-offline-signal-pulse 2.4s ease-out infinite;
+  animation-delay: var(--ats-offline-signal-delay, 0s);
+}
+
+.ats-offline__hub-ring {
+  opacity: 0;
+  animation: ats-offline-glow-ring 3s ease-in-out infinite;
+  animation-delay: var(--ats-offline-glow-delay, 0s);
+}
+
+.ats-offline__node {
+  animation: ats-offline-pulse-node var(--ats-offline-node-duration, 2.2s) ease-in-out infinite;
+  animation-delay: var(--ats-offline-node-delay, 0s);
+}
+
+.ats-offline__node--hub {
+  animation-name: ats-offline-pulse-node-main;
+}
+
+.ats-offline__headline {
+  margin-bottom: 12px;
+  color: var(--ats-offline-zinc-200);
+  font-family: "Syne", sans-serif;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ats-offline__message {
+  max-width: 380px;
+  margin-bottom: 32px;
+  color: var(--ats-offline-zinc-400);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.ats-offline__divider {
+  width: 100%;
+  height: 1px;
+  margin-bottom: 28px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ats-offline-zinc-700) 30%,
+    var(--ats-offline-zinc-700) 70%,
+    transparent
+  );
+}
+
+.ats-offline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ats-offline__button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-radius: 10px;
+  padding: 11px 22px;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.ats-offline__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ats-offline__button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.ats-offline__button:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.ats-offline__button--primary {
+  border: 0;
+  background: linear-gradient(135deg, var(--ats-offline-sky-500) 0%, #0369a1 100%);
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.ats-offline__button--primary:not(:disabled):hover {
+  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ats-offline__button--secondary {
+  border: 1px solid var(--ats-offline-zinc-700);
+  background: transparent;
+  color: var(--ats-offline-zinc-400);
+  font-weight: 400;
+  padding-inline: 20px;
+}
+
+.ats-offline__button--secondary:hover {
+  background: var(--ats-offline-zinc-800);
+  border-color: var(--ats-offline-zinc-600);
+  color: var(--ats-offline-zinc-300);
+}
+
+.ats-offline__button-label {
+  position: relative;
+  z-index: 1;
+}
+
+.ats-offline__icon {
+  flex-shrink: 0;
+}
+
+.ats-offline__icon--refresh.is-spinning {
+  animation: ats-offline-spin-slow 0.8s linear infinite;
+}
+
+.ats-offline__button-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
+  animation: ats-offline-shimmer-bar 1.6s ease-in-out infinite;
+}
+
+.ats-offline__details {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--ats-offline-zinc-800);
+  border-radius: 10px;
+  background: rgba(9, 9, 11, 0.6);
+  color: var(--ats-offline-zinc-600);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+}
+
+.ats-offline__details-text {
+  color: #71717a;
+}
+
+.ats-offline__details-text--with-timestamp {
+  margin-top: 4px;
+}
+
+.ats-offline__watermark {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  color: var(--ats-offline-zinc-700);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.ats-offline__fade-in {
+  animation: ats-offline-fade-in-up 0.6s ease forwards;
+}
+
+.ats-offline__fade-in--1 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+.ats-offline__fade-in--2 {
+  animation-delay: 0.22s;
+  opacity: 0;
+}
+
+.ats-offline__fade-in--3 {
+  animation-delay: 0.36s;
+  opacity: 0;
+}
+
+.ats-offline__fade-in--4 {
+  animation-delay: 0.5s;
+  opacity: 0;
+}
+
+.ats-offline__fade-in--5 {
+  animation-delay: 0.65s;
+  opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .ats-offline__card {
+    padding: 28px 24px 32px;
+  }
+
+  .ats-offline__actions {
+    flex-direction: column;
+  }
+
+  .ats-offline__button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ats-offline *,
+  .ats-offline *::before,
+  .ats-offline *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes ats-offline-pulse-node {
+  0%,
+  100% {
+    opacity: 0.35;
+    r: 4;
+  }
+  50% {
+    opacity: 0.9;
+    r: 5.5;
+  }
+}
+
+@keyframes ats-offline-pulse-node-main {
+  0%,
+  100% {
+    opacity: 0.6;
+    r: 6;
+  }
+  50% {
+    opacity: 1;
+    r: 8;
+  }
+}
+
+@keyframes ats-offline-glow-ring {
+  0%,
+  100% {
+    opacity: 0;
+    r: 12;
+  }
+  50% {
+    opacity: 0.18;
+    r: 20;
+  }
+}
+
+@keyframes ats-offline-dash-flow {
+  0% {
+    stroke-dashoffset: 60;
+    opacity: 0.55;
+  }
+  45% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 0.15;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+  100% {
+    stroke-dashoffset: -60;
+    opacity: 0.55;
+  }
+}
+
+@keyframes ats-offline-broken-flicker {
+  0%,
+  100% {
+    opacity: 0.08;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  22% {
+    opacity: 0.05;
+  }
+  24% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.08;
+  }
+  70% {
+    opacity: 0.45;
+  }
+  72% {
+    opacity: 0.05;
+  }
+}
+
+@keyframes ats-offline-signal-pulse {
+  0% {
+    r: 0;
+    opacity: 0.7;
+  }
+  100% {
+    r: 28;
+    opacity: 0;
+  }
+}
+
+@keyframes ats-offline-float-card {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes ats-offline-grid-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 40px;
+  }
+}
+
+@keyframes ats-offline-shimmer-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes ats-offline-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ats-offline-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

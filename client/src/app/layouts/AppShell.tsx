@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigation } from 'react-router-dom';
 
 import { useAuth } from '@app/providers/AuthProvider';
-import { AtsWakeLoaderSurface } from '@shared/components/AtsWakeLoaderSurface';
+import { AtsWakeLoaderSurface } from '@shared/pages/AtsWakeLoaderSurface';
 import { RouteNavigationFeedback } from '@shared/components/RouteNavigationFeedback';
 import { Sidebar } from '@shared/components/Sidebar';
 import { Topbar } from '@shared/components/Topbar';
