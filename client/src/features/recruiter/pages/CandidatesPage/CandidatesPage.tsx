@@ -11,6 +11,7 @@ import { useFetcher, useLoaderData, useNavigate, useNavigation, useRevalidator, 
 
 import { useToast } from '@app/providers/ToastProvider';
 import { BulkActionsBar } from '@features/recruiter/pages/CandidatesPage/components/BulkActionsBar';
+import { CandidateListSkeleton } from '@features/recruiter/pages/CandidatesPage/components/CandidateListSkeleton';
 import { CandidateStageTabs } from '@features/recruiter/pages/CandidatesPage/components/CandidateStageTabs';
 import { CandidatesFilters } from '@features/recruiter/pages/CandidatesPage/components/CandidatesFilters';
 import { CandidatesTable } from '@features/recruiter/pages/CandidatesPage/components/CandidatesTable';
@@ -403,7 +404,9 @@ export const CandidatesPage = () => {
           />
         </div>
 
-        {isEmptyPage ? (
+        {isLoadingList ? (
+          <CandidateListSkeleton />
+        ) : isEmptyPage ? (
           <EmptyState
             icon={FileSearch}
             title="No results on this page"

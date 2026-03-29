@@ -17,7 +17,7 @@ import { runViewTransition } from "@shared/utils/viewTransition";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, startAppTransition } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +40,7 @@ const LoginPage = () => {
 
     try {
       const userRoles = await login(email.trim(), password, rememberMe);
+      startAppTransition();
       navigate(getDefaultRouteByRole(userRoles), { replace: true });
     } catch (error) {
       setPassword("");

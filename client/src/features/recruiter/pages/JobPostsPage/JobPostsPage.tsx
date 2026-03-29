@@ -5,6 +5,7 @@ import { useLoaderData, useNavigate, useNavigation, useRevalidator, useSearchPar
 import { useToast } from '@app/providers/ToastProvider';
 import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader';
 import { JobPostsFilters } from '@features/recruiter/pages/JobPostsPage/components/JobPostsFilters';
+import { JobListSkeleton } from '@features/recruiter/pages/JobPostsPage/components/JobListSkeleton';
 import { JobPostsTable } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTable';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import { recruiterService } from '@features/recruiter/service/recruiter.service';
@@ -22,6 +23,7 @@ import { EmptyState } from '@shared/components/EmptyState';
 import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
 import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
+import { useDebounce } from '@shared/hooks/useDebounce';
 import { normalizeSearchInput } from '@shared/utils/search';
 
 const buildJobPostsQuery = (searchParams: URLSearchParams, next: Record<string, string>) => {
@@ -53,6 +55,7 @@ export const JobPostsPage = () => {
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [selectedJob, setSelectedJob] = useState<JobListItem | null>(null);
   const [searchDraft, setSearchDraft] = useState(loaderData.filters.search);
+  const debouncedSearchDraft = useDebounce(searchDraft, 250);
 
   useEffect(() => {
     setJobs(loaderData.jobs);
@@ -61,6 +64,20 @@ export const JobPostsPage = () => {
   useEffect(() => {
     setSearchDraft(loaderData.filters.search);
   }, [loaderData.filters.search]);
+
+  useEffect(() => {
+    const normalizedValue = normalizeSearchInput(debouncedSearchDraft);
+    const normalizedCurrentSearch = normalizeSearchInput(loaderData.filters.search);
+
+    if (normalizedValue === normalizedCurrentSearch) {
+      return;
+    }
+
+    navigate(
+      `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: normalizedValue, page: '1' })}`,
+      { replace: true },
+    );
+  }, [debouncedSearchDraft, loaderData.filters.search, navigate, searchParams]);
 
   const applyMutationSync = useCallback((mutation: RecruiterJobMutationPayload, showHiddenFeedback: boolean) => {
     if (!mutation || handledMutationIdsRef.current.has(mutation.mutationId)) {
@@ -258,24 +275,15 @@ export const JobPostsPage = () => {
             }}
             onSearchChange={(value) => {
               setSearchDraft(value);
-
-              const normalizedValue = normalizeSearchInput(value);
-              const normalizedCurrentSearch = normalizeSearchInput(loaderData.filters.search);
-              if (normalizedValue === normalizedCurrentSearch) {
-                return;
-              }
-
-              navigate(
-                `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { search: normalizedValue, page: '1' })}`,
-                { replace: true },
-              );
             }}
           />
         </section>
 
         <section className="min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
 
-        {isEmptyPage ? (
+        {isLoadingList ? (
+          <JobListSkeleton />
+        ) : isEmptyPage ? (
           <EmptyState
             icon={FileSearch}
             title="No results on this page"

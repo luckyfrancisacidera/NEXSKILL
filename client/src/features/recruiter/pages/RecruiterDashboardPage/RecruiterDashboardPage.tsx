@@ -10,7 +10,7 @@
  * - Only supported groupings are exposed in the UI even if the API supports more.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLoaderData, useNavigate, useNavigation, useSearchParams } from 'react-router-dom';
 import {
   BriefcaseBusiness,
   Building2,
@@ -25,6 +25,7 @@ import {
 import { RecruiterHeader } from '@features/recruiter/components/RecruiterHeader';
 import { DashboardFilters } from '@features/recruiter/pages/RecruiterDashboardPage/components/DashboardFilters';
 import { MetricCard } from '@features/recruiter/pages/RecruiterDashboardPage/components/MetricCard';
+import { RecruiterDashboardSkeleton } from '@features/recruiter/pages/RecruiterDashboardPage/components/RecruiterDashboardSkeleton';
 import { TrendChartCard } from '@features/recruiter/pages/RecruiterDashboardPage/components/TrendChartCard';
 import { DashboardGreeting } from '@shared/components/DashboardGreeting';
 import type { DashboardDto, DashboardGroupBy, DashboardQuickRange } from '@features/recruiter/types';
@@ -87,6 +88,7 @@ const getQuickRange = (type: Exclude<DashboardQuickRange, ''>) => {
 export const RecruiterDashboardPage = () => {
   const data = useLoaderData() as DashboardDto;
   const navigate = useNavigate();
+  const navigation = useNavigation();
   const [searchParams] = useSearchParams();
   const [expanded, setExpanded] = useState(false);
   const [quickRange, setQuickRange] = useState<DashboardQuickRange>('');
@@ -112,6 +114,7 @@ export const RecruiterDashboardPage = () => {
     () => `${selected.groupBy[0].toUpperCase()}${selected.groupBy.slice(1)} Applicant Trends`,
     [selected.groupBy],
   );
+  const isLoadingDashboard = navigation.state === 'loading' && navigation.location?.pathname === '/recruiter/dashboard';
 
   const updateFilters = useCallback(
     (nextFilters: typeof selected) => {
@@ -259,6 +262,10 @@ export const RecruiterDashboardPage = () => {
         />
       </DashboardSectionCard>
 
+      {isLoadingDashboard ? (
+        <RecruiterDashboardSkeleton />
+      ) : (
+        <>
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map(({ key, label, icon }) => {
           const metric = data.summary[key];
@@ -400,6 +407,8 @@ export const RecruiterDashboardPage = () => {
           </div>
         </DashboardSectionCard>
       </section>
+        </>
+      )}
     </div>
   );
 };

@@ -17,7 +17,7 @@ import { hasAnyAllowedRole } from "@shared/utils/permissions";
 const RegisterPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, startAppTransition } = useAuth();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -72,6 +72,9 @@ const RegisterPage = () => {
         email: email.trim(),
         password,
       });
+      if (hasAnyAllowedRole(roles, ["jobseeker"])) {
+        startAppTransition();
+      }
       navigate(
         hasAnyAllowedRole(roles, ["jobseeker"]) ? "/dashboard" : "/login",
         { replace: true }
