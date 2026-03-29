@@ -17,6 +17,7 @@ import {
   isTerminalInterviewStatus,
 } from "@shared/utils/interviewStatus";
 import { JobseekerInterviewCalendar } from "./components/JobseekerInterviewCalendar";
+import { InterviewCalendarSkeleton } from "./components/InterviewCalendarSkeleton";
 import { RescheduleRequestForm } from "./components/RescheduleRequestForm";
 
 export const InterviewPage = () => {
@@ -309,13 +310,7 @@ export const InterviewPage = () => {
       ) : null}
 
       {isLoading ? (
-        <Card className="space-y-4 border-0 bg-white py-8 shadow-[0_18px_50px_rgba(24,24,27,0.06)] dark:bg-zinc-950">
-          <div className="h-6 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-            <div className="h-130 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
-            <div className="h-130 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
-          </div>
-        </Card>
+        <InterviewCalendarSkeleton />
       ) : (
         <JobseekerInterviewCalendar
           interviews={activeInterviews}

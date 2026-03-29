@@ -7,6 +7,7 @@ import { SearchField } from "@features/jobseeker/components";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApplicationsEmptyState } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsEmptyState";
+import { ApplicationListSkeleton } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationListSkeleton";
 import { ApplicationsTable } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTable";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
 
@@ -136,7 +137,11 @@ export const ApplicationsPage = () => {
             </div>
           ) : null}
 
-          {data.items.length === 0 ? (
+          {isLoading ? (
+            <div className="p-4">
+              <ApplicationListSkeleton />
+            </div>
+          ) : data.items.length === 0 ? (
             <ApplicationsEmptyState hasFilters={hasFilters} />
           ) : (
             <>

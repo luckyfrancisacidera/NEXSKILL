@@ -16,6 +16,11 @@
   box-sizing: border-box;
 }
 
+:root {
+  --skeleton-base: #e4e4e7;
+  --skeleton-highlight: #f4f4f5;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -53,6 +58,11 @@ body {
 html.dark body {
   background: radial-gradient(circle at 20% 20%, #27272a 0%, #111827 38%, #020617 100%);
   color: #f4f4f5;
+}
+
+html.dark {
+  --skeleton-base: #27272a;
+  --skeleton-highlight: #3f3f46;
 }
 
 html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
