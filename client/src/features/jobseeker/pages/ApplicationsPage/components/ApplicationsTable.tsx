@@ -56,7 +56,7 @@ export const ApplicationsTable = ({
       header: "Applied",
       cell: (item) => (
         <div className="space-y-1">
-          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          <p className="text-[10px] sm:text-sm font-medium text-zinc-800 dark:text-zinc-200">
             {formatAppliedDate(String(item.created_at_utc))}
           </p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">

@@ -25,6 +25,7 @@ import { RecruiterInputField } from '@features/recruiter/components/RecruiterInp
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import type { JobDto } from '@features/recruiter/types';
+import { Button } from '@shared/components/Button';
 import { Card } from '@shared/components/Card';
 import { PredictiveInput } from '@shared/components/PredictiveInput';
 import { RichTextField } from '@shared/components/RichTextField';
@@ -247,9 +248,9 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <Link to="/recruiter/job-posts" className="inline-flex items-center justify-center rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Link>
-            <button className="inline-flex items-center justify-center rounded-xl bg-violet-700 dark:bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:hover:bg-violet-700 disabled:opacity-70" type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+            <Button className="rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:bg-violet-600 dark:hover:bg-violet-700" type="submit" loading={isSaving} loadingText="Saving">
+              Save
+            </Button>
           </div>
         </Form>
       </Card>

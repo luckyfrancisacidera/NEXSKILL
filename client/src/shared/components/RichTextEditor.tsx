@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Underline as UnderlineIcon,
 } from "lucide-react";
+import { useMediaQuery } from "@shared/hooks/useMediaQuery";
 import { cn } from "@shared/utils/cn";
 
 interface RichTextEditorProps {
@@ -42,6 +43,7 @@ export const RichTextEditor = ({
   minHeightClassName = "min-h-[180px]",
   error,
 }: RichTextEditorProps) => {
+  const isMobile = useMediaQuery("(max-width: 639px)");
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -112,37 +114,87 @@ export const RichTextEditor = ({
 
   const toolbarButtonClassName = (isActive = false) =>
     cn(
-      "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition",
+      "inline-flex shrink-0 items-center justify-center rounded-lg border transition",
+      isMobile ? "h-8 w-8" : "h-9 w-9",
       isActive
         ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
         : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white",
     );
 
+  const toolbarActions = [
+    {
+      key: "bold",
+      label: "Bold",
+      isActive: editor.isActive("bold"),
+      onClick: () => editor.chain().focus().toggleBold().run(),
+      icon: <Bold className="h-4 w-4" />,
+    },
+    {
+      key: "italic",
+      label: "Italic",
+      isActive: editor.isActive("italic"),
+      onClick: () => editor.chain().focus().toggleItalic().run(),
+      icon: <Italic className="h-4 w-4" />,
+    },
+    {
+      key: "underline",
+      label: "Underline",
+      isActive: editor.isActive("underline"),
+      onClick: () => editor.chain().focus().toggleUnderline().run(),
+      icon: <UnderlineIcon className="h-4 w-4" />,
+    },
+    {
+      key: "bullet-list",
+      label: "Bullet list",
+      isActive: editor.isActive("bulletList"),
+      onClick: () => editor.chain().focus().toggleBulletList().run(),
+      icon: <List className="h-4 w-4" />,
+    },
+    {
+      key: "ordered-list",
+      label: "Numbered list",
+      isActive: editor.isActive("orderedList"),
+      onClick: () => editor.chain().focus().toggleOrderedList().run(),
+      icon: <ListOrdered className="h-4 w-4" />,
+    },
+    {
+      key: "link",
+      label: "Add link",
+      isActive: editor.isActive("link"),
+      onClick: applyLink,
+      icon: <Link2 className="h-4 w-4" />,
+    },
+    ...(!isMobile
+      ? [
+          {
+            key: "clear-formatting",
+            label: "Clear formatting",
+            isActive: false,
+            onClick: () => editor.chain().focus().unsetAllMarks().clearNodes().run(),
+            icon: <RemoveFormatting className="h-4 w-4" />,
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className={cn("rich-text-editor", className)}>
-      <div className="rich-text-toolbar flex flex-wrap items-center gap-2 rounded-t-2xl border border-b-0 border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-        <button type="button" aria-label="Bold" title="Bold" className={toolbarButtonClassName(editor.isActive("bold"))} onClick={() => editor.chain().focus().toggleBold().run()}>
-          <Bold className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Italic" title="Italic" className={toolbarButtonClassName(editor.isActive("italic"))} onClick={() => editor.chain().focus().toggleItalic().run()}>
-          <Italic className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Underline" title="Underline" className={toolbarButtonClassName(editor.isActive("underline"))} onClick={() => editor.chain().focus().toggleUnderline().run()}>
-          <UnderlineIcon className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Bullet list" title="Bullet list" className={toolbarButtonClassName(editor.isActive("bulletList"))} onClick={() => editor.chain().focus().toggleBulletList().run()}>
-          <List className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Numbered list" title="Numbered list" className={toolbarButtonClassName(editor.isActive("orderedList"))} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
-          <ListOrdered className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Add link" title="Add link" className={toolbarButtonClassName(editor.isActive("link"))} onClick={applyLink}>
-          <Link2 className="h-4 w-4" />
-        </button>
-        <button type="button" aria-label="Clear formatting" title="Clear formatting" className={toolbarButtonClassName()} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}>
-          <RemoveFormatting className="h-4 w-4" />
-        </button>
-        <div className="ml-auto flex items-center gap-2">
+    <div className={cn("rich-text-editor min-w-0 overflow-hidden", className)}>
+      <div className="rich-text-toolbar flex items-center justify-between gap-2 rounded-t-2xl border border-b-0 border-zinc-200 bg-zinc-50 px-2.5 py-2 dark:border-zinc-700 dark:bg-zinc-900 sm:px-3">
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overflow-y-hidden pr-2 sm:flex-wrap sm:overflow-visible">
+          {toolbarActions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              aria-label={action.label}
+              title={action.label}
+              className={toolbarButtonClassName(action.isActive)}
+              onClick={action.onClick}
+            >
+              {action.icon}
+            </button>
+          ))}
+        </div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <button type="button" aria-label="Undo" title="Undo" className={toolbarButtonClassName()} onClick={() => editor.chain().focus().undo().run()}>
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -155,7 +207,7 @@ export const RichTextEditor = ({
       <EditorContent
         editor={editor}
         className={cn(
-          "rich-text-content rich-text-editor-content rounded-b-2xl border border-zinc-200 bg-white px-0 py-0 dark:border-zinc-700 dark:bg-zinc-950",
+          "rich-text-content rich-text-editor-content min-w-0 rounded-b-2xl border border-zinc-200 bg-white px-0 py-0 dark:border-zinc-700 dark:bg-zinc-950",
           minHeightClassName,
           editorClassName,
           error ? "is-invalid" : "",

@@ -69,9 +69,11 @@ export const ProfileForm = ({
       <Button
         type="submit"
         disabled={!canSave}
+        loading={isSaving}
+        loadingText="Saving"
         className={`${primaryButtonClassName} w-full sm:w-auto`}
       >
-        {isSaving ? "Saving..." : "Save changes"}
+        Save changes
       </Button>
 
       <Button

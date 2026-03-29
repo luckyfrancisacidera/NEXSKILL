@@ -7,7 +7,19 @@ import { resolveSearchRoleContext } from "@shared/config/searchableRoutes";
 import { useGlobalSearch } from "@shared/hooks/useGlobalSearch";
 import { cn } from "@shared/utils/cn";
 
-export const GlobalSearchBar = () => {
+interface GlobalSearchBarProps {
+  autoFocus?: boolean;
+  compact?: boolean;
+  onSelect?: () => void;
+  inlineResults?: boolean;
+}
+
+export const GlobalSearchBar = ({
+  autoFocus = false,
+  compact = false,
+  onSelect,
+  inlineResults = false,
+}: GlobalSearchBarProps = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { roles } = useAuth();
@@ -17,6 +29,8 @@ export const GlobalSearchBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isResultsMounted, setIsResultsMounted] = useState(false);
+  const [isResultsVisible, setIsResultsVisible] = useState(false);
   const roleContext = useMemo(
     () => resolveSearchRoleContext(roles, location.pathname),
     [location.pathname, roles],
@@ -51,6 +65,41 @@ export const GlobalSearchBar = () => {
     setIsOpen(false);
   }, [location.pathname, location.search]);
 
+  useEffect(() => {
+    if (!autoFocus) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [autoFocus]);
+
+  const showDropdown = isOpen && isInputFocused;
+  const resultsClassName = inlineResults
+    ? "mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+    : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_20px_45px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950";
+
+  useEffect(() => {
+    if (showDropdown) {
+      setIsResultsMounted(true);
+      const frame = window.requestAnimationFrame(() => {
+        setIsResultsVisible(true);
+      });
+
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    setIsResultsVisible(false);
+    const timeout = window.setTimeout(() => {
+      setIsResultsMounted(false);
+    }, 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [showDropdown]);
+
   const selectSuggestion = (index: number) => {
     const selected = suggestions[index];
     if (!selected) {
@@ -61,13 +110,17 @@ export const GlobalSearchBar = () => {
     setQuery("");
     setIsOpen(false);
     setActiveIndex(0);
+    onSelect?.();
   };
-
-  const showDropdown = isOpen && isInputFocused;
 
   return (
     <div className="relative min-w-0 flex-1" ref={containerRef}>
-      <label className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950">
+      <label
+        className={cn(
+          "flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 transition-colors duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:focus-within:border-zinc-500 dark:focus-within:bg-zinc-950",
+          compact ? "px-3 py-2 text-[13px] sm:text-sm" : "px-3 py-2 text-sm",
+        )}
+      >
         <Search className="h-4 w-4 shrink-0" />
         <input
           ref={inputRef}
@@ -75,7 +128,10 @@ export const GlobalSearchBar = () => {
           aria-autocomplete="list"
           aria-expanded={showDropdown}
           aria-controls="global-search-suggestions"
-          className="w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors duration-300 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          className={cn(
+            "w-full bg-transparent text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors duration-300 dark:text-zinc-100 dark:placeholder:text-zinc-500",
+            compact && "text-[13px] sm:text-sm",
+          )}
           placeholder="Search pages, tools, or actions"
           value={query}
           onFocus={() => {
@@ -138,14 +194,24 @@ export const GlobalSearchBar = () => {
         ) : null}
       </label>
 
-      {showDropdown ? (
+      {isResultsMounted ? (
         <div
           id="global-search-suggestions"
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_20px_45px_rgba(15,23,42,0.12)] dark:border-zinc-800 dark:bg-zinc-950"
+          className={cn(
+            resultsClassName,
+            "transition-all duration-200 ease-out",
+            inlineResults
+              ? isResultsVisible
+                ? "translate-y-0 opacity-100"
+                : "-translate-y-1 opacity-0"
+              : isResultsVisible
+                ? "translate-y-0 opacity-100"
+                : "-translate-y-2 opacity-0",
+          )}
           role="listbox"
         >
           {suggestions.length > 0 ? (
-            <div className="max-h-[22rem] overflow-y-auto p-2">
+            <div className={cn("overflow-y-auto p-2", inlineResults ? "max-h-[calc(100vh-13rem)]" : "max-h-[22rem]")}>
               {suggestions.map((suggestion, index) => {
                 const Icon = suggestion.icon;
                 const isActive = index === activeIndex;
@@ -168,19 +234,24 @@ export const GlobalSearchBar = () => {
                       selectSuggestion(index);
                     }}
                   >
-                    <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                    <span
+                      className={cn(
+                        "mt-0.5 inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200",
+                        inlineResults ? "h-10 w-10" : "h-9 w-9",
+                      )}
+                    >
                       <Icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-3">
-                        <span className="truncate text-sm font-semibold">
+                      <span className="flex flex-wrap items-start justify-between gap-2">
+                        <span className="min-w-0 flex-1 break-words text-sm font-semibold">
                           {suggestion.label}
                         </span>
                         <span className="shrink-0 text-[11px] uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                           {suggestion.section}
                         </span>
                       </span>
-                      <span className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                      <span className="mt-1 block break-words text-xs text-zinc-500 dark:text-zinc-400">
                         {suggestion.description}
                       </span>
                     </span>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigation } from 'react-router-dom';
 
 import { AtsWakeLoaderSurface } from '@shared/components/AtsWakeLoaderSurface';
+import { RouteNavigationFeedback } from '@shared/components/RouteNavigationFeedback';
 import { Sidebar } from '@shared/components/Sidebar';
 import { Topbar } from '@shared/components/Topbar';
 import { isAtsWakeRoute } from '@shared/config/backendWakeRoutes';
@@ -50,6 +51,7 @@ export const AppShell = () => {
 
   return (
     <div className="relative min-h-screen bg-zinc-50 font-inter text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
+      <RouteNavigationFeedback />
       <div
         className={`fixed inset-0 z-40 bg-zinc-950/40 backdrop-blur-[1px] transition-opacity duration-300 lg:hidden ${
           isMobileSidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'

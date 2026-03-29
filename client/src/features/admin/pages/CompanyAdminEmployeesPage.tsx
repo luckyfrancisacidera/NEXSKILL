@@ -110,7 +110,7 @@ export const CompanyAdminEmployeesPage = () => {
               name="search"
               defaultValue={data.filters.search}
               placeholder="Search employees, recruiters, jobs, or departments"
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              className="h-10 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-[13px] text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 sm:h-11 sm:pr-3.5 sm:text-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
             />
             <input type="hidden" name="pageSize" value={String(data.pageSize)} />
           </div>

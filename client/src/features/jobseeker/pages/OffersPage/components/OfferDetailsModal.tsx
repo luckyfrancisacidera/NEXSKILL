@@ -189,19 +189,21 @@ export const OfferDetailsModal = ({
               <Button
                 type="button"
                 variant="secondary"
-                disabled={isActing}
+                loading={isActing}
+                loadingText="Updating"
                 onClick={() => onDecline(item.id)}
               >
-                {isActing ? "Updating..." : "Decline"}
+                Decline
               </Button>
             ) : null}
             {offer.can_accept ? (
               <Button
                 type="button"
-                disabled={isActing}
+                loading={isActing}
+                loadingText="Updating"
                 onClick={() => onAccept(item.id)}
               >
-                {isActing ? "Updating..." : "Accept Offer"}
+                Accept Offer
               </Button>
             ) : null}
           </div>

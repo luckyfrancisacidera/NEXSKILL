@@ -17,8 +17,6 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
     {
         var now = DateTime.UtcNow;
         var nextWeek = now.AddDays(7);
-        var nowOffset = DateTimeOffset.UtcNow;
-
         var companiesQuery = dbContext.Companies
             .AsNoTracking()
             .OrderByDescending(company => company.UpdatedAtUtc)
@@ -47,7 +45,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 CompanyId = company.Id,
                 CompanyName = company.Name,
                 Email = joined.user.Email ?? string.Empty,
-                IsActive = !joined.user.LockoutEnd.HasValue || joined.user.LockoutEnd <= nowOffset,
+                IsActive = joined.user.IsActive,
                 CreatedAtUtc = joined.profile.CreatedAtUtc,
             })
             .OrderByDescending(admin => admin.CreatedAtUtc);
@@ -62,7 +60,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 CompanyId = company.Id,
                 CompanyName = company.Name,
                 Email = joined.user.Email ?? string.Empty,
-                IsActive = !joined.user.LockoutEnd.HasValue || joined.user.LockoutEnd <= nowOffset,
+                IsActive = joined.user.IsActive,
                 CreatedAtUtc = joined.profile.CreatedAtUtc,
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id && job.Status == JobStatus.Published),
@@ -80,7 +78,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
             TotalRecruiters = await dbContext.RecruiterProfiles.CountAsync(ct),
             ActiveRecruiters = await dbContext.RecruiterProfiles
                 .Join(dbContext.Users, profile => profile.UserId, user => user.Id, (_, user) => user)
-                .CountAsync(user => !user.LockoutEnd.HasValue || user.LockoutEnd <= nowOffset, ct),
+                .CountAsync(user => user.IsActive, ct),
             TotalJobs = await dbContext.Jobs.CountAsync(ct),
             ActiveJobs = await dbContext.Jobs.CountAsync(job => job.Status == JobStatus.Published, ct),
             Companies = await CreatePagedDataAsync(companiesQuery, companiesPageNumber, pageSize, ct),
@@ -97,8 +95,6 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
     {
         var now = DateTime.UtcNow;
         var nextWeek = now.AddDays(7);
-        var nowOffset = DateTimeOffset.UtcNow;
-
         var company = await dbContext.Companies
             .AsNoTracking()
             .Where(item => item.Id == companyId)
@@ -127,7 +123,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 CompanyId = profile.CompanyId,
                 CompanyName = company.Name,
                 Email = user.Email ?? string.Empty,
-                IsActive = !user.LockoutEnd.HasValue || user.LockoutEnd <= nowOffset,
+                IsActive = user.IsActive,
                 CreatedAtUtc = profile.CreatedAtUtc,
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == user.Id && job.Status == JobStatus.Published),
@@ -147,7 +143,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
             ActiveRecruiters = await dbContext.RecruiterProfiles
                 .Where(profile => profile.CompanyId == companyId)
                 .Join(dbContext.Users, profile => profile.UserId, user => user.Id, (_, user) => user)
-                .CountAsync(user => !user.LockoutEnd.HasValue || user.LockoutEnd <= nowOffset, ct),
+                .CountAsync(user => user.IsActive, ct),
             ActiveJobs = await dbContext.Jobs.CountAsync(job => job.CompanyId == companyId && job.Status == JobStatus.Published, ct),
             UpcomingInterviews = await dbContext.Interviews.CountAsync(interview =>
                 interview.CompanyId == companyId &&
@@ -296,8 +292,6 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
     public Task<AdminRecruiterOverviewData?> GetRecruiterOverviewByUserIdAsync(Guid recruiterUserId, CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        var nowOffset = DateTimeOffset.UtcNow;
-
         return dbContext.RecruiterProfiles
             .AsNoTracking()
             .Where(profile => profile.UserId == recruiterUserId)
@@ -309,7 +303,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 CompanyId = company.Id,
                 CompanyName = company.Name,
                 Email = joined.user.Email ?? string.Empty,
-                IsActive = !joined.user.LockoutEnd.HasValue || joined.user.LockoutEnd <= nowOffset,
+                IsActive = joined.user.IsActive,
                 CreatedAtUtc = joined.profile.CreatedAtUtc,
                 TotalJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id),
                 ActiveJobs = dbContext.Jobs.Count(job => job.RecruiterId == joined.user.Id && job.Status == JobStatus.Published),
@@ -323,8 +317,6 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
 
     public Task<AdminCompanyAdminOverviewData?> GetCompanyAdminOverviewByUserIdAsync(Guid adminUserId, CancellationToken ct = default)
     {
-        var nowOffset = DateTimeOffset.UtcNow;
-
         return dbContext.AdminProfiles
             .AsNoTracking()
             .Where(profile => profile.UserId == adminUserId && profile.CompanyId.HasValue)
@@ -335,7 +327,7 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                 CompanyId = company.Id,
                 CompanyName = company.Name,
                 Email = joined.user.Email ?? string.Empty,
-                IsActive = !joined.user.LockoutEnd.HasValue || joined.user.LockoutEnd <= nowOffset,
+                IsActive = joined.user.IsActive,
                 CreatedAtUtc = joined.profile.CreatedAtUtc,
             })
             .FirstOrDefaultAsync(ct);

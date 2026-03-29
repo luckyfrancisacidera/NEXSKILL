@@ -144,7 +144,7 @@ export const DataTable = <T,>({
     >
       {toolbar ? <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800 sm:px-5">{toolbar}</div> : null}
       <div className="w-full overflow-x-auto overscroll-x-contain">
-        <table className={cn("min-w-max w-full table-auto", tableClassName)}>
+        <table className={cn("w-full min-w-full table-auto", tableClassName)}>
           <thead className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
             <tr>
               {columns.map((column) => {

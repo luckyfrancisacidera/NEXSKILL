@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { LoaderCircle } from 'lucide-react';
 
 import { cn } from '@shared/utils/cn';
 
@@ -14,6 +15,8 @@ export interface ActionButtonProps
     ActionButtonClassNameOptions {
   icon?: ReactNode;
   label?: string;
+  loading?: boolean;
+  loadingLabel?: string;
 }
 
 const neutralBaseClassName =
@@ -44,6 +47,9 @@ export const ActionButton = ({
   className,
   title,
   type = 'button',
+  loading = false,
+  loadingLabel,
+  disabled,
   ...props
 }: ActionButtonProps) => {
   if (iconOnly && !label) {
@@ -56,19 +62,30 @@ export const ActionButton = ({
     <button
       type={type}
       className={cn(
+        'relative',
         actionButtonClassName({ destructive, iconOnly, fullWidth }),
         className,
       )}
       aria-label={iconOnly ? accessibleLabel : props['aria-label']}
       title={title ?? accessibleLabel}
+      disabled={disabled || loading}
+      aria-busy={loading}
       {...props}
     >
-      {icon}
-      {iconOnly ? (
-        <span className="sr-only">{accessibleLabel}</span>
-      ) : (
-        children
-      )}
+      <span className={cn('inline-flex items-center justify-center gap-2', loading && 'opacity-0')}>
+        {icon}
+        {iconOnly ? (
+          <span className="sr-only">{accessibleLabel}</span>
+        ) : (
+          children
+        )}
+      </span>
+      {loading ? (
+        <span className="absolute inset-0 inline-flex items-center justify-center gap-2">
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          {!iconOnly ? <span>{loadingLabel ?? accessibleLabel ?? 'Loading'}</span> : null}
+        </span>
+      ) : null}
     </button>
   );
 };
