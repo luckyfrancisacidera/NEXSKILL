@@ -103,6 +103,15 @@ public static class IdentitySeeder
         var existingUser = await userManager.FindByEmailAsync(seedUser.Email);
         if (existingUser is not null)
         {
+            existingUser.IsActive = true;
+            existingUser.LockoutEnabled = false;
+            if (!existingUser.EmailConfirmed)
+            {
+                existingUser.EmailConfirmed = true;
+            }
+
+            var updateResult = await userManager.UpdateAsync(existingUser);
+            EnsureSuccess(updateResult, $"normalize seed user '{seedUser.Email}'");
             return existingUser;
         }
 
@@ -115,7 +124,7 @@ public static class IdentitySeeder
             NormalizedEmail = seedUser.Email.ToUpperInvariant(),
             EmailConfirmed = true,
             IsActive = true,
-            LockoutEnabled = true,
+            LockoutEnabled = false,
         };
 
         var result = await userManager.CreateAsync(user, password);

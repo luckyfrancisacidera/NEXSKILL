@@ -67,7 +67,7 @@ export const TrendChartCard = ({
               key={item}
               type="button"
               onClick={() => onGroupByChange(item)}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition sm:px-4 sm:text-sm ${
+              className={`rounded-md px-2.5 py-1.5 text-[11px] font-semibold capitalize transition sm:px-3 sm:text-sm ${
                 groupBy === item
                   ? 'bg-black text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900'
                   : 'text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800'
@@ -87,15 +87,15 @@ export const TrendChartCard = ({
             value={quickRange}
             options={quickRangeOptions}
             onChange={(event) => onQuickRangeChange(event.target.value as DashboardQuickRange)}
-            buttonClassName="h-10 rounded-md"
+            buttonClassName="h-9 rounded-md sm:h-10"
           />
         </div>
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900 sm:px-3 sm:py-2 sm:text-sm"
           onClick={onToggleExpanded}
         >
-          {expanded ? <ArrowLeft size={16} /> : <Expand size={16} />}
+          {expanded ? <ArrowLeft size={14} /> : <Expand size={14} />}
           {expanded ? 'Back to Dashboard' : 'Expand'}
         </button>
       </div>
@@ -104,8 +104,8 @@ export const TrendChartCard = ({
 
   const chartContent = (
     <div className="min-h-0">
-      <h2 className="mb-3 text-sm font-semibold text-zinc-600 dark:text-zinc-400">{title}</h2>
-      <div className={expanded ? 'h-full min-h-[320px]' : 'h-[300px] sm:h-96'}>
+      <h2 className="mb-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 sm:text-sm">{title}</h2>
+      <div className={expanded ? 'h-full min-h-[300px]' : 'h-[260px] sm:h-[320px]'}>
         {labels.length > 0 && datasets.length > 0 ? (
           <DashboardAreaChart labels={labels} datasets={datasets} />
         ) : (
@@ -122,7 +122,7 @@ export const TrendChartCard = ({
 
   return (
     <>
-      <Card className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+      <Card className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div className="flex flex-col gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           {controls}
         </div>
@@ -132,7 +132,7 @@ export const TrendChartCard = ({
       {expanded ? (
         <div className="fixed inset-0 z-50 bg-zinc-950/55 backdrop-blur-sm">
           <div className="flex h-full w-full p-3 sm:p-4 lg:p-6">
-            <Card className="flex h-full w-full flex-col rounded-[28px] border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
+            <Card className="flex h-full w-full flex-col rounded-[24px] border border-zinc-200 bg-white p-4 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-5 lg:p-6">
               <div className="flex flex-col gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-800 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
                 {controls}
               </div>

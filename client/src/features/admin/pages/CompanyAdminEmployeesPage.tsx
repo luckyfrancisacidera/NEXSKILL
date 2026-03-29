@@ -8,11 +8,20 @@ import { DepartmentCell } from "@shared/components/DepartmentCell";
 import { DataTable } from "@shared/components/ui/data-table/DataTable";
 import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 
 export const CompanyAdminEmployeesPage = () => {
   const data = useLoaderData() as CompanyAdminEmployeesDto & { filters: { search: string } };
   const submit = useSubmit();
+
+  const submitFilters = (searchValue: string, pageSizeValue: number | string) => {
+    const formData = new FormData();
+    formData.set("search", searchValue);
+    formData.set("pageSize", String(pageSizeValue));
+    formData.set("page", "1");
+    submit(formData, { method: "get", action: "/admin/company/employees" });
+  };
 
   const submitSearch = (form: HTMLFormElement) => {
     const formData = new FormData(form);
@@ -91,10 +100,14 @@ export const CompanyAdminEmployeesPage = () => {
   return (
     <Card className="border-y border-zinc-200 bg-white p-0 shadow-none dark:border-zinc-800 dark:bg-zinc-950">
       <div className="border-b border-zinc-200 px-4 py-5 dark:border-zinc-800 sm:px-6">
-        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100 sm:text-xl">Employees</h2>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Confirmed hires across your company, sourced directly from hired applications.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-100 sm:text-xl">Employees</h2>
+            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              Confirmed hires across your company, sourced directly from hired applications.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="px-4 py-4 sm:px-6">
@@ -104,13 +117,19 @@ export const CompanyAdminEmployeesPage = () => {
             submitSearch(event.currentTarget);
           }}
         >
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
-              name="search"
-              defaultValue={data.filters.search}
-              placeholder="Search employees, recruiters, jobs, or departments"
-              className="h-10 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-[13px] text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 sm:h-11 sm:pr-3.5 sm:text-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="relative w-full max-w-md flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                name="search"
+                defaultValue={data.filters.search}
+                placeholder="Search employees, recruiters, jobs, or departments"
+                className="h-10 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-[13px] text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 sm:h-11 sm:pr-3.5 sm:text-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              />
+            </div>
+            <TablePageSizeControl
+              value={data.pageSize}
+              onChange={(pageSize) => submitFilters(data.filters.search, pageSize)}
             />
             <input type="hidden" name="pageSize" value={String(data.pageSize)} />
           </div>
@@ -136,6 +155,7 @@ export const CompanyAdminEmployeesPage = () => {
         getPageHref={buildHref}
         itemLabel="employees"
         className="px-4 sm:px-6"
+        showPageSizeSelector={false}
       />
     </Card>
   );

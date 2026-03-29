@@ -9,6 +9,7 @@ import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApplicationsEmptyState } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsEmptyState";
 import { ApplicationListSkeleton } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationListSkeleton";
 import { ApplicationsTable } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTable";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
 
 const statusOptions = [
@@ -129,6 +130,7 @@ export const ApplicationsPage = () => {
                 Updating results...
               </p>
             ) : null}
+            <TablePageSizeControl value={data.pageSize} onChange={handlePageSizeChange} className="ml-auto" />
           </div>
 
           {error ? (
@@ -167,8 +169,8 @@ export const ApplicationsPage = () => {
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
                 onPageChange={setPageNumber}
-                onPageSizeChange={handlePageSizeChange}
                 itemLabel="applications"
+                showPageSizeSelector={false}
               />
             </>
           )}

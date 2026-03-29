@@ -7,6 +7,7 @@ import { ActionButton } from "@shared/components/ActionButton";
 import { JobTitleCell } from "@shared/components/JobTitleCell";
 import { DataTable } from "@shared/components/ui/data-table/DataTable";
 import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
 import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
@@ -185,6 +186,14 @@ export const ArchivedApplicationsPage = () => {
             {isLoading ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Updating results...</p>
             ) : null}
+            <TablePageSizeControl
+              value={data.pageSize}
+              onChange={(value) => {
+                setPageSize(value);
+                setPageNumber(1);
+              }}
+              className="ml-auto"
+            />
           </div>
 
           {error ? (
@@ -214,11 +223,8 @@ export const ArchivedApplicationsPage = () => {
                 totalCount={data.totalCount}
                 totalPages={data.totalPages}
                 onPageChange={setPageNumber}
-                onPageSizeChange={(value) => {
-                  setPageSize(value);
-                  setPageNumber(1);
-                }}
                 itemLabel="archived entries"
+                showPageSizeSelector={false}
               />
             </>
           )}

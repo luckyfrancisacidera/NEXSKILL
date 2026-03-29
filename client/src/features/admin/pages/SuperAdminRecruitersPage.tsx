@@ -1,5 +1,6 @@
 import { useNavigate, useLoaderData, useRevalidator, useSearchParams } from 'react-router-dom';
 import { Card } from '@shared/components/Card';
+import { DashboardPageHeader } from '@shared/components/DashboardPrimitives';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { AdminMetricCard } from '@features/admin/components/AdminMetricCard';
 import { AdminRecruitersTableCard } from '@features/admin/components/AdminRecruitersTableCard';
@@ -40,20 +41,18 @@ export const SuperAdminRecruitersPage = () => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-zinc-200 dark:border-zinc-800 bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#fafaf9,_#ffffff)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.06),_transparent_50%),linear-gradient(135deg,_#19191f,_#09090b)] p-5 shadow-sm sm:p-6 lg:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 sm:text-sm sm:tracking-[0.24em]">Super Admin</p>
-        <h1 className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">Recruiter account management</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Monitor recruiter account status across every company, review hiring activity, and activate or deactivate accounts from a dedicated management surface.
-        </p>
-      </section>
+      <DashboardPageHeader
+        eyebrow="Super Admin"
+        title="Recruiter account management"
+        description="Monitor recruiter account status across every company, review hiring activity, and activate or deactivate accounts from a dedicated management surface."
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminMetricCard label="Recruiters" value={data.summary.totalRecruiters} accent="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-400" />
         <AdminMetricCard label="Active Recruiters" value={data.summary.activeRecruiters} accent="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-900/30 dark:text-violet-400" />
-        <Card className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-sm sm:p-6">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Published Jobs</p>
-          <p className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.activeJobs}</p>
+        <Card className="rounded-2xl border border-zinc-200 bg-white p-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">Published Jobs</p>
+          <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:mt-3 sm:text-2xl">{data.summary.activeJobs}</p>
         </Card>
       </section>
 

@@ -13,6 +13,17 @@ public sealed class SuperAdminDashboardData
     public PagedData<AdminRecruiterOverviewData> Recruiters { get; set; } = new();
 }
 
+public sealed class SuperAdminUsersPageData
+{
+    public int TotalCompanies { get; set; }
+    public int ActiveCompanies { get; set; }
+    public int TotalRecruiters { get; set; }
+    public int ActiveRecruiters { get; set; }
+    public int TotalJobs { get; set; }
+    public int ActiveJobs { get; set; }
+    public PagedData<AdminUserOverviewData> Users { get; set; } = new();
+}
+
 public sealed class CompanyAdminDashboardData
 {
     public AdminCompanyIdentityData Company { get; set; } = new();
@@ -69,4 +80,17 @@ public sealed class AdminRecruiterOverviewData
     public int ActiveJobs { get; set; }
     public int UpcomingInterviews { get; set; }
     public int TotalHires { get; set; }
+}
+
+public sealed class AdminUserOverviewData
+{
+    public Guid UserId { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? ProfileFullName { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public int ApplicationCount { get; set; }
+    public DateTime JoinedAtUtc { get; set; }
 }

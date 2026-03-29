@@ -39,6 +39,8 @@ public sealed class AuthServiceTests
         Assert.Equal("Acidera", result.LastName);
         Assert.NotNull(createdUser.JobSeekerProfile);
         Assert.Equal("Lucky Acidera", createdUser.JobSeekerProfile!.FullName);
+        Assert.True(createdUser.IsActive);
+        Assert.False(createdUser.LockoutEnabled);
     }
 
     [Fact]
@@ -71,6 +73,7 @@ public sealed class AuthServiceTests
         Assert.False(result.Succeeded);
         Assert.Equal("Authentication failed.", result.Message);
         Assert.Contains("Your account is inactive. Please contact your administrator.", result.Errors);
+        Assert.Equal(0, recruiter.AccessFailedCount);
     }
 
     [Fact]
@@ -92,7 +95,8 @@ public sealed class AuthServiceTests
     {
         var lockedUser = CreateUser(
             "locked@company.com",
-            lockoutEnd: DateTimeOffset.UtcNow.AddMinutes(30));
+            lockoutEnd: DateTimeOffset.UtcNow.AddMinutes(30),
+            lockoutEnabled: true);
         var service = CreateService(
             userManager: CreateUserManager((lockedUser, true, ["Recruiter"])),
             authRepository: new TestAuthRepository());
@@ -101,6 +105,28 @@ public sealed class AuthServiceTests
 
         Assert.False(result.Succeeded);
         Assert.Contains("Your account is temporarily locked due to failed login attempts. Please try again later.", result.Errors);
+    }
+
+    [Fact]
+    public async Task CreatePrivilegedUserAsync_SetsIsActive_AndDisablesLockout()
+    {
+        var userManager = CreateUserManager();
+        var service = CreateService(userManager: userManager, authRepository: new TestAuthRepository());
+
+        var result = await service.CreatePrivilegedUserAsync(new CreatePrivilegedUserRequest
+        {
+            Email = "admin.created@example.com",
+            Password = "Password123!",
+            Role = "CompanyAdmin",
+            CompanyId = Guid.NewGuid(),
+        }, CancellationToken.None);
+
+        var createdUser = await userManager.FindByEmailAsync("admin.created@example.com");
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(createdUser);
+        Assert.True(createdUser!.IsActive);
+        Assert.False(createdUser.LockoutEnabled);
     }
 
     [Fact]
@@ -268,7 +294,7 @@ public sealed class AuthServiceTests
         string email,
         bool isActive = true,
         DateTimeOffset? lockoutEnd = null,
-        bool lockoutEnabled = true)
+        bool lockoutEnabled = false)
         => new()
         {
             Id = Guid.NewGuid(),

@@ -10,6 +10,12 @@ public sealed class SuperAdminDashboardResponse
     public PagedResult<AdminRecruiterOverviewResponse> Recruiters { get; set; } = new();
 }
 
+public sealed class SuperAdminUsersPageResponse
+{
+    public SuperAdminDashboardSummaryResponse Summary { get; set; } = new();
+    public PagedResult<AdminUserOverviewResponse> Users { get; set; } = new();
+}
+
 public sealed class SuperAdminDashboardSummaryResponse
 {
     public int TotalCompanies { get; set; }
@@ -81,6 +87,17 @@ public sealed class AdminRecruiterOverviewResponse
     public int ActiveJobs { get; set; }
     public int UpcomingInterviews { get; set; }
     public int TotalHires { get; set; }
+}
+
+public sealed class AdminUserOverviewResponse
+{
+    public Guid UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public int ApplicationCount { get; set; }
+    public DateTime JoinedAtUtc { get; set; }
 }
 
 public sealed class AdminCompanyAccountResponse

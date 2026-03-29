@@ -25,6 +25,11 @@ import type {
 } from '@features/admin/types/admin.type';
 
 const getCompanyScore = (company: AdminCompanyOverviewDto) => company.activeJobs * 100 + company.recruiterCount * 10 + company.upcomingInterviews;
+const getEmailDisplayName = (email: string) =>
+  email
+    .split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (value) => value.toUpperCase());
 
 export const SuperAdminDashboardPage = () => {
   const data = useLoaderData() as SuperAdminDashboardDto;
@@ -163,6 +168,7 @@ export const SuperAdminDashboardPage = () => {
                   <DashboardRankItem
                     key={company.companyId}
                     rank={index + 1}
+                    avatar={<Avatar name={company.name} email={company.primaryEmail} className="h-9 w-9 sm:h-10 sm:w-10" />}
                     title={company.name}
                     subtitle={company.primaryEmail ?? 'No primary email set'}
                     meta={[
@@ -193,10 +199,11 @@ export const SuperAdminDashboardPage = () => {
                   <DashboardRankItem
                     key={recruiter.userId}
                     rank={index + 1}
-                    avatar={<Avatar name={recruiter.email} />}
-                    title={recruiter.email}
-                    subtitle={recruiter.companyName}
+                    avatar={<Avatar name={recruiter.email} email={recruiter.email} className="h-9 w-9 sm:h-10 sm:w-10" />}
+                    title={getEmailDisplayName(recruiter.email)}
+                    subtitle={recruiter.email}
                     meta={[
+                      recruiter.companyName,
                       `${recruiter.totalHires} hires`,
                       `${recruiter.activeJobs}/${recruiter.totalJobs} jobs`,
                     ]}
@@ -223,29 +230,29 @@ export const SuperAdminDashboardPage = () => {
           onPageSizeChange={(nextPageSize) => updatePageSize(nextPageSize, 'companiesPage')}
         />
 
-        <section className="grid gap-6 md:grid-cols-2">
+        <section className="grid gap-5 md:grid-cols-2">
           <DashboardSectionCard title="Recruiter Coverage" description="Platform-wide recruiter totals for quick health checks.">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total recruiters</p>
-                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.totalRecruiters}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">Total recruiters</p>
+                <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">{data.summary.totalRecruiters}</p>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Active recruiters</p>
-                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.activeRecruiters}</p>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">Active recruiters</p>
+                <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">{data.summary.activeRecruiters}</p>
               </div>
             </div>
           </DashboardSectionCard>
 
           <DashboardSectionCard title="Job Coverage" description="High-level platform volume for active and historical jobs.">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">All jobs</p>
-                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.totalJobs}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">All jobs</p>
+                <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">{data.summary.totalJobs}</p>
               </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-                <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Published jobs</p>
-                <p className="mt-2 text-2xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-3xl">{data.summary.activeJobs}</p>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">Published jobs</p>
+                <p className="mt-2 text-xl font-semibold text-zinc-950 dark:text-zinc-100 sm:text-2xl">{data.summary.activeJobs}</p>
               </div>
             </div>
           </DashboardSectionCard>

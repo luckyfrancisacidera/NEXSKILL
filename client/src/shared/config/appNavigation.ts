@@ -42,6 +42,7 @@ const recruiterItems: AppNavigationItem[] = [
 
 const superAdminItems: AppNavigationItem[] = [
   { label: "Platform Overview", to: "/admin/super", icon: LayoutDashboard },
+  { label: "Users", to: "/admin/super/users", icon: Users },
   { label: "Company Admins", to: "/admin/super/company-admins", icon: Users },
   { label: "Recruiters", to: "/admin/super/recruiters", icon: BriefcaseBusiness },
 ];

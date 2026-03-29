@@ -8,6 +8,7 @@ import type {
   SuperAdminCompanyAdminsPageDto,
   SuperAdminDashboardDto,
   SuperAdminRecruitersPageDto,
+  SuperAdminUsersPageDto,
 } from "@features/admin/types/admin.type";
 
 const getPositiveNumber = (value: string | null, fallback: number) => {
@@ -78,6 +79,14 @@ export const superAdminRecruitersLoader = async ({ request }: LoaderFunctionArgs
     summary: data.summary,
     recruiters: data.recruiters,
   };
+};
+
+export const superAdminUsersLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminUsersPageDto> => {
+  const url = new URL(request.url);
+  return adminService.getSuperAdminUsers({
+    page: getPositiveNumber(url.searchParams.get("page"), 1),
+    pageSize: getPositiveNumber(url.searchParams.get("pageSize"), 10),
+  });
 };
 
 export const companyAdminDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<CompanyAdminDashboardDto> => {

@@ -82,7 +82,7 @@ public sealed class AuthService(
             NormalizedUserName = email.ToUpperInvariant(),
             EmailConfirmed = true,
             IsActive = true,
-            LockoutEnabled = true,
+            LockoutEnabled = false,
             FirstName = firstName,
             LastName = lastName
         };
@@ -115,6 +115,12 @@ public sealed class AuthService(
         {
             _logger.LogInformation("Login failed because no user exists for email {Email}.", email);
             return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
+        }
+
+        var prePasswordBlockResult = await GetPrePasswordAuthenticationBlockResultAsync(user);
+        if (prePasswordBlockResult is not null)
+        {
+            return prePasswordBlockResult;
         }
 
         var valid = await _userManager.CheckPasswordAsync(user, password);
@@ -236,7 +242,7 @@ public sealed class AuthService(
             NormalizedUserName = email.ToUpperInvariant(),
             EmailConfirmed = true,
             IsActive = true,
-            LockoutEnabled = true,
+            LockoutEnabled = false,
         };
         var passwordValidation = await ValidatePasswordAsync(user, password);
         if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
@@ -749,21 +755,10 @@ public sealed class AuthService(
 
     private async Task<AuthResult?> GetBlockedAuthenticationResultAsync(AppUser user, CancellationToken cancellationToken)
     {
-        if (!user.IsActive)
+        var prePasswordBlockResult = await GetPrePasswordAuthenticationBlockResultAsync(user);
+        if (prePasswordBlockResult is not null)
         {
-            _logger.LogWarning(
-                "Blocking authentication for user {UserId} because IsActive is false.",
-                user.Id);
-            return AuthResult.Failure(AuthenticationFailedMessage, InactiveAccountError);
-        }
-
-        if (await _userManager.IsLockedOutAsync(user))
-        {
-            _logger.LogWarning(
-                "Blocking authentication for user {UserId} because the account is temporarily locked out. LockoutEnd={LockoutEndUtc}.",
-                user.Id,
-                user.LockoutEnd);
-            return AuthResult.Failure(AuthenticationFailedMessage, LockedOutAccountError);
+            return prePasswordBlockResult;
         }
 
         var companyAccess = await _authRepository.GetUserCompanyAccessAsync(user.Id, cancellationToken);
@@ -783,6 +778,28 @@ public sealed class AuthService(
             user.LockoutEnd,
             companyAccess is not null,
             companyAccess?.CompanyIsActive);
+        return null;
+    }
+
+    private async Task<AuthResult?> GetPrePasswordAuthenticationBlockResultAsync(AppUser user)
+    {
+        if (!user.IsActive)
+        {
+            _logger.LogWarning(
+                "Blocking authentication for user {UserId} because IsActive is false.",
+                user.Id);
+            return AuthResult.Failure(AuthenticationFailedMessage, InactiveAccountError);
+        }
+
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            _logger.LogWarning(
+                "Blocking authentication for user {UserId} because the account is temporarily locked out. LockoutEnd={LockoutEndUtc}.",
+                user.Id,
+                user.LockoutEnd);
+            return AuthResult.Failure(AuthenticationFailedMessage, LockedOutAccountError);
+        }
+
         return null;
     }
 

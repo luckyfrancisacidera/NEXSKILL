@@ -60,11 +60,13 @@ import {
   SuperAdminCompanyAdminsPage,
   SuperAdminDashboardPage,
   SuperAdminRecruitersPage,
+  SuperAdminUsersPage,
   companyAdminEmployeesLoader,
   companyAdminDashboardLoader,
   superAdminCompanyAdminsLoader,
   superAdminDashboardLoader,
   superAdminRecruitersLoader,
+  superAdminUsersLoader,
 } from "@features/admin";
 import {
   RegisterAccount,
@@ -370,6 +372,12 @@ const adminRoutes: AppRoute = {
       access: "superAdminRecruiters",
       loader: superAdminRecruitersLoader,
       element: <SuperAdminRecruitersPage />,
+    }),
+    protectedRoute({
+      path: "super/users",
+      access: "superAdminUsers",
+      loader: superAdminUsersLoader,
+      element: <SuperAdminUsersPage />,
     }),
     protectedRoute({
       path: "company",
