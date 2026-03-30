@@ -130,6 +130,15 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
+    public void AppUser_DefaultsToActive_WithLockoutDisabled()
+    {
+        var user = new AppUser();
+
+        Assert.True(user.IsActive);
+        Assert.False(user.LockoutEnabled);
+    }
+
+    [Fact]
     public async Task LoginAsync_AllowsActiveRecruiterInActiveCompany()
     {
         var recruiter = CreateUser("active.recruiter@company.com");
