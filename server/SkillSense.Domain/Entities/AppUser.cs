@@ -4,6 +4,12 @@ namespace SkillSense.Domain.Entities;
 
 public sealed class AppUser : IdentityUser<Guid>
 {
+    public AppUser()
+    {
+        IsActive = true;
+        LockoutEnabled = false;
+    }
+
     public bool IsActive { get; set; } = true;
     public string? FirstName { get; set; }
     public string? LastName { get; set; }

@@ -1,6 +1,8 @@
+using System.IO;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
@@ -37,6 +39,16 @@ var jwtKey = GetRequiredConfigurationValue(configuration, "Jwt:Key");
 var jwtIssuer = GetRequiredConfigurationValue(configuration, "Jwt:Issuer");
 var jwtAudience = GetRequiredConfigurationValue(configuration, "Jwt:Audience");
 var allowedOrigins = GetAllowedOrigins(configuration);
+
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .SetApplicationName("SkillSense");
+
+if (IsRunningInContainer())
+{
+    var keyRingDirectory = new DirectoryInfo("/var/app/dataprotection-keys");
+    keyRingDirectory.Create();
+    dataProtectionBuilder.PersistKeysToFileSystem(keyRingDirectory);
+}
 
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
@@ -303,6 +315,12 @@ static string[] GetAllowedOrigins(IConfiguration configuration)
 
 static bool ShouldRunMigrationsOnly(IConfiguration configuration)
     => bool.TryParse(configuration["RUN_MIGRATIONS_ONLY"], out var enabled) && enabled;
+
+static bool IsRunningInContainer()
+    => string.Equals(
+        Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"),
+        "true",
+        StringComparison.OrdinalIgnoreCase);
 
 static void LogEmailConfigurationStatus(WebApplication app)
 {
