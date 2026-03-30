@@ -10,7 +10,6 @@ internal sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
     {
         builder.ToTable("users");
         builder.Property(x => x.IsActive).HasDefaultValue(true);
-        builder.Property(x => x.LockoutEnabled).HasDefaultValue(false);
         builder.Property(x => x.FirstName).HasMaxLength(120);
         builder.Property(x => x.LastName).HasMaxLength(120);
         builder.Property(x => x.Location).HasMaxLength(200);

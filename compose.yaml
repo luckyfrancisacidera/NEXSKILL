@@ -108,6 +108,7 @@ services:
       BOOTSTRAP_RECRUITER_COMPANY_ID: ${BOOTSTRAP_RECRUITER_COMPANY_ID}
     volumes:
       - api_storage:/app/storage
+      - dataprotection_keys:/var/app/dataprotection-keys
     networks:
       - app_net
 
@@ -132,6 +133,7 @@ services:
       - "${API_PORT:-5062}:8080"
     volumes:
       - api_storage:/app/storage
+      - dataprotection_keys:/var/app/dataprotection-keys
     networks:
       - app_net
 
@@ -154,6 +156,7 @@ services:
 volumes:
   postgres_data:
   api_storage:
+  dataprotection_keys:
 
 networks:
   app_net:
