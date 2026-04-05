@@ -8,6 +8,7 @@ import type { JobDto } from "@features/recruiter/types";
 import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
 import { Button } from "@shared/components/actions/Button";
+import { DatePicker, Dropdown, type DropdownOption } from "@shared/components/form";
 import { RichTextField } from "@shared/components/form/RichTextField";
 import { sanitizeRichText } from "@shared/utils/richText";
 
@@ -90,6 +91,92 @@ export const InterviewSchedulerForm = ({
       (job) => (job.department?.trim() ? job.department.trim() : "Unassigned") === department,
     );
   }, [department, jobs]);
+
+  const departmentOptions = useMemo<DropdownOption[]>(
+    () => [
+      {
+        value: "",
+        label: isLoadingJobs ? "Loading departments..." : "All departments",
+      },
+      ...departments.map((item) => ({
+        value: item,
+        label: item,
+      })),
+    ],
+    [departments, isLoadingJobs],
+  );
+
+  const jobOptions = useMemo<DropdownOption[]>(
+    () => [
+      {
+        value: "",
+        label: isLoadingJobs
+          ? "Loading jobs..."
+          : filteredJobs.length === 0
+            ? "No jobs for this department"
+            : "Select a job",
+      },
+      ...filteredJobs.map((job) => ({
+        value: job.id,
+        label: `${job.title}${job.department ? ` - ${job.department}` : ""}`,
+        triggerLabel: job.title,
+      })),
+    ],
+    [filteredJobs, isLoadingJobs],
+  );
+
+  const candidateOptions = useMemo<DropdownOption[]>(
+    () => [
+      {
+        value: "",
+        label: !jobId
+          ? "Select a job first"
+          : isLoadingCandidates
+            ? "Loading shortlisted candidates..."
+            : candidates.length === 0
+              ? "No shortlisted candidates"
+              : "Select a candidate",
+      },
+      ...candidates.map((candidate) => ({
+        value: candidate.jobseekerId,
+        label: `${candidate.candidateName} (${candidate.candidateEmail})`,
+        triggerLabel: candidate.candidateName,
+      })),
+    ],
+    [candidates, isLoadingCandidates, jobId],
+  );
+
+  const hourOptions = useMemo<DropdownOption[]>(
+    () => Array.from({ length: 12 }, (_, index) => {
+      const hour = String(index + 1);
+      return { value: hour, label: hour };
+    }),
+    [],
+  );
+
+  const minuteOptions = useMemo<DropdownOption[]>(
+    () => Array.from({ length: 60 }, (_, index) => {
+      const minute = String(index).padStart(2, "0");
+      return { value: minute, label: minute };
+    }),
+    [],
+  );
+
+  const meridiemOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: "AM", label: "AM" },
+      { value: "PM", label: "PM" },
+    ],
+    [],
+  );
+
+  const interviewTypeOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: "Virtual", label: "Virtual" },
+      { value: "Onsite", label: "Onsite" },
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (defaultDate) {
@@ -343,108 +430,73 @@ export const InterviewSchedulerForm = ({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            Department
-            <select
+          <div>
+            <Dropdown
+              label="Department"
+              name="department"
               value={department}
+              options={departmentOptions}
               disabled={isLoadingJobs || isSubmitting}
+              className="w-full"
+              compactOnMobile={false}
+              buttonClassName="h-11"
               onChange={(event) => {
                 setDepartment(event.target.value);
                 clearError("department");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
-              style={{ colorScheme: 'light dark' }}
-            >
-              <option value="">
-                {isLoadingJobs ? "Loading departments..." : "All departments"}
-              </option>
-              {departments.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+          </div>
 
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            Job
-            <select
-              required
+          <div>
+            <Dropdown
+              label="Job"
+              name="jobId"
               value={jobId}
+              options={jobOptions}
               disabled={isLoadingJobs || isSubmitting}
+              className="w-full"
+              compactOnMobile={false}
+              buttonClassName="h-11"
               onChange={(event) => {
                 setJobId(event.target.value);
                 clearError("jobId");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
-              style={{ colorScheme: 'light dark' }}
-            >
-              <option value="">
-                {isLoadingJobs
-                  ? "Loading jobs..."
-                  : filteredJobs.length === 0
-                    ? "No jobs for this department"
-                    : "Select a job"}
-              </option>
-              {filteredJobs.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.title}
-                  {job.department ? ` - ${job.department}` : ""}
-                </option>
-              ))}
-            </select>
+            />
             {errors.jobId ? (
               <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">{errors.jobId}</p>
             ) : null}
-          </label>
+          </div>
 
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            Candidate
-            <select
-              required
+          <div className="md:col-span-2">
+            <Dropdown
+              label="Candidate"
+              name="jobseekerId"
               value={jobseekerId}
+              options={candidateOptions}
               disabled={!jobId || isLoadingCandidates || isSubmitting}
+              className="w-full"
+              compactOnMobile={false}
+              buttonClassName="h-11"
               onChange={(event) => {
                 setJobseekerId(event.target.value);
                 clearError("jobseekerId");
               }}
-              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
-              style={{ colorScheme: 'light dark' }}
-            >
-              <option value="">
-                {!jobId
-                  ? "Select a job first"
-                  : isLoadingCandidates
-                    ? "Loading shortlisted candidates..."
-                    : candidates.length === 0
-                      ? "No shortlisted candidates"
-                      : "Select a candidate"}
-              </option>
-              {candidates.map((candidate) => (
-                <option
-                  key={candidate.submissionId}
-                  value={candidate.jobseekerId}
-                >
-                  {candidate.candidateName} ({candidate.candidateEmail})
-                </option>
-              ))}
-            </select>
+            />
             {errors.jobseekerId ? (
               <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
                 {errors.jobseekerId}
               </p>
             ) : null}
-          </label>
+          </div>
 
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
-            Interview date
-            <input
-              required
-              type="date"
-              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+          <div className="md:col-span-2">
+            <DatePicker
+              label="Interview date"
               value={scheduledDate}
-              onChange={(event) => {
-                setScheduledDate(event.target.value);
+              disabled={isSubmitting}
+              className="w-full"
+              onChange={(value) => {
+                setScheduledDate(value);
                 clearError("scheduledDate");
               }}
             />
@@ -453,7 +505,7 @@ export const InterviewSchedulerForm = ({
                 {errors.scheduledDate}
               </p>
             ) : null}
-          </label>
+          </div>
 
           <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
             Interview time
@@ -461,50 +513,45 @@ export const InterviewSchedulerForm = ({
               Select the time the interview will begin.
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <select
-                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+              <Dropdown
+                name="scheduledHour"
                 value={scheduledHour}
+                options={hourOptions}
+                className="w-full"
+                compactOnMobile={false}
+                buttonClassName="h-11"
                 onChange={(event) => {
                   setScheduledHour(event.target.value);
                   clearError("scheduledTime");
                 }}
-                style={{ colorScheme: 'light dark' }}
-              >
-                {["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"].map(
-                  (hour) => (
-                    <option key={hour} value={hour}>
-                      {hour}
-                    </option>
-                  ),
-                )}
-              </select>
-              <select
-                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                disabled={isSubmitting}
+              />
+              <Dropdown
+                name="scheduledMinute"
                 value={scheduledMinute}
+                options={minuteOptions}
+                className="w-full"
+                compactOnMobile={false}
+                buttonClassName="h-11"
                 onChange={(event) => {
                   setScheduledMinute(event.target.value);
                   clearError("scheduledTime");
                 }}
-                style={{ colorScheme: 'light dark' }}
-              >
-                {["00", "15", "30", "45"].map((minute) => (
-                  <option key={minute} value={minute}>
-                    {minute}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                disabled={isSubmitting}
+              />
+              <Dropdown
+                name="scheduledMeridiem"
                 value={scheduledMeridiem}
+                options={meridiemOptions}
+                className="w-full"
+                compactOnMobile={false}
+                buttonClassName="h-11"
                 onChange={(event) => {
                   setScheduledMeridiem(event.target.value as "AM" | "PM");
                   clearError("scheduledTime");
                 }}
-                style={{ colorScheme: 'light dark' }}
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
+                disabled={isSubmitting}
+              />
             </div>
             {errors.scheduledTime ? (
               <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400">
@@ -513,11 +560,15 @@ export const InterviewSchedulerForm = ({
             ) : null}
           </label>
 
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 md:col-span-2">
-            Interview type
-            <select
-              className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+          <div className="md:col-span-2">
+            <Dropdown
+              label="Interview type"
+              name="interviewType"
               value={interviewType}
+              options={interviewTypeOptions}
+              className="w-full"
+              compactOnMobile={false}
+              buttonClassName="h-11"
               onChange={(event) => {
                 const nextType = event.target.value as InterviewType;
                 setInterviewType(nextType);
@@ -528,12 +579,9 @@ export const InterviewSchedulerForm = ({
                   setMeetingLink("");
                 }
               }}
-              style={{ colorScheme: 'light dark' }}
-            >
-              <option value="Virtual">Virtual</option>
-              <option value="Onsite">Onsite</option>
-            </select>
-          </label>
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         <div className="grid gap-3">
@@ -543,7 +591,7 @@ export const InterviewSchedulerForm = ({
               <input
                 required
                 type="url"
-                className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                className="mt-1 h-11 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-zinc-400 dark:focus:ring-white/15"
                 value={meetingLink}
                 onChange={(event) => {
                   setMeetingLink(event.target.value);
@@ -557,7 +605,7 @@ export const InterviewSchedulerForm = ({
               Location / address
               <input
                 required
-                className="mt-1 w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 shadow-sm outline-none transition focus:border-violet-500 dark:focus:border-violet-600 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900"
+                className="mt-1 h-11 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-zinc-400 dark:focus:ring-white/15"
                 value={location}
                 onChange={(event) => {
                   setLocation(event.target.value);
@@ -587,35 +635,31 @@ export const InterviewSchedulerForm = ({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            Calendar sync will be available once connected in settings.
-          </p>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            {onCancel ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full rounded-xl px-4 py-2 text-xs sm:w-auto"
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            ) : null}
+        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+          <Button
+            type="submit"
+            className="w-full rounded-xl px-4 py-2 text-xs"
+            disabled={isLoadingJobs}
+            loading={isSubmitting}
+            loadingText="Scheduling"
+          >
+            {submitLabel}
+          </Button>
+          {onCancel ? (
             <Button
-              type="submit"
-              className="w-full rounded-xl px-4 py-2 text-xs sm:w-auto"
-              disabled={isLoadingJobs}
-              loading={isSubmitting}
-              loadingText="Scheduling"
+              type="button"
+              variant="secondary"
+              className="w-full rounded-xl px-4 py-2 text-xs"
+              onClick={onCancel}
+              disabled={isSubmitting}
             >
-              {submitLabel}
+              Cancel
             </Button>
-          </div>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
         </div>
       </form>
     </div>
   );
 };
-

@@ -104,10 +104,10 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
       <div className="flex min-w-0 items-center gap-3 py-1.5">
         <span className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-current opacity-90" />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-zinc-900">
+          <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {interview.candidateName}
           </div>
-          <div className="truncate text-xs text-zinc-500">
+          <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             {interview.jobTitle ?? "Interview schedule"}
           </div>
         </div>
@@ -117,11 +117,11 @@ const renderInterviewEvent = (eventInfo: EventContentArg) => {
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="truncate text-xs font-semibold text-zinc-900">
+      <div className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
         {eventInfo.event.title}
       </div>
       {interview.jobTitle ? (
-        <div className="truncate text-[11px] text-zinc-600">{interview.jobTitle}</div>
+        <div className="truncate text-[11px] text-zinc-600 dark:text-zinc-300">{interview.jobTitle}</div>
       ) : null}
       <span
         className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusClassName}`}

@@ -1,6 +1,9 @@
-import type { FormEvent, MouseEvent } from 'react';
+import type { FormEvent, MouseEvent, ReactNode } from 'react';
+import { CalendarCheck2, CircleX, X } from 'lucide-react';
 
 import { Button } from '@shared/components/actions/Button';
+import { DatePicker, Dropdown, type DropdownOption } from '@shared/components/form';
+import { RichTextContent } from '@shared/components/data-display/RichTextContent';
 import { SideDrawer } from '@shared/components/overlay/SideDrawer';
 import { RichTextField } from '@shared/components/form/RichTextField';
 
@@ -17,14 +20,18 @@ export interface InterviewFormValues {
 export interface InterviewModalProps {
   open: boolean;
   form: InterviewFormValues;
+  readOnly?: boolean;
   isSubmitting?: boolean;
   isCanceling?: boolean;
   title?: string;
-  submitLabel?: string;
+  submitLabel?: ReactNode;
   errors?: Partial<Record<keyof InterviewFormValues | 'form', string>>;
   showCancelInterviewAction?: boolean;
-  secondaryActionLabel?: string;
+  secondaryActionLabel?: ReactNode;
   secondaryActionDisabled?: boolean;
+  cancelInterviewLabel?: ReactNode;
+  closeLabel?: ReactNode;
+  helperText?: ReactNode;
   onSecondaryAction?: () => void | Promise<void>;
   onClose: () => void;
   onChange: (field: keyof InterviewFormValues, value: string) => void;
@@ -38,14 +45,33 @@ export interface InterviewModalProps {
 export const InterviewModal = ({
   open,
   form,
+  readOnly = false,
   isSubmitting = false,
   isCanceling = false,
   title = 'Set Interview',
-  submitLabel = 'Confirm Interview',
+  submitLabel = (
+    <>
+      <CalendarCheck2 className="h-4 w-4" />
+      <span>Confirm Interview</span>
+    </>
+  ),
   errors,
   showCancelInterviewAction = false,
   secondaryActionLabel,
   secondaryActionDisabled = false,
+  cancelInterviewLabel = (
+    <>
+      <CircleX className="h-4 w-4" />
+      <span>Cancel Interview</span>
+    </>
+  ),
+  closeLabel = (
+    <>
+      <X className="h-4 w-4" />
+      <span>Cancel Review</span>
+    </>
+  ),
+  helperText,
   onSecondaryAction,
   onClose,
   onChange,
@@ -57,7 +83,21 @@ export const InterviewModal = ({
   }
 
   const hourOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const minuteOptions = ['00', '15', '30', '45'];
+  const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+  const primaryActionClassName =
+    'w-full rounded-lg border-transparent bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white';
+  const secondaryActionClassName =
+    'w-full rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800';
+  const hourDropdownOptions: DropdownOption[] = hourOptions.map((hour) => ({ value: hour, label: hour }));
+  const minuteDropdownOptions: DropdownOption[] = minuteOptions.map((minute) => ({ value: minute, label: minute }));
+  const meridiemDropdownOptions: DropdownOption[] = [
+    { value: 'AM', label: 'AM' },
+    { value: 'PM', label: 'PM' },
+  ];
+  const interviewTypeOptions: DropdownOption[] = [
+    { value: 'Virtual', label: 'Virtual' },
+    { value: 'Onsite', label: 'Onsite' },
+  ];
 
   return (
     <SideDrawer
@@ -83,49 +123,45 @@ export const InterviewModal = ({
         ) : null}
         <div className="grid grid-cols-1 gap-2">
           <div className="space-y-1">
-            <input required type="date" className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-zinc-200 dark:focus:ring-zinc-800" style={{ colorScheme: 'light dark' }} value={form.date} onChange={(event) => onChange('date', event.target.value)} />
+            <DatePicker
+              label="Interview date"
+              value={form.date}
+              disabled={readOnly}
+              onChange={(value) => onChange('date', value)}
+            />
             {errors?.date ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.date}</p> : null}
           </div>
           <div className="space-y-1">
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Interview Time</label>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">Select the time the interview will begin.</p>
             <div className="grid grid-cols-3 gap-2">
-              <select
-                required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
-                style={{ colorScheme: 'light dark' }}
+              <Dropdown
+                name="hour"
                 value={form.hour}
+                options={hourDropdownOptions}
+                disabled={readOnly}
+                compactOnMobile={false}
+                buttonClassName="h-10 rounded-lg"
                 onChange={(event) => onChange('hour', event.target.value)}
-              >
-                {hourOptions.map((hour) => (
-                  <option key={hour} value={hour}>
-                    {hour}
-                  </option>
-                ))}
-              </select>
-              <select
-                required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
-                style={{ colorScheme: 'light dark' }}
+              />
+              <Dropdown
+                name="minute"
                 value={form.minute}
+                options={minuteDropdownOptions}
+                disabled={readOnly}
+                compactOnMobile={false}
+                buttonClassName="h-10 rounded-lg"
                 onChange={(event) => onChange('minute', event.target.value)}
-              >
-                {minuteOptions.map((minute) => (
-                  <option key={minute} value={minute}>
-                    {minute}
-                  </option>
-                ))}
-              </select>
-              <select
-                required
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
-                style={{ colorScheme: 'light dark' }}
+              />
+              <Dropdown
+                name="meridiem"
                 value={form.meridiem}
+                options={meridiemDropdownOptions}
+                disabled={readOnly}
+                compactOnMobile={false}
+                buttonClassName="h-10 rounded-lg"
                 onChange={(event) => onChange('meridiem', event.target.value as InterviewFormValues['meridiem'])}
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
+              />
             </div>
             {errors?.hour ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.hour}</p> : null}
           </div>
@@ -133,99 +169,122 @@ export const InterviewModal = ({
         <div className="space-y-1">
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Interview type
-            <select
-              className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
-              style={{ colorScheme: 'light dark' }}
+            <Dropdown
+              name="mode"
+              disabled={readOnly}
               value={form.mode}
+              options={interviewTypeOptions}
+              className="mt-1"
+              compactOnMobile={false}
+              buttonClassName="h-10 rounded-lg"
               onChange={(event) => {
                 // Interview types determine whether recruiters must provide a meeting link or an onsite address.
                 onChange('mode', event.target.value as InterviewFormValues['mode']);
                 onChange('location', '');
               }}
-            >
-              <option value="Virtual">Virtual</option>
-              <option value="Onsite">Onsite</option>
-            </select>
+            />
           </label>
           {errors?.mode ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.mode}</p> : null}
         </div>
         <div className="space-y-1">
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {form.mode === 'Virtual' ? 'Meeting link' : 'Interview location'}
+          </label>
           <input
             required
             type={form.mode === 'Virtual' ? 'url' : 'text'}
-            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 dark:focus:ring-zinc-800"
+            disabled={readOnly}
+            className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-300 focus:ring-4 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-70 dark:focus:ring-zinc-800"
             placeholder={form.mode === 'Virtual' ? 'Meeting link' : 'Location / Address'}
             value={form.location}
             onChange={(event) => onChange('location', event.target.value)}
           />
           {errors?.location ? <p className="text-xs text-rose-600 dark:text-rose-400">{errors.location}</p> : null}
         </div>
-        <RichTextField
-          label="Notes"
-          value={form.notes}
-          onChange={(value) => onChange('notes', value)}
-          placeholder="Share interview notes, expectations, or context."
-          error={errors?.notes}
-          minHeightClassName="min-h-[160px]"
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div>
-            {showCancelInterviewAction && onCancelInterview ? (
-              <Button
-                type="button"
-                variant="secondary"
-                loading={isCanceling}
-                loadingText="Cancelling"
-                disabled={isSubmitting}
-                className="rounded-lg border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-950/50"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void onCancelInterview();
-                }}
-              >
-                Cancel Interview
-              </Button>
-            ) : null}
-          </div>
+        {readOnly ? (
+          form.notes ? (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <p className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">Notes</p>
+              <RichTextContent html={form.notes} />
+            </div>
+          ) : null
+        ) : (
+          <>
+            <RichTextField
+              label="Notes"
+              value={form.notes}
+              onChange={(value) => onChange('notes', value)}
+              placeholder="Share interview notes, expectations, or context."
+              error={errors?.notes}
+              minHeightClassName="min-h-[160px]"
+            />
+            <div className="space-y-2 pt-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {secondaryActionLabel ? (
+                  <Button
+                    type="button"
+                    disabled={secondaryActionDisabled || isSubmitting || !onSecondaryAction}
+                    className={primaryActionClassName}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!onSecondaryAction) {
+                        return;
+                      }
 
-          <div className="flex justify-end gap-2">
-            {secondaryActionLabel && onSecondaryAction ? (
-              <Button
-                type="button"
-                disabled={secondaryActionDisabled || isSubmitting}
-                variant="secondary"
-                className="rounded-lg"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void onSecondaryAction();
-                }}
-              >
-                {secondaryActionLabel}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              disabled={isSubmitting}
-              variant="secondary"
-              className="rounded-lg"
-              onClick={(event) => {
-                // Stop propagation so cancel only closes the active modal.
-                event.stopPropagation();
-                onClose();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              loading={isSubmitting}
-              loadingText="Saving"
-              className="rounded-lg"
-            >
-              {submitLabel}
-            </Button>
-          </div>
-        </div>
+                      void onSecondaryAction();
+                    }}
+                  >
+                    {secondaryActionLabel}
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    loading={isSubmitting}
+                    loadingText="Saving"
+                    className={primaryActionClassName}
+                  >
+                    {submitLabel}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  variant="secondary"
+                  className={secondaryActionClassName}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onClose();
+                  }}
+                >
+                  {closeLabel}
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {showCancelInterviewAction && onCancelInterview ? (
+                  <Button
+                    type="button"
+                    loading={isCanceling}
+                    loadingText="Cancelling"
+                    disabled={isSubmitting}
+                    className={secondaryActionClassName}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void onCancelInterview();
+                    }}
+                  >
+                    {cancelInterviewLabel}
+                  </Button>
+                ) : <div className="hidden sm:block" />}
+                <div className="hidden sm:block" />
+              </div>
+              {helperText ? (
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  {helperText}
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
       </form>
     </SideDrawer>
   );

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 interface DatePickerProps {
@@ -7,6 +7,7 @@ interface DatePickerProps {
   label?: string;
   disabled?: boolean;
   className?: string;
+  placeholder?: string;
 }
 
 const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -35,7 +36,14 @@ const formatDateValue = (date: Date) => {
 
 const displayFormatter = new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 
-const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disabled = false, className = '' }) => {
+const DatePicker: React.FC<DatePickerProps> = ({
+  value,
+  onChange,
+  label,
+  disabled = false,
+  className = '',
+  placeholder = 'Select date',
+}) => {
   const initialDate = parseDateValue(value) ?? new Date();
   const [isOpen, setIsOpen] = useState(false);
   const [viewYear, setViewYear] = useState(initialDate.getFullYear());
@@ -43,6 +51,15 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedDate = parseDateValue(value);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+
+    setViewYear(selectedDate.getFullYear());
+    setViewMonth(selectedDate.getMonth());
+  }, [selectedDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -105,8 +122,13 @@ const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, label, disable
           disabled={disabled}
           className="flex h-11 w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-3.5 text-left text-sm text-zinc-700 shadow-sm transition-colors hover:border-zinc-400 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:disabled:border-zinc-800 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600"
         >
-          <span className={`truncate ${!selectedDate ? 'text-zinc-400 dark:text-zinc-600' : ''}`}>{selectedDate ? displayFormatter.format(selectedDate) : 'Select date'}</span>
-          <svg className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span className="flex min-w-0 items-center gap-2">
+            <CalendarDays className="h-4 w-4 shrink-0 text-zinc-500 dark:text-zinc-400" />
+            <span className={`truncate ${!selectedDate ? 'text-zinc-400 dark:text-zinc-600' : ''}`}>
+              {selectedDate ? displayFormatter.format(selectedDate) : placeholder}
+            </span>
+          </span>
+          <svg className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>

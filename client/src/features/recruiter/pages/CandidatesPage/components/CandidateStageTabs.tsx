@@ -124,7 +124,7 @@ export const CandidateStageTabs = ({ countByStage, filters }: CandidateStageTabs
         >
           <div
             ref={tabsTrackRef}
-            className="relative inline-flex min-w-full snap-x snap-mandatory flex-nowrap gap-2 overflow-hidden rounded-full p-1 whitespace-nowrap dark:bg-zinc-900/90 dark:ring-zinc-800"
+            className="relative inline-flex min-w-full snap-x snap-mandatory flex-nowrap gap-2 overflow-hidden rounded-full p-1 whitespace-nowrap"
           >
             <span
               aria-hidden="true"
@@ -158,7 +158,7 @@ export const CandidateStageTabs = ({ countByStage, filters }: CandidateStageTabs
                       activeTabRef.current = element;
                     }
                   }}
-                  to={`?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&recommendedTopPercent=${encodeURIComponent(filters.recommendedTopPercent)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=1&stage=${encodeURIComponent(tab.key)}`}
+                to={`?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=1&stage=${encodeURIComponent(tab.key)}`}
                   className={cn(
                     'relative z-10 inline-flex min-h-11 min-w-[7rem] shrink-0 snap-start items-center justify-center gap-2 rounded-full border border-transparent px-3 py-2.5 text-sm font-medium whitespace-nowrap text-zinc-500 outline-none transition-colors sm:min-w-[7.5rem] sm:px-4',
                     isActive

@@ -1,6 +1,7 @@
-import { CalendarDays, Eye, Loader2, Mail, Sparkles, Trash2 } from "lucide-react";
+import { CalendarDays, Copy, Eye, Loader2, Mail, Sparkles, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { useToast } from "@app/providers/ToastProvider";
 import type { JobseekerApplicationStage, JobseekerOfferDto } from "@features/jobseeker/types";
 import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
 import { ActionButton } from "@shared/components/actions/ActionButton";
@@ -11,6 +12,7 @@ import { StatusBadge } from "@shared/components/data-display/StatusBadge";
 import { cn } from "@shared/utils/cn";
 
 import { OfferStageTimeline } from "./OfferStageTimeline";
+import { fallbackRecruiterMailto, openRecruiterContact } from "../utils/contactRecruiter";
 
 export interface OfferPipelineCardData {
   id: string;
@@ -126,9 +128,27 @@ export const OfferPipelineCard = ({
   isActing?: boolean;
   isDeletingHistory?: boolean;
 }) => {
+  const { showToast } = useToast();
   const actions = getJobseekerListActions(item.currentStage, "offers");
   const jobDetailsButtonClassName =
     "inline-flex min-h-[2.125rem] items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 sm:min-h-9 sm:px-3.5 sm:py-2 sm:text-sm";
+
+  const handleCopyRecruiterEmail = async () => {
+    if (!item.recruiterEmail) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(item.recruiterEmail);
+      showToast({
+        title: "Recruiter email copied",
+        description: item.recruiterEmail,
+        tone: "success",
+      });
+    } catch {
+      fallbackRecruiterMailto(item.recruiterEmail);
+    }
+  };
 
   return (
     <Card className="rounded-[20px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
@@ -213,13 +233,26 @@ export const OfferPipelineCard = ({
               ) : null}
             </div>
             {item.recruiterEmail ? (
-              <a
-                href={`mailto:${item.recruiterEmail}`}
+              <button
+                type="button"
                 className={cn(jobDetailsButtonClassName, "h-9 w-full px-3 sm:w-auto")}
+                onClick={() => openRecruiterContact(item.recruiterEmail!)}
               >
                 <Mail className="h-4 w-4" />
                 <span>Contact Recruiter</span>
-              </a>
+              </button>
+            ) : null}
+            {item.recruiterEmail ? (
+              <button
+                type="button"
+                className={cn(jobDetailsButtonClassName, "h-9 w-full px-3 sm:w-auto")}
+                onClick={() => {
+                  void handleCopyRecruiterEmail();
+                }}
+              >
+                <Copy className="h-4 w-4" />
+                <span>Copy Email</span>
+              </button>
             ) : null}
             {actions.includes("delete_history") ? (
               <>

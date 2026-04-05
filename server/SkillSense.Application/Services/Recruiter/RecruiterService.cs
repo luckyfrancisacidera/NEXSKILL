@@ -433,14 +433,14 @@ public sealed class RecruiterService(
     }
 
     // Loads applicant scores.
-    public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
+    public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int pageNumber, int pageSize, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
-        return await GetApplicantScoresAsync(profile.CompanyId, recruiterId, jobId, department, stage, search, recommendedTopPercent, pageNumber, pageSize, ct);
+        return await GetApplicantScoresAsync(profile.CompanyId, recruiterId, jobId, department, stage, search, pageNumber, pageSize, ct);
     }
 
     // Loads applicant scores.
-    public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid companyId, Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
+    public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid companyId, Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int pageNumber, int pageSize, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
         var normalizedStage = string.IsNullOrWhiteSpace(stage) ? "all" : stage.Trim().ToLowerInvariant();
@@ -448,7 +448,6 @@ public sealed class RecruiterService(
         var normalizedDepartment = string.IsNullOrWhiteSpace(department) || department.Equals("all", StringComparison.OrdinalIgnoreCase)
             ? null
             : department.Trim();
-        var topPercent = Math.Clamp(recommendedTopPercent ?? 10, 1, 100);
         var normalizedPageNumber = Math.Max(1, pageNumber);
         var normalizedPageSize = Math.Clamp(pageSize, 1, 100);
 
@@ -462,8 +461,8 @@ public sealed class RecruiterService(
             ? allItemsForCounts.Where(x => x.JobId == jobId.Value).ToList()
             : allItemsForCounts;
 
-        var projected = BuildProjectedApplicants(allItems, topPercent);
-        var projectedForCounters = BuildProjectedApplicants(allItemsForCounts, topPercent);
+        var projected = BuildProjectedApplicants(allItems);
+        var projectedForCounters = BuildProjectedApplicants(allItemsForCounts);
 
         var filtered = normalizedStage == "all"
             ? projected
@@ -533,7 +532,7 @@ public sealed class RecruiterService(
             },
             Recommendation = new RecommendationSettingsResponse
             {
-                TopPercent = topPercent,
+                ThresholdScore = ApplicantRecommendationPolicy.RecommendationThresholdScore,
             }
         };
     }
@@ -549,7 +548,7 @@ public sealed class RecruiterService(
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
-        var baseItem = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct);
+        var baseItem = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, ct);
         if (baseItem is null)
         {
             return null;
@@ -719,7 +718,7 @@ public sealed class RecruiterService(
         await NotifyOfferSentAsync(context.Submission, context.Job.Title, offer, ct);
 
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
-        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct)
+        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, ct)
             ?? throw new KeyNotFoundException("Submission not found after offer creation.");
         updated.Offer = MapOffer(offer);
         return updated;
@@ -811,8 +810,8 @@ public sealed class RecruiterService(
             var results = new List<BulkUpdateApplicantStageResultItemResponse>(submissionIds.Count);
 
             var allItemsForStatus = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
-            var recommendedIds = BuildRecommendedIds(allItemsForStatus, 10);
             var statusById = allItemsForStatus.ToDictionary(x => x.ResumeSubmissionId, x => x.Status);
+            var scoreById = allItemsForStatus.ToDictionary(x => x.ResumeSubmissionId, x => x.Score);
 
             await using var transaction = await recruiterRepository.BeginSerializableTransactionAsync(ct);
             var now = DateTime.UtcNow;
@@ -822,7 +821,7 @@ public sealed class RecruiterService(
             foreach (var submissionId in submissionIds)
             {
                 var previousStatus = statusById.TryGetValue(submissionId, out var previousRaw)
-                    ? RecruiterApplicantProjection.ResolveSubmissionStatus(previousRaw, recommendedIds.Contains(submissionId))
+                    ? RecruiterApplicantProjection.ResolveSubmissionStatus(previousRaw, scoreById.GetValueOrDefault(submissionId))
                     : null;
 
                 try
@@ -858,9 +857,11 @@ public sealed class RecruiterService(
                     }
 
                    
-                    context.Submission.Status = nextStatus;
+                    var normalizedNextStatus = NormalizeInitialStage(nextStatus, scoreById.GetValueOrDefault(submissionId));
+
+                    context.Submission.Status = normalizedNextStatus;
                     context.Submission.UpdatedAtUtc = now;
-                    if (nextStatus == ResumeSubmissionStatus.Hired)
+                    if (normalizedNextStatus == ResumeSubmissionStatus.Hired)
                     {
                         var latestOffer = await EnsureOfferExpirationStateAsync(context.LatestOffer, ct);
                         if (latestOffer is null || latestOffer.Status != JobOfferStatus.Accepted)
@@ -873,12 +874,12 @@ public sealed class RecruiterService(
                         context.Submission.AcceptedOfferId ??= latestOffer.Id;
                     }
 
-                    if (nextStatus == ResumeSubmissionStatus.Shortlisted)
+                    if (normalizedNextStatus == ResumeSubmissionStatus.Shortlisted)
                     {
                         shortlistedForExplanation.Add(submissionId);
                     }
 
-                    var newStatus = RecruiterApplicantProjection.ResolveSubmissionStatus(nextStatus, recommendedIds.Contains(submissionId));
+                    var newStatus = RecruiterApplicantProjection.ResolveSubmissionStatus(normalizedNextStatus, scoreById.GetValueOrDefault(submissionId));
 
                     results.Add(new BulkUpdateApplicantStageResultItemResponse
                     {
@@ -907,7 +908,7 @@ public sealed class RecruiterService(
 
             foreach (var result in results.Where(x => x.Success))
             {
-                var updatedCandidate = await BuildApplicantProjectionAsync(recruiterId, companyId, result.SubmissionId, recommendedIds, ct);
+                var updatedCandidate = await BuildApplicantProjectionAsync(recruiterId, companyId, result.SubmissionId, ct);
                 if (updatedCandidate is not null)
                 {
                     result.Candidate = updatedCandidate;
@@ -930,7 +931,7 @@ public sealed class RecruiterService(
             // Recalculate counts from the database after updates so the API reflects real totals
             // and never relies on client-side deltas that can drift or go negative.
             var refreshedItems = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
-            var projectedForCounts = BuildProjectedApplicants(refreshedItems, 10);
+            var projectedForCounts = BuildProjectedApplicants(refreshedItems);
             var counts = new ApplicantScoreCountsResponse
             {
                 AllApplicants = projectedForCounts.Count,
@@ -1044,9 +1045,12 @@ public sealed class RecruiterService(
             }
         }
 
-        context.Submission.Status = nextStatus;
+        var currentScore = (await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, companyId, submissionId, ct))?.Score ?? 0m;
+        var normalizedNextStatus = NormalizeInitialStage(nextStatus, currentScore);
+
+        context.Submission.Status = normalizedNextStatus;
         context.Submission.UpdatedAtUtc = dateTimeProvider.UtcNow;
-        if (nextStatus == ResumeSubmissionStatus.Hired)
+        if (normalizedNextStatus == ResumeSubmissionStatus.Hired)
         {
             context.Submission.HireDateUtc ??= dateTimeProvider.UtcNow;
             context.Submission.HiredByRecruiterId ??= recruiterId;
@@ -1056,12 +1060,18 @@ public sealed class RecruiterService(
         await transaction.CommitAsync(ct);
 
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
-        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, null, ct)
+        var updated = await BuildApplicantProjectionAsync(recruiterId, companyId, submissionId, ct)
             ?? throw new KeyNotFoundException("Submission not found after update.");
         updated.Offer = latestOffer is null ? null : MapOffer(latestOffer);
 
         return updated;
     }
+
+    // Normalizes automatic ATS stages without overwriting later recruiter-managed stages.
+    private static ResumeSubmissionStatus NormalizeInitialStage(ResumeSubmissionStatus status, decimal score)
+        => status == ResumeSubmissionStatus.Completed
+            ? ApplicantRecommendationPolicy.ResolveInitialStage(status, score)
+            : status;
 
     // Validates offer request.
     private void ValidateOfferRequest(SendOfferRequest request)
@@ -1464,30 +1474,13 @@ public sealed class RecruiterService(
         };
 
     // Builds projected applicants.
-    private List<ApplicantScoreItemResponse> BuildProjectedApplicants(List<ApplicantScoreData> sourceItems, int topPercent)
-    {
-        var recommendedIds = BuildRecommendedIds(sourceItems, topPercent);
-        return sourceItems
-            .Select(x => mapper.Map<ApplicantScoreItemResponse>(x, opt => opt.Items["recommendedIds"] = recommendedIds))
+    private List<ApplicantScoreItemResponse> BuildProjectedApplicants(List<ApplicantScoreData> sourceItems)
+        => sourceItems
+            .Select(x => mapper.Map<ApplicantScoreItemResponse>(x))
             .ToList();
-    }
-
-    // Builds recommended IDs.
-    private static IReadOnlySet<Guid> BuildRecommendedIds(List<ApplicantScoreData> sourceItems, int topPercent)
-    {
-        var recommendedCount = sourceItems.Count == 0
-            ? 0
-            : (int)Math.Ceiling(sourceItems.Count * (topPercent / 100d));
-
-        return sourceItems
-            .OrderByDescending(x => x.Score)
-            .Take(recommendedCount)
-            .Select(x => x.ResumeSubmissionId)
-            .ToHashSet();
-    }
 
     // Builds applicant projection.
-    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid companyId, Guid submissionId, IReadOnlySet<Guid>? recommendedIds, CancellationToken ct)
+    private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct)
     {
         var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, companyId, submissionId, ct);
         if (source is null)
@@ -1495,8 +1488,7 @@ public sealed class RecruiterService(
             return null;
         }
 
-        recommendedIds ??= BuildRecommendedIds(await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct), 10);
-        var item = mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds);
+        var item = mapper.Map<ApplicantScoreItemResponse>(source);
         var latestOffer = await recruiterRepository.GetLatestOfferByApplicationIdAsync(submissionId, ct);
         latestOffer = await EnsureOfferExpirationStateAsync(latestOffer, ct);
         item.Offer = latestOffer is null ? null : MapOffer(latestOffer);
@@ -1507,14 +1499,13 @@ public sealed class RecruiterService(
     private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct)
     {
         var items = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
-        var recommendedIds = BuildRecommendedIds(items, 10);
         var source = items.FirstOrDefault(x => x.ResumeSubmissionId == submissionId);
         if (source is null)
         {
             return null;
         }
 
-        return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds).SubmissionStatus;
+        return mapper.Map<ApplicantScoreItemResponse>(source).SubmissionStatus;
     }
 
     // Builds remaining vacancies lookup.

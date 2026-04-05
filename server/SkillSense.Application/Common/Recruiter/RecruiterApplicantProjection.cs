@@ -45,6 +45,7 @@ internal static class RecruiterApplicantProjection
     public static string ResolveJobseekerStage(ResumeSubmissionStatus status)
         => status switch
         {
+            ResumeSubmissionStatus.Recommended => "Applied",
             ResumeSubmissionStatus.Shortlisted => "Applied",
             ResumeSubmissionStatus.Interview => "Interview",
             ResumeSubmissionStatus.Offer => "Offer",
@@ -53,18 +54,10 @@ internal static class RecruiterApplicantProjection
             _ => "Applied",
         };
 
-    public static string ResolveSubmissionStatus(ResumeSubmissionStatus status, bool isRecommended)
-        => status switch
-        {
-            ResumeSubmissionStatus.Shortlisted => "Shortlisted",
-            ResumeSubmissionStatus.Interview => "Interview",
-            ResumeSubmissionStatus.Offer => "Offer",
-            ResumeSubmissionStatus.Hired => "Hired",
-            ResumeSubmissionStatus.Rejected => "Rejected",
-            _ => isRecommended ? "Recommended" : "Applied",
-        };
+    public static string ResolveSubmissionStatus(ResumeSubmissionStatus status, decimal score)
+        => ApplicantRecommendationPolicy.ResolveRecruiterStageLabel(status, score);
 
-    public static ApplicantScoreItemResponse ToApplicantScoreItem(ApplicantScoreData source, IReadOnlySet<Guid> recommendedIds)
+    public static ApplicantScoreItemResponse ToApplicantScoreItem(ApplicantScoreData source)
     {
         var score = (int)Math.Round(source.Score);
 
@@ -76,7 +69,7 @@ internal static class RecruiterApplicantProjection
             JobId = source.JobId,
             JobTitle = source.JobTitle,
             Score = score,
-            SubmissionStatus = ResolveSubmissionStatus(source.Status, recommendedIds.Contains(source.ResumeSubmissionId)),
+            SubmissionStatus = ResolveSubmissionStatus(source.Status, source.Score),
             JobseekerStage = ResolveJobseekerStage(source.Status),
             CreatedAtUtc = source.CreatedAtUtc,
         };

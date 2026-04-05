@@ -12,6 +12,7 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
     private static readonly ResumeSubmissionStatus[] RecruiterActiveApplicantStatuses =
     [
         ResumeSubmissionStatus.Completed,
+        ResumeSubmissionStatus.Recommended,
         ResumeSubmissionStatus.Shortlisted,
         ResumeSubmissionStatus.Interview,
         ResumeSubmissionStatus.Offer,
@@ -20,6 +21,7 @@ public sealed class RecruiterRepository(SkillSenseDbContext dbContext) : IRecrui
     private static readonly ResumeSubmissionStatus[] RecruiterDetailApplicantStatuses =
     [
         ResumeSubmissionStatus.Completed,
+        ResumeSubmissionStatus.Recommended,
         ResumeSubmissionStatus.Shortlisted,
         ResumeSubmissionStatus.Interview,
         ResumeSubmissionStatus.Offer,

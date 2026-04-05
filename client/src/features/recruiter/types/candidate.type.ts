@@ -173,7 +173,7 @@ export interface ApplicantStageCounts {
 }
 
 export interface ApplicantRecommendationDto {
-  top_percent: number;
+  threshold_score: number;
 }
 
 export interface ApplicantScoresDto {
@@ -212,7 +212,6 @@ export interface CandidateFilters {
   stage: string;
   jobId: string;
   department: string;
-  recommendedTopPercent: string;
   pageSize: string;
 }
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Scoring;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
@@ -36,6 +37,11 @@ public sealed class ResumeScoringService(
 
         var persistTimer = global::System.Diagnostics.Stopwatch.StartNew();
         await SaveScoreAsync(submission, request.JobDescription.Description, result.Score, ct);
+        submission.Status = ApplicantRecommendationPolicy.ResolveInitialStage(
+            submission.Status,
+            result.Score.FinalScore);
+        submission.UpdatedAtUtc = DateTime.UtcNow;
+        await resumeSubmissionRepository.SaveChangesAsync(ct);
         persistTimer.Stop();
         totalTimer.Stop();
 

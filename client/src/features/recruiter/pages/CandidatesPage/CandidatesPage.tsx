@@ -25,11 +25,8 @@ import type {
 import { canShortlistCandidate, getShortlistWarningMessage } from '@features/recruiter/utils/candidateStageRules';
 import { Card } from '@shared/components/data-display/Card';
 import { EmptyState } from '@shared/components/feedback/EmptyState';
-import type { DropdownOption } from '@shared/components/form/Dropdown';
 import { TablePagination } from '@shared/components/data-display/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
-
-const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
 
 const isActionAllowed = (action: string, submissionStatus: string) => {
   if (action === 'shortlist') {
@@ -45,7 +42,7 @@ const isActionAllowed = (action: string, submissionStatus: string) => {
 };
 
 const buildCandidateQuery = (filters: CandidateFilters, page: number) =>
-  `?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&recommendedTopPercent=${encodeURIComponent(filters.recommendedTopPercent)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=${page}&stage=${encodeURIComponent(filters.stage)}`;
+  `?search=${encodeURIComponent(filters.search)}&jobId=${encodeURIComponent(filters.jobId)}&department=${encodeURIComponent(filters.department)}&pageSize=${encodeURIComponent(filters.pageSize)}&page=${page}&stage=${encodeURIComponent(filters.stage)}`;
 
 const stageEmptyStateMap: Record<
   string,
@@ -157,7 +154,6 @@ export const CandidatesPage = () => {
     stage: filters.stage ?? 'all',
     jobId: filters.jobId ?? 'all',
     department: filters.department ?? 'all',
-    recommendedTopPercent: filters.recommendedTopPercent ?? '10',
     pageSize: filters.pageSize ?? '10',
   };
 
@@ -240,19 +236,12 @@ export const CandidatesPage = () => {
   );
 
   const isAllChecked = candidates.length > 0 && candidates.every((candidate) => selectedSet.has(candidate.resume_submission_id));
-  const isRecommendationFilterVisible = tabsWithRecommendationFilter.has(normalizedFilters.stage);
   const isSubmittingAction = fetcher.state !== 'idle';
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const bulkActions = useMemo(
     () => getBulkActionsForStage(normalizedFilters.stage, selectedIdsOnPage.length, selectedValidShortlistCount),
     [normalizedFilters.stage, selectedIdsOnPage.length, selectedValidShortlistCount],
   );
 
-  const recommendedCutoffOptions: DropdownOption[] = [5, 10, 15, 20, 25, 30].map((value) => ({
-    value: String(value),
-    label: `Top ${value}%`,
-    accentClassName: 'bg-violet-100 text-violet-700',
-  }));
   const previousPageHref = buildCandidateQuery(normalizedFilters, Math.max(1, pagination.page - 1));
   const hasSearchOrFacetFilters =
     normalizedFilters.search.trim().length > 0 ||
@@ -369,8 +358,6 @@ export const CandidatesPage = () => {
               jobs={jobs}
               departments={departments}
               counts={counts}
-              isRecommendationFilterVisible={isRecommendationFilterVisible}
-              recommendedCutoffOptions={recommendedCutoffOptions}
               onSearchChange={(value) => applyFilters({ ...normalizedFilters, search: value })}
               onFieldChange={(name, value) => applyFilters({ ...normalizedFilters, [name]: value })}
               onApplyFilters={applyFilters}
@@ -380,7 +367,7 @@ export const CandidatesPage = () => {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
+                ATS automatically moves candidates with scores of {recommendation.threshold_score}+ into Recommended. Selected: {selectedIdsOnPage.length}
               </p>
             </div>
             <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">

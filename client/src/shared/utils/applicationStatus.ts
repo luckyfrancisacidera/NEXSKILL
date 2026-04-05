@@ -46,42 +46,42 @@ const applicationStatusConfig: Record<
     badgeClassName:
       "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-300",
     accentClassName:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
+      "bg-indigo-100 text-indigo-700 dark:border dark:border-indigo-900/60 dark:bg-indigo-550/50 dark:text-indigo-900",
   },
   shortlisted: {
     label: "Shortlisted",
     badgeClassName:
       "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300",
     accentClassName:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+      "bg-emerald-100 text-emerald-700 dark:border dark:border-emerald-900/60 dark:bg-emerald-550/50 dark:text-emerald-900",
   },
   interview: {
     label: "Interview",
     badgeClassName:
       "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-300",
     accentClassName:
-      "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
+      "bg-violet-100 text-violet-700 dark:border dark:border-violet-900/60 dark:bg-violet-550/50 dark:text-violet-900",
   },
   offer: {
     label: "Offer",
     badgeClassName:
       "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300",
     accentClassName:
-      "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
+      "bg-amber-100 text-amber-700 dark:border dark:border-amber-900/60 dark:bg-amber-550/50 dark:text-amber-900",
   },
   hire: {
     label: "Hired",
     badgeClassName:
       "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-900/60 dark:bg-cyan-950/30 dark:text-cyan-300",
     accentClassName:
-      "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300",
+      "bg-cyan-100 text-cyan-700 dark:border dark:border-cyan-900/60 dark:bg-cyan-550/50 dark:text-cyan-900",
   },
   rejected: {
     label: "Rejected",
     badgeClassName:
       "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300",
     accentClassName:
-      "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
+      "bg-rose-100 text-rose-700 dark:border dark:border-rose-900/60 dark:bg-rose-550/50 dark:text-rose-900",
   },
   withdrawn: {
     label: "Withdrawn",

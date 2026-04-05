@@ -35,7 +35,6 @@ export interface ApplicantScoresQueryParams {
   stage?: string;
   jobId?: string;
   department?: string;
-  recommendedTopPercent?: number;
   pageNumber?: number;
   pageSize?: number;
 }

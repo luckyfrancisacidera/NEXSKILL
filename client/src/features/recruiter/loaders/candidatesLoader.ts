@@ -17,14 +17,8 @@ export const recruiterCandidatesLoader = async ({
     const stage = url.searchParams.get("stage") ?? "all";
     const jobId = url.searchParams.get("jobId") ?? "all";
     const department = url.searchParams.get("department") ?? "all";
-    const recommendedTopPercent = Number(
-      url.searchParams.get("recommendedTopPercent") ?? "10",
-    );
     const page = Number(url.searchParams.get("page") ?? "1");
     const pageSize = Number(url.searchParams.get("pageSize") ?? "10");
-    const safeRecommendedTopPercent = Number.isFinite(recommendedTopPercent)
-      ? recommendedTopPercent
-      : 10;
     const safePage = Number.isFinite(page) ? page : 1;
     const safePageSize = Number.isFinite(pageSize) ? pageSize : 10;
 
@@ -34,7 +28,6 @@ export const recruiterCandidatesLoader = async ({
       stage,
       jobId: jobId === "all" ? undefined : jobId,
       department: department === "all" ? undefined : department,
-      recommendedTopPercent: safeRecommendedTopPercent,
       pageNumber: safePage,
       pageSize: safePageSize,
     });
@@ -56,7 +49,6 @@ export const recruiterCandidatesLoader = async ({
         stage,
         jobId: undefined,
         department: department === "all" ? undefined : department,
-        recommendedTopPercent: safeRecommendedTopPercent,
         pageNumber: safePage,
         pageSize: safePageSize,
       });
@@ -80,7 +72,6 @@ export const recruiterCandidatesLoader = async ({
         stage,
         jobId: resolvedJobId,
         department,
-        recommendedTopPercent: String(safeRecommendedTopPercent),
         pageSize: String(safePageSize),
       },
     };
@@ -88,4 +79,3 @@ export const recruiterCandidatesLoader = async ({
     rethrowAsRouteError(error, "Unable to load candidates.");
   }
 };
-

@@ -205,7 +205,18 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                           : "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700",
                       )}
                     >
-                      <p className="wrap-break-word font-semibold">{item.title}</p>
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={cn(
+                            "mt-1 h-2 w-2 shrink-0 rounded-full",
+                            item.read
+                              ? "bg-zinc-400 dark:bg-zinc-500"
+                              : "bg-green-500 dark:bg-green-400",
+                          )}
+                          aria-label={item.read ? "Read notification" : "Unread notification"}
+                        />
+                        <p className="wrap-break-word min-w-0 font-semibold">{item.title}</p>
+                      </div>
                       {item.description ? (
                         <p className="mt-0.5 wrap-break-word line-clamp-2">{item.description}</p>
                       ) : null}
@@ -321,4 +332,3 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
     </>
   );
 };
-

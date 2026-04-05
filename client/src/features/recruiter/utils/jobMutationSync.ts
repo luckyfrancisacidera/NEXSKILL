@@ -15,6 +15,8 @@ export interface RecruiterJobMutationPayload {
   job?: JobListItem;
 }
 
+export type PendingRecruiterJobMutations = Record<string, RecruiterJobMutationPayload>;
+
 const isBrowser = () => typeof window !== 'undefined' && typeof sessionStorage !== 'undefined';
 
 // Maps full job payloads into the smaller list item shape used by recruiter job tables.
@@ -129,4 +131,64 @@ export const applyRecruiterJobMutation = (
   }
 
   return [mutation.job, ...withoutCurrent];
+};
+
+const areJobListItemsEqual = (left?: JobListItem, right?: JobListItem) =>
+  Boolean(
+    left &&
+      right &&
+      left.id === right.id &&
+      left.title === right.title &&
+      left.department === right.department &&
+      left.location === right.location &&
+      left.employment_type === right.employment_type &&
+      left.status === right.status,
+  );
+
+export const upsertPendingRecruiterJobMutation = (
+  pendingMutations: PendingRecruiterJobMutations,
+  mutation: RecruiterJobMutationPayload,
+): PendingRecruiterJobMutations => ({
+  ...pendingMutations,
+  [mutation.jobId]: mutation,
+});
+
+export const reconcileRecruiterJobsWithPendingMutations = (
+  jobs: JobListItem[],
+  pendingMutations: PendingRecruiterJobMutations,
+  filters: JobListFilters,
+) => {
+  const sortedMutations = Object.values(pendingMutations).sort((left, right) => left.occurredAt - right.occurredAt);
+
+  if (sortedMutations.length === 0) {
+    return { jobs, pendingMutations };
+  }
+
+  let nextJobs = jobs;
+  let nextPendingMutations = pendingMutations;
+
+  sortedMutations.forEach((mutation) => {
+    const loaderJob = nextJobs.find((job) => job.id === mutation.jobId);
+    const loaderAlreadyMatches = mutation.type !== 'deleted' && areJobListItemsEqual(loaderJob, mutation.job);
+    const loaderAlreadyRemoved = mutation.type === 'deleted' && !loaderJob;
+    const loaderAlreadyFilteredOut =
+      mutation.type !== 'deleted' &&
+      mutation.job &&
+      !jobMatchesCurrentFilters(mutation.job, filters) &&
+      !loaderJob;
+
+    if (loaderAlreadyMatches || loaderAlreadyRemoved || loaderAlreadyFilteredOut) {
+      const { [mutation.jobId]: removedMutation, ...rest } = nextPendingMutations;
+      void removedMutation;
+      nextPendingMutations = rest;
+      return;
+    }
+
+    nextJobs = applyRecruiterJobMutation(nextJobs, mutation, filters);
+  });
+
+  return {
+    jobs: nextJobs,
+    pendingMutations: nextPendingMutations,
+  };
 };

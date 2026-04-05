@@ -261,9 +261,9 @@ export const JobsPage = () => {
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end lg:hidden">
-                <div className="w-full min-w-0 sm:flex-1">
+            <div className="min-w-0">
+              <div className="flex w-full min-w-0 flex-col gap-3 lg:flex-row lg:items-end">
+                <div className="min-w-0 flex-1 lg:max-w-none">
                   <SearchInput
                     id="job-search"
                     label="Search"
@@ -271,6 +271,7 @@ export const JobsPage = () => {
                     icon={<Search className="h-4 w-4" />}
                     placeholder="Search roles, companies, locations, or job types"
                     value={search}
+                    compactOnMobile={false}
                     onValueChange={(value) => {
                       setSearch(value);
                       setCurrentPage(1);
@@ -278,6 +279,7 @@ export const JobsPage = () => {
                   />
                 </div>
 
+                <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-end lg:hidden">
                 <button
                   type="button"
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 sm:w-auto sm:shrink-0"
@@ -302,33 +304,34 @@ export const JobsPage = () => {
                     {activeFilterCount}
                   </span>
                 </button>
-              </div>
+                </div>
 
-              <div className="hidden gap-3 lg:grid lg:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_auto]">
-                <JobsFilterFields
-                  employmentTypeFilter={employmentTypeFilter}
-                  employmentTypeOptions={employmentTypeOptions}
-                  salaryFilter={salaryFilter}
-                  salaryOptions={salaryFilterOptions}
-                  compactOnMobile={false}
-                  onEmploymentTypeChange={(value) => applyFilters({ salaryFilter, employmentTypeFilter: value })}
-                  onSalaryChange={(value) =>
-                    applyFilters({
-                      salaryFilter: value as SalaryFilterValue,
-                      employmentTypeFilter,
-                    })
-                  }
-                />
+                <div className="hidden min-w-0 gap-3 lg:grid lg:flex-[1.35] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                  <JobsFilterFields
+                    employmentTypeFilter={employmentTypeFilter}
+                    employmentTypeOptions={employmentTypeOptions}
+                    salaryFilter={salaryFilter}
+                    salaryOptions={salaryFilterOptions}
+                    compactOnMobile={false}
+                    onEmploymentTypeChange={(value) => applyFilters({ salaryFilter, employmentTypeFilter: value })}
+                    onSalaryChange={(value) =>
+                      applyFilters({
+                        salaryFilter: value as SalaryFilterValue,
+                        employmentTypeFilter,
+                      })
+                    }
+                  />
 
-                <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    disabled={activeFilterCount === 0}
-                    className="h-11 w-full rounded-xl border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-                  >
-                    Reset filters
-                  </button>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      disabled={activeFilterCount === 0}
+                      className="h-11 w-full rounded-xl border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                    >
+                      Reset filters
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
