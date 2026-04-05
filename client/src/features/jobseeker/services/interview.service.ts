@@ -23,6 +23,7 @@ interface JobseekerInterviewDto {
   companyName?: string | null;
 }
 
+// Maps the jobseeker interview API payload into the UI model used across interview pages.
 const mapInterview = (dto: JobseekerInterviewDto): JobseekerInterview => {
   const value = dto.locationOrMeetingLink?.trim() ?? "";
   const looksLikeLink = /^https?:\/\//i.test(value);
@@ -46,17 +47,21 @@ const mapInterview = (dto: JobseekerInterviewDto): JobseekerInterview => {
   };
 };
 
+// Handles jobseeker interview reads and mutations against the interview endpoints.
 export const jobseekerInterviewService = {
+  // Use to load the active interview list shown on jobseeker interview pages.
   async getJobseekerInterviews(): Promise<JobseekerInterview[]> {
     const response = await http.get<JobseekerInterviewDto[]>("/api/jobseeker/interviews");
     return response.data.map(mapInterview);
   },
 
+  // Use to fetch every archived interview when a screen needs the full archived collection.
   async getArchivedJobseekerInterviews(): Promise<JobseekerInterview[]> {
     const response = await http.get<JobseekerInterviewDto[]>("/api/jobseeker/interviews/archived");
     return response.data.map(mapInterview);
   },
 
+  // Use to load the archived interview table with pagination and current route filters.
   async getArchivedJobseekerInterviewsPage(
     params: JobseekerArchivedInterviewsQueryParams,
   ): Promise<JobseekerArchivedInterviewsLoaderData> {
@@ -81,6 +86,7 @@ export const jobseekerInterviewService = {
     };
   },
 
+  // Handles the jobseeker action for accepting a scheduled interview invitation.
   async acceptInterview(interviewId: string): Promise<JobseekerInterview> {
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/accept`,
@@ -89,6 +95,7 @@ export const jobseekerInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles the jobseeker action for declining a scheduled interview invitation.
   async declineInterview(interviewId: string): Promise<JobseekerInterview> {
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/decline`,
@@ -97,6 +104,7 @@ export const jobseekerInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles a jobseeker reschedule request and sanitizes the message before it reaches the API.
   async requestReschedule(
     interviewId: string,
     message: string,
@@ -109,6 +117,7 @@ export const jobseekerInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles archiving an interview so it moves out of the active interview workflow.
   async archiveInterview(interviewId: string): Promise<JobseekerInterview> {
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/archive`,
@@ -117,6 +126,7 @@ export const jobseekerInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles restoring an archived interview back into the active interview workflow.
   async unarchiveInterview(interviewId: string): Promise<JobseekerInterview> {
     const response = await http.post<JobseekerInterviewDto>(
       `/api/jobseeker/interviews/${interviewId}/unarchive`,

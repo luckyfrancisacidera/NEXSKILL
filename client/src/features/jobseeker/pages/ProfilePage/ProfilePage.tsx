@@ -7,8 +7,8 @@ import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPi
 import { authService } from "@features/auth/services/auth.service";
 import { ProfileForm } from "@features/jobseeker/pages/ProfilePage/components/ProfileForm";
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { Card } from "@shared/components/Card";
+import { Button } from "@shared/components/actions/Button";
+import { Card } from "@shared/components/data-display/Card";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import type {
   PasswordFormState,
@@ -511,3 +511,4 @@ export const ProfilePage = () => {
     </div>
   );
 };
+

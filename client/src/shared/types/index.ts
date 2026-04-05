@@ -1,4 +1,4 @@
-export type Role = 'jobseeker' | 'recruiter' | 'admin' | 'companyAdmin' | 'superAdmin';
+export type Role = "jobseeker" | "recruiter" | "companyadmin" | "superadmin";
 
 export type JobType = 'Full-time' | 'Part-time' | 'Contract' | 'Remote';
 

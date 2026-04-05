@@ -6,6 +6,7 @@ const DATE_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, {
 
 const startOfDay = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate());
 
+// Reads the first usable posted-date field from the mixed job DTO shapes used across the app.
 export const getPostedDateValue = <T extends {
   posted_date_utc?: string | null;
   created_at_utc?: string | null;
@@ -14,6 +15,7 @@ export const getPostedDateValue = <T extends {
 }>(job: T) =>
   job.posted_date_utc ?? job.created_at_utc ?? job.posted_at ?? job.created_at ?? null;
 
+// Formats job posting dates into the relative labels shown on job cards and detail screens.
 export const formatPostedDateLabel = (value?: string | null) => {
   if (!value) {
     return 'Not available';
@@ -42,4 +44,3 @@ export const formatPostedDateLabel = (value?: string | null) => {
 
   return DATE_LABEL_FORMATTER.format(date);
 };
-

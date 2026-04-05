@@ -6,10 +6,10 @@ export interface PermissionContextState {
 }
 
 export const isSuperAdminRole = (roles: readonly Role[]) =>
-  roles.includes("superAdmin") || roles.includes("admin");
+  roles.includes("superadmin");
 
 export const isCompanyAdminRole = (roles: readonly Role[]) =>
-  roles.includes("companyAdmin");
+  roles.includes("companyadmin");
 
 export const isRecruiterRole = (roles: readonly Role[]) =>
   roles.includes("recruiter");
@@ -17,6 +17,7 @@ export const isRecruiterRole = (roles: readonly Role[]) =>
 export const hasAnyAllowedRole = (roles: readonly Role[], allowedRoles: readonly Role[]) =>
   allowedRoles.some((role) => roles.includes(role));
 
+// Resolves the first route a user should see after auth based on their highest-priority role.
 export const getDefaultRouteForRoles = (roles: readonly Role[]) => {
   if (isSuperAdminRole(roles)) return "/admin/super";
   if (isCompanyAdminRole(roles)) return "/admin/company";
@@ -24,6 +25,7 @@ export const getDefaultRouteForRoles = (roles: readonly Role[]) => {
   return "/dashboard";
 };
 
+// Combines auth roles with active company and recruiter context to expose feature-level permission flags.
 export const resolvePermissions = (
   roles: readonly Role[],
   context: PermissionContextState = {},

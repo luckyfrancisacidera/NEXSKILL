@@ -1,8 +1,8 @@
 import type { FormEvent, MouseEvent } from 'react';
 
-import { Button } from '@shared/components/Button';
-import { SideDrawer } from '@shared/components/SideDrawer';
-import { RichTextField } from '@shared/components/RichTextField';
+import { Button } from '@shared/components/actions/Button';
+import { SideDrawer } from '@shared/components/overlay/SideDrawer';
+import { RichTextField } from '@shared/components/form/RichTextField';
 
 export interface InterviewFormValues {
   date: string;
@@ -230,3 +230,4 @@ export const InterviewModal = ({
     </SideDrawer>
   );
 };
+

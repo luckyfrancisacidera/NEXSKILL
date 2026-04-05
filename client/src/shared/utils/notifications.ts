@@ -15,6 +15,7 @@ export interface AppNotification extends AppNotificationPayload {
 
 const EVENT_NAME = "app:notify";
 
+// Emits a local notification event so providers can show toast feedback immediately.
 export const emitNotification = (payload: AppNotificationPayload) => {
   if (typeof window === "undefined") return;
 
@@ -27,6 +28,7 @@ export const emitNotification = (payload: AppNotificationPayload) => {
 
 export const notificationEventName = EVENT_NAME;
 
+// Formats notification timestamps for the compact labels shown in the topbar and inbox.
 export const formatNotificationTimestamp = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {

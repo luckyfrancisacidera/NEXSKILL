@@ -1,3 +1,4 @@
 export {
   actionButtonClassName as getJobActionButtonClassName,
-} from '@shared/components/ActionButton';
+} from '@shared/components/actions/ActionButton';
+

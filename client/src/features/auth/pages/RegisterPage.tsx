@@ -9,8 +9,8 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@app/providers/AuthProvider";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { Checkbox } from "@shared/components/Checkbox";
+import { Button } from "@shared/components/actions/Button";
+import { Checkbox } from "@shared/components/form/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 import { hasAnyAllowedRole } from "@shared/utils/permissions";
 
@@ -292,3 +292,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+

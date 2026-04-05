@@ -8,6 +8,7 @@ import {
 const normalize = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, " ");
 
+// Scores route metadata so label matches beat looser keyword and description matches.
 const scoreRouteMatch = (route: SearchableRouteItem, rawQuery: string) => {
   const query = normalize(rawQuery);
   if (!query) {
@@ -63,6 +64,7 @@ const scoreRouteMatch = (route: SearchableRouteItem, rawQuery: string) => {
   return score;
 };
 
+// Use to turn the route catalog into ranked global-search suggestions for the active role context.
 export const useGlobalSearch = (
   query: string,
   roleContext: SearchRoleContext,

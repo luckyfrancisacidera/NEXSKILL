@@ -27,10 +27,10 @@ import { DashboardFilters } from '@features/recruiter/pages/RecruiterDashboardPa
 import { MetricCard } from '@features/recruiter/pages/RecruiterDashboardPage/components/MetricCard';
 import { RecruiterDashboardSkeleton } from '@features/recruiter/pages/RecruiterDashboardPage/components/RecruiterDashboardSkeleton';
 import { TrendChartCard } from '@features/recruiter/pages/RecruiterDashboardPage/components/TrendChartCard';
-import { DashboardGreeting } from '@shared/components/DashboardGreeting';
+import { DashboardGreeting } from '@shared/components/layout/DashboardGreeting';
 import type { DashboardDto, DashboardGroupBy, DashboardQuickRange } from '@features/recruiter/types';
-import { DashboardEmptyState, DashboardSectionCard } from '@shared/components/DashboardPrimitives';
-import type { DropdownOption } from '@shared/components/Dropdown';
+import { DashboardEmptyState, DashboardSectionCard } from '@shared/components/layout/DashboardPrimitives';
+import type { DropdownOption } from '@shared/components/form/Dropdown';
 import { formatOfferCompensation } from '@shared/utils/offerCompensation';
 
 const cards = [
@@ -182,6 +182,16 @@ export const RecruiterDashboardPage = () => {
     { value: '', label: 'All Job Roles' },
     ...availableJobRoles.map((role) => ({ value: role, label: role })),
   ];
+  const jobRoleOptionsByDepartment = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(roleOptionsByDepartment).map(([department, roles]) => [
+          department,
+          [{ value: '', label: 'All Job Roles' }, ...roles.map((role) => ({ value: role, label: role }))],
+        ]),
+      ),
+    [roleOptionsByDepartment],
+  );
   const quickRangeOptions: DropdownOption[] = [
     { value: '', label: 'Quick Range' },
     { value: 'last7', label: 'Last 7 Days' },
@@ -255,9 +265,11 @@ export const RecruiterDashboardPage = () => {
           selected={selected}
           departmentOptions={departmentOptions}
           jobRoleOptions={jobRoleOptions}
+          jobRoleOptionsByDepartment={jobRoleOptionsByDepartment}
           availableJobRoleValue={availableJobRoleSet.has(selected.jobRole) ? selected.jobRole : ''}
           onFieldChange={updateFilterField}
           onDepartmentChange={handleDepartmentChange}
+          onApply={(nextFilters) => updateFilters({ ...selected, ...nextFilters })}
           onClear={clearFilters}
         />
       </DashboardSectionCard>
@@ -412,3 +424,4 @@ export const RecruiterDashboardPage = () => {
     </div>
   );
 };
+

@@ -51,6 +51,7 @@ public sealed class CandidateExplanationService(
         "to",
     ];
 
+    // Handles generate for shortlisted.
     public async Task GenerateForShortlistedAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var existing = await candidateExplanationRepository.GetBySubmissionIdAsync(submissionId, ct);
@@ -128,6 +129,7 @@ public sealed class CandidateExplanationService(
         }
     }
 
+    // Builds evaluation context.
     private static CandidateEvaluationContext BuildEvaluationContext(
         ResumeSubmissionEntity submission,
         JobEntity job,
@@ -188,6 +190,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Normalizes structured explanation.
     private static CandidateStructuredExplanation NormalizeStructuredExplanation(
         CandidateStructuredExplanation explanation,
         CandidateEvaluationContext context)
@@ -204,6 +207,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Builds skill signals.
     private static List<CandidateEvaluationSkillSignal> BuildSkillSignals(
         IEnumerable<string> jobSkills,
         IEnumerable<CandidateExplanationMatchItem> details)
@@ -258,6 +262,7 @@ public sealed class CandidateExplanationService(
             .ToList();
     }
 
+    // Builds highlights.
     private static List<string> BuildHighlights(params IEnumerable<CandidateExplanationMatchItem>[] groups)
     {
         var highlights = new List<string>();
@@ -271,6 +276,7 @@ public sealed class CandidateExplanationService(
         return highlights.Take(4).ToList();
     }
 
+    // Builds strength signals.
     private static List<string> BuildStrengthSignals(
         IReadOnlyList<CandidateEvaluationSkillSignal> requiredSkills,
         IReadOnlyList<CandidateEvaluationSkillSignal> preferredSkills,
@@ -302,6 +308,7 @@ public sealed class CandidateExplanationService(
         return strengths.Take(4).ToList();
     }
 
+    // Builds weak signals.
     private static List<string> BuildWeakSignals(
         IReadOnlyList<CandidateEvaluationSkillSignal> requiredSkills,
         IEnumerable<CandidateExplanationMatchItem> responsibilityDetails,
@@ -325,6 +332,7 @@ public sealed class CandidateExplanationService(
         return weakSignals.Take(3).ToList();
     }
 
+    // Builds deterministic strengths.
     private static List<string> BuildDeterministicStrengths(CandidateEvaluationContext context)
     {
         var strengths = new List<string>();
@@ -364,6 +372,7 @@ public sealed class CandidateExplanationService(
         return strengths.Take(4).ToList();
     }
 
+    // Builds deterministic gaps.
     private static List<string> BuildDeterministicGaps(CandidateEvaluationContext context)
     {
         var gaps = new List<string>();
@@ -407,6 +416,7 @@ public sealed class CandidateExplanationService(
         return gaps.Take(3).ToList();
     }
 
+    // Builds deterministic summary.
     private static string BuildDeterministicSummary(
         CandidateEvaluationContext context,
         IReadOnlyList<string> strengths,
@@ -442,6 +452,7 @@ public sealed class CandidateExplanationService(
         return CleanupInsightText(summary.ToString());
     }
 
+    // Normalizes recommendation.
     private static string NormalizeRecommendation(string? recommendation, CandidateEvaluationContext context)
     {
         var cleaned = CleanupInsightText(recommendation);
@@ -454,6 +465,7 @@ public sealed class CandidateExplanationService(
         return cleaned;
     }
 
+    // Builds deterministic recommendation.
     private static string BuildDeterministicRecommendation(CandidateEvaluationContext context)
     {
         var focusAreas = new List<string>();
@@ -476,6 +488,7 @@ public sealed class CandidateExplanationService(
         return CleanupInsightText($"Worth validating {JoinItems(focusAreas)} during interview.");
     }
 
+    // Handles looks like resume fragment.
     private static bool LooksLikeResumeFragment(string value)
     {
         if (value.Contains('"'))
@@ -487,6 +500,7 @@ public sealed class CandidateExplanationService(
         return wordCount > 28 || value.Count(character => character == ',') >= 3 || value.Contains(';');
     }
 
+    // Builds match details.
     private static List<CandidateExplanationMatchItem> BuildMatchDetails(IEnumerable<MatchEvidence> matches)
     {
         return matches
@@ -496,6 +510,7 @@ public sealed class CandidateExplanationService(
             .ToList();
     }
 
+    // Builds match detail.
     private static CandidateExplanationMatchItem BuildMatchDetail(MatchEvidence match)
     {
         return new CandidateExplanationMatchItem
@@ -516,6 +531,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Handles classify match state.
     private static string ClassifyMatchState(MatchEvidence match)
     {
         var hasEvidence = !string.IsNullOrWhiteSpace(match.BestResumeEvidence) || !string.IsNullOrWhiteSpace(match.StrongestEvidence);
@@ -543,6 +559,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Loads effective confidence.
     private static float GetEffectiveConfidence(MatchEvidence match)
     {
         return match.FinalMatchConfidence > 0f
@@ -550,6 +567,7 @@ public sealed class CandidateExplanationService(
             : Math.Max(match.Similarity, match.BaseMatchScore);
     }
 
+    // Handles to signal level.
     private static string ToSignalLevel(string matchState)
     {
         return matchState switch
@@ -562,6 +580,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Loads signal rank.
     private static int GetSignalRank(string level)
     {
         return level switch
@@ -572,6 +591,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Builds compatibility context.
     private static CandidateEvaluationCompatibilityContext BuildCompatibilityContext(
         ResumeSubmissionEntity submission,
         JobEntity job)
@@ -584,6 +604,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Builds experience assessment.
     private static string BuildExperienceAssessment(bool? minimumYearsMet, int? totalExperienceMonths, int? minimumYears)
     {
         if (minimumYearsMet.HasValue)
@@ -599,6 +620,7 @@ public sealed class CandidateExplanationService(
         return "unknown";
     }
 
+    // Builds education assessment.
     private static string BuildEducationAssessment(bool? minimumEducationMet)
     {
         return minimumEducationMet.HasValue
@@ -606,6 +628,7 @@ public sealed class CandidateExplanationService(
             : "unknown";
     }
 
+    // Normalizes skill list.
     private static List<string> NormalizeSkillList(IEnumerable<string> values)
     {
         return values
@@ -615,6 +638,7 @@ public sealed class CandidateExplanationService(
             .ToList();
     }
 
+    // Handles clean skill name.
     private static string CleanSkillName(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -627,6 +651,7 @@ public sealed class CandidateExplanationService(
         return cleaned.Trim().TrimEnd('.', ';', ':');
     }
 
+    // Normalizes capability phrase.
     private static string NormalizeCapabilityPhrase(string? primaryText, string? rawEvidence)
     {
         var combined = $"{primaryText} {rawEvidence}".Trim().ToLowerInvariant();
@@ -753,6 +778,7 @@ public sealed class CandidateExplanationService(
         return ToSentenceCase(string.Join(' ', compactTokens));
     }
 
+    // Handles preserve token case.
     private static string PreserveTokenCase(string token)
     {
         return token.ToLowerInvariant() switch
@@ -773,6 +799,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Handles to sentence case.
     private static string ToSentenceCase(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -783,6 +810,7 @@ public sealed class CandidateExplanationService(
         return char.ToUpperInvariant(value[0]) + value[1..];
     }
 
+    // Handles add phrase.
     private static void AddPhrase(List<string> values, string? candidate)
     {
         if (string.IsNullOrWhiteSpace(candidate))
@@ -800,6 +828,7 @@ public sealed class CandidateExplanationService(
         values.Add(cleaned);
     }
 
+    // Handles join items.
     private static string JoinItems(IEnumerable<string> values)
     {
         var items = values
@@ -817,6 +846,7 @@ public sealed class CandidateExplanationService(
         };
     }
 
+    // Handles compose fallback text.
     private static string ComposeFallbackText(CandidateStructuredExplanation explanation)
     {
         var sections = new List<string>();
@@ -844,6 +874,7 @@ public sealed class CandidateExplanationService(
         return CleanupInsightText(string.Join(" ", sections));
     }
 
+    // Handles add insight.
     private static void AddInsight(List<string> insights, string? candidate)
     {
         var cleaned = CleanupInsightText(candidate);
@@ -861,6 +892,7 @@ public sealed class CandidateExplanationService(
         insights.Add(cleaned);
     }
 
+    // Handles cleanup insight text.
     private static string CleanupInsightText(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -899,6 +931,7 @@ public sealed class CandidateExplanationService(
         return result.Trim().TrimEnd();
     }
 
+    // Normalizes for comparison.
     private static string NormalizeForComparison(string value)
     {
         var lowered = value.ToLowerInvariant();
@@ -909,6 +942,7 @@ public sealed class CandidateExplanationService(
         return Regex.Replace(lowered, @"\s+", " ").Trim();
     }
 
+    // Handles evaluate location compatibility.
     private static string EvaluateLocationCompatibility(string? candidateLocation, string jobLocation)
     {
         if (string.IsNullOrWhiteSpace(jobLocation) || string.IsNullOrWhiteSpace(candidateLocation))
@@ -927,6 +961,7 @@ public sealed class CandidateExplanationService(
         return "potential_mismatch";
     }
 
+    // Handles deserialize string list.
     private static List<string> DeserializeStringList(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -937,6 +972,7 @@ public sealed class CandidateExplanationService(
         return JsonSerializer.Deserialize<List<string>>(json) ?? [];
     }
 
+    // Parses final score.
     private static FinalMatchScore? ParseFinalScore(string? scoreBreakdownJson)
     {
         if (string.IsNullOrWhiteSpace(scoreBreakdownJson))
@@ -954,6 +990,7 @@ public sealed class CandidateExplanationService(
         }
     }
 
+    // Parses resume.
     private static ParsedResumeRoot? ParseResume(string? parsedResumeJson)
     {
         if (string.IsNullOrWhiteSpace(parsedResumeJson))

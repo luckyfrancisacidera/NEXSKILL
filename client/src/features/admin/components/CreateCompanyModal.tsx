@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { Button } from '@shared/components/Button';
-import { ModalOverlay } from '@shared/components/ModalOverlay';
+import { Button } from '@shared/components/actions/Button';
+import { ModalOverlay } from '@shared/components/overlay/ModalOverlay';
 import type { CreateCompanyAccountPayload } from '@features/admin/types/admin.type';
 import { AdminPasswordField } from '@features/admin/components/AdminPasswordField';
 
@@ -160,3 +160,4 @@ export const CreateCompanyModal = ({ open, isSubmitting, error, onClose, onSubmi
     </ModalOverlay>
   );
 };
+

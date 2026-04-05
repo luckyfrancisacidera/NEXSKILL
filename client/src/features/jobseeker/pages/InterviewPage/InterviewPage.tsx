@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
-import { Card } from "@shared/components/Card";
-import { RichTextContent } from "@shared/components/RichTextContent";
-import { SideDrawer } from "@shared/components/SideDrawer";
+import { Card } from "@shared/components/data-display/Card";
+import { RichTextContent } from "@shared/components/data-display/RichTextContent";
+import { SideDrawer } from "@shared/components/overlay/SideDrawer";
 import type { JobseekerInterview } from "@features/jobseeker/types";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { emitNotification } from "@shared/utils/notifications";
@@ -495,3 +495,4 @@ export const InterviewPage = () => {
     </div>
   );
 };
+

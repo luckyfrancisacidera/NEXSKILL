@@ -1,6 +1,6 @@
 import { redirect, type ActionFunctionArgs } from "react-router-dom";
 import { createJobAction } from "@features/recruiter/actions/createJobAction";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { ApiError } from "@shared/api/http";
 import {
   getApiErrorMessage,

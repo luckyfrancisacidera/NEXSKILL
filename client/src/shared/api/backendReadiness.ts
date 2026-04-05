@@ -1,3 +1,8 @@
+/* =========================================
+   BACKEND READINESS
+   Runs the explicit health probe used by the ATS wake experience before sensitive routes render.
+========================================= */
+
 import {
   beginBackendReadinessProbe,
   completeBackendReadinessProbe,
@@ -17,6 +22,8 @@ const getBackendReadinessUrl = () => {
 };
 
 export const ensureBackendReadiness = () => {
+  // Short-circuit once warm so the wake experience stays a first-load concern,
+  // not a recurring tax on normal route transitions.
   const snapshot = getBackendWakeSnapshot();
 
   if (snapshot.isBackendWarm) {

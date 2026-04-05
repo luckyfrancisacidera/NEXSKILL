@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from "react-router-dom";
 import type { BulkApplicantStageResponseDto } from "@features/recruiter/types";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { getApiErrorMessage, getString } from "@features/recruiter/actions/utils";
 
 /**

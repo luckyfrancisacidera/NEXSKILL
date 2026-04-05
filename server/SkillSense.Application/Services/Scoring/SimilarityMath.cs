@@ -1,8 +1,9 @@
-﻿
+
 namespace SkillSense.Application.Services.Scoring;
 
 public static class SimilarityMath
 {
+    // Computes cosine similarity between two vectors.
     public static float CosineSimilarity(IReadOnlyList<float> a, IReadOnlyList<float> b)
     {
         var length = Math.Min(a.Count, b.Count);

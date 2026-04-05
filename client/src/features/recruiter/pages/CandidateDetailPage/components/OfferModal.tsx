@@ -4,10 +4,10 @@ import { BriefcaseBusiness, CalendarDays, CircleDollarSign, Clock3, MessageSquar
 
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import { recruiterInputClassName } from '@features/recruiter/components/recruiterForm.shared';
-import { Button } from '@shared/components/Button';
-import { ModalOverlay } from '@shared/components/ModalOverlay';
-import { PredictiveInput } from '@shared/components/PredictiveInput';
-import { RichTextField } from '@shared/components/RichTextField';
+import { Button } from '@shared/components/actions/Button';
+import { ModalOverlay } from '@shared/components/overlay/ModalOverlay';
+import { PredictiveInput } from '@shared/components/form/PredictiveInput';
+import { RichTextField } from '@shared/components/form/RichTextField';
 
 export const OFFER_EMPLOYMENT_TYPE_OPTIONS = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Temporary'] as const;
 export const OFFER_WORK_SETUP_OPTIONS = ['On-site', 'Hybrid', 'Remote'] as const;
@@ -392,3 +392,4 @@ export const OfferModal = ({
     </ModalOverlay>
   );
 };
+

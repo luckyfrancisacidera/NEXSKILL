@@ -1,3 +1,9 @@
+/* =========================================
+   SETUP PROVIDER
+   Tracks post-login setup requirements and mounts the correct setup modal.
+   Related: AuthProvider, account setup endpoints, route guards
+========================================= */
+
 /* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
@@ -10,11 +16,10 @@ import {
 import type { PropsWithChildren } from "react";
 import { http } from "@shared/api/http";
 import { useAuth } from "@app/providers/AuthProvider";
-import { RecruiterInitialSetupModal } from "@shared/components/setup/RecruiterInitialSetupModal";
-import { CompanyAdminInitialSetupModal } from "@shared/components/setup/CompanyAdminInitialSetupModal";
+import { RecruiterInitialSetupModal } from "@shared/components/overlay/setup/RecruiterInitialSetupModal";
+import { CompanyAdminInitialSetupModal } from "@shared/components/overlay/setup/CompanyAdminInitialSetupModal";
 import { getDefaultRouteForRoles } from "@shared/utils/permissions";
-
-type SetupType = "recruiter" | "companyAdmin" | null;
+import { normalizeSetupType, type SetupType } from "@shared/utils/role";
 
 interface SetupStatus {
   requiresSetup: boolean;
@@ -29,6 +34,10 @@ interface SetupContextValue {
 
 const SetupContext = createContext<SetupContextValue | null>(null);
 
+/* =========================================
+   SETUP STATE
+========================================= */
+
 export const SetupProvider = ({ children }: PropsWithChildren) => {
   const { isAuthenticated, isHydrating, roles } = useAuth();
   const [status, setStatus] = useState<SetupStatus>({
@@ -38,6 +47,8 @@ export const SetupProvider = ({ children }: PropsWithChildren) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadStatus = useCallback(async () => {
+    // Setup status is role-sensitive and can change after auth or tenant context
+    // changes, so providers and guards share this one refresh path.
     if (isHydrating) {
       return;
     }
@@ -53,12 +64,12 @@ export const SetupProvider = ({ children }: PropsWithChildren) => {
     try {
       const response = await http.get<{
         requiresSetup?: boolean;
-        type?: "recruiter" | "companyAdmin";
+        type?: string;
       }>("/api/account/setup-status");
 
       setStatus({
         requiresSetup: response.data.requiresSetup ?? false,
-        type: (response.data.type as SetupType) ?? null,
+        type: normalizeSetupType(response.data.type),
       });
     } catch {
       setStatus({ requiresSetup: false, type: null });
@@ -76,6 +87,8 @@ export const SetupProvider = ({ children }: PropsWithChildren) => {
   }, [isHydrating, loadStatus]);
 
   const handleCompleted = async () => {
+    // Force a fresh setup-status read before redirecting so the next route lands
+    // on the role's real post-setup default instead of stale pre-setup state.
     await loadStatus();
     const redirectTo = getDefaultRouteForRoles(roles);
     window.location.replace(redirectTo);
@@ -93,7 +106,7 @@ export const SetupProvider = ({ children }: PropsWithChildren) => {
   const showRecruiterSetup =
     status.requiresSetup && status.type === "recruiter";
   const showCompanyAdminSetup =
-    status.requiresSetup && status.type === "companyAdmin";
+    status.requiresSetup && status.type === "companyadmin";
 
   return (
     <SetupContext.Provider value={value}>
@@ -108,6 +121,10 @@ export const SetupProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
+/* =========================================
+   SETUP HOOK
+========================================= */
+
 export const useSetup = () => {
   const context = useContext(SetupContext);
   if (!context) {
@@ -116,3 +133,4 @@ export const useSetup = () => {
 
   return context;
 };
+

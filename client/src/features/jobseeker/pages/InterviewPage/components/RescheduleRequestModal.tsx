@@ -1,4 +1,4 @@
-import { SideDrawer } from "@shared/components/SideDrawer";
+import { SideDrawer } from "@shared/components/overlay/SideDrawer";
 import { RescheduleRequestForm } from "./RescheduleRequestForm";
 
 interface RescheduleRequestModalProps {
@@ -27,3 +27,4 @@ export const RescheduleRequestModal = ({
     </SideDrawer>
   );
 };
+

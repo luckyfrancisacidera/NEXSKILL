@@ -6,6 +6,7 @@ const phpCurrencyFormatter = new Intl.NumberFormat('en-PH', {
 
 export const formatPhpCurrency = (amount: number) => phpCurrencyFormatter.format(amount);
 
+// Maps salary values into the compensation label used by offer and hiring screens.
 export const formatOfferCompensation = (amount: number, normalizedUnit?: string | null) => {
   const suffix = normalizedUnit === 'month' ? ' / month' : ' / year';
   return `${formatPhpCurrency(amount)}${suffix}`;

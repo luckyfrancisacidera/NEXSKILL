@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Schema normalization helpers for parser outputs returned to the platform."""
+
 import uuid
 from typing import Any, Dict, List
 

@@ -1,4 +1,4 @@
-import { Card } from '@shared/components/Card';
+import { Card } from '@shared/components/data-display/Card';
 
 interface AdminMetricCardProps {
   label: string;
@@ -23,3 +23,4 @@ export const AdminMetricCard = ({
     </div>
   </Card>
 );
+

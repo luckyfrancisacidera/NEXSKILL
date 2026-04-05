@@ -9,6 +9,7 @@ public sealed class NotificationService(
     INotificationRepository notificationRepository,
     IDateTimeProvider dateTimeProvider) : INotificationService
 {
+    // Creates notification.
     public async Task<NotificationDto> CreateNotificationAsync(CreateNotificationRequest request, CancellationToken ct = default)
     {
         var title = request.Title.Trim();
@@ -43,12 +44,14 @@ public sealed class NotificationService(
         return Map(entity);
     }
 
+    // Loads notifications by user.
     public async Task<IReadOnlyList<NotificationDto>> GetNotificationsByUserAsync(Guid userId, CancellationToken ct = default)
     {
         var items = await notificationRepository.GetByUserAsync(userId, ct);
         return items.Select(Map).ToList();
     }
 
+    // Marks as read.
     public async Task MarkAsReadAsync(Guid userId, Guid notificationId, CancellationToken ct = default)
     {
         var entity = await notificationRepository.GetByIdForUserAsync(notificationId, userId, ct)
@@ -63,6 +66,7 @@ public sealed class NotificationService(
         await notificationRepository.SaveChangesAsync(ct);
     }
 
+    // Marks all as read.
     public async Task MarkAllAsReadAsync(Guid userId, CancellationToken ct = default)
     {
         var unreadItems = await notificationRepository.GetUnreadByUserAsync(userId, ct);
@@ -79,6 +83,7 @@ public sealed class NotificationService(
         await notificationRepository.SaveChangesAsync(ct);
     }
 
+    // Deletes notifications.
     public async Task<int> DeleteNotificationsAsync(Guid userId, IReadOnlyList<Guid> notificationIds, CancellationToken ct = default)
     {
         var validIds = notificationIds
@@ -101,6 +106,7 @@ public sealed class NotificationService(
         return deletedCount;
     }
 
+    // Deletes all notifications.
     public async Task<int> DeleteAllNotificationsAsync(Guid userId, CancellationToken ct = default)
     {
         var deletedCount = await notificationRepository.DeleteAllForUserAsync(userId, ct);
@@ -113,6 +119,7 @@ public sealed class NotificationService(
         return deletedCount;
     }
 
+    // Handles map.
     private static NotificationDto Map(NotificationEntity entity) => new()
     {
         Id = entity.Id,

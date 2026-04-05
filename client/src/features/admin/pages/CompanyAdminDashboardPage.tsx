@@ -3,23 +3,23 @@ import { useLoaderData, useNavigate, useRevalidator, useSearchParams } from 'rea
 import { BadgeCheck, BriefcaseBusiness, Building2, Trophy, Users } from 'lucide-react';
 
 import { ApiError } from '@shared/api/http';
-import { Avatar } from '@shared/components/Avatar';
-import { Badge } from '@shared/components/Badge';
-import { Button } from '@shared/components/Button';
-import { Card } from '@shared/components/Card';
-import { DashboardGreeting } from '@shared/components/DashboardGreeting';
+import { Avatar } from '@shared/components/data-display/Avatar';
+import { Badge } from '@shared/components/data-display/Badge';
+import { Button } from '@shared/components/actions/Button';
+import { Card } from '@shared/components/data-display/Card';
+import { DashboardGreeting } from '@shared/components/layout/DashboardGreeting';
 import {
   DashboardEmptyState,
   DashboardPageHeader,
   DashboardRankItem,
   DashboardSectionCard,
   DashboardStatCard,
-} from '@shared/components/DashboardPrimitives';
-import { DataTable } from '@shared/components/ui/data-table/DataTable';
-import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
-import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
-import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
-import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
+} from '@shared/components/layout/DashboardPrimitives';
+import { DataTable } from '@shared/components/data-display/data-table/DataTable';
+import { IdentityCell } from '@shared/components/data-display/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/data-display/data-table/TablePagination';
+import { TablePageSizeControl } from '@shared/components/data-display/data-table/TablePageSizeControl';
+import type { DataTableColumn } from '@shared/components/data-display/data-table/table-types';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { CreateRecruiterModal } from '@features/admin/components/CreateRecruiterModal';
@@ -386,3 +386,4 @@ export const CompanyAdminDashboardPage = () => {
     </>
   );
 };
+

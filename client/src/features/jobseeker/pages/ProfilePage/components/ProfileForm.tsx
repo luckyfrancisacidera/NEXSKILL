@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { Button } from "@shared/components/Button";
+import { Button } from "@shared/components/actions/Button";
 
 type ProfileFormProps = {
   inputClassName: string;
@@ -87,3 +87,4 @@ export const ProfileForm = ({
     </div>
   </form>
 );
+

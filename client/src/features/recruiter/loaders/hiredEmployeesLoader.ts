@@ -1,7 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 
+// Use to preload the hired employees table and preserve its current filters.
 export const recruiterHiredEmployeesLoader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);

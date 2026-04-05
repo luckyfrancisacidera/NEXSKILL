@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { ArrowLeft, BarChart3, Expand } from 'lucide-react';
 
 import type { DashboardDto, DashboardGroupBy, DashboardQuickRange } from '@features/recruiter/types';
-import { Card } from '@shared/components/Card';
-import { DashboardAreaChart } from '@shared/components/DashboardAreaChart';
-import { DashboardEmptyState } from '@shared/components/DashboardPrimitives';
-import Dropdown, { type DropdownOption } from '@shared/components/Dropdown';
+import { Card } from '@shared/components/data-display/Card';
+import { DashboardAreaChart } from '@shared/components/data-display/DashboardAreaChart';
+import { DashboardEmptyState } from '@shared/components/layout/DashboardPrimitives';
+import Dropdown, { type DropdownOption } from '@shared/components/form/Dropdown';
 
 export interface TrendChartCardProps {
   expanded: boolean;
@@ -146,3 +146,4 @@ export const TrendChartCard = ({
     </>
   );
 };
+

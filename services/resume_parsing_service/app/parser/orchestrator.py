@@ -1,3 +1,5 @@
+"""High-level resume parsing orchestration for extraction, sectioning, and normalization."""
+
 import uuid
 from typing import Any, Dict, Optional, Set
 from spacy.matcher import PhraseMatcher
@@ -30,6 +32,9 @@ def parse_resume(
     edu_institutions: Optional[Set[str]] = None,
     edu_programs: Optional[Set[str]] = None,
 ) -> Dict[str, Any]:
+    # =========================================
+    # RESUME PARSE ORCHESTRATION
+    # =========================================
     raw = extract_text_from_upload(filename, content)
 
     raw_text = normalize_text(raw)

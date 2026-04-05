@@ -3,16 +3,16 @@ import { useLoaderData, useNavigate, useRevalidator, useSearchParams } from 'rea
 import { Building2, BriefcaseBusiness, Globe2, ShieldCheck, Users } from 'lucide-react';
 
 import { ApiError } from '@shared/api/http';
-import { Avatar } from '@shared/components/Avatar';
-import { Button } from '@shared/components/Button';
-import { DashboardGreeting } from '@shared/components/DashboardGreeting';
+import { Avatar } from '@shared/components/data-display/Avatar';
+import { Button } from '@shared/components/actions/Button';
+import { DashboardGreeting } from '@shared/components/layout/DashboardGreeting';
 import {
   DashboardEmptyState,
   DashboardPageHeader,
   DashboardRankItem,
   DashboardSectionCard,
   DashboardStatCard,
-} from '@shared/components/DashboardPrimitives';
+} from '@shared/components/layout/DashboardPrimitives';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { AdminCompaniesTableCard } from '@features/admin/components/AdminCompaniesTableCard';
 import { CreateCompanyModal } from '@features/admin/components/CreateCompanyModal';
@@ -272,3 +272,4 @@ export const SuperAdminDashboardPage = () => {
     </>
   );
 };
+

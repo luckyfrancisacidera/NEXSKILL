@@ -28,6 +28,7 @@ public sealed class AdminManagementService(
     UserManager<AppUser> userManager,
     ILogger<AdminManagementService> logger) : IAdminManagementService
 {
+    // Loads super admin dashboard.
     public async Task<SuperAdminDashboardResponse> GetSuperAdminDashboardAsync(
         int companiesPage,
         int companyAdminsPage,
@@ -59,6 +60,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Loads super admin users.
     public async Task<SuperAdminUsersPageResponse> GetSuperAdminUsersAsync(
         int pageNumber,
         int pageSize,
@@ -84,6 +86,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Loads company admin dashboard.
     public async Task<CompanyAdminDashboardResponse> GetCompanyAdminDashboardAsync(
         Guid adminUserId,
         Guid companyId,
@@ -119,6 +122,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Loads company employees.
     public async Task<PagedResult<EmployeeRecordResponse>> GetCompanyEmployeesAsync(
         Guid adminUserId,
         Guid companyId,
@@ -139,6 +143,7 @@ public sealed class AdminManagementService(
         return MapPaged(data, MapEmployee);
     }
 
+    // Loads company applicant by submission ID.
     public async Task<ApplicantDetailResponse?> GetCompanyApplicantBySubmissionIdAsync(
         Guid adminUserId,
         Guid companyId,
@@ -173,6 +178,7 @@ public sealed class AdminManagementService(
         return detail;
     }
 
+    // Loads company applicant resume access.
     public async Task<ApplicantResumeAccessResult> GetCompanyApplicantResumeAccessAsync(
         Guid adminUserId,
         Guid companyId,
@@ -207,6 +213,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Creates company account.
     public async Task<AdminCompanyAccountResponse> CreateCompanyAccountAsync(CreateCompanyAccountRequest request, CancellationToken ct = default)
     {
         var companyName = request.Name.Trim();
@@ -274,6 +281,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Creates recruiter.
     public async Task<AdminRecruiterOverviewResponse> CreateRecruiterAsync(Guid adminUserId, Guid companyId, CreateManagedRecruiterRequest request, CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
@@ -301,42 +309,53 @@ public sealed class AdminManagementService(
         return MapRecruiter(recruiter);
     }
 
+    // Activates company.
     public Task ActivateCompanyAsync(Guid companyId, CancellationToken ct = default)
         => SetCompanyActiveStatusAsync(companyId, true, ct);
 
+    // Deactivates company.
     public Task DeactivateCompanyAsync(Guid companyId, CancellationToken ct = default)
         => SetCompanyActiveStatusAsync(companyId, false, ct);
 
+    // Activates company admin.
     public Task ActivateCompanyAdminAsync(Guid adminUserId, CancellationToken ct = default)
         => SetCompanyAdminActiveStatusAsync(adminUserId, true, ct);
 
+    // Deactivates company admin.
     public Task DeactivateCompanyAdminAsync(Guid adminUserId, CancellationToken ct = default)
         => SetCompanyAdminActiveStatusAsync(adminUserId, false, ct);
 
+    // Activates recruiter.
     public Task ActivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default)
         => SetRecruiterActiveStatusAsync(recruiterUserId, null, true, ct);
 
+    // Deactivates recruiter.
     public Task DeactivateRecruiterAsync(Guid recruiterUserId, CancellationToken ct = default)
         => SetRecruiterActiveStatusAsync(recruiterUserId, null, false, ct);
 
+    // Activates user.
     public Task ActivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default)
         => SetManagedUserActiveStatusAsync(actorUserId, userId, true, ct);
 
+    // Deactivates user.
     public Task DeactivateUserAsync(Guid actorUserId, Guid userId, CancellationToken ct = default)
         => SetManagedUserActiveStatusAsync(actorUserId, userId, false, ct);
 
+    // Activates recruiter.
     public async Task ActivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
         await SetRecruiterActiveStatusAsync(recruiterUserId, companyId, true, ct);
     }
 
+    // Deactivates recruiter.
     public async Task DeactivateRecruiterAsync(Guid adminUserId, Guid companyId, Guid recruiterUserId, CancellationToken ct = default)
     {
         await EnsureCompanyAdminAccessAsync(adminUserId, companyId, ct);
         await SetRecruiterActiveStatusAsync(recruiterUserId, companyId, false, ct);
     }
 
+    // Sets company active status.
     private async Task SetCompanyActiveStatusAsync(Guid companyId, bool isActive, CancellationToken ct)
     {
         var company = await adminManagementRepository.GetCompanyByIdAsync(companyId, ct)
@@ -352,6 +371,7 @@ public sealed class AdminManagementService(
             isActive);
     }
 
+    // Sets company admin active status.
     private async Task SetCompanyAdminActiveStatusAsync(Guid adminUserId, bool isActive, CancellationToken ct)
     {
         var companyAdmin = await adminManagementRepository.GetCompanyAdminOverviewByUserIdAsync(adminUserId, ct)
@@ -360,6 +380,7 @@ public sealed class AdminManagementService(
         await SetIdentityAccountActiveStatusAsync(companyAdmin.UserId, "CompanyAdmin", isActive);
     }
 
+    // Sets recruiter active status.
     private async Task SetRecruiterActiveStatusAsync(Guid recruiterUserId, Guid? scopedCompanyId, bool isActive, CancellationToken ct)
     {
         var recruiter = await adminManagementRepository.GetRecruiterOverviewByUserIdAsync(recruiterUserId, ct)
@@ -373,6 +394,7 @@ public sealed class AdminManagementService(
         await SetIdentityAccountActiveStatusAsync(recruiter.UserId, "Recruiter", isActive);
     }
 
+    // Sets managed user active status.
     private async Task SetManagedUserActiveStatusAsync(Guid actorUserId, Guid userId, bool isActive, CancellationToken ct)
     {
         if (actorUserId == userId)
@@ -391,6 +413,7 @@ public sealed class AdminManagementService(
         await SetIdentityAccountActiveStatusAsync(user.UserId, user.Role, isActive);
     }
 
+    // Sets identity account active status.
     private async Task SetIdentityAccountActiveStatusAsync(Guid userId, string requiredRole, bool isActive)
     {
         var user = await userManager.FindByIdAsync(userId.ToString())
@@ -416,6 +439,7 @@ public sealed class AdminManagementService(
             isActive);
     }
 
+    // Ensures company admin access.
     private async Task EnsureCompanyAdminAccessAsync(Guid adminUserId, Guid companyId, CancellationToken ct)
     {
         var scopedCompanyId = await adminManagementRepository.GetCompanyIdByAdminUserIdAsync(adminUserId, ct)
@@ -427,8 +451,10 @@ public sealed class AdminManagementService(
         }
     }
 
+    // Normalizes page size.
     private static int NormalizePageSize(int pageSize) => Math.Clamp(pageSize <= 0 ? 10 : pageSize, 1, 100);
 
+    // Maps paged.
     private static PagedResult<TResponse> MapPaged<TData, TResponse>(PagedData<TData> data, Func<TData, TResponse> map)
         => new()
         {
@@ -439,6 +465,7 @@ public sealed class AdminManagementService(
             TotalPages = data.TotalPages,
         };
 
+    // Maps company.
     private static AdminCompanyOverviewResponse MapCompany(AdminCompanyOverviewData company)
         => new()
         {
@@ -452,6 +479,7 @@ public sealed class AdminManagementService(
             UpdatedAtUtc = company.UpdatedAtUtc,
         };
 
+    // Maps company admin.
     private static AdminCompanyAdminOverviewResponse MapCompanyAdmin(AdminCompanyAdminOverviewData admin)
         => new()
         {
@@ -463,6 +491,7 @@ public sealed class AdminManagementService(
             CreatedAtUtc = admin.CreatedAtUtc,
         };
 
+    // Maps recruiter.
     private static AdminRecruiterOverviewResponse MapRecruiter(AdminRecruiterOverviewData recruiter)
         => new()
         {
@@ -479,6 +508,7 @@ public sealed class AdminManagementService(
             TotalHires = recruiter.TotalHires,
         };
 
+    // Maps user.
     private static AdminUserOverviewResponse MapUser(AdminUserOverviewData user)
         => new()
         {
@@ -491,6 +521,7 @@ public sealed class AdminManagementService(
             JoinedAtUtc = user.JoinedAtUtc,
         };
 
+    // Maps employee.
     private static EmployeeRecordResponse MapEmployee(EmployeeRecordData employee)
         => new()
         {
@@ -512,6 +543,7 @@ public sealed class AdminManagementService(
             HireDateUtc = employee.HireDateUtc,
         };
 
+    // Maps offer.
     private async Task<OfferResponse?> MapOfferAsync(Guid submissionId, CancellationToken ct)
     {
         var offer = await adminManagementRepository.GetLatestOfferByApplicationIdAsync(submissionId, ct);
@@ -545,6 +577,7 @@ public sealed class AdminManagementService(
         };
     }
 
+    // Resolves user display name.
     private static string ResolveUserDisplayName(AdminUserOverviewData user)
     {
         var firstName = user.FirstName?.Trim();

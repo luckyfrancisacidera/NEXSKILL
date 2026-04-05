@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { Interview } from "@features/recruiter/types/interview.types";
-import { Card } from "@shared/components/Card";
+import { Card } from "@shared/components/data-display/Card";
 import { InterviewCard } from "./InterviewCard";
 
 interface InterviewListProps {
@@ -94,3 +94,4 @@ export const InterviewList = ({
     </Card>
   );
 };
+

@@ -3,15 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import { ArchiveRestore, Loader2, Search } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
 
-import { ActionButton } from "@shared/components/ActionButton";
-import { Card } from "@shared/components/Card";
-import { RichTextContent } from "@shared/components/RichTextContent";
-import { SideDrawer } from "@shared/components/SideDrawer";
-import { DataTable } from "@shared/components/ui/data-table/DataTable";
-import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
+import { ActionButton } from "@shared/components/actions/ActionButton";
+import { Card } from "@shared/components/data-display/Card";
+import { RichTextContent } from "@shared/components/data-display/RichTextContent";
+import { SideDrawer } from "@shared/components/overlay/SideDrawer";
+import { DataTable } from "@shared/components/data-display/data-table/DataTable";
+import { IdentityCell } from "@shared/components/data-display/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import type { DataTableColumn } from "@shared/components/data-display/data-table/table-types";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
@@ -439,3 +439,4 @@ export const ArchivedInterviewsPage = () => {
     </Card>
   );
 };
+

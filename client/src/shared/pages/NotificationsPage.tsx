@@ -3,7 +3,7 @@ import { ArrowLeft, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
-import { Card } from "@shared/components/Card";
+import { Card } from "@shared/components/data-display/Card";
 import { useNotifications } from "@app/providers/NotificationsProvider";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
 import { cn } from "@shared/utils/cn";
@@ -255,3 +255,4 @@ export const NotificationsPage = () => {
     </div>
   );
 };
+

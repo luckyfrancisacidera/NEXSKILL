@@ -8,7 +8,7 @@ import { JobPostsFilters } from '@features/recruiter/pages/JobPostsPage/componen
 import { JobListSkeleton } from '@features/recruiter/pages/JobPostsPage/components/JobListSkeleton';
 import { JobPostsTable } from '@features/recruiter/pages/JobPostsPage/components/JobPostsTable';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
-import { recruiterService } from '@features/recruiter/service/recruiter.service';
+import { recruiterService } from '@features/recruiter/services/recruiter.service';
 import type { JobListItem, RecruiterJobsLoaderData } from '@features/recruiter/types';
 import {
   applyRecruiterJobMutation,
@@ -19,10 +19,10 @@ import {
   toJobListItem,
   type RecruiterJobMutationPayload,
 } from '@features/recruiter/utils/jobMutationSync';
-import { EmptyState } from '@shared/components/EmptyState';
-import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
-import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
-import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
+import { Card } from '@shared/components/data-display/Card';
+import { EmptyState } from '@shared/components/feedback/EmptyState';
+import { HighRiskVerificationModal } from '@shared/components/overlay/HighRiskVerificationModal';
+import { TablePagination } from '@shared/components/data-display/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { normalizeSearchInput } from '@shared/utils/search';
@@ -259,112 +259,115 @@ export const JobPostsPage = () => {
   })}`;
 
   return (
-    <div className="min-w-0 space-y-6">
-      <RecruiterHeader />
-      <div className="space-y-4">
-        <section className="border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Job Posts</h2>
-          </div>
+    <Card className="w-full min-w-0 max-w-full border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
+      <div className="flex w-full min-w-0 flex-col overflow-hidden">
+        <RecruiterHeader />
+        <div className="flex-1 min-w-0 space-y-4">
+          <section className="w-full min-w-0 max-w-full overflow-hidden border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
+            <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Job Posts</h2>
+            </div>
 
-          <JobPostsFilters
-            currentDepartment={currentDepartment}
-            currentSearch={searchDraft}
-            departments={departments}
-            onDepartmentChange={(department) => {
-              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, page: '1' })}`);
-            }}
-            onSearchChange={(value) => {
-              setSearchDraft(value);
-            }}
-          />
-        </section>
+            <JobPostsFilters
+              currentDepartment={currentDepartment}
+              currentPageSize={loaderData.pageSize}
+              currentSearch={searchDraft}
+              departments={departments}
+              onDepartmentChange={(department) => {
+                navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, page: '1' })}`);
+              }}
+              onPageSizeChange={(pageSize) => {
+                navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize, page: '1' })}`);
+              }}
+              onSearchChange={(value) => {
+                setSearchDraft(value);
+              }}
+              onApplyMobileFilters={({ department, pageSize }) => {
+                navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { department, pageSize, page: '1' })}`);
+              }}
+            />
+          </section>
 
-        <section className="min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-6">
-          <div className="min-w-0 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
-            {loaderData.total} total job posts
-          </div>
-          <TablePageSizeControl
-            value={loaderData.pageSize}
-            onChange={(pageSize) => {
-              navigate(`/recruiter/job-posts?${buildJobPostsQuery(searchParams, { pageSize: String(pageSize), page: '1' })}`);
-            }}
-          />
+          <section className="w-full min-w-0 max-w-full overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:px-6">
+              <div className="min-w-0 flex-1 text-xs text-zinc-500 dark:text-zinc-400 sm:text-sm">
+                {loaderData.total} total job posts
+              </div>
+            </div>
+
+            {isLoadingList ? (
+              <JobListSkeleton />
+            ) : isEmptyPage ? (
+              <EmptyState
+                icon={FileSearch}
+                title="No results on this page"
+                description="There are job posts in this view, but this page is empty. Go back a page to keep browsing."
+                actionLabel="Go to previous page"
+                onAction={() => {
+                  navigate(previousPageHref);
+                }}
+                className="mt-4"
+              />
+            ) : isEmptyJobs ? (
+              <EmptyState
+                icon={BriefcaseBusiness}
+                title={hasActiveFilters ? 'No matching job posts' : 'No job posts yet'}
+                description={
+                  hasActiveFilters
+                    ? 'Try adjusting your search or filters to see more openings.'
+                    : 'Create your first job post to start receiving applications.'
+                }
+                actionLabel={hasActiveFilters ? 'Clear filters' : 'Create Job'}
+                onAction={() => {
+                  if (hasActiveFilters) {
+                    navigate('/recruiter/job-posts');
+                    return;
+                  }
+
+                  navigate('/recruiter/job-posts/new');
+                }}
+                className="mt-4"
+              />
+            ) : (
+              <JobPostsTable
+                jobs={jobs}
+                isDeleting={isDeleting}
+                isDuplicating={isDuplicating}
+                onDelete={openDeleteFlow}
+                onDuplicate={openDuplicateFlow}
+                loading={isLoadingList}
+              />
+            )}
+
+            {loaderData.total > 0 || isEmptyPage ? (
+              <TablePagination
+                page={loaderData.page}
+                totalPages={pageCount}
+                totalCount={loaderData.total}
+                pageSize={loaderData.pageSize}
+                itemLabel="jobs"
+                getPageHref={(page) => `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { page: String(page) })}`}
+                showPageSizeSelector={false}
+              />
+            ) : null}
+          </section>
         </div>
 
-        {isLoadingList ? (
-          <JobListSkeleton />
-        ) : isEmptyPage ? (
-          <EmptyState
-            icon={FileSearch}
-            title="No results on this page"
-            description="There are job posts in this view, but this page is empty. Go back a page to keep browsing."
-            actionLabel="Go to previous page"
-            onAction={() => {
-              navigate(previousPageHref);
-            }}
-            className="mt-4"
-          />
-        ) : isEmptyJobs ? (
-          <EmptyState
-            icon={BriefcaseBusiness}
-            title={hasActiveFilters ? 'No matching job posts' : 'No job posts yet'}
-            description={
-              hasActiveFilters
-                ? 'Try adjusting your search or filters to see more openings.'
-                : 'Create your first job post to start receiving applications.'
-            }
-            actionLabel={hasActiveFilters ? 'Clear filters' : 'Create Job'}
-            onAction={() => {
-              if (hasActiveFilters) {
-                navigate('/recruiter/job-posts');
-                return;
-              }
-
-              navigate('/recruiter/job-posts/new');
-            }}
-            className="mt-4"
-          />
-        ) : (
-          <JobPostsTable
-            jobs={jobs}
-            isDeleting={isDeleting}
-            isDuplicating={isDuplicating}
-            onDelete={openDeleteFlow}
-            onDuplicate={openDuplicateFlow}
-            loading={isLoadingList}
-          />
-        )}
-
-        {(loaderData.total > 0 || isEmptyPage) ? (
-          <TablePagination
-            page={loaderData.page}
-            totalPages={pageCount}
-            totalCount={loaderData.total}
-            pageSize={loaderData.pageSize}
-            itemLabel="jobs"
-            getPageHref={(page) => `/recruiter/job-posts?${buildJobPostsQuery(searchParams, { page: String(page) })}`}
-            showPageSizeSelector={false}
-          />
-        ) : null}
-        </section>
+        <HighRiskVerificationModal
+          open={Boolean(selectedJob) && isVerificationOpen}
+          title="Final verification required"
+          message="For published job posts, type DELETE or the exact job title to confirm this destructive action."
+          expectedKeyword="DELETE"
+          expectedText={selectedJob?.title}
+          loading={isDeleting || navigation.state === 'loading'}
+          error={deleteError}
+          onClose={closeDeleteFlow}
+          onCancel={closeDeleteFlow}
+          onConfirm={() => {
+            void runDelete();
+          }}
+        />
       </div>
-
-      <HighRiskVerificationModal
-        open={Boolean(selectedJob) && isVerificationOpen}
-        title="Final verification required"
-        message="For published job posts, type DELETE or the exact job title to confirm this destructive action."
-        expectedKeyword="DELETE"
-        expectedText={selectedJob?.title}
-        loading={isDeleting || navigation.state === 'loading'}
-        error={deleteError}
-        onClose={closeDeleteFlow}
-        onCancel={closeDeleteFlow}
-        onConfirm={() => {
-          void runDelete();
-        }}
-      />
-    </div>
+    </Card>
   );
 };

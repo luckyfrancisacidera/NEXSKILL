@@ -1,10 +1,11 @@
 import type { ActionFunctionArgs } from "react-router-dom";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import {
   getApiErrorMessage,
   getString,
 } from "@features/jobseeker/actions/action.utils";
 
+// Handles save and unsave actions from job cards and job detail views.
 export const saveJobAction = async ({
   request,
   params,

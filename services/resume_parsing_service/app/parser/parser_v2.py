@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Hybrid parser that prefers local extraction and uses Groq only as an enhancement pass."""
+
 import ast
 import json
 import os
@@ -15,6 +17,10 @@ from app.parser.orchestrator import parse_resume
 from .base import ResumeParserBase
 from .schema import validate_resume_schema
 
+
+# =========================================
+# PARSER V2 REGEX AND LOOKUP HELPERS
+# =========================================
 
 SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9])")
 SKILL_DELIM_RE = re.compile(r"[,;|\n]+")
@@ -320,6 +326,8 @@ class ParserV2(ResumeParserBase):
         self.groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     def _parse_with_local(self, filename: str, content: bytes) -> Dict[str, Any]:
+        # Always keep a deterministic local parse path so the service can succeed
+        # when the external enhancement model is unavailable or returns unusable JSON.
         base = parse_resume(
             filename=filename,
             content=content,
@@ -333,6 +341,8 @@ class ParserV2(ResumeParserBase):
         return self._recompute_derived(validated)
 
     def _recompute_derived(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        # Derived fields are recomputed after every parse path so local and
+        # model-enhanced outputs expose the same downstream contract.
         out = dict(payload or {})
         work = out.get("work_experience") if isinstance(out.get("work_experience"), list) else []
         education = out.get("education") if isinstance(out.get("education"), list) else []
@@ -347,6 +357,8 @@ class ParserV2(ResumeParserBase):
         return out
 
     def parse(self, filename: str, content: bytes):
+        # Treat the LLM as an optional enrichment layer, not the source of truth:
+        # local parsing must remain the safety net for production reliability.
         raw_text = normalize_text(extract_text_from_upload(filename, content))
 
         if not self.groq_api_key or not raw_text:
@@ -362,6 +374,8 @@ class ParserV2(ResumeParserBase):
         return fallback_local
 
     def _enhance_with_groq(self, *, raw_text: str) -> Optional[Dict[str, Any]]:
+        # The prompt is intentionally strict because downstream scoring expects
+        # schema-shaped data, not best-effort prose or inferred resume details.
         prompt = {
             "task": "Strictly extract structured resume fields from raw text only.",
             "raw_resume_text": raw_text,

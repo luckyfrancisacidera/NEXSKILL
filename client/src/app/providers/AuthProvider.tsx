@@ -1,3 +1,9 @@
+/* =========================================
+   AUTH PROVIDER
+   Owns authenticated user state, role normalization, and session hydration.
+   Related: SetupProvider, routes.guard, protectedLoader
+========================================= */
+
 import {
   createContext,
   useCallback,
@@ -14,6 +20,7 @@ import type {
 } from "@features/auth/types/auth.types";
 import type { Role } from "@shared/types";
 import { ApiError, http } from "@shared/api/http";
+import { normalizeRoles } from "@shared/utils/role";
 
 interface AuthUser {
   userId: string;
@@ -39,29 +46,9 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const normalizeRole = (role: string): Role | null => {
-  const normalized = role.trim().toLowerCase();
-
-  switch (normalized) {
-    case "admin":
-      return "admin";
-    case "superadmin":
-      return "superAdmin";
-    case "companyadmin":
-      return "companyAdmin";
-    case "recruiter":
-      return "recruiter";
-    case "jobseeker":
-      return "jobseeker";
-    default:
-      return null;
-  }
-};
-
-const normalizeRoles = (roles: string[]): Role[] =>
-  roles
-    .map(normalizeRole)
-    .filter((role): role is Role => role !== null);
+/* =========================================
+   AUTH STATE
+========================================= */
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -70,6 +57,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isAppTransitioning, setIsAppTransitioning] = useState(false);
 
   const refreshMe = useCallback(async (): Promise<Role[]> => {
+    // Centralize session hydration here so route guards, providers, and loaders
+    // all derive from one canonical "me" payload instead of diverging fetch rules.
     try {
       const response = await http.get<AuthMeResponse>("/api/auth/me");
       if (
@@ -159,6 +148,8 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
     setUser(null);
     setRoles([]);
+    // Clear transition state on logout so the next public route does not inherit
+    // a protected-route loading surface from the previous session.
     setIsAppTransitioning(false);
   }, []);
 
@@ -209,6 +200,10 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+/* =========================================
+   AUTH HOOK
+========================================= */
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {

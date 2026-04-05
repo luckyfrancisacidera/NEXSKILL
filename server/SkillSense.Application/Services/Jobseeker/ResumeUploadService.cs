@@ -1,4 +1,4 @@
-﻿using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Jobseeker;
 using SkillSense.Domain.Entities;
@@ -10,6 +10,7 @@ public sealed class ResumeUploadService(
     IObjectStorageService objectStorageService,
     IResumeSubmissionRepository resumeSubmissionRepository) : IResumeUploadService
 {
+    // Handles enqueue upload.
     public async Task<ResumeUploadResponse> EnqueueUploadAsync(
         Stream fileStream,
         string fileName,
@@ -54,6 +55,7 @@ public sealed class ResumeUploadService(
         };
     }
 
+    // Determines whether active application.
     public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
         => resumeSubmissionRepository.ExistsActiveApplicationAsync(jobId, jobSeekerUserId, ct);
 }

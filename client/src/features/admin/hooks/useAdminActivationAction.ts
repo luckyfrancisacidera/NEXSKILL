@@ -16,6 +16,7 @@ interface UseAdminActivationActionOptions<T> {
   onCompleted: () => void;
 }
 
+// Use to wrap admin activation and deactivation flows with a confirmation step.
 export const useAdminActivationAction = <T>({
   canManage,
   getId,
@@ -28,6 +29,7 @@ export const useAdminActivationAction = <T>({
   const confirm = useConfirmation();
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
+  // Confirms the requested state change before running the matching mutation.
   const runAction = async (item: T) => {
     if (!canManage) {
       return;

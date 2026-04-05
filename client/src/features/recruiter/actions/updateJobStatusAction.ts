@@ -1,5 +1,5 @@
 import { redirect, type ActionFunctionArgs } from "react-router-dom";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { ApiError } from "@shared/api/http";
 import {
   getApiErrorMessage,
@@ -7,6 +7,7 @@ import {
 } from "@features/recruiter/actions/utils";
 import { publishRecruiterJobMutation, toJobListItem } from "@features/recruiter/utils/jobMutationSync";
 
+// Handles quick status changes from recruiter job management screens.
 export const updateJobStatusAction = async ({
   request,
   params,

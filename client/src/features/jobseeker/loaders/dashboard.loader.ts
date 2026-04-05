@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { guardProtectedLoader } from "@app/routes/protectedLoader";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type {
   DashboardLoaderData,
   DashboardRange,
@@ -23,6 +23,7 @@ const createEmptyDashboardData = (): DashboardLoaderData => ({
   },
 });
 
+// Use to guard and preload the jobseeker dashboard before the page mounts.
 export const dashboardLoader = async ({
   request,
 }: LoaderFunctionArgs): Promise<DashboardLoaderData> => {

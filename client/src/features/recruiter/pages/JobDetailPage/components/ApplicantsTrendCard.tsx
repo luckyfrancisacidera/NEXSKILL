@@ -1,6 +1,6 @@
 import type { JobTrendPoint } from '@features/recruiter/types';
-import { Card } from '@shared/components/Card';
-import { DashboardAreaChart } from '@shared/components/DashboardAreaChart';
+import { Card } from '@shared/components/data-display/Card';
+import { DashboardAreaChart } from '@shared/components/data-display/DashboardAreaChart';
 
 export interface ApplicantsTrendCardProps {
   trend: JobTrendPoint[];
@@ -33,3 +33,4 @@ export const ApplicantsTrendCard = ({ trend }: ApplicantsTrendCardProps) => (
     )}
   </Card>
 );
+

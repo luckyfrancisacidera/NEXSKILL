@@ -29,7 +29,7 @@ import {
 import { ProjectCard } from '@features/recruiter/pages/CandidateDetailPage/components/ProjectCard';
 import { WorkExperienceCard } from '@features/recruiter/pages/CandidateDetailPage/components/WorkExperienceCard';
 import { recruiterInterviewService } from '@features/recruiter/services/interview.service';
-import { recruiterService } from '@features/recruiter/service/recruiter.service';
+import { recruiterService } from '@features/recruiter/services/recruiter.service';
 
 import type {
   ApplicantDetailDto,
@@ -37,8 +37,8 @@ import type {
   CandidateStage,
 } from '@features/recruiter/types';
 import { ApiError } from '@shared/api/http';
-import { Card } from '@shared/components/Card';
-import { StatusBadge } from '@shared/components/StatusBadge';
+import { Card } from '@shared/components/data-display/Card';
+import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { formatJobLabel } from '@shared/utils/jobLabels';
@@ -1291,3 +1291,4 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
+

@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useLoaderData, useSearchParams } from "react-router-dom";
-import { SearchField } from "@features/jobseeker/components";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { JobsFilterFields } from "@features/jobseeker/pages/JobsPage/components/JobsFilterFields";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { JobListItemDto, JobsLoaderData } from "@features/jobseeker/types";
-import { Card } from "@shared/components/Card";
-import { JobCard } from "@shared/components/JobCard";
+import { Card } from "@shared/components/data-display/Card";
+import { JobCard } from "@shared/components/data-display/JobCard";
+import { SearchInput } from "@shared/components/form";
+import { FilterSnapSheet } from "@shared/components/overlay/FilterSnapSheet";
 import type { Job, JobType } from "@shared/types";
+import { cn } from "@shared/utils/cn";
 import { stripRichText } from "@shared/utils/richText";
 import { matchesSearchFields, normalizeSearchInput } from "@shared/utils/search";
 
@@ -21,11 +25,10 @@ const salaryFilterOptions = [
 
 type SalaryFilterValue = (typeof salaryFilterOptions)[number]["value"];
 
-const defaultSelectClassName =
-  "h-11 w-full rounded-xl border border-zinc-300 bg-white px-3.5 text-sm text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-500 focus:ring-4 focus:ring-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:ring-zinc-800";
-
-const filterLabelClassName =
-  "mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400";
+type JobsFiltersValue = {
+  salaryFilter: SalaryFilterValue;
+  employmentTypeFilter: string;
+};
 
 const toPositiveNumber = (value: string | null, fallbackValue: number) => {
   const parsedValue = Number(value ?? "");
@@ -134,6 +137,11 @@ export const JobsPage = () => {
   });
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState(() => params.get("employmentType") ?? "all");
   const [currentPage, setCurrentPage] = useState(() => toPositiveNumber(params.get("page"), 1));
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [mobileFilters, setMobileFilters] = useState<JobsFiltersValue>({
+    salaryFilter,
+    employmentTypeFilter,
+  });
   const [isLargeScreen, setIsLargeScreen] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -152,10 +160,13 @@ export const JobsPage = () => {
 
     const mediaQuery = window.matchMedia(LARGE_SCREEN_QUERY);
     const handleChange = (event?: MediaQueryListEvent) => {
-      setIsLargeScreen(event?.matches ?? mediaQuery.matches);
-    };
+      const matches = event?.matches ?? mediaQuery.matches;
+      setIsLargeScreen(matches);
 
-    handleChange();
+      if (matches) {
+        setIsFilterDrawerOpen(false);
+      }
+    };
 
     if (typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", handleChange);
@@ -215,18 +226,27 @@ export const JobsPage = () => {
     return filteredJobs.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredJobs, itemsPerPage, safeCurrentPage]);
 
-  const activeFilterCount =
-    Number(normalizedSearch.length > 0) +
-    Number(salaryFilter !== "any") +
-    Number(employmentTypeFilter !== "all");
+  const activeFilterCount = Number(salaryFilter !== "any") + Number(employmentTypeFilter !== "all");
   const showingFrom = filteredJobs.length === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage + 1;
   const showingTo = filteredJobs.length === 0 ? 0 : Math.min(filteredJobs.length, safeCurrentPage * itemsPerPage);
 
-  const clearFilters = () => {
-    setSearch("");
+  const applyFilters = (nextFilters: JobsFiltersValue) => {
+    setSalaryFilter(nextFilters.salaryFilter);
+    setEmploymentTypeFilter(nextFilters.employmentTypeFilter);
+    setCurrentPage(1);
+  };
+
+  const resetFilters = () => {
     setSalaryFilter("any");
     setEmploymentTypeFilter("all");
     setCurrentPage(1);
+  };
+
+  const resetMobileFilters = () => {
+    setMobileFilters({
+      salaryFilter: "any",
+      employmentTypeFilter: "all",
+    });
   };
 
   return (
@@ -241,75 +261,75 @@ export const JobsPage = () => {
               </p>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_auto]">
-              <div>
-                <label htmlFor="job-search" className={filterLabelClassName}>
-                  Search
-                </label>
-                <SearchField
-                  id="job-search"
-                  ariaLabel="Search job posts"
-                  className={defaultSelectClassName}
-                  placeholder="Search roles, companies, locations, or job types"
-                  value={search}
-                  onChange={(value) => {
-                    setSearch(value);
-                    setCurrentPage(1);
-                  }}
-                />
-              </div>
+            <div className="space-y-3">
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end lg:hidden">
+                <div className="w-full min-w-0 sm:flex-1">
+                  <SearchInput
+                    id="job-search"
+                    label="Search"
+                    ariaLabel="Search job posts"
+                    icon={<Search className="h-4 w-4" />}
+                    placeholder="Search roles, companies, locations, or job types"
+                    value={search}
+                    onValueChange={(value) => {
+                      setSearch(value);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="salary-filter" className={filterLabelClassName}>
-                  Salary Range
-                </label>
-                <select
-                  id="salary-filter"
-                  className={defaultSelectClassName}
-                  value={salaryFilter}
-                  onChange={(event) => {
-                    setSalaryFilter(event.target.value as SalaryFilterValue);
-                    setCurrentPage(1);
-                  }}
-                >
-                  {salaryFilterOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="employment-type-filter" className={filterLabelClassName}>
-                  Employment Type
-                </label>
-                <select
-                  id="employment-type-filter"
-                  className={defaultSelectClassName}
-                  value={employmentTypeFilter}
-                  onChange={(event) => {
-                    setEmploymentTypeFilter(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                >
-                  {employmentTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-end md:col-span-2 xl:col-span-1">
                 <button
                   type="button"
-                  onClick={clearFilters}
-                  disabled={activeFilterCount === 0}
-                  className="h-11 w-full rounded-xl border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 lg:w-auto"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 sm:w-auto sm:shrink-0"
+                  aria-label="Open filter drawer"
+                  aria-expanded={isFilterDrawerOpen}
+                  aria-controls="mobile-filter-drawer"
+                  onClick={() => {
+                    setMobileFilters({ salaryFilter, employmentTypeFilter });
+                    setIsFilterDrawerOpen(true);
+                  }}
                 >
-                  Clear filters
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span>Filters</span>
+                  <span
+                    className={cn(
+                      "inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold",
+                      activeFilterCount > 0
+                        ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+                        : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                    )}
+                  >
+                    {activeFilterCount}
+                  </span>
                 </button>
+              </div>
+
+              <div className="hidden gap-3 lg:grid lg:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)_auto]">
+                <JobsFilterFields
+                  employmentTypeFilter={employmentTypeFilter}
+                  employmentTypeOptions={employmentTypeOptions}
+                  salaryFilter={salaryFilter}
+                  salaryOptions={salaryFilterOptions}
+                  compactOnMobile={false}
+                  onEmploymentTypeChange={(value) => applyFilters({ salaryFilter, employmentTypeFilter: value })}
+                  onSalaryChange={(value) =>
+                    applyFilters({
+                      salaryFilter: value as SalaryFilterValue,
+                      employmentTypeFilter,
+                    })
+                  }
+                />
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    disabled={activeFilterCount === 0}
+                    className="h-11 w-full rounded-xl border border-zinc-300 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                  >
+                    Reset filters
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -329,11 +349,57 @@ export const JobsPage = () => {
         Salary bands use monthly equivalents derived from the API&apos;s annual salary fields.
       </Card>
 
+      <FilterSnapSheet
+        isOpen={isFilterDrawerOpen}
+        id="mobile-filter-drawer"
+        title="Filter jobs"
+        description="Adjust the job list, then apply when you're ready."
+        footer={
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <button
+              type="button"
+              className="h-11 rounded-xl bg-zinc-100 px-4 text-sm font-medium text-zinc-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              onClick={() => {
+                applyFilters(mobileFilters);
+                setIsFilterDrawerOpen(false);
+              }}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              className="h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
+              onClick={resetMobileFilters}
+            >
+              Reset
+            </button>
+          </div>
+        }
+        onClose={() => setIsFilterDrawerOpen(false)}
+      >
+        <JobsFilterFields
+          employmentTypeFilter={mobileFilters.employmentTypeFilter}
+          employmentTypeOptions={employmentTypeOptions}
+          salaryFilter={mobileFilters.salaryFilter}
+          salaryOptions={salaryFilterOptions}
+          selectButtonClassName="dark:bg-zinc-950"
+          onEmploymentTypeChange={(value) =>
+            setMobileFilters((current) => ({ ...current, employmentTypeFilter: value }))
+          }
+          onSalaryChange={(value) =>
+            setMobileFilters((current) => ({
+              ...current,
+              salaryFilter: value as SalaryFilterValue,
+            }))
+          }
+        />
+      </FilterSnapSheet>
+
       {filteredJobs.length === 0 ? (
         <Card className="rounded-[24px] border border-dashed border-zinc-300 bg-white px-6 py-12 text-center shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">No job posts found</h3>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Try adjusting your search term.
+            Try adjusting your search term or filters.
           </p>
         </Card>
       ) : (

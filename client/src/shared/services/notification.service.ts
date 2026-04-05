@@ -11,6 +11,7 @@ export interface NotificationDto {
   relatedEntityId?: string | null;
 }
 
+// Handles notification inbox reads and bulk notification mutations.
 export const notificationService = {
   async getNotifications(): Promise<NotificationDto[]> {
     const response = await http.get<NotificationDto[]>("/api/notifications");

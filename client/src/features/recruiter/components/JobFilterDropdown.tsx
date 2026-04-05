@@ -1,4 +1,4 @@
-import Dropdown, { type DropdownOption } from '@shared/components/Dropdown';
+import Dropdown, { type DropdownOption } from '@shared/components/form/Dropdown';
 import type {
   ApplicantJobFilterOption,
   ApplicantStageCounts,
@@ -53,3 +53,4 @@ export default function JobFilterDropdown({ jobs, filters, counts, onChange }: J
     />
   );
 }
+

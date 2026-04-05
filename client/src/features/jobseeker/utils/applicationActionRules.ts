@@ -18,6 +18,7 @@ const offerActionsByStatus: Record<string, JobseekerListAction[]> = {
   withdrawn: ["view_job", "delete_history"],
 };
 
+// Maps application status and page context into the row actions the jobseeker UI should allow.
 export const getJobseekerListActions = (
   status: string | null | undefined,
   context: JobseekerActionContext,

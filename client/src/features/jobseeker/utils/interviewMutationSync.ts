@@ -16,6 +16,7 @@ export interface JobseekerInterviewMutationPayload {
 
 const isBrowser = () => typeof window !== "undefined" && typeof sessionStorage !== "undefined";
 
+// Publishes interview archive changes so separate jobseeker routes can refresh without a full reload.
 export const publishJobseekerInterviewMutation = (
   payload: Omit<JobseekerInterviewMutationPayload, "mutationId" | "occurredAt" | "interviewId"> & {
     interview: JobseekerInterview;
@@ -36,6 +37,7 @@ export const publishJobseekerInterviewMutation = (
   window.dispatchEvent(new CustomEvent<JobseekerInterviewMutationPayload>(INTERVIEW_MUTATION_EVENT_NAME, { detail: mutation }));
 };
 
+// Use to recover the latest interview mutation after navigation within the TTL window.
 export const readLatestJobseekerInterviewMutation = (): JobseekerInterviewMutationPayload | null => {
   if (!isBrowser()) {
     return null;
@@ -58,6 +60,7 @@ export const readLatestJobseekerInterviewMutation = (): JobseekerInterviewMutati
   }
 };
 
+// Use to react to cross-screen interview archive mutations while the user stays in the app shell.
 export const subscribeJobseekerInterviewMutations = (
   handler: (payload: JobseekerInterviewMutationPayload) => void,
 ) => {

@@ -8,6 +8,7 @@ export const normalizeSearchInput = (value?: string | null) =>
 export const tokenizeSearchText = (value?: string | null) =>
   normalizeSearchInput(value).match(SEARCH_TOKEN_PATTERN) ?? [];
 
+// Keeps short queries strict so tiny tokens do not match unrelated words too aggressively.
 const fieldMatchesToken = (field: string, fieldTokens: string[], token: string) => {
   if (token.length <= SHORT_QUERY_LENGTH) {
     return fieldTokens.includes(token);
@@ -16,6 +17,7 @@ const fieldMatchesToken = (field: string, fieldTokens: string[], token: string) 
   return field.includes(token);
 };
 
+// Evaluates one field against the normalized query used by shared list filtering.
 const fieldMatchesQuery = (fieldValue: string, normalizedQuery: string, queryTokens: string[]) => {
   const normalizedField = normalizeSearchInput(fieldValue);
   if (!normalizedField) {
@@ -30,6 +32,7 @@ const fieldMatchesQuery = (fieldValue: string, normalizedQuery: string, queryTok
   return queryTokens.every((token) => fieldMatchesToken(normalizedField, fieldTokens, token));
 };
 
+// Reuses the same search matching rules across recruiter and shared list filters.
 export const matchesSearchFields = (fieldValues: Array<string | null | undefined>, query: string) => {
   const normalizedQuery = normalizeSearchInput(query);
   if (!normalizedQuery) {

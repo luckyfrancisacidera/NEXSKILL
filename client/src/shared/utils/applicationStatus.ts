@@ -177,6 +177,7 @@ const statusAliases: Record<string, ApplicationStatusKey> = {
 const normalizeStatusToken = (status?: string | null) =>
   status?.trim().toLowerCase().replace(/[\s_-]+/g, " ") ?? "";
 
+// Normalizes mixed backend and UI status strings into one stable key used by shared status components.
 export const normalizeApplicationStatusKey = (
   status?: string | null,
 ): ApplicationStatusKey => {
@@ -193,6 +194,7 @@ export const normalizeApplicationStatusKey = (
   return "unknown";
 };
 
+// Maps a raw application status into the label and styling used by tables, cards, and badges.
 export const getApplicationStatusAppearance = (status?: string | null) => {
   const key = normalizeApplicationStatusKey(status);
   const appearance =

@@ -1,3 +1,9 @@
+/* =========================================
+   CURRENT RECRUITER PROVIDER
+   Resolves the active recruiter profile and syncs that context into request headers.
+   Related: AuthProvider, SetupProvider, shared/api/http
+========================================= */
+
 /* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
@@ -44,6 +50,10 @@ interface RecruiterProfileResponse {
 const CurrentRecruiterContext =
   createContext<CurrentRecruiterContextValue | null>(null);
 
+/* =========================================
+   RECRUITER PROFILE CONTEXT
+========================================= */
+
 export const CurrentRecruiterProvider = ({
   children,
 }: PropsWithChildren) => {
@@ -56,6 +66,8 @@ export const CurrentRecruiterProvider = ({
   const isRecruiter = isRecruiterRole(roles);
 
   const loadProfiles = useCallback(async () => {
+    // This provider gates recruiter-specific header state so downstream API
+    // calls never guess which recruiter profile should be active.
     if (isHydrating) {
       return;
     }
@@ -105,6 +117,8 @@ export const CurrentRecruiterProvider = ({
         null,
       );
 
+      // Prefer the last explicit user choice when it is still valid; otherwise
+      // fall back to the server-selected active profile or the first available profile.
       const resolvedProfileId =
         storedProfileId && availableProfiles.some((profile) => profile.id === storedProfileId)
           ? storedProfileId
@@ -132,6 +146,8 @@ export const CurrentRecruiterProvider = ({
   }, [isHydrating, loadProfiles]);
 
   useEffect(() => {
+    // Keep the persisted selection and outbound request context aligned so
+    // a page refresh does not silently swap recruiter profile scope.
     setActiveRecruiterProfileHeader(currentProfileId);
     writeStorage(CURRENT_RECRUITER_PROFILE_STORAGE_KEY, currentProfileId);
   }, [currentProfileId]);
@@ -162,6 +178,10 @@ export const CurrentRecruiterProvider = ({
     </CurrentRecruiterContext.Provider>
   );
 };
+
+/* =========================================
+   RECRUITER HOOK
+========================================= */
 
 export const useCurrentRecruiter = () => {
   const context = useContext(CurrentRecruiterContext);
