@@ -847,12 +847,12 @@ export const CandidateDetailPage = () => {
               Resume ID: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.resume_submission_id.slice(0, 8)}</span>
             </p>
             {candidate.resume_file_name ? (
-             <p className="text-zinc-600 dark:text-zinc-400">
-              File:{' '}
-              <span className="inline-block max-w-2xl truncate align-bottom font-semibold text-zinc-800 dark:text-zinc-100">
-                {candidate.resume_file_name}
-              </span>
-            </p>
+              <p className="flex min-w-0 items-center gap-1 text-zinc-600 dark:text-zinc-400">
+                <span className="shrink-0">File:</span>
+                <span className="min-w-0 truncate font-semibold text-zinc-800 dark:text-zinc-100">
+                  {candidate.resume_file_name}
+                </span>
+              </p>
             ) : null}
             <p className="text-zinc-600 dark:text-zinc-400">
               Parsed: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Successfully</span>
@@ -1033,7 +1033,7 @@ export const CandidateDetailPage = () => {
                   }}
                   className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                     canRejectCandidate
-                      ? 'border-rose-300 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:bg-zinc-900 dark:text-rose-300 dark:hover:bg-rose-500/10'
+                      ? 'border-rose-300 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-600 dark:bg-rose-600 dark:text-white dark:hover:bg-rose-500'
                       : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
                   }`}
                 >
@@ -1291,4 +1291,3 @@ export const CandidateDetailPage = () => {
     </div>
   );
 };
-

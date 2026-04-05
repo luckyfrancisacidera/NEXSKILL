@@ -1,6 +1,21 @@
 import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router-dom";
-import { ArrowRight, Bookmark, BriefcaseBusiness, Check, Clock3, Loader2, MapPin } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bookmark,
+  BriefcaseBusiness,
+  Check,
+  Clock3,
+  FileText,
+  GraduationCap,
+  HandCoins,
+  Loader2,
+  MapPin,
+  Sparkles,
+  SquareChartGantt,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useToast } from "@app/providers/ToastProvider";
 import { Card } from "@shared/components/data-display/Card";
 import { DetailBlock } from "@shared/components/data-display/DetailBlock";
@@ -13,6 +28,15 @@ import { ApplyModalWizard } from "@features/jobseeker/pages/JobDetailPage/compon
 import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { JobDetailLoaderData, JobseekerApplicationInput } from "@features/jobseeker/types";
 import { ApiError } from "@shared/api/http";
+
+const renderDetailTitle = (title: string, Icon: LucideIcon) => (
+  <span className="inline-flex items-center gap-2">
+    <span className="rounded-lg bg-zinc-100 p-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+      <Icon className="h-4 w-4" />
+    </span>
+    <span>{title}</span>
+  </span>
+);
 
 export const JobDetailPage = () => {
   const job = useLoaderData() as JobDetailLoaderData;
@@ -130,12 +154,12 @@ export const JobDetailPage = () => {
                 </div>
               </div>
 
-              <div className="grid gap-3 rounded-3xl border border-zinc-200 bg-white/85 p-4 shadow-sm backdrop-blur sm:grid-cols-2 lg:min-w-[280px] lg:grid-cols-1 dark:border-zinc-800 dark:bg-zinc-950/80">
-                <div className="flex items-start gap-3">
+              <div className="grid gap-3 rounded-3xl border border-zinc-200 bg-white/85 p-4 shadow-sm backdrop-blur sm:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)_minmax(0,0.9fr)] lg:min-w-[620px] dark:border-zinc-800 dark:bg-zinc-950/80">
+                <div className="flex min-w-0 items-start gap-3">
                   <div className="rounded-2xl bg-zinc-900 p-2 text-white dark:bg-zinc-100 dark:text-zinc-900">
                     <BriefcaseBusiness className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                       Compensation
                     </p>
@@ -145,11 +169,11 @@ export const JobDetailPage = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <div className="rounded-2xl bg-zinc-100 p-2 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                     <MapPin className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                       Work setup
                     </p>
@@ -158,11 +182,11 @@ export const JobDetailPage = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <div className="rounded-2xl bg-zinc-100 p-2 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                     <Clock3 className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
                       Posted
                     </p>
@@ -177,14 +201,14 @@ export const JobDetailPage = () => {
 
           <div className="grid gap-4 px-4 pb-4 sm:px-6 sm:pb-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
             <div className="space-y-4 pt-4">
-              <DetailBlock title="About the Role">
+              <DetailBlock title={renderDetailTitle("About the Role", FileText)}>
                 <RichTextContent
                   html={job.description}
                   emptyFallback="No description provided."
                 />
               </DetailBlock>
 
-              <DetailBlock title="Responsibilities">
+              <DetailBlock title={renderDetailTitle("Responsibilities", SquareChartGantt)}>
                 <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                   {responsibilities.length > 0 ? (
                     responsibilities.map((item) => <li key={item}>{item}</li>)
@@ -195,7 +219,7 @@ export const JobDetailPage = () => {
               </DetailBlock>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <DetailBlock title="Required Skills">
+                <DetailBlock title={renderDetailTitle("Required Skills", BadgeCheck)}>
                   <div className="flex flex-wrap gap-2">
                     {requiredSkills.length > 0 ? (
                       requiredSkills.map((skill) => (
@@ -214,7 +238,7 @@ export const JobDetailPage = () => {
                   </div>
                 </DetailBlock>
 
-                <DetailBlock title="Preferred Skills">
+                <DetailBlock title={renderDetailTitle("Preferred Skills", Sparkles)}>
                   <div className="flex flex-wrap gap-2">
                     {preferredSkills.length > 0 ? (
                       preferredSkills.map((skill) => (
@@ -235,7 +259,7 @@ export const JobDetailPage = () => {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <DetailBlock title="Qualifications">
+                <DetailBlock title={renderDetailTitle("Qualifications", GraduationCap)}>
                   <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                     <li>
                       {job.min_years
@@ -251,7 +275,7 @@ export const JobDetailPage = () => {
                   </ul>
                 </DetailBlock>
 
-                <DetailBlock title="Work Details">
+                <DetailBlock title={renderDetailTitle("Work Details", MapPin)}>
                   <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
                     <li>
                       <span className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -279,7 +303,7 @@ export const JobDetailPage = () => {
                 </DetailBlock>
               </div>
 
-              <DetailBlock title="Compensation & Benefits">
+              <DetailBlock title={renderDetailTitle("Compensation & Benefits", HandCoins)}>
                 <div className="flex flex-wrap items-center gap-2 text-zinc-700">
                   {benefits.length > 0
                     ? benefits.map((benefit) => (
@@ -372,4 +396,3 @@ export const JobDetailPage = () => {
     </div>
   );
 };
-

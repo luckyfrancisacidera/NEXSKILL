@@ -158,7 +158,7 @@ public sealed class AdminManagementService(
             return null;
         }
 
-        var baseItem = mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = new HashSet<Guid>());
+        var baseItem = mapper.Map<ApplicantScoreItemResponse>(source);
         var parsedResumeJson = await adminManagementRepository.GetParsedResumeJsonAsync(companyId, submissionId, ct);
         CandidateExplanationResponse? explanation = null;
 

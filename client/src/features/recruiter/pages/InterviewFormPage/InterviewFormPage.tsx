@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CalendarCheck2, CheckCheck, CircleX, Clock3, X } from "lucide-react";
 import { useLoaderData, useRevalidator } from "react-router-dom";
 import { useToast } from "@app/providers/ToastProvider";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
@@ -87,6 +88,9 @@ export const InterviewFormPage = () => {
     setRescheduleErrors({});
   };
 
+  const isReadOnlyInterviewStatus = (status: Interview["status"]) =>
+    status === "Completed";
+
   const openScheduleDrawer = (date?: string) => {
     setScheduleDrawerDate(date ?? "");
     setIsScheduleDrawerOpen(true);
@@ -107,11 +111,11 @@ export const InterviewFormPage = () => {
   };
 
   const openRescheduleModal = (interview: Interview) => {
-    if (interview.status === "Declined" || interview.status === "Cancelled" || interview.status === "Completed") {
+    if (interview.status === "Declined" || interview.status === "Cancelled") {
       showToast({
         title: "Interview cannot be rescheduled",
         description:
-          "Declined, cancelled, and completed interviews are terminal scheduling states. Create a fresh interview instead.",
+          "Declined and cancelled interviews are terminal scheduling states. Create a fresh interview instead.",
         tone: "error",
       });
       return;
@@ -328,6 +332,10 @@ export const InterviewFormPage = () => {
     }
   };
 
+  const selectedInterviewIsReadOnly = selectedInterview
+    ? isReadOnlyInterviewStatus(selectedInterview.status)
+    : false;
+
   return (
     <div className="space-y-4">
       <Card className="border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
@@ -371,17 +379,56 @@ export const InterviewFormPage = () => {
         open={isRescheduleOpen}
         form={rescheduleForm}
         isSubmitting={isRescheduling}
-        title={selectedInterview ? `Reschedule ${selectedInterview.candidateName}` : "Reschedule interview"}
-        submitLabel="Save reschedule"
+        title={selectedInterview
+          ? selectedInterview.status === "Completed"
+            ? `Review ${selectedInterview.candidateName}`
+            : `Reschedule ${selectedInterview.candidateName}`
+          : "Reschedule interview"}
+        readOnly={selectedInterviewIsReadOnly}
+        submitLabel={
+          <>
+            <CalendarCheck2 className="h-4 w-4" />
+            <span>Save Reschedule</span>
+          </>
+        }
         errors={rescheduleErrors}
         showCancelInterviewAction={
           Boolean(selectedInterview) &&
+          !selectedInterviewIsReadOnly &&
           selectedInterview?.status !== "Cancelled" &&
-          selectedInterview?.status !== "Declined" &&
-          selectedInterview?.status !== "Completed"
+          selectedInterview?.status !== "Declined"
         }
-        secondaryActionLabel={selectedInterview?.status === "Accepted" ? (isCompleting ? "Marking done..." : "Mark Done") : undefined}
-        secondaryActionDisabled={isCompleting}
+        secondaryActionLabel={selectedInterview?.status === "Accepted"
+          ? (
+              <>
+                <CheckCheck className="h-4 w-4" />
+                <span>{isCompleting ? "Marking Done..." : "Mark Done"}</span>
+              </>
+            )
+          : selectedInterview?.status === "Pending"
+            ? (
+                <>
+                  <Clock3 className="h-4 w-4" />
+                  <span>Pending</span>
+                </>
+              )
+          : undefined}
+        secondaryActionDisabled={isCompleting || selectedInterview?.status === "Pending"}
+        cancelInterviewLabel={
+          <>
+            <CircleX className="h-4 w-4" />
+            <span>Cancel Interview</span>
+          </>
+        }
+        closeLabel={
+          <>
+            <X className="h-4 w-4" />
+            <span>Cancel Review</span>
+          </>
+        }
+        helperText={selectedInterviewIsReadOnly
+          ? "Completed interviews are view-only. Cancelled and declined interviews can still be archived from here."
+          : undefined}
         onSecondaryAction={selectedInterview?.status === "Accepted"
           ? async () => {
               if (!selectedInterview) {

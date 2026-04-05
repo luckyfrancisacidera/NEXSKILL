@@ -99,6 +99,15 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   font-family: var(--font-inter);
 }
 
+html.dark .interview-calendar .fc {
+  --fc-border-color: rgba(63, 63, 70, 0.9);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgb(24 24 27);
+  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.06);
+  --fc-today-bg-color: rgba(255, 255, 255, 0.05);
+  --fc-now-indicator-color: rgb(244 244 245);
+}
+
 .interview-calendar .fc .fc-scrollgrid,
 .interview-calendar .fc .fc-list {
   border: 0;
@@ -108,6 +117,10 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   padding: 0.7rem 0;
   background: rgb(255 255 255);
   border-top: 0;
+}
+
+html.dark .interview-calendar .fc .fc-col-header-cell {
+  background: rgb(9 9 11);
 }
 
 .interview-calendar .fc .fc-daygrid-day-frame,
@@ -171,8 +184,12 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   border-radius: 0.65rem;
   border: 0;
   box-shadow: none;
-  padding: 0.2rem 0.3rem;
+  padding: 0.4rem 0.5rem;
   color: rgb(24 24 27);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event {
+  color: rgb(244 244 245);
 }
 
 .interview-calendar .fc .fc-daygrid-event,
@@ -190,19 +207,31 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
 
 .interview-calendar .fc .fc-timegrid-event .fc-event-main,
 .interview-calendar .fc .fc-daygrid-event .fc-event-main {
-  padding: 0.15rem;
+  padding: 0.25rem;
 }
 
 .interview-calendar .fc .recruiter-interview-event.status-pending {
   background: rgb(241 245 249);
 }
 
+html.dark .interview-calendar .fc .recruiter-interview-event.status-pending {
+  background: rgba(51, 65, 85, 0.75);
+}
+
 .interview-calendar .fc .recruiter-interview-event.status-accepted {
   background: rgb(236 253 245);
 }
 
+html.dark .interview-calendar .fc .recruiter-interview-event.status-accepted {
+  background: rgba(6, 78, 59, 0.72);
+}
+
 .interview-calendar .fc .recruiter-interview-event.status-declined {
   background: rgb(255 241 242);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-declined {
+  background: rgba(136, 19, 55, 0.72);
 }
 
 .interview-calendar .fc .recruiter-interview-event.status-reschedule-requested,
@@ -210,12 +239,25 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   background: rgb(255 247 237);
 }
 
+html.dark .interview-calendar .fc .recruiter-interview-event.status-reschedule-requested,
+html.dark .interview-calendar .fc .recruiter-interview-event.status-rescheduled {
+  background: rgba(146, 64, 14, 0.72);
+}
+
 .interview-calendar .fc .recruiter-interview-event.status-cancelled {
   background: rgb(244 244 245);
 }
 
+html.dark .interview-calendar .fc .recruiter-interview-event.status-cancelled {
+  background: rgba(63, 63, 70, 0.85);
+}
+
 .interview-calendar .fc .recruiter-interview-event.status-completed {
   background: rgb(239 246 255);
+}
+
+html.dark .interview-calendar .fc .recruiter-interview-event.status-completed {
+  background: rgba(30, 64, 175, 0.72);
 }
 
 .interview-calendar .fc .fc-list {
@@ -227,6 +269,10 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   padding: 0.9rem 1rem;
 }
 
+html.dark .interview-calendar .fc .fc-list-day-cushion {
+  background: rgb(24 24 27);
+}
+
 .interview-calendar .fc .fc-list-day-text,
 .interview-calendar .fc .fc-list-day-side-text {
   color: rgb(63 63 70);
@@ -234,9 +280,19 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   font-weight: 600;
 }
 
+html.dark .interview-calendar .fc .fc-list-day-text,
+html.dark .interview-calendar .fc .fc-list-day-side-text {
+  color: rgb(228 228 231);
+}
+
 .interview-calendar .fc .fc-list-event-title,
 .interview-calendar .fc .fc-list-event-time {
   color: rgb(39 39 42);
+}
+
+html.dark .interview-calendar .fc .fc-list-event-title,
+html.dark .interview-calendar .fc .fc-list-event-time {
+  color: rgb(228 228 231);
 }
 
 .interview-calendar .fc .fc-list-event-time {
@@ -245,12 +301,20 @@ html.dark .scrollbar-thin-stable::-webkit-scrollbar-thumb {
   color: rgb(82 82 91);
 }
 
+html.dark .interview-calendar .fc .fc-list-event-time {
+  color: rgb(161 161 170);
+}
+
 .interview-calendar .fc .fc-list-event-title {
   padding: 0;
 }
 
 .interview-calendar .fc .fc-list-event td {
   background: transparent;
+}
+
+html.dark .interview-calendar .fc .fc-list-event:hover td {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .interview-calendar .fc .fc-list-event-dot {

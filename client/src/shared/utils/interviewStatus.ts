@@ -26,13 +26,13 @@ export const interviewStatusChipClassName: Record<DisplayInterviewStatus, string
 
 
 export const interviewStatusCalendarPillClassName: Record<DisplayInterviewStatus, string> = {
-  Pending: "bg-slate-100 text-slate-700",
-  Accepted: "bg-emerald-50 text-emerald-700",
-  Declined: "bg-rose-50 text-rose-700",
-  RescheduleRequested: "bg-amber-50 text-amber-700",
-  Rescheduled: "bg-amber-50 text-amber-700",
-  Cancelled: "bg-zinc-100 text-zinc-600",
-  Completed: "bg-blue-50 text-blue-700",
+  Pending: "bg-slate-100 text-slate-700 dark:bg-slate-800/80 dark:text-slate-100",
+  Accepted: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/45 dark:text-emerald-100",
+  Declined: "bg-rose-50 text-rose-700 dark:bg-rose-900/45 dark:text-rose-100",
+  RescheduleRequested: "bg-amber-50 text-amber-700 dark:bg-amber-900/45 dark:text-amber-100",
+  Rescheduled: "bg-amber-50 text-amber-700 dark:bg-amber-900/45 dark:text-amber-100",
+  Cancelled: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-100",
+  Completed: "bg-blue-50 text-blue-700 dark:bg-blue-900/45 dark:text-blue-100",
 };
 
 // Use to branch interview actions once a status can no longer move forward in the workflow.

@@ -8,6 +8,7 @@ internal static class ApplicantStageTransitionPolicy
     private static readonly IReadOnlySet<ResumeSubmissionStatus> ActiveStatuses = new HashSet<ResumeSubmissionStatus>
     {
         ResumeSubmissionStatus.Completed,
+        ResumeSubmissionStatus.Recommended,
         ResumeSubmissionStatus.Shortlisted,
         ResumeSubmissionStatus.Interview,
         ResumeSubmissionStatus.Offer,
@@ -30,6 +31,7 @@ internal static class ApplicantStageTransitionPolicy
             ["reject"] = new HashSet<ResumeSubmissionStatus>
             {
                 ResumeSubmissionStatus.Completed,
+                ResumeSubmissionStatus.Recommended,
                 ResumeSubmissionStatus.Shortlisted,
                 ResumeSubmissionStatus.Interview,
                 ResumeSubmissionStatus.Offer,

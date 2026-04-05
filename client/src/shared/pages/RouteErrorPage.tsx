@@ -8,8 +8,10 @@
  */
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Link, isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { useState } from "react";
+import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router-dom";
 import { ApiError } from "@shared/api/http";
+import { Button } from "@shared/components/actions/Button";
 import { ArrowRight, RotateCcw } from "lucide-react";
 const EASE_STANDARD = [0.16, 1, 0.3, 1] as const;
 const EASE_BOUNCE = [0.34, 1.56, 0.64, 1] as const;
@@ -301,6 +303,22 @@ export const RouteErrorPage = () => {
   const config = getErrorConfig(error);
   const { title, description, ctaLabel, ctaTo, code, systemLine, beamColor } = config;
   const reduce = useReducedMotion();
+  const navigate = useNavigate();
+  const [activeAction, setActiveAction] = useState<"navigate" | "reload" | null>(null);
+
+  const handleNavigate = () => {
+    if (activeAction) return;
+
+    setActiveAction("navigate");
+    navigate(ctaTo);
+  };
+
+  const handleReload = () => {
+    if (activeAction) return;
+
+    setActiveAction("reload");
+    window.location.reload();
+  };
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-zinc-50 px-6 py-20 font-inter dark:bg-zinc-950">
@@ -405,23 +423,29 @@ export const RouteErrorPage = () => {
             className="flex flex-wrap items-center justify-center gap-3 lg:justify-start"
           >
             {/* Primary CTA */}
-            <Link
-              to={ctaTo}
+            <Button
+              type="button"
+              onClick={handleNavigate}
+              loading={activeAction === "navigate"}
+              loadingText="Loading..."
               className="group inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-50 shadow-sm ring-1 ring-zinc-900/10 transition-all duration-200 hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-100/10 dark:hover:bg-white"
             >
               {ctaLabel}
               <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </Link>
+            </Button>
 
             {/* Reload button */}
-            <button
+            <Button
               type="button"
-              onClick={() => window.location.reload()}
+              variant="secondary"
+              onClick={handleReload}
+              loading={activeAction === "reload"}
+              loadingText="Reloading..."
               className="group inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-transparent px-5 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/60"
             >
               <RotateCcw className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-rotate-45" />
               Reload
-            </button>
+            </Button>
           </motion.div>
         </motion.div>
 

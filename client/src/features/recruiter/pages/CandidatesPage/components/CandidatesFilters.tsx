@@ -4,7 +4,7 @@ import { SlidersHorizontal } from 'lucide-react';
 
 import JobFilterDropdown from '@features/recruiter/components/JobFilterDropdown';
 import type { ApplicantJobFilterOption, ApplicantStageCounts, CandidateFilters } from '@features/recruiter/types';
-import { Dropdown, SearchInput, type DropdownOption } from '@shared/components/form';
+import { Dropdown, SearchInput } from '@shared/components/form';
 import { FilterSnapSheet } from '@shared/components/overlay/FilterSnapSheet';
 import { useDebounce } from '@shared/hooks/useDebounce';
 
@@ -13,8 +13,6 @@ export interface CandidatesFiltersProps {
   jobs: ApplicantJobFilterOption[];
   departments: string[];
   counts: ApplicantStageCounts;
-  isRecommendationFilterVisible: boolean;
-  recommendedCutoffOptions: DropdownOption[];
   onSearchChange: (value: string) => void;
   onFieldChange: (name: keyof CandidateFilters, value: string) => void;
   onApplyFilters: (nextFilters: CandidateFilters) => void;
@@ -22,7 +20,7 @@ export interface CandidatesFiltersProps {
 
 type SnapSheetFilters = Pick<
   CandidateFilters,
-  'department' | 'jobId' | 'recommendedTopPercent' | 'pageSize'
+  'department' | 'jobId' | 'pageSize'
 >;
 
 export const CandidatesFilters = ({
@@ -30,8 +28,6 @@ export const CandidatesFilters = ({
   jobs,
   departments,
   counts,
-  isRecommendationFilterVisible,
-  recommendedCutoffOptions,
   onSearchChange,
   onFieldChange,
   onApplyFilters,
@@ -41,7 +37,6 @@ export const CandidatesFilters = ({
   const [draftFilters, setDraftFilters] = useState<SnapSheetFilters>({
     department: filters.department,
     jobId: filters.jobId,
-    recommendedTopPercent: filters.recommendedTopPercent,
     pageSize: filters.pageSize,
   });
   const debouncedSearchValue = useDebounce(searchValue, 250);
@@ -60,8 +55,7 @@ export const CandidatesFilters = ({
 
   const activeFilterCount =
     Number(filters.department !== 'all') +
-    Number(filters.jobId !== 'all') +
-    Number(isRecommendationFilterVisible && filters.recommendedTopPercent !== '10');
+    Number(filters.jobId !== 'all');
 
   const departmentOptions = [
     { value: 'all', label: 'All departments', accentClassName: 'bg-violet-100 text-violet-700' },
@@ -82,7 +76,6 @@ export const CandidatesFilters = ({
     setDraftFilters({
       department: filters.department,
       jobId: filters.jobId,
-      recommendedTopPercent: filters.recommendedTopPercent,
       pageSize: filters.pageSize,
     });
     setIsFilterSnapSheetOpen(true);
@@ -152,19 +145,6 @@ export const CandidatesFilters = ({
           />
         </div>
 
-        {isRecommendationFilterVisible ? (
-          <div className="min-w-0 flex-1 lg:basis-[14rem]">
-            <Dropdown
-              label="Recommended Cutoff"
-              name="recommendedTopPercent"
-              value={filters.recommendedTopPercent}
-              options={recommendedCutoffOptions}
-              className="w-full min-w-0"
-              onChange={(event) => onFieldChange(event.target.name as keyof CandidateFilters, event.target.value)}
-            />
-          </div>
-        ) : null}
-
         <div className="min-w-0 lg:w-[11rem] lg:flex-none">
           <Dropdown
             label="Page Size"
@@ -192,7 +172,6 @@ export const CandidatesFilters = ({
                 setDraftFilters({
                   department: 'all',
                   jobId: 'all',
-                  recommendedTopPercent: '10',
                   pageSize: '10',
                 })
               }
@@ -258,24 +237,6 @@ export const CandidatesFilters = ({
             }))
           }
         />
-
-        {isRecommendationFilterVisible ? (
-          <Dropdown
-            label="Recommended Cutoff"
-            name="recommendedTopPercent"
-            value={draftFilters.recommendedTopPercent}
-            options={recommendedCutoffOptions}
-            className="w-full min-w-0"
-            buttonClassName="h-10 text-sm"
-            compactOnMobile={false}
-            onChange={(event) =>
-              setDraftFilters((current) => ({
-                ...current,
-                recommendedTopPercent: event.target.value,
-              }))
-            }
-          />
-        ) : null}
 
         <Dropdown
           label="Page Size"

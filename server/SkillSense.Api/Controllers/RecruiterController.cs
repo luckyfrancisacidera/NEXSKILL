@@ -165,10 +165,10 @@ public sealed class RecruiterController(
 
     // Loads applicant scores.
     [HttpGet("applicants/scores")]
-    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? department = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int? recommendedTopPercent = null, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken ct = default)
+    public async Task<ActionResult<ApplicantScoresResponse>> GetApplicantScores([FromQuery] Guid? jobId = null, [FromQuery] string? department = null, [FromQuery] string? stage = "all", [FromQuery] string? search = null, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, CancellationToken ct = default)
     {
         var (userId, companyId) = GetRecruiterContext();
-        return Ok(await recruiterService.GetApplicantScoresAsync(companyId, userId, jobId, department, stage, search, recommendedTopPercent, pageNumber, pageSize, ct));
+        return Ok(await recruiterService.GetApplicantScoresAsync(companyId, userId, jobId, department, stage, search, pageNumber, pageSize, ct));
     }
 
     // Loads applicant by submission.

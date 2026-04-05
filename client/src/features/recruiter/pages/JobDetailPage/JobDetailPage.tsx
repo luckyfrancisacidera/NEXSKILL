@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
-import { Copy } from 'lucide-react';
+import {
+  BookOpenText,
+  BriefcaseBusiness,
+  CircleOff,
+  ClipboardList,
+  Copy,
+  FilePenLine,
+  GraduationCap,
+  ListChecks,
+  Rocket,
+  ShieldX,
+  Sparkles,
+  Wrench,
+} from 'lucide-react';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { ApplicantsCard } from '@features/recruiter/pages/JobDetailPage/components/ApplicantsCard';
@@ -24,6 +37,8 @@ import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
 import { formatJobLabel } from '@shared/utils/jobLabels';
 
 const isPublishedJob = (job: JobDto) => job.status?.toLowerCase() === 'published';
+
+const sectionTitleClassName = 'inline-flex items-center gap-2';
 
 export const JobDetailPage = () => {
   const { job: loaderJob, applicants, trend } = useLoaderData() as RecruiterJobDetailLoaderData;
@@ -211,26 +226,54 @@ export const JobDetailPage = () => {
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
             <div className="space-y-4">
-              <DetailBlock title="About the Role">
+              <DetailBlock
+                title={
+                  <span className={sectionTitleClassName}>
+                    <BookOpenText className="h-5 w-5" />
+                    <span>About the Role</span>
+                  </span>
+                }
+              >
                 <RichTextContent
                   html={job.description}
                   emptyFallback="No description provided."
                 />
               </DetailBlock>
 
-              <DetailBlock title="Responsibilities">
+              <DetailBlock
+                title={
+                  <span className={sectionTitleClassName}>
+                    <ClipboardList className="h-5 w-5" />
+                    <span>Responsibilities</span>
+                  </span>
+                }
+              >
                 <BulletList items={responsibilities} emptyLabel="No responsibilities listed." />
               </DetailBlock>
 
               <div className="grid gap-4 xl:grid-cols-2">
-                <DetailBlock title="Required Skills">
+                <DetailBlock
+                  title={
+                    <span className={sectionTitleClassName}>
+                      <BriefcaseBusiness className="h-5 w-5" />
+                      <span>Required Skills</span>
+                    </span>
+                  }
+                >
                   <SkillList
                     items={requiredSkills}
                     emptyLabel="No required skills listed."
                     roundedClassName="rounded-full text-xs font-medium"
                   />
                 </DetailBlock>
-                <DetailBlock title="Preferred Skills">
+                <DetailBlock
+                  title={
+                    <span className={sectionTitleClassName}>
+                      <Sparkles className="h-5 w-5" />
+                      <span>Preferred Skills</span>
+                    </span>
+                  }
+                >
                   <SkillList
                     items={preferredSkills}
                     emptyLabel="No preferred skills listed."
@@ -240,14 +283,28 @@ export const JobDetailPage = () => {
               </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
-                <DetailBlock title="Qualifications">
+                <DetailBlock
+                  title={
+                    <span className={sectionTitleClassName}>
+                      <GraduationCap className="h-5 w-5" />
+                      <span>Qualifications</span>
+                    </span>
+                  }
+                >
                   <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
                     <li>{job.min_years ? `${job.min_years}+ years of experience` : 'Experience not specified'}</li>
                     <li>{job.education || job.min_education || 'Education not specified'}</li>
                     <li>{job.experience_level || 'Role level not specified'}</li>
                   </ul>
                 </DetailBlock>
-                <DetailBlock title="Work Details">
+                <DetailBlock
+                  title={
+                    <span className={sectionTitleClassName}>
+                      <Wrench className="h-5 w-5" />
+                      <span>Work Details</span>
+                    </span>
+                  }
+                >
                   <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
                     <li>
                       <span className="font-medium text-zinc-900 dark:text-zinc-100">Schedule:</span> {job.schedule || 'Not specified'}
@@ -268,7 +325,8 @@ export const JobDetailPage = () => {
                 to={`/recruiter/job-posts/${job.id}/edit`}
                 className={actionButtonClassName({ fullWidth: true })}
               >
-                Edit Job
+                <FilePenLine className="h-4 w-4" />
+                <span>Edit Job</span>
               </Link>
               <ActionButton
                 onClick={() => void duplicateJob()}
@@ -282,6 +340,7 @@ export const JobDetailPage = () => {
               <ActionButton
                 onClick={() => void updateStatus('Draft')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Draft'}
+                icon={<ListChecks className="h-4 w-4" />}
                 fullWidth
               >
                 Move to Draft
@@ -289,6 +348,7 @@ export const JobDetailPage = () => {
               <ActionButton
                 onClick={() => void updateStatus('Published')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Published'}
+                icon={<Rocket className="h-4 w-4" />}
                 fullWidth
               >
                 Publish Job
@@ -296,6 +356,7 @@ export const JobDetailPage = () => {
               <ActionButton
                 onClick={() => void updateStatus('Closed')}
                 disabled={isUpdatingStatus || isDuplicating || job.status === 'Closed'}
+                icon={<CircleOff className="h-4 w-4" />}
                 fullWidth
               >
                 Close Job
@@ -305,6 +366,7 @@ export const JobDetailPage = () => {
                   event.stopPropagation();
                   void openDeleteFlow();
                 }}
+                icon={<ShieldX className="h-4 w-4" />}
                 destructive
                 fullWidth
               >
@@ -335,4 +397,3 @@ export const JobDetailPage = () => {
     </div>
   );
 };
-
