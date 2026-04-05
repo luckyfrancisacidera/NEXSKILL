@@ -154,8 +154,8 @@ namespace SkillSense.Application.Contracts.Recruiter.Response
 
     public sealed class RecommendationSettingsResponse
     {
-        [JsonPropertyName("top_percent")]
-        public int TopPercent { get; set; }
+        [JsonPropertyName("threshold_score")]
+        public int ThresholdScore { get; set; }
     }
 
     public sealed class BulkUpdateApplicantStageResultItemResponse

@@ -774,9 +774,14 @@ public sealed class InterviewService(
             throw new ArgumentException("Interview is already archived.");
         }
 
-        if (entity.Status is not InterviewStatus.Declined and not InterviewStatus.Cancelled and not InterviewStatus.Completed)
+        if (entity.Status == InterviewStatus.Completed)
         {
-            throw new ArgumentException("Only completed, declined, or cancelled interviews can be archived.");
+            throw new ArgumentException("Completed interviews are read-only and cannot be archived.");
+        }
+
+        if (entity.Status is not InterviewStatus.Declined and not InterviewStatus.Cancelled)
+        {
+            throw new ArgumentException("Only declined or cancelled interviews can be archived.");
         }
     }
 

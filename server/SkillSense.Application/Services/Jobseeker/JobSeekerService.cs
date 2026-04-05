@@ -404,6 +404,7 @@ namespace SkillSense.Application.Services.Jobseeker
         private static string ResolveCurrentStage(ResumeSubmissionStatus status)
             => status switch
             {
+                ResumeSubmissionStatus.Recommended => "Under Review",
                 ResumeSubmissionStatus.Completed => "Under Review",
                 ResumeSubmissionStatus.Shortlisted => "Shortlisted",
                 ResumeSubmissionStatus.Interview => "Interview",

@@ -29,7 +29,7 @@ export interface SearchableRouteItem {
 }
 
 const recruiterCandidatesBaseQuery =
-  "search=&jobId=all&department=all&recommendedTopPercent=10&pageSize=10&page=1";
+  "search=&jobId=all&department=all&pageSize=10&page=1";
 
 export const searchableRoutes: SearchableRouteItem[] = [
   {

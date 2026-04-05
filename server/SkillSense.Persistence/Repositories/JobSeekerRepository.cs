@@ -391,6 +391,7 @@ public sealed class JobSeekerRepository(SkillSenseDbContext dbContext) : IJobSee
             "recommended" or "under review" or "under-review" or "review" =>
             [
                 ResumeSubmissionStatus.Completed,
+                ResumeSubmissionStatus.Recommended,
             ],
             "shortlist" or "shortlisted" => [ResumeSubmissionStatus.Shortlisted],
             "interview" => [ResumeSubmissionStatus.Interview],

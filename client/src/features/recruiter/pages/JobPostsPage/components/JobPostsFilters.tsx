@@ -34,40 +34,8 @@ export const JobPostsFilters = ({
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-3">
-      <div className="flex w-full min-w-0 items-end gap-2 lg:hidden">
-        <div className="min-w-0 flex-1">
-          <SearchInput
-            label="Search"
-            name="search"
-            value={currentSearch}
-            onValueChange={onSearchChange}
-            placeholder="Search by title, department, or location"
-          />
-        </div>
-
-        <button
-          type="button"
-          className="relative inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-zinc-300 bg-white px-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800 md:px-2.5 lg:hidden"
-          aria-label="Open job post filters"
-          aria-expanded={isSnapSheetOpen}
-          aria-controls="job-post-filter-snap-sheet"
-          onClick={() => {
-            setDraftDepartment(currentDepartment);
-            setDraftPageSize(String(currentPageSize));
-            setIsSnapSheetOpen(true);
-          }}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          {activeFilterCount > 0 ? (
-            <span className="absolute right-1 top-1 inline-flex min-h-4.5 min-w-4.5 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-semibold leading-none text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900">
-              {activeFilterCount}
-            </span>
-          ) : null}
-        </button>
-      </div>
-
-      <div className="hidden w-full min-w-0 max-w-full items-end gap-4 lg:flex lg:flex-wrap 2xl:flex-nowrap">
-        <div className="min-w-0 flex-[1.6]">
+      <div className="flex w-full min-w-0 flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="min-w-0 flex-1 lg:max-w-none">
           <SearchInput
             label="Search"
             name="search"
@@ -78,29 +46,53 @@ export const JobPostsFilters = ({
           />
         </div>
 
-        <div className="min-w-0 flex-1 lg:basis-[16rem]">
-          <AppSelect
-            label="Department"
-            name="department"
-            value={currentDepartment}
-            onChange={(event) => onDepartmentChange(event.target.value)}
-            compactOnMobile={false}
-            options={[
-              { value: 'all', label: 'All departments', accentClassName: 'bg-violet-100 text-violet-700' },
-              ...departments.map((department) => ({ value: department, label: department })),
-            ]}
-          />
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-end lg:hidden">
+          <button
+            type="button"
+            className="relative inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+            aria-label="Open job post filters"
+            aria-expanded={isSnapSheetOpen}
+            aria-controls="job-post-filter-snap-sheet"
+            onClick={() => {
+              setDraftDepartment(currentDepartment);
+              setDraftPageSize(String(currentPageSize));
+              setIsSnapSheetOpen(true);
+            }}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {activeFilterCount > 0 ? (
+              <span className="absolute right-1 top-1 inline-flex min-h-4.5 min-w-4.5 items-center justify-center rounded-full bg-zinc-900 px-1 text-[10px] font-semibold leading-none text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
         </div>
 
-        <div className="min-w-0 lg:w-[11rem] lg:flex-none">
-          <AppSelect
-            label="Page Size"
-            name="pageSize"
-            value={String(currentPageSize)}
-            onChange={(event) => onPageSizeChange(event.target.value)}
-            compactOnMobile={false}
-            options={['10', '20', '50'].map((value) => ({ value, label: `${value} per page` }))}
-          />
+        <div className="hidden w-full min-w-0 max-w-full items-end gap-4 lg:flex lg:flex-[1.2] lg:flex-wrap 2xl:flex-nowrap">
+          <div className="min-w-0 flex-1 lg:basis-[16rem]">
+            <AppSelect
+              label="Department"
+              name="department"
+              value={currentDepartment}
+              onChange={(event) => onDepartmentChange(event.target.value)}
+              compactOnMobile={false}
+              options={[
+                { value: 'all', label: 'All departments', accentClassName: 'bg-violet-100 text-violet-700' },
+                ...departments.map((department) => ({ value: department, label: department })),
+              ]}
+            />
+          </div>
+
+          <div className="min-w-0 lg:w-[11rem] lg:flex-none">
+            <AppSelect
+              label="Page Size"
+              name="pageSize"
+              value={String(currentPageSize)}
+              onChange={(event) => onPageSizeChange(event.target.value)}
+              compactOnMobile={false}
+              options={['10', '20', '50'].map((value) => ({ value, label: `${value} per page` }))}
+            />
+          </div>
         </div>
       </div>
 

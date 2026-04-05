@@ -1,6 +1,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 
 import { cn } from '@shared/utils/cn';
@@ -33,8 +34,15 @@ export type AppSelectProps = {
   size?: 'default' | 'compact' | 'pagination';
 };
 
+type DropdownPosition = {
+  top: number;
+  left: number;
+  width: number;
+  maxWidth: number;
+};
+
 const baseButtonClassName =
-  'flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white text-left text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-violet-600 dark:focus:ring-violet-900';
+  'flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white font-inter text-left text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-zinc-400 dark:focus:ring-white/15';
 
 const defaultBadgeClassName = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
 
@@ -60,7 +68,10 @@ export function AppSelect({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const listboxRef = useRef<HTMLDivElement | null>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
 
   const selectedIndex = useMemo(() => {
     const index = options.findIndex((option) => option.value === value);
@@ -83,8 +94,58 @@ export function AppSelect({
   }, [activeIndex, open]);
 
   useEffect(() => {
+    if (!open || typeof window === 'undefined') {
+      return;
+    }
+
+    const updateDropdownPosition = () => {
+      const triggerRect = triggerRef.current?.getBoundingClientRect();
+      if (!triggerRect) {
+        return;
+      }
+
+      const viewportPadding = 8;
+      const availableWidth = Math.max(240, window.innerWidth - viewportPadding * 2);
+
+      setDropdownPosition({
+        top: triggerRect.bottom + 8,
+        left: Math.min(
+          Math.max(viewportPadding, triggerRect.left),
+          window.innerWidth - viewportPadding - Math.min(320, Math.max(triggerRect.width, 240)),
+        ),
+        width: triggerRect.width,
+        maxWidth: availableWidth,
+      });
+    };
+
+    updateDropdownPosition();
+
+    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    setDropdownPosition(null);
+  }, [open]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        listboxRef.current &&
+        !listboxRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -203,6 +264,7 @@ export function AppSelect({
       <div ref={dropdownRef} className="relative min-w-0 max-w-full">
         <input type="hidden" name={name} value={selectedOption?.value ?? value} />
         <button
+          ref={triggerRef}
           id={triggerId}
           type="button"
           aria-label={ariaLabel ?? label}
@@ -247,57 +309,67 @@ export function AppSelect({
           />
         </button>
 
-        {open ? (
-          <div
-            id={listboxId}
-            role="listbox"
-            aria-labelledby={triggerId}
-            className={cn(
-              'absolute left-0 top-full z-50 mt-2 max-h-80 w-max min-w-full max-w-[min(20rem,calc(100vw-1rem))] overflow-x-hidden overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-zinc-800 dark:bg-zinc-900',
-              listboxClassName,
-            )}
-          >
-            {options.map((option, optionIndex) => {
-              const isSelected = option.value === (selectedOption?.value ?? value);
+        {open && dropdownPosition && typeof document !== 'undefined'
+          ? createPortal(
+              <div
+                ref={listboxRef}
+                id={listboxId}
+                role="listbox"
+                aria-labelledby={triggerId}
+                className={cn(
+                  'fixed z-[90] max-h-80 overflow-x-hidden overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 font-inter shadow-xl dark:border-zinc-800 dark:bg-zinc-900',
+                  listboxClassName,
+                )}
+                style={{
+                  top: dropdownPosition.top,
+                  left: dropdownPosition.left,
+                  minWidth: dropdownPosition.width,
+                  maxWidth: dropdownPosition.maxWidth,
+                }}
+              >
+                {options.map((option, optionIndex) => {
+                  const isSelected = option.value === (selectedOption?.value ?? value);
 
-              return (
-                <button
-                  key={option.value}
-                  ref={(node) => {
-                    optionRefs.current[optionIndex] = node;
-                  }}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  disabled={option.disabled}
-                  onClick={() => handleSelect(optionIndex)}
-                  onKeyDown={(event) => handleOptionKeyDown(event, optionIndex)}
-                  className={cn(
-                    'flex w-full max-w-full items-center justify-between rounded-xl px-2.5 py-2.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-                    isSelected
-                      ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/70 dark:text-violet-300'
-                      : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800',
-                  )}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate">{option.label}</span>
-                    {typeof option.count === 'number' ? (
-                      <span
-                        className={cn(
-                          'flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold',
-                          option.accentClassName ?? defaultBadgeClassName,
-                        )}
-                      >
-                        {option.count}
-                      </span>
-                    ) : null}
-                  </div>
-                  {isSelected ? <Check className="ml-2 h-4 w-4 shrink-0" /> : null}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+                  return (
+                    <button
+                      key={option.value}
+                      ref={(node) => {
+                        optionRefs.current[optionIndex] = node;
+                      }}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      disabled={option.disabled}
+                      onClick={() => handleSelect(optionIndex)}
+                      onKeyDown={(event) => handleOptionKeyDown(event, optionIndex)}
+                      className={cn(
+                        'flex w-full max-w-full items-center justify-between rounded-xl px-2.5 py-2.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                        isSelected
+                          ? 'bg-zinc-100 text-zinc-800 dark:bg-white/10 dark:text-zinc-100'
+                          : 'text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/5',
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate">{option.label}</span>
+                        {typeof option.count === 'number' ? (
+                          <span
+                            className={cn(
+                              'flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold',
+                              option.accentClassName ?? defaultBadgeClassName,
+                            )}
+                          >
+                            {option.count}
+                          </span>
+                        ) : null}
+                      </div>
+                      {isSelected ? <Check className="ml-2 h-4 w-4 shrink-0" /> : null}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
     </FormControlShell>
   );

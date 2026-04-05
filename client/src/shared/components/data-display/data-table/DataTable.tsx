@@ -137,7 +137,7 @@ export const DataTable = <T,>({
 <div className="block w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain">
       <section
         className={cn(
-          "w-full min-w-0 max-w-full overflow-hidden border border-zinc-200 bg-white font-inter dark:border-zinc-800 dark:bg-zinc-950",
+          "w-full min-w-0 max-w-full overflow-hidden bg-white font-inter dark:border-zinc-800 dark:bg-zinc-950",
           surfaceClassName,
         )}
       >

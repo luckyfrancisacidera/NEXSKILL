@@ -1,4 +1,5 @@
 using SkillSense.Application.Common.Jobs;
+using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Scoring;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
@@ -115,7 +116,9 @@ public sealed class ResumeProcessingService(
 
             await SaveScoreAsync(submission, normalizedJob.Description, result.Score, ct);
 
-            submission.Status = ResumeSubmissionStatus.Completed;
+            submission.Status = ApplicantRecommendationPolicy.ResolveInitialStage(
+                ResumeSubmissionStatus.Completed,
+                result.Score.FinalScore);
             submission.UpdatedAtUtc = DateTime.UtcNow;
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             persistTimer.Stop();

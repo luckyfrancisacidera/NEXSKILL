@@ -1,10 +1,12 @@
-import { Briefcase, CalendarDays, CircleDollarSign, Clock3, Laptop2, Mail, MessageSquareText, ShieldCheck } from "lucide-react";
+import { Briefcase, CalendarDays, CircleDollarSign, Clock3, Copy, Laptop2, Mail, MessageSquareText, ShieldCheck } from "lucide-react";
 
+import { useToast } from "@app/providers/ToastProvider";
 import type { OfferPipelineCardData } from "./OfferPipelineCard";
 import { Button } from "@shared/components/actions/Button";
 import { ModalFrame } from "@shared/components/overlay/ModalFrame";
 import { StatusBadge } from "@shared/components/data-display/StatusBadge";
 import { richTextToDisplayLines, richTextToList } from "@shared/utils/richText";
+import { fallbackRecruiterMailto, openRecruiterContact } from "../utils/contactRecruiter";
 
 const formatDate = (value?: string | null) => {
   if (!value) {
@@ -72,6 +74,7 @@ export const OfferDetailsModal = ({
   onDecline: (applicationId: string) => void;
   onClose: () => void;
 }) => {
+  const { showToast } = useToast();
   const offer = item.offer;
   if (!offer) {
     return null;
@@ -80,6 +83,23 @@ export const OfferDetailsModal = ({
   const benefitItems = richTextToList(offer.benefits);
   const benefitLines = richTextToDisplayLines(offer.benefits);
   const messageLines = richTextToDisplayLines(offer.message);
+
+  const handleCopyRecruiterEmail = async () => {
+    if (!item.recruiterEmail) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(item.recruiterEmail);
+      showToast({
+        title: "Recruiter email copied",
+        description: item.recruiterEmail,
+        tone: "success",
+      });
+    } catch {
+      fallbackRecruiterMailto(item.recruiterEmail);
+    }
+  };
 
   return (
     <ModalFrame
@@ -130,13 +150,26 @@ export const OfferDetailsModal = ({
                 <span className="font-medium text-zinc-700 dark:text-zinc-200">{item.companyName}</span>
                 <span>{item.recruiterName}</span>
                 {item.recruiterEmail ? (
-                  <a
-                    href={`mailto:${item.recruiterEmail}`}
+                  <button
+                    type="button"
                     className="inline-flex items-center gap-1 text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    onClick={() => openRecruiterContact(item.recruiterEmail!)}
                   >
                     <Mail className="h-3.5 w-3.5" />
                     {item.recruiterEmail}
-                  </a>
+                  </button>
+                ) : null}
+                {item.recruiterEmail ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    onClick={() => {
+                      void handleCopyRecruiterEmail();
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy email
+                  </button>
                 ) : null}
               </div>
             </div>

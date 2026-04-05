@@ -14,9 +14,11 @@ import {
   applyRecruiterJobMutation,
   jobMatchesCurrentFilters,
   publishRecruiterJobMutation,
+  reconcileRecruiterJobsWithPendingMutations,
   readLatestRecruiterJobMutation,
   subscribeRecruiterJobMutations,
   toJobListItem,
+  upsertPendingRecruiterJobMutation,
   type RecruiterJobMutationPayload,
 } from '@features/recruiter/utils/jobMutationSync';
 import { Card } from '@shared/components/data-display/Card';
@@ -48,6 +50,7 @@ export const JobPostsPage = () => {
   const { showToast } = useToast();
   const confirm = useConfirmation();
   const handledMutationIdsRef = useRef<Set<string>>(new Set());
+  const pendingMutationsRef = useRef<Record<string, RecruiterJobMutationPayload>>({});
 
   const [jobs, setJobs] = useState(loaderData.jobs);
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
@@ -59,8 +62,15 @@ export const JobPostsPage = () => {
   const debouncedSearchDraft = useDebounce(searchDraft, 250);
 
   useEffect(() => {
-    setJobs(loaderData.jobs);
-  }, [loaderData.jobs]);
+    const reconciliation = reconcileRecruiterJobsWithPendingMutations(
+      loaderData.jobs,
+      pendingMutationsRef.current,
+      loaderData.filters,
+    );
+
+    pendingMutationsRef.current = reconciliation.pendingMutations;
+    setJobs(reconciliation.jobs);
+  }, [loaderData.filters, loaderData.jobs]);
 
   useEffect(() => {
     setSearchDraft(loaderData.filters.search);
@@ -86,6 +96,7 @@ export const JobPostsPage = () => {
     }
 
     handledMutationIdsRef.current.add(mutation.mutationId);
+    pendingMutationsRef.current = upsertPendingRecruiterJobMutation(pendingMutationsRef.current, mutation);
     console.info('[JobPostsPage] Applying recruiter job mutation', mutation);
 
     setJobs((current) => applyRecruiterJobMutation(current, mutation, loaderData.filters));

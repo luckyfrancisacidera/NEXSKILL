@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Archive, CalendarClock, CalendarPlus2, CheckCheck, CircleX } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useConfirmation } from "@shared/hooks/useConfirmation";
+import { Button } from "@shared/components/actions/Button";
 import { Card } from "@shared/components/data-display/Card";
 import { RichTextContent } from "@shared/components/data-display/RichTextContent";
 import { SideDrawer } from "@shared/components/overlay/SideDrawer";
@@ -273,6 +275,7 @@ export const InterviewPage = () => {
   const selectedIsTerminal = selectedInterview
     ? isTerminalInterviewStatus(selectedInterview.status)
     : false;
+  const selectedIsCompleted = selectedInterview?.status === "Completed";
   const canRespond =
     Boolean(selectedInterview) &&
     !selectedIsPending &&
@@ -285,6 +288,10 @@ export const InterviewPage = () => {
   const canArchive =
     Boolean(selectedInterview) &&
     !selectedIsPending;
+  const primaryActionClassName =
+    "w-full rounded-full border-transparent bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white";
+  const secondaryActionClassName =
+    "w-full rounded-full border border-zinc-300 bg-zinc-100 text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
 
   return (
     <div className="space-y-4">
@@ -434,59 +441,68 @@ export const InterviewPage = () => {
                 />
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="grid gap-2 sm:flex sm:flex-wrap">
-                  <button
-                    type="button"
-                    className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    disabled={!canRespond}
-                    onClick={() => void handleAccept(selectedInterview.id)}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    disabled={!canRespond}
-                    onClick={() => void handleDecline(selectedInterview.id)}
-                  >
-                    Decline
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                    disabled={!canRequestReschedule}
-                    onClick={() => setShowRescheduleForm(true)}
-                  >
-                    Request Schedule
-                  </button>
-                </div>
-
-                <div className="grid gap-2 sm:flex sm:flex-wrap">
-                  <button
-                    type="button"
-                    className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                    onClick={() => void handleDownloadCalendar(selectedInterview.id)}
-                  >
-                    Add To Calendar
-                  </button>
-                  {canArchive ? (
-                    <button
+              !selectedIsCompleted ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Button
                       type="button"
-                      className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                      disabled={selectedIsPending}
-                      onClick={() => void handleArchive(selectedInterview.id)}
+                      className={primaryActionClassName}
+                      disabled={!canRespond}
+                      onClick={() => void handleAccept(selectedInterview.id)}
                     >
-                      Archive
-                    </button>
-                  ) : null}
+                      <CheckCheck className="h-4 w-4" />
+                      <span>Accept</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      className={primaryActionClassName}
+                      disabled={!canRespond}
+                      onClick={() => void handleDecline(selectedInterview.id)}
+                    >
+                      <CircleX className="h-4 w-4" />
+                      <span>Decline</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      className={primaryActionClassName}
+                      disabled={!canRequestReschedule}
+                      onClick={() => setShowRescheduleForm(true)}
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      <span>Request Schedule</span>
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className={secondaryActionClassName}
+                      onClick={() => void handleDownloadCalendar(selectedInterview.id)}
+                    >
+                      <CalendarPlus2 className="h-4 w-4" />
+                      <span>Add to Calendar</span>
+                    </Button>
+                    {canArchive ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className={secondaryActionClassName}
+                        disabled={selectedIsPending}
+                        onClick={() => void handleArchive(selectedInterview.id)}
+                      >
+                        <Archive className="h-4 w-4" />
+                        <span>Archive Interview</span>
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              ) : null
             )}
 
             {selectedIsTerminal ? (
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Completed, declined, and cancelled interviews can be archived. Other interview states need to finish or be closed first.
+                Completed interviews are view-only. Cancelled and declined interviews can still be archived from here.
               </p>
             ) : null}
           </div>

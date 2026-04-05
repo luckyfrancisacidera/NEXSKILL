@@ -6,7 +6,7 @@ import { cn } from '@shared/utils/cn';
 import { FormControlShell } from './FormControlShell';
 
 const baseInputClassName =
-  'w-full rounded-xl border border-zinc-300 bg-white text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:hover:border-zinc-600 dark:focus:border-violet-600 dark:focus:ring-violet-900';
+  'w-full rounded-xl border border-zinc-300 bg-white font-inter text-sm text-zinc-700 shadow-sm outline-none transition placeholder:text-zinc-400 hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:focus:ring-white/15';
 
 export interface SearchInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> {
@@ -79,4 +79,3 @@ export function SearchInput({
 }
 
 export const SearchInputIcon = Search;
-

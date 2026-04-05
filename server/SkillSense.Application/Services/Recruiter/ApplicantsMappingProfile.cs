@@ -41,11 +41,5 @@ internal sealed class SubmissionStatusResolver : IValueResolver<ApplicantScoreDa
 {
     // Handles resolve.
     public string Resolve(ApplicantScoreData source, ApplicantScoreItemResponse destination, string destMember, ResolutionContext context)
-    {
-        var recommendedIds = context.Items.TryGetValue("recommendedIds", out var value) && value is IReadOnlySet<Guid> ids
-            ? ids
-            : null;
-
-        return RecruiterApplicantProjection.ResolveSubmissionStatus(source.Status, recommendedIds?.Contains(source.ResumeSubmissionId) == true);
-    }
+        => RecruiterApplicantProjection.ResolveSubmissionStatus(source.Status, source.Score);
 }
