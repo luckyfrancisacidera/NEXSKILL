@@ -1,4 +1,4 @@
-import { TableRowsSkeleton } from "@shared/components/skeletons/TableRowsSkeleton";
+import { TableRowsSkeleton } from "@shared/components/feedback/skeletons/TableRowsSkeleton";
 
 export const JobListSkeleton = () => (
   <TableRowsSkeleton
@@ -6,3 +6,4 @@ export const JobListSkeleton = () => (
     rowCount={6}
   />
 );
+

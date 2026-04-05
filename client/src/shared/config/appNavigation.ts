@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Sparkles } from "lucide-react";
 
-export type NavigationSection = "jobseeker" | "recruiter" | "companyAdmin" | "superAdmin";
+export type NavigationSection = "jobseeker" | "recruiter" | "companyadmin" | "superadmin";
 
 export interface AppNavigationItem {
   label: string;
@@ -62,11 +62,11 @@ export const resolveNavigationSection = ({
   isRecruiter: boolean;
 }): NavigationSection => {
   if (isSuperAdmin) {
-    return "superAdmin";
+    return "superadmin";
   }
 
   if (isCompanyAdmin) {
-    return "companyAdmin";
+    return "companyadmin";
   }
 
   if (isRecruiter) {
@@ -78,14 +78,14 @@ export const resolveNavigationSection = ({
 
 export const getNavigationContext = (section: NavigationSection): NavigationContext => {
   switch (section) {
-    case "superAdmin":
+    case "superadmin":
       return {
         section,
         title: "Super Admin",
         eyebrow: "Platform",
         items: superAdminItems,
       };
-    case "companyAdmin":
+    case "companyadmin":
       return {
         section,
         title: "Company Admin",

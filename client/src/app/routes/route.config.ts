@@ -1,3 +1,8 @@
+/* =========================================
+   ROUTE ACCESS MAP
+   Declares the canonical role-to-route access matrix used by guards and route helpers.
+========================================= */
+
 import type { Role } from "@shared/types";
 
 export type AppRouteKey =
@@ -26,17 +31,17 @@ export const routeAccess: Record<AppRouteKey, Role[]> = {
   applications: ["jobseeker"],
   offers: ["jobseeker"],
   saved: ["jobseeker"],
-  profile: ["jobseeker", "recruiter", "companyAdmin", "superAdmin", "admin"],
+  profile: ["jobseeker", "recruiter", "companyadmin", "superadmin"],
   recruiterDashboard: ["recruiter"],
   recruiterJobs: ["recruiter"],
   recruiterCandidates: ["recruiter"],
   recruiterHires: ["recruiter"],
   recruiterInterviews: ["recruiter"],
-  superAdminDashboard: ["admin", "superAdmin"],
-  superAdminCompanyAdmins: ["admin", "superAdmin"],
-  superAdminRecruiters: ["admin", "superAdmin"],
-  superAdminUsers: ["admin", "superAdmin"],
-  companyAdminDashboard: ["companyAdmin"],
-  companyAdminEmployees: ["companyAdmin"],
-  companyAdminCandidates: ["companyAdmin"],
+  superAdminDashboard: ["superadmin"],
+  superAdminCompanyAdmins: ["superadmin"],
+  superAdminRecruiters: ["superadmin"],
+  superAdminUsers: ["superadmin"],
+  companyAdminDashboard: ["companyadmin"],
+  companyAdminEmployees: ["companyadmin"],
+  companyAdminCandidates: ["companyadmin"],
 };

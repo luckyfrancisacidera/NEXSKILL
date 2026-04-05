@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type {
   ApplicationsLoaderData,
   JobseekerApplicationsQueryParams,
@@ -9,6 +9,7 @@ import {
   rethrowAsRouteError,
 } from "@features/jobseeker/loaders/loader.utils";
 
+// Use to preload the applications or archived-applications table before the route renders.
 export const applicationsLoader = async ({
   request,
 }: LoaderFunctionArgs): Promise<ApplicationsLoaderData> => {

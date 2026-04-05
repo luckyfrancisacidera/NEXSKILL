@@ -1,8 +1,9 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { JobDetailLoaderData } from "@features/jobseeker/types";
 import { rethrowAsRouteError } from "@features/jobseeker/loaders/loader.utils";
 
+// Use to preload a public job detail route once the job id is known from navigation.
 export const jobDetailLoader = async ({
   params,
 }: LoaderFunctionArgs): Promise<JobDetailLoaderData> => {

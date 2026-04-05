@@ -1,6 +1,7 @@
 import { redirect } from "react-router-dom";
 import { ApiError } from "@shared/api/http";
 
+// Maps API failures into route-level redirects and responses that React Router can render correctly.
 export const rethrowAsRouteError = (
   error: unknown,
   fallbackMessage: string,
@@ -23,6 +24,7 @@ export const rethrowAsRouteError = (
   throw error;
 };
 
+// Normalizes numeric query params used by jobseeker loaders.
 export const getPositiveNumber = (
   value: string | null,
   fallbackValue: number,

@@ -1,9 +1,10 @@
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { JobsLoaderData } from "@features/jobseeker/types";
 import {
   rethrowAsRouteError,
 } from "@features/jobseeker/loaders/loader.utils";
 
+// Use to preload the public jobs feed and mark which listings are already saved for the viewer.
 export const jobsLoader = async (): Promise<JobsLoaderData> => {
   try {
     const [jobs, savedJobs] = await Promise.all([

@@ -8,15 +8,15 @@ import { ApplicantsTrendCard } from '@features/recruiter/pages/JobDetailPage/com
 import { BulletList } from '@features/recruiter/pages/JobDetailPage/components/BulletList';
 import { MetadataBadge } from '@features/recruiter/pages/JobDetailPage/components/MetadataBadge';
 import { SkillList } from '@features/recruiter/pages/JobDetailPage/components/SkillList';
-import { recruiterService } from '@features/recruiter/service/recruiter.service';
+import { recruiterService } from '@features/recruiter/services/recruiter.service';
 import { useSearchParamToast } from '@features/recruiter/hooks/useSearchParamToast';
 import type { JobDto, RecruiterJobDetailLoaderData } from '@features/recruiter/types';
 import { publishRecruiterJobMutation, toJobListItem } from '@features/recruiter/utils/jobMutationSync';
-import { ActionButton, actionButtonClassName } from '@shared/components/ActionButton';
-import { Card } from '@shared/components/Card';
-import { DetailBlock } from '@shared/components/DetailBlock';
-import { HighRiskVerificationModal } from '@shared/components/HighRiskVerificationModal';
-import { RichTextContent } from '@shared/components/RichTextContent';
+import { ActionButton, actionButtonClassName } from '@shared/components/actions/ActionButton';
+import { Card } from '@shared/components/data-display/Card';
+import { DetailBlock } from '@shared/components/data-display/DetailBlock';
+import { HighRiskVerificationModal } from '@shared/components/overlay/HighRiskVerificationModal';
+import { RichTextContent } from '@shared/components/data-display/RichTextContent';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { formatCurrencyAmount } from '@shared/data/currency';
 import { splitToBullets, toList } from '@shared/utils/formatText';
@@ -335,3 +335,4 @@ export const JobDetailPage = () => {
     </div>
   );
 };
+

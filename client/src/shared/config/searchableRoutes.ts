@@ -14,8 +14,8 @@ import type { Role } from "@shared/types";
 export type SearchRoleContext =
   | "jobseeker"
   | "recruiter"
-  | "companyAdmin"
-  | "superAdmin";
+  | "companyadmin"
+  | "superadmin";
 
 export interface SearchableRouteItem {
   id: string;
@@ -98,7 +98,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Manage your account details, email verification, and password settings.",
     path: "/profile",
     section: "Shared",
-    roles: ["jobseeker", "recruiter", "companyAdmin", "superAdmin"],
+    roles: ["jobseeker", "recruiter", "companyadmin", "superadmin"],
     keywords: ["account", "my profile", "personal info", "email", "password", "settings"],
     icon: UserRound,
   },
@@ -218,7 +218,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Super admin dashboard for tenant health and platform oversight.",
     path: "/admin/super",
     section: "Admin",
-    roles: ["superAdmin"],
+    roles: ["superadmin"],
     keywords: ["admin dashboard", "platform dashboard", "overview", "super admin"],
     icon: LayoutDashboard,
   },
@@ -228,7 +228,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Manage company admin accounts across every tenant.",
     path: "/admin/super/company-admins",
     section: "Admin",
-    roles: ["superAdmin"],
+    roles: ["superadmin"],
     keywords: ["company admins", "tenant admins", "admins", "admin accounts"],
     icon: Users,
   },
@@ -238,7 +238,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Review and manage recruiter accounts across the platform.",
     path: "/admin/super/recruiters",
     section: "Admin",
-    roles: ["superAdmin"],
+    roles: ["superadmin"],
     keywords: ["recruiters", "recruiter accounts", "talent team", "hiring users"],
     icon: BriefcaseBusiness,
   },
@@ -248,7 +248,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Manage recruiter access and company hiring operations.",
     path: "/admin/company",
     section: "Company Admin",
-    roles: ["companyAdmin"],
+    roles: ["companyadmin"],
     keywords: ["company admin", "company dashboard", "recruiter management", "company overview"],
     icon: LayoutDashboard,
   },
@@ -258,7 +258,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Review hired employees across the active company.",
     path: "/admin/company/employees",
     section: "Company Admin",
-    roles: ["companyAdmin"],
+    roles: ["companyadmin"],
     keywords: ["employees", "hires", "company employees", "hired candidates"],
     icon: Users,
   },
@@ -268,7 +268,7 @@ export const searchableRoutes: SearchableRouteItem[] = [
     description: "Open your notifications center and review recent activity.",
     path: "/notifications",
     section: "Shared",
-    roles: ["jobseeker", "recruiter", "companyAdmin", "superAdmin"],
+    roles: ["jobseeker", "recruiter", "companyadmin", "superadmin"],
     keywords: ["alerts", "updates", "notification center", "announcements"],
     icon: Bell,
   },
@@ -283,19 +283,19 @@ export const resolveSearchRoleContext = (
   }
 
   if (pathname.startsWith("/admin/company")) {
-    return "companyAdmin";
+    return "companyadmin";
   }
 
   if (pathname.startsWith("/admin")) {
-    return "superAdmin";
+    return "superadmin";
   }
 
-  if (roles.includes("superAdmin") || roles.includes("admin")) {
-    return "superAdmin";
+  if (roles.includes("superadmin")) {
+    return "superadmin";
   }
 
-  if (roles.includes("companyAdmin")) {
-    return "companyAdmin";
+  if (roles.includes("companyadmin")) {
+    return "companyadmin";
   }
 
   if (roles.includes("recruiter")) {

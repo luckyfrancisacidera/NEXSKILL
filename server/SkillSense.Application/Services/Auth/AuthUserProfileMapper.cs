@@ -5,6 +5,7 @@ namespace SkillSense.Application.Services.Auth;
 
 public static class AuthUserProfileMapper
 {
+    // Handles to current user response.
     public static CurrentUserResponse ToCurrentUserResponse(AppUser user, IEnumerable<string> roles)
     {
         var roleArray = roles
@@ -25,6 +26,7 @@ public static class AuthUserProfileMapper
         };
     }
 
+    // Handles to account profile response.
     public static AccountProfileResponse ToAccountProfileResponse(AppUser user, IEnumerable<string> roles)
     {
         var roleArray = roles
@@ -79,6 +81,7 @@ public static class AuthUserProfileMapper
         return (parts[0], string.Join(' ', parts.Skip(1)));
     }
 
+    // Resolves primary role.
     private static string ResolvePrimaryRole(IEnumerable<string> roles)
     {
         if (roles.Any(role => role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)))
@@ -104,6 +107,7 @@ public static class AuthUserProfileMapper
         return "Jobseeker";
     }
 
+    // Handles null if empty.
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

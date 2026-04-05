@@ -1,17 +1,26 @@
+"""FastAPI entrypoint for the resume parsing microservice."""
+
 import asyncio
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from contextlib import asynccontextmanager
-from pathlib import Path
-import os
+
 import spacy
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from dotenv import load_dotenv
 
 from app.resources import (
-    load_experience_gazetteer,
     load_education_programs,
+    load_experience_gazetteer,
     load_jz_skill_phrases,
+    resolve_parser_resource_paths,
+    validate_parser_resource_paths,
 )
-from app.parser.matchers import build_phrase_matcher
 from app.parser.factory import build_parser
+from app.parser.matchers import build_phrase_matcher
+
+# =========================================
+# RESUME PARSER API
+# =========================================
+
 class AppState:
     nlp = None
     skill_matcher = None
@@ -20,31 +29,20 @@ class AppState:
     exp_firms = set()
     edu_programs = set()
 
-from dotenv import load_dotenv
-
 load_dotenv()
 
 state = AppState()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
-
-    EXPERIENCE_CSV = Path(os.getenv("EXPERIENCE_CSV", str(DATA_DIR / "experience.csv")))
-    EDUCATION_CSV = Path(os.getenv("EDUCATION_CSV", str(DATA_DIR / "education.csv")))
-    JZ_SKILLS_JSONL = Path(os.getenv("JZ_SKILLS_JSONL", str(DATA_DIR / "jz_skill_patterns.jsonl")))
-
-    if not EXPERIENCE_CSV.exists():
-        raise RuntimeError(f"experience.csv not found at: {EXPERIENCE_CSV}")
-    if not EDUCATION_CSV.exists():
-        raise RuntimeError(f"education.csv not found at: {EDUCATION_CSV}")
+    resource_paths = resolve_parser_resource_paths()
+    validate_parser_resource_paths(resource_paths)
 
     state.nlp = spacy.load("en_core_web_sm")
 
-    skills = load_jz_skill_phrases(str(JZ_SKILLS_JSONL))
-    state.exp_titles, state.exp_firms = load_experience_gazetteer(EXPERIENCE_CSV)
-    state.edu_programs = load_education_programs(EDUCATION_CSV)
+    skills = load_jz_skill_phrases(str(resource_paths.jz_skills_jsonl))
+    state.exp_titles, state.exp_firms = load_experience_gazetteer(resource_paths.experience_csv)
+    state.edu_programs = load_education_programs(resource_paths.education_csv)
 
     state.skill_matcher = build_phrase_matcher(state.nlp, skills, "SKILL")
     state.title_matcher = build_phrase_matcher(state.nlp, state.exp_titles, "JOB_TITLE")

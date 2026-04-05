@@ -1,3 +1,8 @@
+/* =========================================
+   APP COMPOSITION
+   Composes the provider tree, boot loaders, and root router for the client.
+========================================= */
+
 import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from '@app/routes/router';
@@ -12,7 +17,7 @@ import { isAtsWakeRoute } from '@shared/config/backendWakeRoutes';
 import { useBackendWakeIndicator } from '@shared/hooks/useBackendWakeIndicator';
 import { ToastProvider } from './providers/ToastProvider';
 import { ConfirmationProvider } from '@shared/hooks/useConfirmation';
-import { AppLoadingScreen } from '@shared/components/AppLoadingScreen';
+import { AppLoadingScreen } from '@shared/components/feedback/AppLoadingScreen';
 import { useAuth } from '@app/providers/AuthProvider';
 import { useSetup } from '@app/providers/SetupProvider';
 import { SkeletonTheme } from 'react-loading-skeleton';
@@ -26,11 +31,18 @@ const PUBLIC_ROUTES = new Set([
   '/reset-password',
 ]);
 
+/* =========================================
+   BOOTSTRAP LOADERS
+========================================= */
+
 const AppLoadingBoundary = () => {
   const { isAuthenticated, isHydrating, isAppTransitioning } = useAuth();
   const { isLoading: isSetupLoading } = useSetup();
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
+
+  // Keep protected routes visually blocked until auth and setup state agree on
+  // the user's initial destination, otherwise route flashes can occur on boot.
   const shouldShowBootstrapLoader = !isPublicRoute && (isHydrating || (isAuthenticated && isSetupLoading));
 
   if (!isAppTransitioning && !shouldShowBootstrapLoader) {
@@ -47,6 +59,8 @@ const InitialAtsWakeGate = () => {
   const { isBackendWarm, isVisible } = useBackendWakeIndicator(isInitialAtsRoute);
 
   useEffect(() => {
+    // The wake surface is only meant for the first ATS-sensitive route load;
+    // once the backend is confirmed warm we should not re-show it on this visit.
     if (isInitialAtsRoute && isBackendWarm) {
       setIsInitialAtsRoute(false);
     }
@@ -62,6 +76,10 @@ const InitialAtsWakeGate = () => {
     </div>
   );
 };
+
+/* =========================================
+   PROVIDER TREE
+========================================= */
 
 const App = () => (
   <ThemeProvider>
@@ -88,3 +106,4 @@ const App = () => (
 );
 
 export default App;
+

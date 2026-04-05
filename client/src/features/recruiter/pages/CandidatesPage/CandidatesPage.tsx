@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   FileSearch,
@@ -7,7 +7,7 @@ import {
   UserRoundSearch,
   UserX,
 } from 'lucide-react';
-import { useFetcher, useLoaderData, useNavigate, useNavigation, useRevalidator, useSubmit } from 'react-router-dom';
+import { useFetcher, useLoaderData, useNavigate, useNavigation, useRevalidator } from 'react-router-dom';
 
 import { useToast } from '@app/providers/ToastProvider';
 import { BulkActionsBar } from '@features/recruiter/pages/CandidatesPage/components/BulkActionsBar';
@@ -23,11 +23,10 @@ import type {
   CandidatesLoaderData,
 } from '@features/recruiter/types';
 import { canShortlistCandidate, getShortlistWarningMessage } from '@features/recruiter/utils/candidateStageRules';
-import { Card } from '@shared/components/Card';
-import { EmptyState } from '@shared/components/EmptyState';
-import type { DropdownOption } from '@shared/components/Dropdown';
-import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
-import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
+import { Card } from '@shared/components/data-display/Card';
+import { EmptyState } from '@shared/components/feedback/EmptyState';
+import type { DropdownOption } from '@shared/components/form/Dropdown';
+import { TablePagination } from '@shared/components/data-display/data-table/TablePagination';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 
 const tabsWithRecommendationFilter = new Set(['all', 'Recommended']);
@@ -146,11 +145,9 @@ export const CandidatesPage = () => {
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const navigation = useNavigation();
-  const submit = useSubmit();
   const revalidator = useRevalidator();
   const { showToast } = useToast();
   const confirm = useConfirmation();
-  const filterFormRef = useRef<HTMLFormElement | null>(null);
 
   // The recruiterSync cache is removed; loader data is the single source of truth.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -349,116 +346,102 @@ export const CandidatesPage = () => {
     setSelectedIds([]);
   };
 
-  const submitFilters = (event?: { target: { name: string; value: string } }) => {
-    if (!filterFormRef.current) {
-      return;
-    }
-
-    const formData = new FormData(filterFormRef.current);
-    if (event?.target.name) {
-      formData.set(event.target.name, event.target.value);
-    }
-
-    formData.set('page', '1');
-    submit(formData, {
-      method: 'get',
-      action: '/recruiter/candidates',
-    });
+  const applyFilters = (nextFilters: CandidateFilters) => {
+    navigate(buildCandidateQuery(nextFilters, 1));
   };
 
   return (
-    <Card className="-mx-4 border-0 bg-transparent p-0 shadow-none sm:mx-0 dark:border-0 dark:bg-transparent">
-      <section className="border border-zinc-200 bg-white px-3 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Candidates</h2>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Review applications, filter by hiring stage, and move candidates forward.
-          </p>
-        </div>
+    <Card className="w-full min-w-0 max-w-full border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
+      <div className="flex w-full min-w-0 flex-col">
+        <div className="flex-1 min-w-0 space-y-4">
+          <section className="w-full min-w-0 max-w-full px-3 py-4 sm:px-0 sm:py-0">
+            <div className="mb-3">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 sm:text-xl">Candidates</h2>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Review applications, filter by hiring stage, and move candidates forward.
+              </p>
+            </div>
 
-        <CandidateStageTabs countByStage={countByStage} filters={normalizedFilters} />
+            <CandidateStageTabs countByStage={countByStage} filters={normalizedFilters} />
 
-        <CandidatesFilters
-          filters={normalizedFilters}
-          jobs={jobs}
-          departments={departments}
-          counts={counts}
-          isRecommendationFilterVisible={isRecommendationFilterVisible}
-          recommendedCutoffOptions={recommendedCutoffOptions}
-          formRef={filterFormRef}
-          onSubmitFilters={submitFilters}
-        />
-      </section>
+            <CandidatesFilters
+              filters={normalizedFilters}
+              jobs={jobs}
+              departments={departments}
+              counts={counts}
+              isRecommendationFilterVisible={isRecommendationFilterVisible}
+              recommendedCutoffOptions={recommendedCutoffOptions}
+              onSearchChange={(value) => applyFilters({ ...normalizedFilters, search: value })}
+              onFieldChange={(name, value) => applyFilters({ ...normalizedFilters, [name]: value })}
+              onApplyFilters={applyFilters}
+            />
+          </section>
 
-      <section className="mt-4 min-w-0 border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-3 py-4 dark:border-zinc-800 sm:px-6">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                ATS auto-recommends top {recommendation.top_percent}% by score. Selected: {selectedIdsOnPage.length}
+              </p>
+            </div>
+            <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+              <BulkActionsBar
+                actions={bulkActions}
+                selectedCount={selectedIdsOnPage.length}
+                isSubmittingAction={isSubmittingAction}
+                onQueueAction={(action) => {
+                  void queueBulkAction(action);
+                }}
+              />
+            </div>
           </div>
-          <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
-            <BulkActionsBar
-              actions={bulkActions}
-              selectedCount={selectedIdsOnPage.length}
-              isSubmittingAction={isSubmittingAction}
-              onQueueAction={(action) => {
-                void queueBulkAction(action);
+
+          {isLoadingList ? (
+            <CandidateListSkeleton />
+          ) : isEmptyPage ? (
+            <EmptyState
+              icon={FileSearch}
+              title="No results on this page"
+              description="There are candidates in this view, but this page has no results. Go back a page to continue reviewing them."
+              actionLabel="Go to previous page"
+              onAction={() => {
+                navigate(`/recruiter/candidates${previousPageHref}`);
               }}
             />
-            <TablePageSizeControl
-              value={pagination.pageSize}
-              onChange={(pageSize) => navigate(buildCandidateQuery({ ...normalizedFilters, pageSize: String(pageSize) }, 1))}
+          ) : candidates.length === 0 ? (
+            <EmptyState
+              icon={emptyStateContent.icon}
+              title={emptyStateContent.title}
+              description={
+                hasSearchOrFacetFilters
+                  ? 'Try adjusting your search, job, or department filters to broaden the candidate list.'
+                  : emptyStateContent.description
+              }
             />
-          </div>
+          ) : (
+            <CandidatesTable
+              candidates={candidates}
+              stage={normalizedFilters.stage}
+              isAllChecked={isAllChecked}
+              selectedSet={selectedSet}
+              onToggleAllRows={toggleAllRows}
+              onToggleSingleRow={toggleSingleRow}
+              loading={isLoadingList}
+            />
+          )}
+
+          {pagination.total > 0 || isEmptyPage ? (
+            <TablePagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              totalCount={pagination.total}
+              pageSize={pagination.pageSize}
+              itemLabel="candidates"
+              getPageHref={(page) => buildCandidateQuery(normalizedFilters, page)}
+              showPageSizeSelector={false}
+            />
+          ) : null}
         </div>
-
-        {isLoadingList ? (
-          <CandidateListSkeleton />
-        ) : isEmptyPage ? (
-          <EmptyState
-            icon={FileSearch}
-            title="No results on this page"
-            description="There are candidates in this view, but this page has no results. Go back a page to continue reviewing them."
-            actionLabel="Go to previous page"
-            onAction={() => {
-              navigate(`/recruiter/candidates${previousPageHref}`);
-            }}
-          />
-        ) : candidates.length === 0 ? (
-          <EmptyState
-            icon={emptyStateContent.icon}
-            title={emptyStateContent.title}
-            description={
-              hasSearchOrFacetFilters
-                ? 'Try adjusting your search, job, or department filters to broaden the candidate list.'
-                : emptyStateContent.description
-            }
-          />
-        ) : (
-          <CandidatesTable
-            candidates={candidates}
-            stage={normalizedFilters.stage}
-            isAllChecked={isAllChecked}
-            selectedSet={selectedSet}
-            onToggleAllRows={toggleAllRows}
-            onToggleSingleRow={toggleSingleRow}
-            loading={isLoadingList}
-          />
-        )}
-
-        {(pagination.total > 0 || isEmptyPage) ? (
-          <TablePagination
-            page={pagination.page}
-            totalPages={pagination.totalPages}
-            totalCount={pagination.total}
-            pageSize={pagination.pageSize}
-            itemLabel="candidates"
-            getPageHref={(page) => buildCandidateQuery(normalizedFilters, page)}
-            showPageSizeSelector={false}
-          />
-        ) : null}
-      </section>
+      </div>
     </Card>
   );
 };

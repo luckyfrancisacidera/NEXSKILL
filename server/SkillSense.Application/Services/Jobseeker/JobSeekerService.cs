@@ -20,6 +20,7 @@ namespace SkillSense.Application.Services.Jobseeker
         IDateTimeProvider dateTimeProvider,
         INotificationService notificationService) : IJobSeekerService
     {
+        // Loads public jobs.
         public async Task<PagedResult<JobListItemResponse>> GetPublicJobsAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDir, CancellationToken ct = default)
         {
             var cacheKey = $"jobs:public:list:{pageNumber}:{pageSize}:{search}:{sortBy}:{sortDir}";
@@ -37,6 +38,7 @@ namespace SkillSense.Application.Services.Jobseeker
             });
         }
 
+        // Loads public job.
         public async Task<JobListItemResponse?> GetPublicJobAsync(Guid id, CancellationToken ct = default)
             => await cacheService.GetOrCreateAsync($"jobs:public:detail:{id}", TimeSpan.FromSeconds(120), async () =>
             {
@@ -44,6 +46,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 return job is null ? null : Map(job);
             });
 
+        // Applies the requested operation.
         public async Task<ResumeUploadResponse> ApplyAsync(Guid jobId, ApplyToJobRequest request, Stream fileStream, string fileName, string contentType, Guid? jobSeekerUserId, CancellationToken ct = default)
         {
             var job = await jobSeekerRepository.GetPublishedJobByIdAsync(jobId, ct)
@@ -62,6 +65,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return response;
         }
 
+        // Loads my applications.
         public async Task<PagedResult<JobSeekerApplicationResponse>> GetMyApplicationsAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default)
         {
             var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, search, status, startDate, endDate, archivedOnly, ct);
@@ -75,6 +79,7 @@ namespace SkillSense.Application.Services.Jobseeker
             };
         }
 
+        // Loads dashboard summary.
         public async Task<object> GetDashboardSummaryAsync(Guid userId, string range, CancellationToken ct = default)
         {
             var normalizedRange = (range ?? "this_week").Trim().ToLowerInvariant();
@@ -122,6 +127,7 @@ namespace SkillSense.Application.Services.Jobseeker
             };
         }
 
+        // Loads saved jobs.
         public async Task<IReadOnlyList<object>> GetSavedJobsAsync(Guid userId, string? search, CancellationToken ct = default)
         {
             var items = await jobSeekerRepository.GetSavedJobsAsync(userId, search, ct);
@@ -141,6 +147,7 @@ namespace SkillSense.Application.Services.Jobseeker
             }).ToList();
         }
 
+        // Saves job.
         public async Task SaveJobAsync(Guid userId, Guid jobId, CancellationToken ct = default)
         {
             var job = await jobSeekerRepository.GetPublishedJobByIdAsync(jobId, ct) ?? throw new KeyNotFoundException("Job not found.");
@@ -148,15 +155,18 @@ namespace SkillSense.Application.Services.Jobseeker
             await jobSeekerRepository.SaveJobAsync(new SavedJobEntity { UserId = userId, JobId = jobId, Id = Guid.NewGuid() }, ct);
         }
 
+        // Removes saved job.
         public Task RemoveSavedJobAsync(Guid userId, Guid jobId, CancellationToken ct = default)
             => jobSeekerRepository.RemoveSavedJobAsync(userId, jobId, ct);
 
+        // Loads my profile.
         public async Task<object> GetMyProfileAsync(Guid userId, CancellationToken ct = default)
         {
             var profile = await jobSeekerRepository.GetProfileAsync(userId, ct) ?? new JobSeekerProfileEntity { UserId = userId };
             return ToProfileResponse(profile);
         }
 
+        // Updates my profile.
         public async Task<object> UpdateMyProfileAsync(Guid userId, JobSeekerProfileRequest request, CancellationToken ct = default)
         {
             var profile = await jobSeekerRepository.GetProfileAsync(userId, ct);
@@ -180,6 +190,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return ToProfileResponse(profile);
         }
 
+        // Loads application detail.
         public async Task<JobSeekerApplicationResponse> GetApplicationDetailAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var item = await jobSeekerRepository.GetApplicationDetailAsync(userId, applicationId, ct)
@@ -188,6 +199,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return MapApplication(item);
         }
 
+        // Loads offer.
         public async Task<OfferResponse> GetOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var offer = await jobSeekerRepository.GetLatestOfferByApplicationIdAsync(userId, applicationId, ct)
@@ -197,6 +209,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return MapOffer(offer);
         }
 
+        // Handles accept offer.
         public async Task<OfferResponse> AcceptOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
@@ -205,6 +218,8 @@ namespace SkillSense.Application.Services.Jobseeker
                 ?? throw new KeyNotFoundException("Offer not found.");
 
             offer = await EnsureOfferExpirationStateAsync(offer, ct);
+            ValidateOfferApplicationConsistency(entity, offer);
+            ValidateApplicationForOfferAcceptance(entity);
             ValidatePendingOfferResponse(offer);
 
             await using var transaction = await jobSeekerRepository.BeginSerializableTransactionAsync(ct);
@@ -265,6 +280,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return MapOffer(offer);
         }
 
+        // Handles decline offer.
         public async Task<OfferResponse> DeclineOfferAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
@@ -294,16 +310,30 @@ namespace SkillSense.Application.Services.Jobseeker
             return MapOffer(offer);
         }
 
+        // Handles withdraw application.
         public async Task WithdrawApplicationAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct) ?? throw new KeyNotFoundException("Application not found.");
             if (entity.Status is ResumeSubmissionStatus.Hired or ResumeSubmissionStatus.Rejected)
                 throw new InvalidOperationException("This application can no longer be withdrawn.");
+
+            var latestOffer = await jobSeekerRepository.GetLatestOfferByApplicationIdAsync(userId, applicationId, ct);
+            if (latestOffer is not null)
+            {
+                latestOffer = await EnsureOfferExpirationStateAsync(latestOffer, ct);
+                if (latestOffer.ApplicationId == entity.Id && latestOffer.Status == JobOfferStatus.Pending)
+                {
+                    latestOffer.Status = JobOfferStatus.Cancelled;
+                    latestOffer.UpdatedAtUtc = dateTimeProvider.UtcNow;
+                }
+            }
+
             entity.Status = ResumeSubmissionStatus.Failed;
             entity.UpdatedAtUtc = dateTimeProvider.UtcNow;
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
+        // Archives application history.
         public async Task ArchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetVisibleApplicationEntityAsync(userId, applicationId, ct)
@@ -316,6 +346,7 @@ namespace SkillSense.Application.Services.Jobseeker
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
+        // Restores application history.
         public async Task UnarchiveApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetArchivedApplicationEntityAsync(userId, applicationId, ct)
@@ -327,6 +358,7 @@ namespace SkillSense.Application.Services.Jobseeker
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
+        // Deletes application history.
         public async Task DeleteApplicationHistoryAsync(Guid userId, Guid applicationId, CancellationToken ct = default)
         {
             var entity = await jobSeekerRepository.GetApplicationEntityAsync(userId, applicationId, ct)
@@ -338,6 +370,7 @@ namespace SkillSense.Application.Services.Jobseeker
             await jobSeekerRepository.SaveChangesAsync(ct);
         }
 
+        // Maps application.
         private JobSeekerApplicationResponse MapApplication(ApplicationListItemData item)
         {
             var currentStage = ResolveCurrentStage(item.Status);
@@ -367,6 +400,7 @@ namespace SkillSense.Application.Services.Jobseeker
             };
         }
 
+        // Resolves current stage.
         private static string ResolveCurrentStage(ResumeSubmissionStatus status)
             => status switch
             {
@@ -381,6 +415,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 _ => "Applied"
             };
 
+        // Resolves recruiter name.
         private static string? ResolveRecruiterName(string? recruiterName, string? recruiterEmail)
         {
             if (!string.IsNullOrWhiteSpace(recruiterName))
@@ -396,6 +431,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return null;
         }
 
+        // Handles to profile response.
         private static object ToProfileResponse(JobSeekerProfileEntity profile) => new
         {
             full_name = profile.FullName,
@@ -424,6 +460,7 @@ namespace SkillSense.Application.Services.Jobseeker
             };
         }
 
+        // Handles map.
         private static JobListItemResponse Map(JobEntity x)
             => new()
             {
@@ -452,6 +489,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 PostedDateUtc = x.PostedDateUtc
             };
 
+        // Normalizes multiline text.
         private static string NormalizeMultilineText(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return string.Empty;
@@ -460,6 +498,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return string.Join(Environment.NewLine, lines);
         }
 
+        // Ensures offer expiration state.
         private async Task<JobOfferEntity> EnsureOfferExpirationStateAsync(JobOfferEntity offer, CancellationToken ct)
         {
             if (offer.Status != JobOfferStatus.Pending || !offer.ExpirationDate.HasValue)
@@ -479,6 +518,7 @@ namespace SkillSense.Application.Services.Jobseeker
             return offer;
         }
 
+        // Validates pending offer response.
         private void ValidatePendingOfferResponse(JobOfferEntity offer)
         {
             if (offer.Status == JobOfferStatus.Accepted || offer.Status == JobOfferStatus.Declined)
@@ -497,6 +537,36 @@ namespace SkillSense.Application.Services.Jobseeker
             }
         }
 
+        // Ensures the offer is still tied to the selected application.
+        private static void ValidateOfferApplicationConsistency(ResumeSubmissionEntity application, JobOfferEntity offer)
+        {
+            if (offer.ApplicationId != application.Id)
+            {
+                throw new InvalidOperationException("Cannot accept this offer because the related application is no longer active.");
+            }
+        }
+
+        // Only active application records can continue the offer response flow.
+        private static void ValidateApplicationForOfferAcceptance(ResumeSubmissionEntity application)
+        {
+            if (application.Status == ResumeSubmissionStatus.Failed)
+            {
+                throw new InvalidOperationException("This offer can no longer be accepted because the application has been withdrawn.");
+            }
+
+            if (application.JobSeekerHistoryDeletedAtUtc.HasValue
+                || application.Status is ResumeSubmissionStatus.Rejected or ResumeSubmissionStatus.Hired)
+            {
+                throw new InvalidOperationException("Cannot accept this offer because the related application is no longer active.");
+            }
+
+            if (application.Status != ResumeSubmissionStatus.Offer)
+            {
+                throw new InvalidOperationException("Cannot accept this offer because the related application is no longer active.");
+            }
+        }
+
+        // Maps offer.
         private OfferResponse MapOffer(JobOfferEntity offer)
         {
             var effectiveStatus = offer.Status == JobOfferStatus.Pending
@@ -534,6 +604,7 @@ namespace SkillSense.Application.Services.Jobseeker
             };
         }
 
+        // Maps offer.
         private OfferResponse? MapOffer(ApplicationListItemData item)
         {
             if (!item.OfferId.HasValue || item.OfferStatus is null)

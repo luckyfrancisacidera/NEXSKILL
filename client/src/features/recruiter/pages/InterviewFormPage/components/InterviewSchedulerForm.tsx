@@ -5,10 +5,10 @@ import type {
   ShortlistedCandidateOption,
 } from "@features/recruiter/types/interview.types";
 import type { JobDto } from "@features/recruiter/types";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
-import { Button } from "@shared/components/Button";
-import { RichTextField } from "@shared/components/RichTextField";
+import { Button } from "@shared/components/actions/Button";
+import { RichTextField } from "@shared/components/form/RichTextField";
 import { sanitizeRichText } from "@shared/utils/richText";
 
 const buildScheduleConflictMessage = (message: string) => {
@@ -618,3 +618,4 @@ export const InterviewSchedulerForm = ({
     </div>
   );
 };
+

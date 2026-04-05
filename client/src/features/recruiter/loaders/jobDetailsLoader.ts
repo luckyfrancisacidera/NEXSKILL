@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import type { ApplicantScoreItemDto, JobApplicantListItem, JobTrendPoint } from "@features/recruiter/types";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 
@@ -8,6 +8,7 @@ const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
 });
 
+// Aggregates applicant submissions into chart points for the recruiter job detail trend view.
 const aggregateTrend = (items: ApplicantScoreItemDto[]): JobTrendPoint[] => {
   const counts = new Map<string, { date: Date; applications: number }>();
 
@@ -39,6 +40,7 @@ const aggregateTrend = (items: ApplicantScoreItemDto[]): JobTrendPoint[] => {
     }));
 };
 
+// Maps applicant score rows into the lighter candidate list shown on the recruiter job detail page.
 const toApplicants = (items: ApplicantScoreItemDto[]): JobApplicantListItem[] =>
   items.map((item) => ({
     id: item.resume_submission_id,
@@ -46,6 +48,7 @@ const toApplicants = (items: ApplicantScoreItemDto[]): JobApplicantListItem[] =>
     stage: item.submission_status,
   }));
 
+// Use to preload the recruiter job detail page, including applicant summaries and application trend data.
 export const recruiterJobDetailLoader = async ({
   params,
 }: LoaderFunctionArgs) => {

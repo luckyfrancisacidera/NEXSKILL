@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs } from "react-router-dom";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type {
   JobseekerProfileDto,
   JobseekerProfileUpdatePayload,
@@ -10,6 +10,7 @@ import {
 } from "@features/jobseeker/actions/action.utils";
 import { sanitizeRichText } from "@shared/utils/richText";
 
+// Handles profile form submission and sanitizes rich-text fields before sending them to the API.
 export const updateProfileAction = async ({
   request,
 }: ActionFunctionArgs): Promise<{

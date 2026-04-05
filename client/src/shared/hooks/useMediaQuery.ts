@@ -8,6 +8,7 @@ const getInitialMatch = (query: string) => {
   return window.matchMedia(query).matches;
 };
 
+// Use to mirror a CSS media query inside React state.
 export const useMediaQuery = (query: string) => {
   const [matches, setMatches] = useState(() => getInitialMatch(query));
 

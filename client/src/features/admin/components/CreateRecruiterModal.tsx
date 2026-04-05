@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Button } from '@shared/components/Button';
-import { ModalOverlay } from '@shared/components/ModalOverlay';
-import { SideDrawer } from '@shared/components/SideDrawer';
+import { Button } from '@shared/components/actions/Button';
+import { ModalOverlay } from '@shared/components/overlay/ModalOverlay';
+import { SideDrawer } from '@shared/components/overlay/SideDrawer';
 import type { CreateManagedRecruiterPayload } from '@features/admin/types/admin.type';
 import { AdminPasswordField } from '@features/admin/components/AdminPasswordField';
 import { useMediaQuery } from '@shared/hooks/useMediaQuery';
@@ -166,3 +166,4 @@ export const CreateRecruiterModal = ({
     </ModalOverlay>
   );
 };
+

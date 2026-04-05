@@ -1,3 +1,9 @@
+/* =========================================
+   AUTH GUARDS
+   Shared loader-side access checks for auth, setup, company context, and recruiter context.
+   Related: AuthProvider, SetupProvider, routes.guard
+========================================= */
+
 import { redirect } from "react-router-dom";
 import {
   http,
@@ -11,6 +17,7 @@ import {
   hasAnyAllowedRole,
 } from "@shared/utils/permissions";
 import type { Role } from "@shared/types";
+import { normalizeRoles } from "@shared/utils/role";
 import {
   CURRENT_COMPANY_STORAGE_KEY,
   CURRENT_RECRUITER_PROFILE_STORAGE_KEY,
@@ -35,35 +42,17 @@ type ProtectedLoaderGuardResult<T> =
   | { shouldLoad: true }
   | { shouldLoad: false; data: T };
 
-const normalizeRole = (role: string): Role | null => {
-  const normalized = role.trim().toLowerCase();
-
-  switch (normalized) {
-    case "admin":
-      return "admin";
-    case "superadmin":
-      return "superAdmin";
-    case "companyadmin":
-      return "companyAdmin";
-    case "recruiter":
-      return "recruiter";
-    case "jobseeker":
-      return "jobseeker";
-    default:
-      return null;
-  }
-};
-
-const normalizeRoles = (roles: string[]): Role[] =>
-  roles
-    .map(normalizeRole)
-    .filter((role): role is Role => role !== null);
+/* =========================================
+   CONTEXT RESOLUTION
+========================================= */
 
 const resolvePreferredId = (
   storedId: string | null,
   activeId: string | null | undefined,
   availableIds: string[],
 ) => {
+  // Prefer stable client state first so reloads preserve the user's chosen
+  // company/profile scope when that scope is still valid for the session.
   if (storedId && availableIds.includes(storedId)) {
     return storedId;
   }
@@ -81,6 +70,8 @@ export const guardProtectedLoader = async <T>({
   requireCompany = false,
   requireRecruiter = false,
 }: ProtectedLoaderGuardOptions<T>): Promise<ProtectedLoaderGuardResult<T>> => {
+  // Loaders cannot rely on mounted React providers, so this duplicates the
+  // minimum auth/setup bootstrap needed to keep route data access consistent.
   const meResponse = await http.get<AuthMeResponse>("/api/auth/me");
   const me = meResponse.data;
 
@@ -103,6 +94,10 @@ export const guardProtectedLoader = async <T>({
     setActiveRecruiterProfileHeader(null);
     return { shouldLoad: false, data: fallback() };
   }
+
+  /* =========================================
+     COMPANY CONTEXT
+  ========================================= */
 
   const companyIds = new Set<string>((me.company_ids ?? []).filter(Boolean));
   if (setup.activeCompanyId) {
@@ -128,6 +123,10 @@ export const guardProtectedLoader = async <T>({
   } else {
     setActiveCompanyHeader(null);
   }
+
+  /* =========================================
+     RECRUITER CONTEXT
+  ========================================= */
 
   const resolvedRecruiterProfileId = resolvePreferredId(
     readStorage<string | null>(CURRENT_RECRUITER_PROFILE_STORAGE_KEY, null),

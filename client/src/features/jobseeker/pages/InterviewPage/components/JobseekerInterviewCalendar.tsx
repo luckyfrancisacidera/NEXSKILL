@@ -17,8 +17,8 @@ import type {
   JobseekerInterview,
   JobseekerInterviewStatus,
 } from "@features/jobseeker/types";
-import { Card } from "@shared/components/Card";
-import { SideDrawer } from "@shared/components/SideDrawer";
+import { Card } from "@shared/components/data-display/Card";
+import { SideDrawer } from "@shared/components/overlay/SideDrawer";
 import { cn } from "@shared/utils/cn";
 import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewStatus";
 
@@ -554,3 +554,4 @@ export const JobseekerInterviewCalendar = ({
     </Card>
   );
 };
+

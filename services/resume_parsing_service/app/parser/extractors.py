@@ -1,3 +1,5 @@
+"""Text extraction and normalization helpers shared by the resume parser pipeline."""
+
 import io
 import re
 from typing import List, Optional, Union, Tuple
@@ -6,18 +8,16 @@ from docx import Document
 from itertools import groupby
 
 
-# -------------------------------------------------
-# Precompiled regex patterns (existing)
-# -------------------------------------------------
+# =========================================
+# TEXT NORMALIZATION PRIMITIVES
+# =========================================
 RE_HYPHEN = re.compile(r"(\w)-\s*\n\s*(\w)")
 RE_SPACES = re.compile(r"[ \t]+")
 RE_NEWLINES = re.compile(r"\n{3,}")
 
 
-# -------------------------------------------------
-# PDF word grouping helper (existing)
-# -------------------------------------------------
 def _words_to_lines(words: List[dict], y_tol: float = 3.0) -> List[str]:
+    """Reconstruct lines from PDF word fragments when direct text extraction is sparse."""
     if not words:
         return []
 
@@ -32,10 +32,8 @@ def _words_to_lines(words: List[dict], y_tol: float = 3.0) -> List[str]:
     return out
 
 
-# -------------------------------------------------
-# Text extraction (existing)
-# -------------------------------------------------
 def extract_text_from_upload(filename: str, content: bytes) -> str:
+    """Normalize file ingestion across PDF, DOCX, and plain-text uploads."""
     name = filename.lower()
     buf = io.StringIO()
 
@@ -44,6 +42,8 @@ def extract_text_from_upload(filename: str, content: bytes) -> str:
             for page in pdf.pages:
                 text = (page.extract_text() or "").strip()
                 if not text:
+                    # PDF extraction can fail on layout-heavy resumes, so we fall back
+                    # to grouped word lines to preserve enough structure for parsing.
                     words = page.extract_words(use_text_flow=True) or []
                     text = "\n".join(_words_to_lines(words)).strip()
                 if text:
@@ -63,10 +63,8 @@ def extract_text_from_upload(filename: str, content: bytes) -> str:
     return content.decode("utf-8", errors="ignore")
 
 
-# -------------------------------------------------
-# Text normalization (existing)
-# -------------------------------------------------
 def normalize_text(text: str) -> str:
+    """Collapse noisy whitespace and line-break artifacts before section parsing."""
     text = (text or "").replace("\x00", " ")
     text = RE_HYPHEN.sub(r"\1\2", text)
     text = RE_SPACES.sub(" ", text)
@@ -74,9 +72,9 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
-# =================================================
-# YEARS OF EXPERIENCE EXTRACTION (NEW)
-# =================================================
+# =========================================
+# YEARS OF EXPERIENCE HELPERS
+# =========================================
 
 WORD_NUMBERS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
@@ -109,6 +107,7 @@ RE_YEARS_EXPERIENCE = re.compile(
 def extract_years_of_experience(
     text: str
 ) -> Optional[Union[int, Tuple[int, int]]]:
+    """Extract explicit years-of-experience requirements from freeform text."""
     matches = []
 
     for m in RE_YEARS_EXPERIENCE.finditer(text):
@@ -123,17 +122,20 @@ def extract_years_of_experience(
     if not matches:
         return None
 
-    # Prefer highest experience (ATS behavior)
+    # Prefer the highest requirement because job descriptions often repeat
+    # experience in multiple forms and the strictest mention should win.
     def max_value(v):
         return v[1] if isinstance(v, tuple) else v
 
     return max(matches, key=max_value)
 
 
-# =================================================
-# ATS-FRIENDLY EXPERIENCE SCORING (NEW)
-# =================================================
+# =========================================
+# EXPERIENCE SCORING
+# =========================================
 
+# Keep scoring non-binary so the screening layer can still rank partial matches
+# when resumes omit an explicit summary but list enough dated experience to infer fit.
 def score_years_of_experience(
     extracted_exp: Optional[Union[int, Tuple[int, int]]],
     required_exp: int,
@@ -144,30 +146,17 @@ def score_years_of_experience(
     """
 
     if extracted_exp is None:
+        # Missing experience should lower confidence without zeroing the score,
+        # because many resumes omit a summary while still listing dated roles.
         return 20  # Missing data penalty (not zero)
 
-    # Use upper bound for ranges
+    # Use the upper bound so "3-5 years" behaves like the strongest stated value.
     years = extracted_exp[1] if isinstance(extracted_exp, tuple) else extracted_exp
 
     if years >= required_exp:
         bonus = min(years - required_exp, max_bonus_years)
         return min(100, 80 + int((bonus / max_bonus_years) * 20))
 
-    # Partial credit for underqualification
+    # Partial credit keeps near-matches rankable instead of collapsing them to zero.
     ratio = years / required_exp
     return max(30, int(ratio * 80))
-
-
-# =================================================
-# PIPELINE USAGE EXAMPLE
-# =================================================
-"""
-raw_text = extract_text_from_upload(filename, content)
-clean_text = normalize_text(raw_text)
-
-years_exp = extract_years_of_experience(clean_text)
-experience_score = score_years_of_experience(
-    extracted_exp=years_exp,
-    required_exp=5
-)
-"""

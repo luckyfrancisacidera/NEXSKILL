@@ -23,9 +23,11 @@ public sealed class InterviewService(
 {
     private const int DefaultInterviewDurationMinutes = 60;
 
+    // Handles schedule interview.
     public async Task<InterviewDto> ScheduleInterviewAsync(ScheduleInterviewRequest request, CancellationToken ct = default)
         => await ScheduleInterviewAsync(null, request, ct);
 
+    // Handles schedule interview.
     public async Task<InterviewDto> ScheduleInterviewAsync(Guid? companyId, ScheduleInterviewRequest request, CancellationToken ct = default)
     {
         var now = dateTimeProvider.UtcNow;
@@ -83,12 +85,14 @@ public sealed class InterviewService(
         return response;
     }
 
+    // Loads recruiter interview.
     public async Task<InterviewDto> GetRecruiterInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
         return await MapAsync(entity, ct);
     }
 
+    // Handles reschedule interview.
     public async Task<InterviewDto> RescheduleInterviewAsync(Guid interviewId, RescheduleInterviewRequest request, CancellationToken ct = default)
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
@@ -111,6 +115,7 @@ public sealed class InterviewService(
         return await MapAsync(updatedInterview, ct);
     }
 
+    // Handles reschedule interview.
     public async Task<InterviewDto> RescheduleInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, RescheduleInterviewRequest request, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
@@ -138,6 +143,7 @@ public sealed class InterviewService(
         return await MapAsync(updatedInterview, ct);
     }
 
+    // Handles accept interview.
     public async Task<InterviewDto> AcceptInterviewAsync(Guid interviewId, CancellationToken ct = default)
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
@@ -149,6 +155,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Handles accept interview.
     public async Task<InterviewDto> AcceptInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
@@ -170,6 +177,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Handles decline interview.
     public async Task<InterviewDto> DeclineInterviewAsync(Guid interviewId, CancellationToken ct = default)
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
@@ -181,6 +189,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Handles decline interview.
     public async Task<InterviewDto> DeclineInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
@@ -201,6 +210,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Requests reschedule.
     public async Task<InterviewDto> RequestRescheduleAsync(Guid interviewId, Guid jobSeekerId, RequestInterviewRescheduleRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Message))
@@ -237,6 +247,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Determines whether cel interview.
     public async Task<InterviewDto> CancelInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancelInterviewRequest request, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
@@ -257,6 +268,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Marks interview completed.
     public async Task<InterviewDto> MarkInterviewCompletedAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
@@ -267,6 +279,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Archives interview.
     public async Task<InterviewDto> ArchiveInterviewAsync(Guid? companyId, Guid recruiterId, Guid interviewId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForRecruiterAsync(interviewId, companyId, recruiterId, ct);
@@ -278,6 +291,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Archives interview.
     public async Task<InterviewDto> ArchiveInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
@@ -289,6 +303,7 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Restores interview.
     public async Task<InterviewDto> UnarchiveInterviewAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct = default)
     {
         var entity = await GetInterviewForJobSeekerAsync(interviewId, jobSeekerId, ct);
@@ -300,9 +315,11 @@ public sealed class InterviewService(
         return await MapAsync(entity, ct);
     }
 
+    // Loads by recruiter.
     public async Task<IReadOnlyList<InterviewDto>> GetByRecruiterAsync(Guid recruiterId, CancellationToken ct = default)
         => await GetByRecruiterAsync(null, recruiterId, ct);
 
+    // Loads by recruiter.
     public async Task<IReadOnlyList<InterviewDto>> GetByRecruiterAsync(Guid? companyId, Guid recruiterId, CancellationToken ct = default)
     {
         var items = companyId.HasValue && companyId.Value != Guid.Empty
@@ -316,18 +333,21 @@ public sealed class InterviewService(
         return await MapAsync(scopedItems, ct);
     }
 
+    // Loads by job seeker.
     public async Task<IReadOnlyList<InterviewDto>> GetByJobSeekerAsync(Guid jobSeekerId, CancellationToken ct = default)
     {
         var items = await interviewRepository.GetByJobSeekerAsync(jobSeekerId, ct);
         return await MapAsync(items, ct);
     }
 
+    // Loads archived by job seeker.
     public async Task<IReadOnlyList<InterviewDto>> GetArchivedByJobSeekerAsync(Guid jobSeekerId, CancellationToken ct = default)
     {
         var items = await interviewRepository.GetArchivedByJobSeekerAsync(jobSeekerId, ct);
         return await MapAsync(items, ct);
     }
 
+    // Loads archived by job seeker.
     public async Task<PagedResult<InterviewDto>> GetArchivedByJobSeekerAsync(Guid jobSeekerId, ArchivedInterviewsQuery query, CancellationToken ct = default)
     {
         var normalizedPageNumber = Math.Max(1, query.PageNumber);
@@ -385,6 +405,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Creates recruiter notification.
     private async Task CreateRecruiterNotificationAsync(
         InterviewEntity interview,
         NotificationType type,
@@ -410,6 +431,7 @@ public sealed class InterviewService(
             ct);
     }
 
+    // Loads interview for recruiter.
     private async Task<InterviewEntity> GetInterviewForRecruiterAsync(Guid interviewId, Guid? companyId, Guid recruiterId, CancellationToken ct)
     {
         InterviewEntity? entity;
@@ -429,6 +451,7 @@ public sealed class InterviewService(
         return entity ?? throw new KeyNotFoundException("Interview not found.");
     }
 
+    // Loads interview for job seeker.
     private async Task<InterviewEntity> GetInterviewForJobSeekerAsync(Guid interviewId, Guid jobSeekerId, CancellationToken ct)
     {
         var entity = await interviewRepository.GetByIdAsync(interviewId, ct)
@@ -442,6 +465,7 @@ public sealed class InterviewService(
         return entity;
     }
 
+    // Handles map.
     private async Task<IReadOnlyList<InterviewDto>> MapAsync(IReadOnlyCollection<InterviewEntity> entities, CancellationToken ct)
     {
         var recruiterLookup = await BuildRecruiterLookupAsync(entities.Select(entity => entity.RecruiterId).Distinct().ToArray(), ct);
@@ -480,9 +504,11 @@ public sealed class InterviewService(
         }).ToList();
     }
 
+    // Handles map.
     private async Task<InterviewDto> MapAsync(InterviewEntity entity, CancellationToken ct)
         => (await MapAsync(new[] { entity }, ct)).Single();
 
+    // Handles try run side effect.
     private async Task TryRunSideEffectAsync(
         List<string> warnings,
         string warningMessage,
@@ -499,6 +525,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Builds recruiter lookup.
     private async Task<Dictionary<Guid, RecruiterContext>> BuildRecruiterLookupAsync(IReadOnlyCollection<Guid> recruiterIds, CancellationToken ct)
     {
         var profiles = await recruiterRepository.GetProfilesByUserIdsAsync(recruiterIds, ct);
@@ -522,6 +549,7 @@ public sealed class InterviewService(
                 });
     }
 
+    // Resolves company ID.
     private async Task<Guid> ResolveCompanyIdAsync(Guid? claimedCompanyId, Guid recruiterId, Guid jobId, CancellationToken ct)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct);
@@ -546,6 +574,7 @@ public sealed class InterviewService(
         return job.CompanyId;
     }
 
+    // Ensures candidate is shortlisted.
     private async Task EnsureCandidateIsShortlistedAsync(Guid jobId, Guid jobSeekerId, CancellationToken ct)
     {
         // Interview scheduling is restricted to shortlisted candidates so recruiters cannot
@@ -557,6 +586,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Synchronizes submission to interview stage.
     private async Task SyncSubmissionToInterviewStageAsync(InterviewEntity interview, CancellationToken ct)
     {
         var submission = await recruiterRepository.GetSubmissionForInterviewAsync(
@@ -587,6 +617,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Builds invite email body.
     private static string BuildInviteEmailBody(InterviewEntity interview)
     {
         var candidateName = ResolveCandidateName(interview);
@@ -607,16 +638,19 @@ public sealed class InterviewService(
         });
     }
 
+    // Resolves candidate name.
     private static string ResolveCandidateName(InterviewEntity interview)
         => string.IsNullOrWhiteSpace(interview.JobSeeker.UserName)
             ? interview.JobSeeker.Email ?? "Candidate"
             : interview.JobSeeker.UserName;
 
+    // Resolves recruiter name.
     private static string ResolveRecruiterName(InterviewEntity interview)
         => string.IsNullOrWhiteSpace(interview.Recruiter.UserName)
             ? interview.Recruiter.Email ?? "Recruiter"
             : interview.Recruiter.UserName;
 
+    // Validates interview details.
     private static void ValidateInterviewDetails(InterviewType interviewType, string locationOrMeetingLink)
     {
         if (string.IsNullOrWhiteSpace(locationOrMeetingLink))
@@ -635,6 +669,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Validates scheduled date.
     private static void ValidateScheduledDate(DateTime scheduledDateTimeUtc, DateTime utcNow)
     {
         if (scheduledDateTimeUtc == default)
@@ -653,6 +688,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Handles apply reschedule.
     private void ApplyReschedule(InterviewEntity entity, RescheduleInterviewRequest request)
     {
         var interviewType = MapInterviewType(request.InterviewType);
@@ -666,6 +702,7 @@ public sealed class InterviewService(
         entity.Status = InterviewStatus.Rescheduled;
     }
 
+    // Ensures can reschedule.
     private static void EnsureCanReschedule(InterviewEntity entity)
     {
         // Declined and cancelled interviews are terminal scheduling states.
@@ -691,6 +728,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures can respond.
     private static void EnsureCanRespond(InterviewEntity entity)
     {
         if (entity.IsArchived)
@@ -709,6 +747,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures can cancel.
     private static void EnsureCanCancel(InterviewEntity entity)
     {
         if (entity.IsArchived)
@@ -727,6 +766,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures can archive.
     private static void EnsureCanArchive(InterviewEntity entity)
     {
         if (entity.IsArchived)
@@ -740,6 +780,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures can unarchive.
     private static void EnsureCanUnarchive(InterviewEntity entity)
     {
         if (!entity.IsArchived)
@@ -748,6 +789,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Saves interview changes.
     private async Task SaveInterviewChangesAsync(Guid interviewId, CancellationToken ct)
     {
         try
@@ -765,6 +807,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures can mark completed.
     private static void EnsureCanMarkCompleted(InterviewEntity entity)
     {
         if (entity.IsArchived)
@@ -793,6 +836,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Ensures no schedule conflicts.
     private async Task EnsureNoScheduleConflictsAsync(Guid recruiterId, Guid jobSeekerId, DateTime startsAtUtc, Guid? excludeInterviewId, CancellationToken ct)
     {
         var normalizedStart = startsAtUtc.ToUniversalTime();
@@ -809,6 +853,7 @@ public sealed class InterviewService(
         }
     }
 
+    // Creates job seeker notification.
     private async Task CreateJobSeekerNotificationAsync(
         InterviewEntity interview,
         NotificationType type,
@@ -834,19 +879,24 @@ public sealed class InterviewService(
             ct);
     }
 
+    // Builds schedule notification message.
     private static string BuildScheduleNotificationMessage(InterviewEntity interview)
         => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was scheduled for {interview.ScheduledDateTimeUtc:yyyy-MM-dd HH:mm} UTC.";
 
+    // Builds reschedule notification message.
     private static string BuildRescheduleNotificationMessage(InterviewEntity interview)
         => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was rescheduled to {interview.ScheduledDateTimeUtc:yyyy-MM-dd HH:mm} UTC.";
 
+    // Builds cancel notification message.
     private static string BuildCancelNotificationMessage(InterviewEntity interview)
         => $"{interview.Job.Title} at {ResolveCompanyName(interview)} was cancelled."
             + (string.IsNullOrWhiteSpace(interview.CancelReason) ? string.Empty : $" Reason: {interview.CancelReason.Trim()}");
 
+    // Resolves company name.
     private static string ResolveCompanyName(InterviewEntity interview)
         => string.IsNullOrWhiteSpace(interview.Job.CompanyNameSnapshot) ? "the company" : interview.Job.CompanyNameSnapshot;
 
+    // Maps interview type.
     private static InterviewType MapInterviewType(InterviewTypeDto interviewType)
         => interviewType switch
         {
@@ -855,6 +905,7 @@ public sealed class InterviewService(
             _ => throw new ArgumentOutOfRangeException(nameof(interviewType), interviewType, "Unsupported interview type."),
         };
 
+    // Maps interview type.
     private static InterviewTypeDto MapInterviewType(InterviewType interviewType)
         => interviewType switch
         {

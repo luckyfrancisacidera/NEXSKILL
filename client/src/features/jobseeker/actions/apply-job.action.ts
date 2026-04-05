@@ -1,5 +1,5 @@
 import { redirect, type ActionFunctionArgs } from "react-router-dom";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type {
   ApplyJobActionData,
   JobseekerApplicationInput,
@@ -31,6 +31,7 @@ const getApplicationPayload = (
   };
 };
 
+// Handles form submission for applying to a public job posting.
 export const applyJobAction = async ({
   request,
   params,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApiError } from "@shared/api/http";
 
@@ -12,6 +12,7 @@ type UseApplicationsArgs = {
   archivedOnly?: boolean;
 };
 
+// Use to keep the applications table in sync with route filters and row-level mutations.
 export const useApplications = ({
   initialData,
   pageNumber,
@@ -60,6 +61,7 @@ export const useApplications = ({
     };
   }, [archivedOnly, pageNumber, pageSize, search, status]);
 
+  // Use to reload the current page after a mutation and fall back when the last page becomes empty.
   const refreshApplications = async () => {
     let refreshed = await jobseekerService.getMyApplications({
       pageNumber,
@@ -159,6 +161,7 @@ export const useApplications = ({
     }
   };
 
+  // Use for manual refresh actions initiated from the applications screen.
   const refresh = async () => {
     setIsLoading(true);
     setError(null);

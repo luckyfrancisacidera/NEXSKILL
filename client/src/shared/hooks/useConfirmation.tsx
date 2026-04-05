@@ -9,13 +9,14 @@ import {
 } from "react";
 import type { PropsWithChildren } from "react";
 
-import { ConfirmationModal } from "@shared/components/ConfirmationModal";
+import { ConfirmationModal } from "@shared/components/overlay/ConfirmationModal";
 
 type ConfirmationAccent = "red" | "green" | "violet";
 
 export interface ConfirmationOptions {
   title: string;
   message: string;
+  supportingNote?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   accent?: ConfirmationAccent;
@@ -35,11 +36,13 @@ const initialState: ConfirmationState = {
   open: false,
   title: "",
   message: "",
+  supportingNote: undefined,
   confirmLabel: "Confirm",
   cancelLabel: "Cancel",
   accent: "violet",
 };
 
+// Manages confirmation modal state globally so features can await a simple boolean result.
 export const ConfirmationProvider = ({ children }: PropsWithChildren) => {
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
   const [confirmation, setConfirmation] = useState<ConfirmationState>(initialState);
@@ -60,6 +63,7 @@ export const ConfirmationProvider = ({ children }: PropsWithChildren) => {
       open: true,
       title: options.title,
       message: options.message,
+      supportingNote: options.supportingNote,
       confirmLabel: options.confirmLabel ?? "Confirm",
       cancelLabel: options.cancelLabel ?? "Cancel",
       accent: options.accent ?? "violet",
@@ -79,6 +83,7 @@ export const ConfirmationProvider = ({ children }: PropsWithChildren) => {
         open={confirmation.open}
         title={confirmation.title}
         message={confirmation.message}
+        supportingNote={confirmation.supportingNote}
         confirmLabel={confirmation.confirmLabel}
         cancelLabel={confirmation.cancelLabel}
         accent={confirmation.accent}
@@ -90,6 +95,7 @@ export const ConfirmationProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
+// Use to trigger the shared confirmation modal from feature code.
 export const useConfirmation = () => {
   const context = useContext(ConfirmationContext);
   if (!context) {
@@ -98,3 +104,4 @@ export const useConfirmation = () => {
 
   return context.confirm;
 };
+

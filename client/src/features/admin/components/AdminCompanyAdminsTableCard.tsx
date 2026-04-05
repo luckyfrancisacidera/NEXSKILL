@@ -1,9 +1,9 @@
-import { Badge } from '@shared/components/Badge';
-import { Button } from '@shared/components/Button';
-import { DataTable } from '@shared/components/ui/data-table/DataTable';
-import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
-import { TablePagination } from '@shared/components/ui/data-table/TablePagination';
-import { TablePageSizeControl } from '@shared/components/ui/data-table/TablePageSizeControl';
+import { Badge } from '@shared/components/data-display/Badge';
+import { Button } from '@shared/components/actions/Button';
+import { DataTable } from '@shared/components/data-display/data-table/DataTable';
+import { IdentityCell } from '@shared/components/data-display/data-table/IdentityCell';
+import { TablePagination } from '@shared/components/data-display/data-table/TablePagination';
+import { TablePageSizeControl } from '@shared/components/data-display/data-table/TablePageSizeControl';
 import { AdminStatusBadge } from '@features/admin/components/AdminStatusBadge';
 import type { AdminCompanyAdminOverviewDto, Paged } from '@features/admin/types/admin.type';
 
@@ -101,3 +101,4 @@ export const AdminCompanyAdminsTableCard = ({
     />
   </section>
 );
+

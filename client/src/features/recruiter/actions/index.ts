@@ -13,4 +13,3 @@ export * from "@features/recruiter/actions/updateCandidateAction";
 export * from "@features/recruiter/actions/candidatesAction";
 export * from "@features/recruiter/actions/upsertInterviewAction";
 export * from "@features/recruiter/actions/cancelInterviewAction";
-export * from "@features/recruiter/actions/updateRecruiterSettingsAction";

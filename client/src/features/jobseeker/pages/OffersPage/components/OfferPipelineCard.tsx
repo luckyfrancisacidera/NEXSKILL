@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 
 import type { JobseekerApplicationStage, JobseekerOfferDto } from "@features/jobseeker/types";
 import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
-import { ActionButton, actionButtonClassName } from "@shared/components/ActionButton";
-import { Badge } from "@shared/components/Badge";
-import { Button } from "@shared/components/Button";
-import { Card } from "@shared/components/Card";
-import { StatusBadge } from "@shared/components/StatusBadge";
+import { ActionButton } from "@shared/components/actions/ActionButton";
+import { Badge } from "@shared/components/data-display/Badge";
+import { Button } from "@shared/components/actions/Button";
+import { Card } from "@shared/components/data-display/Card";
+import { StatusBadge } from "@shared/components/data-display/StatusBadge";
+import { cn } from "@shared/utils/cn";
 
 import { OfferStageTimeline } from "./OfferStageTimeline";
 
@@ -126,6 +127,8 @@ export const OfferPipelineCard = ({
   isDeletingHistory?: boolean;
 }) => {
   const actions = getJobseekerListActions(item.currentStage, "offers");
+  const jobDetailsButtonClassName =
+    "inline-flex min-h-[2.125rem] items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 sm:min-h-9 sm:px-3.5 sm:py-2 sm:text-sm";
 
   return (
     <Card className="rounded-[20px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
@@ -166,81 +169,81 @@ export const OfferPipelineCard = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-          <CompactDetailChip label="Stage" value={item.currentStage} />
-          <CompactDetailChip label="Salary" value={item.offer?.salary_text?.trim() || "Not specified"} />
-          {item.offer?.work_setup ? <CompactDetailChip label="Setup" value={item.offer.work_setup} /> : null}
-          <CompactDetailChip label="Start" value={formatDate(item.offer?.start_date) || "Not specified"} />
-          {item.offer?.end_date ? (
-            <CompactDetailChip label="End" value={formatDate(item.offer.end_date) || "Not specified"} />
-          ) : null}
-          <CompactDetailChip label="Type" value={item.offer?.employment_type?.trim() || "Not specified"} />
-          {item.offer?.expiration_date ? (
-            <CompactDetailChip
-              label="Offer Expires"
-              value={formatDate(item.offer.expiration_date) || "Not specified"}
-            />
-          ) : null}
-        </div>
-
-        <div className="rounded-[18px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/70 sm:px-3 sm:py-3">
+        <div className="w-full rounded-[18px] border border-zinc-200 bg-zinc-50 px-2.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/70 sm:px-3 sm:py-3">
           <OfferStageTimeline activeStage={item.currentStage} stageDates={buildTimelineDates(item)} />
         </div>
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        {item.legacyHint ? (
+          <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 sm:text-xs">
+            <p className="flex items-center gap-1.5 font-semibold">
+              <Sparkles className="h-3.5 w-3.5" /> Legacy fallback in use
+            </p>
+            <p className="mt-1 leading-5">{item.legacyHint}</p>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:items-end">
           <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{resolveStatusMessage(item)}</p>
             <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-300 sm:text-sm">{resolveNextAction(item)}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            {item.offer ? (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={isActing}
-                className="h-9 w-full px-3 text-xs sm:w-auto sm:text-sm"
-                onClick={() => onViewOffer(item)}
-              >
-                View Offer
-              </Button>
-            ) : null}
-            {item.jobId ? (
-              <Link
-                to={`/jobs/${item.jobId}`}
-                title="View job"
-                aria-label="View job"
-                className={actionButtonClassName({ iconOnly: true })}
-              >
-                <Eye className="h-4 w-4" />
-                <span className="sr-only">View job</span>
-              </Link>
-            ) : null}
-            {actions.includes("delete_history") ? (
-              <ActionButton
-                icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                label="Delete history"
-                destructive
-                iconOnly
-                disabled={isDeletingHistory || isActing}
-                onClick={() => onDeleteHistory(item.id)}
-              />
-            ) : null}
-            {item.legacyHint ? (
-              <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 sm:text-xs">
-                <p className="flex items-center gap-1.5 font-semibold">
-                  <Sparkles className="h-3.5 w-3.5" /> Legacy fallback in use
-                </p>
-                <p className="mt-1 leading-5">{item.legacyHint}</p>
-              </div>
-            ) : null}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+            <div className="flex w-full gap-2 sm:w-auto sm:flex-nowrap">
+              {item.offer ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isActing}
+                  className="h-9 flex-1 px-3 text-sm sm:flex-none"
+                  onClick={() => onViewOffer(item)}
+                >
+                  View Offer
+                </Button>
+              ) : null}
+              {item.jobId ? (
+                <Link
+                  to={`/jobs/${item.jobId}`}
+                  title="View job"
+                  aria-label="View job"
+                  className={cn(jobDetailsButtonClassName, "h-9 flex-1 px-3 sm:flex-none")}
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>View Job Details</span>
+                </Link>
+              ) : null}
+            </div>
             {item.recruiterEmail ? (
               <a
                 href={`mailto:${item.recruiterEmail}`}
-                className="inline-flex w-full items-center gap-1.5 text-[11px] text-zinc-500 transition hover:text-zinc-800 sm:w-auto sm:text-xs dark:text-zinc-400 dark:hover:text-zinc-200"
+                className={cn(jobDetailsButtonClassName, "h-9 w-full px-3 sm:w-auto")}
               >
-                <Mail className="h-3.5 w-3.5" />
-                Contact recruiter
+                <Mail className="h-4 w-4" />
+                <span>Contact Recruiter</span>
               </a>
+            ) : null}
+            {actions.includes("delete_history") ? (
+              <>
+                <ActionButton
+                  icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  label="Delete history"
+                  destructive
+                  className="hidden sm:inline-flex"
+                  iconOnly
+                  disabled={isDeletingHistory || isActing}
+                  onClick={() => onDeleteHistory(item.id)}
+                />
+                <ActionButton
+                  icon={isDeletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  label="Delete history"
+                  destructive
+                  fullWidth
+                  className="sm:hidden"
+                  disabled={isDeletingHistory || isActing}
+                  onClick={() => onDeleteHistory(item.id)}
+                >
+                  Delete history
+                </ActionButton>
+              </>
             ) : null}
           </div>
         </div>

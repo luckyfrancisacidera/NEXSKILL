@@ -1,4 +1,4 @@
-import { Card } from '@shared/components/Card';
+import { Card } from '@shared/components/data-display/Card';
 
 interface AdminPlaceholderPageProps {
   title: string;
@@ -10,3 +10,4 @@ export const AdminPlaceholderPage = ({ title }: AdminPlaceholderPageProps) => (
     <p className="mt-2 text-zinc-500">Admin tools coming soon.</p>
   </Card>
 );
+

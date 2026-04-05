@@ -11,8 +11,8 @@ import { getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { Checkbox } from "@shared/components/Checkbox";
+import { Button } from "@shared/components/actions/Button";
+import { Checkbox } from "@shared/components/form/Checkbox";
 import { runViewTransition } from "@shared/utils/viewTransition";
 
 const LoginPage = () => {
@@ -212,3 +212,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

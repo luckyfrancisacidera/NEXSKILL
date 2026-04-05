@@ -7,8 +7,8 @@ import { useToast } from "@app/providers/ToastProvider";
 import { ResetPasswordPinModal } from "@features/auth/components/ResetPasswordPinModal";
 import { authService } from "@features/auth/services/auth.service";
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { Card } from "@shared/components/Card";
+import { Button } from "@shared/components/actions/Button";
+import { Card } from "@shared/components/data-display/Card";
 
 export const SettingsPage = () => {
   const { roles, user } = useAuth();
@@ -317,3 +317,4 @@ export const SettingsPage = () => {
     </div>
   );
 };
+

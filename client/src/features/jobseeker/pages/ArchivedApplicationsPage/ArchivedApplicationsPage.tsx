@@ -2,17 +2,22 @@
 import { ArchiveRestore, Loader2, Search, Trash2 } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
 
-import { Card } from "@shared/components/Card";
-import { ActionButton } from "@shared/components/ActionButton";
-import { JobTitleCell } from "@shared/components/JobTitleCell";
-import { DataTable } from "@shared/components/ui/data-table/DataTable";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
+import { Card } from "@shared/components/data-display/Card";
+import { ActionButton } from "@shared/components/actions/ActionButton";
+import { JobTitleCell } from "@shared/components/data-display/JobTitleCell";
+import { DataTable } from "@shared/components/data-display/data-table/DataTable";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import type { DataTableColumn } from "@shared/components/data-display/data-table/table-types";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
 import { useEffect, useState } from "react";
+import { useConfirmation } from "@shared/hooks/useConfirmation";
+import {
+  getApplicationActionConfirmation,
+  hasExistingActiveOffer,
+} from "@features/jobseeker/utils/applicationActionConfirmation";
 
 export const ArchivedApplicationsPage = () => {
   const initialData = useLoaderData() as ApplicationsLoaderData;
@@ -20,6 +25,7 @@ export const ArchivedApplicationsPage = () => {
   const [status, setStatus] = useState("");
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
+  const confirm = useConfirmation();
   const {
     data,
     error,
@@ -40,6 +46,22 @@ export const ArchivedApplicationsPage = () => {
   useEffect(() => {
     setPageNumber(data.pageNumber);
   }, [data.pageNumber]);
+
+  const handleDeleteHistory = async (applicationId: string) => {
+    const application = data.items.find((item) => item.id === applicationId);
+    if (!application) {
+      return;
+    }
+
+    const isConfirmed = await confirm(
+      getApplicationActionConfirmation("delete", hasExistingActiveOffer(application)),
+    );
+    if (!isConfirmed) {
+      return;
+    }
+
+    await deleteHistory(applicationId);
+  };
 
   const columns: Array<DataTableColumn<ApplicationsLoaderData["items"][number]>> = [
     {
@@ -100,7 +122,7 @@ export const ArchivedApplicationsPage = () => {
               iconOnly
               disabled={isDeleting || isRestoring}
               onClick={() => {
-                void deleteHistory(itemId);
+                void handleDeleteHistory(itemId);
               }}
             />
           </div>
@@ -233,3 +255,4 @@ export const ArchivedApplicationsPage = () => {
     </Card>
   );
 };
+

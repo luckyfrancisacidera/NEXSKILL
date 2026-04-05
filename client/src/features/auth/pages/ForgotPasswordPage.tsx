@@ -3,8 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MailCheck, ShieldCheck } from "lucide-react";
 
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { Card } from "@shared/components/Card";
+import { Button } from "@shared/components/actions/Button";
+import { Card } from "@shared/components/data-display/Card";
 import { authService } from "@features/auth/services/auth.service";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -203,3 +203,4 @@ export const ForgotPasswordPage = () => {
     </div>
   );
 };
+

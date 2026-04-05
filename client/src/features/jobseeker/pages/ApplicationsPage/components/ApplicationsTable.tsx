@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import type { JobseekerApplicationDto } from "@features/jobseeker/types";
 import { ApplicationStatusBadge } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationStatusBadge";
 import { getJobseekerListActions } from "@features/jobseeker/utils/applicationActionRules";
-import { ActionButton, actionButtonClassName } from "@shared/components/ActionButton";
-import { JobTitleCell } from "@shared/components/JobTitleCell";
-import { DataTable } from "@shared/components/ui/data-table/DataTable";
-import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
+import { ActionButton, actionButtonClassName } from "@shared/components/actions/ActionButton";
+import { JobTitleCell } from "@shared/components/data-display/JobTitleCell";
+import { DataTable } from "@shared/components/data-display/data-table/DataTable";
+import type { DataTableColumn } from "@shared/components/data-display/data-table/table-types";
 
 type ApplicationsTableProps = {
   items: JobseekerApplicationDto[];
@@ -44,22 +44,23 @@ export const ApplicationsTable = ({
         <JobTitleCell
           title={String(item.job_title)}
           subtitle={String(item.company_name ?? item.company)}
+          className="min-w-0 max-w-full"
         />
       ),
       accessor: (item) => item.job_title,
       sortable: true,
       sortType: "string",
-      widthClassName: "min-w-[240px]",
+      cellClassName: "min-w-0",
     },
     {
       id: "applied",
       header: "Applied",
       cell: (item) => (
-        <div className="space-y-1">
+        <div className="min-w-0 max-w-full space-y-1 overflow-hidden">
           <p className="text-[10px] sm:text-sm font-medium text-zinc-800 dark:text-zinc-200">
             {formatAppliedDate(String(item.created_at_utc))}
           </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             Submitted application
           </p>
         </div>
@@ -80,7 +81,6 @@ export const ApplicationsTable = ({
       id: "actions",
       header: "Actions",
       align: "right",
-      widthClassName: "min-w-[248px]",
       cell: (item) => {
         const itemId = String(item.id);
         const isWithdrawing = withdrawingId === itemId;
@@ -89,7 +89,7 @@ export const ApplicationsTable = ({
         const actions = getJobseekerListActions(item.current_stage ?? item.status, "applications");
 
         return (
-          <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
+          <div className="flex min-w-0 max-w-full flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
             {actions.includes("view_job") ? (
               <Link
                 to={`/jobs/${String(item.job_id)}`}
@@ -130,8 +130,8 @@ export const ApplicationsTable = ({
           </div>
         );
       },
-      headerClassName: "w-[248px] whitespace-nowrap",
-      cellClassName: "w-[248px] whitespace-nowrap",
+      headerClassName: "whitespace-nowrap",
+      cellClassName: "min-w-0 whitespace-nowrap",
     },
   ];
 
@@ -142,7 +142,7 @@ export const ApplicationsTable = ({
       getRowKey={(item) => String(item.id)}
       loading={loading}
       loadingRowCount={6}
-      surfaceClassName="border-0"
     />
   );
 };
+

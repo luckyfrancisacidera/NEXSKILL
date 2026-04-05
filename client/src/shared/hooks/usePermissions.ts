@@ -5,6 +5,7 @@ import { useCurrentCompany } from "@app/providers/CurrentCompanyProvider";
 import { useCurrentRecruiter } from "@app/providers/CurrentRecruiterProvider";
 import { resolvePermissions } from "@shared/utils/permissions";
 
+// Use to derive permission flags from auth roles plus the active company and recruiter context.
 export const usePermissions = () => {
   const { roles } = useAuth();
   const { currentCompany } = useCurrentCompany();

@@ -1,3 +1,9 @@
+/* =========================================
+   ROUTE GUARDS
+   React-side route guards for authenticated, role-based, and public-only screens.
+   Related: AuthProvider, SetupProvider, protectedLoader
+========================================= */
+
 import type { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@app/providers/AuthProvider";
@@ -13,6 +19,10 @@ interface RequireRoleProps extends PropsWithChildren {
   allowedRoles: Role[];
 }
 
+/* =========================================
+   AUTHENTICATED ROUTES
+========================================= */
+
 export const RequireAuth = ({ children }: PropsWithChildren) => {
   const { isAuthenticated, isHydrating, roles } = useAuth();
   const { status, isLoading } = useSetup();
@@ -25,6 +35,8 @@ export const RequireAuth = ({ children }: PropsWithChildren) => {
   }
 
   if (status.requiresSetup) {
+    // Setup completion takes precedence over the originally requested route so
+    // the user always lands in the blocking setup workflow first.
     const redirectTo = getDefaultRouteByRole(roles);
     if (location.pathname !== redirectTo) {
       return <Navigate to={redirectTo} replace />;
@@ -45,6 +57,8 @@ export const RequireRole = ({ allowedRoles, children }: RequireRoleProps) => {
   }
 
   if (isAuthenticated && status.requiresSetup) {
+    // Preserve setup redirects here as well so role-protected pages do not render
+    // partial content before the setup requirement is satisfied.
     const redirectTo = getDefaultRouteByRole(roles);
     if (location.pathname !== redirectTo) {
       return <Navigate to={redirectTo} replace />;
@@ -63,6 +77,10 @@ export const RequireRole = ({ allowedRoles, children }: RequireRoleProps) => {
 // eslint-disable-next-line react-refresh/only-export-components
 export const getDefaultRouteByRole = (roles: Role[]) => getDefaultRouteForRoles(roles);
 
+/* =========================================
+   PUBLIC-ONLY ROUTES
+========================================= */
+
 export const PublicOnly = ({ children }: PropsWithChildren) => {
   const { isAuthenticated, roles, isHydrating } = useAuth();
   const { isLoading } = useSetup();
@@ -71,6 +89,8 @@ export const PublicOnly = ({ children }: PropsWithChildren) => {
   if (isHydrating || (isAuthenticated && isLoading)) return null;
 
   if (isAuthenticated) {
+    // Public auth pages should immediately hand control back to the most
+    // specific signed-in workspace instead of leaving logged-in users on login/register.
     const redirectTo = isSuperAdmin
       ? "/admin/super"
       : isCompanyAdmin

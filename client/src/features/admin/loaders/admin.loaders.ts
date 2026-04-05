@@ -41,6 +41,7 @@ const createEmptyCompanyAdminDashboard = (): CompanyAdminDashboardDto => ({
   },
 });
 
+// Use to preload super-admin dashboard cards and all three paginated management lists.
 export const superAdminDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminDashboardDto> => {
   const url = new URL(request.url);
   return adminService.getSuperAdminDashboard({
@@ -51,6 +52,7 @@ export const superAdminDashboardLoader = async ({ request }: LoaderFunctionArgs)
   });
 };
 
+// Use to preload the company-admin management screen when only that table needs fresh data.
 export const superAdminCompanyAdminsLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminCompanyAdminsPageDto> => {
   const url = new URL(request.url);
   const data = await adminService.getSuperAdminDashboard({
@@ -66,6 +68,7 @@ export const superAdminCompanyAdminsLoader = async ({ request }: LoaderFunctionA
   };
 };
 
+// Use to preload the recruiter management table inside the super-admin area.
 export const superAdminRecruitersLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminRecruitersPageDto> => {
   const url = new URL(request.url);
   const data = await adminService.getSuperAdminDashboard({
@@ -81,6 +84,7 @@ export const superAdminRecruitersLoader = async ({ request }: LoaderFunctionArgs
   };
 };
 
+// Use to preload the standalone user directory for super-admin routes.
 export const superAdminUsersLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminUsersPageDto> => {
   const url = new URL(request.url);
   return adminService.getSuperAdminUsers({
@@ -89,9 +93,10 @@ export const superAdminUsersLoader = async ({ request }: LoaderFunctionArgs): Pr
   });
 };
 
+// Use to guard and preload the company-admin dashboard before the page renders.
 export const companyAdminDashboardLoader = async ({ request }: LoaderFunctionArgs): Promise<CompanyAdminDashboardDto> => {
   const guard = await guardProtectedLoader({
-    allowedRoles: ["companyAdmin"],
+    allowedRoles: ["companyadmin"],
     fallback: createEmptyCompanyAdminDashboard,
     requireCompany: true,
   });
@@ -107,9 +112,10 @@ export const companyAdminDashboardLoader = async ({ request }: LoaderFunctionArg
   });
 };
 
+// Use to preload the company employee table and echo back the active search filter.
 export const companyAdminEmployeesLoader = async ({ request }: LoaderFunctionArgs): Promise<CompanyAdminEmployeesDto & { filters: { search: string } }> => {
   const guard = await guardProtectedLoader({
-    allowedRoles: ["companyAdmin"],
+    allowedRoles: ["companyadmin"],
     fallback: () => ({
       items: [],
       pageNumber: 1,
@@ -141,9 +147,10 @@ export const companyAdminEmployeesLoader = async ({ request }: LoaderFunctionArg
   };
 };
 
+// Use to preload a specific candidate record when company admins open the detail view.
 export const companyAdminCandidateDetailLoader = async ({ params }: LoaderFunctionArgs): Promise<CompanyAdminCandidateDetailLoaderData> => {
   const guard = await guardProtectedLoader({
-    allowedRoles: ["companyAdmin"],
+    allowedRoles: ["companyadmin"],
     fallback: () => ({ candidate: null as never }),
     requireCompany: true,
   });

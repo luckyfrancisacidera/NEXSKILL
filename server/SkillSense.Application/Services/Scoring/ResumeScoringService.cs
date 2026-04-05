@@ -49,6 +49,7 @@ public sealed class ResumeScoringService(
         return result.Score;
     }
 
+    // Saves score.
     private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
         => await resumeScoreRepository.AddAsync(ResumeScoreEntityFactory.Create(submission, jobDescriptionText, score), saveChanges: true, ct);
 }

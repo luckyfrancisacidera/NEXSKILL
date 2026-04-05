@@ -2,13 +2,13 @@ import { Copy, Eye, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { JobListItem } from '@features/recruiter/types';
-import { ActionButton, actionButtonClassName } from '@shared/components/ActionButton';
-import { DepartmentCell } from '@shared/components/DepartmentCell';
-import { EmploymentTypeCell } from '@shared/components/EmploymentTypeCell';
-import { JobTitleCell } from '@shared/components/JobTitleCell';
-import { DataTable } from '@shared/components/ui/data-table/DataTable';
-import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
-import { StatusBadge } from '@shared/components/StatusBadge';
+import { ActionButton, actionButtonClassName } from '@shared/components/actions/ActionButton';
+import { DepartmentCell } from '@shared/components/data-display/DepartmentCell';
+import { EmploymentTypeCell } from '@shared/components/data-display/EmploymentTypeCell';
+import { JobTitleCell } from '@shared/components/data-display/JobTitleCell';
+import { DataTable } from '@shared/components/data-display/data-table/DataTable';
+import type { DataTableColumn } from '@shared/components/data-display/data-table/table-types';
+import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 import { getJobStatusAccent } from '@shared/utils/jobStatusAccent';
 import { formatJobLabel } from '@shared/utils/jobLabels';
 
@@ -32,31 +32,34 @@ export const JobPostsTable = ({
   onDuplicate,
   loading = false,
 }: JobPostsTableProps) => {
+  const compactCellClassName = 'min-w-0 max-w-full overflow-hidden whitespace-nowrap';
   const columns: Array<DataTableColumn<JobListItem>> = [
     {
       id: 'title',
       header: 'JOB TITLE',
-      cell: (job) => <JobTitleCell title={job.title} subtitle={job.department ?? null} />,
+      cell: (job) => <JobTitleCell title={job.title} subtitle={job.department ?? null} className="min-w-0 max-w-full" />,
       accessor: (job) => job.title,
       sortable: true,
       sortType: 'string',
-      widthClassName: 'min-w-[240px]',
+      cellClassName: 'min-w-0',
     },
     {
       id: 'department',
       header: 'DEPARTMENT',
-      cell: (job) => <DepartmentCell department={job.department} />,
+      cell: (job) => <DepartmentCell department={job.department} className="min-w-0 max-w-full" />,
       accessor: (job) => job.department ?? '',
       sortable: true,
       sortType: 'string',
+      cellClassName: compactCellClassName,
     },
     {
       id: 'location',
       header: 'LOCATION',
-      cell: (job) => <span className="text-[12px] leading-5">{job.location}</span>,
+      cell: (job) => <span className="block min-w-0 max-w-full truncate text-[12px] leading-5">{job.location}</span>,
       accessor: (job) => job.location,
       sortable: true,
       sortType: 'string',
+      cellClassName: compactCellClassName,
     },
     {
       id: 'type',
@@ -64,11 +67,13 @@ export const JobPostsTable = ({
       cell: (job) => (
         <EmploymentTypeCell
           type={formatJobLabel(job.employment_type, 'Employment type not specified')}
+          className="min-w-0 max-w-full"
         />
       ),
       accessor: (job) => job.employment_type,
       sortable: true,
       sortType: 'string',
+      cellClassName: compactCellClassName,
     },
     {
       id: 'status',
@@ -86,13 +91,14 @@ export const JobPostsTable = ({
       accessor: (job) => job.status,
       sortable: true,
       sortType: 'string',
+      cellClassName: 'min-w-0 max-w-full whitespace-nowrap',
     },
     {
       id: 'actions',
       header: 'ACTIONS',
       align: 'right',
       cell: (job) => (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex min-w-0 max-w-full items-center justify-end gap-1.5 whitespace-nowrap sm:gap-2">
           <Link className={actionButtonClassName({ iconOnly: true })} to={`/recruiter/job-posts/${job.id}`} aria-label={`View ${job.title}`} title={`View ${job.title}`}>
             <Eye size={16} />
             <span className="sr-only">{`View ${job.title}`}</span>
@@ -119,8 +125,8 @@ export const JobPostsTable = ({
           />
         </div>
       ),
-      headerClassName: 'w-[236px]',
-      cellClassName: 'w-[236px]',
+      headerClassName: 'whitespace-nowrap',
+      cellClassName: 'min-w-0 whitespace-nowrap',
     },
   ];
 
@@ -134,3 +140,4 @@ export const JobPostsTable = ({
     />
   );
 };
+
