@@ -14,6 +14,7 @@ type UseArchivedInterviewsArgs = JobseekerArchivedInterviewsQueryParams & {
   initialData: JobseekerArchivedInterviewsLoaderData;
 };
 
+// Use to manage the archived interviews screen after route preload and archive-state updates.
 export const useArchivedInterviews = ({
   initialData,
   pageNumber,
@@ -63,6 +64,7 @@ export const useArchivedInterviews = ({
     };
   }, [pageNumber, pageSize, search, status]);
 
+  // Use to reload the archived interview page and step back when the current page becomes empty.
   const refresh = useCallback(async (preferredPageNumber = pageNumber) => {
     let refreshed = await jobseekerInterviewService.getArchivedJobseekerInterviewsPage({
       pageNumber: preferredPageNumber,
@@ -85,6 +87,7 @@ export const useArchivedInterviews = ({
   }, [pageNumber, pageSize, search, status]);
 
   useEffect(() => {
+    // Use to keep the archived list updated when another part of the feature archives or restores an interview.
     const unsubscribe = subscribeJobseekerInterviewMutations(() => {
       void refresh();
     });
@@ -92,6 +95,7 @@ export const useArchivedInterviews = ({
     return unsubscribe;
   }, [refresh]);
 
+  // Handles restoring an archived interview and broadcasting the change to other screens.
   const unarchive = async (interviewId: string) => {
     setUnarchivingId(interviewId);
     setError(null);

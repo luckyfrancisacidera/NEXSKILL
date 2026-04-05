@@ -5,15 +5,16 @@ import { Search, Sparkles } from "lucide-react";
 import { useToast } from "@app/providers/ToastProvider";
 import { useApplications } from "@features/jobseeker/hooks";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type {
   ApplicationsLoaderData,
   JobseekerApplicationDto,
   JobseekerInterview,
 } from "@features/jobseeker/types";
-import { Card } from "@shared/components/Card";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { Card } from "@shared/components/data-display/Card";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { AppSelect, SearchInput } from "@shared/components/form";
 
 import {
   OfferPipelineCard,
@@ -213,71 +214,59 @@ export const OffersPage = () => {
   };
 
   return (
-      <div className="space-y-4">
-        <div className="rounded-2xl bg-[radial-gradient(circle_at_top_right,rgba(82,82,91,0.18),transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-4 py-5 text-white sm:px-5 md:px-6 md:py-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-300">
-                Application tracking
-              </p>
-              <h1 className="mt-2 text-lg font-semibold sm:text-xl md:text-2xl">
-                Follow every submission from applied to final outcome.
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-zinc-200">
-                This view now uses your application records directly, so early and late stages stay visible in one compact timeline.
-              </p>
-            </div>
+    <div className="space-y-4">
+      <div className="rounded-2xl bg-[radial-gradient(circle_at_top_right,rgba(82,82,91,0.18),transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-4 py-5 text-white sm:px-5 md:px-6 md:py-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-300">
+              Application tracking
+            </p>
+            <h1 className="mt-2 text-lg font-semibold sm:text-xl md:text-2xl">
+              Follow every submission from applied to final outcome.
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-zinc-200">
+              This view now uses your application records directly, so early and late stages stay visible in one compact timeline.
+            </p>
+          </div>
 
-            <div className="grid w-full gap-2 sm:w-auto sm:min-w-55 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Tracked</p>
-                <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{data.totalCount}</p>
-              </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Offers</p>
-                <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{stageSummary.Offer ?? 0}</p>
-              </div>
+          <div className="grid w-full gap-2 sm:w-auto sm:min-w-55 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Tracked</p>
+              <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{data.totalCount}</p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-3.5 py-3 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-[0.22em] text-zinc-300">Offers</p>
+              <p className="mt-1.5 text-xl font-semibold sm:text-2xl">{stageSummary.Offer ?? 0}</p>
             </div>
           </div>
         </div>
+      </div>
 
       <Card className="rounded-[24px] border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-4">
         <div className="grid gap-3 sm:gap-3.5 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_160px]">
           <div className="md:col-span-2 xl:col-span-1">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-              <input
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPageNumber(1);
-                }}
-                placeholder="Search by role or company"
-                className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-              />
-            </div>
+            <SearchInput
+              label="Search"
+              icon={<Search className="h-4 w-4" />}
+              value={search}
+              onValueChange={(value) => {
+                setSearch(value);
+                setPageNumber(1);
+              }}
+              placeholder="Search by role or company"
+            />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
-              Stage
-            </label>
-            <select
+            <AppSelect
+              label="Stage"
+              name="status"
               value={status}
+              options={[...statusOptions]}
               onChange={(event) => {
                 setStatus(event.target.value);
                 setPageNumber(1);
               }}
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
@@ -309,7 +298,7 @@ export const OffersPage = () => {
           {error}
         </Card>
       ) : null}
-
+      
       {isLoading && cards.length === 0 ? (
         <div className="space-y-2.5">
           {[...Array(3)].map((_, index) => (
@@ -333,6 +322,20 @@ export const OffersPage = () => {
         </Card>
       ) : (
         <>
+          <TablePagination
+            page={data.pageNumber}
+            pageSize={data.pageSize}
+            totalCount={data.totalCount}
+            totalPages={data.totalPages}
+            onPageChange={setPageNumber}
+            onPageSizeChange={(value) => {
+              setPageSize(value);
+              setPageNumber(1);
+            }}
+            pageSizeOptions={[5, 10, 20]}
+            itemLabel="applications"
+          />
+
           <div className="space-y-2.5 sm:space-y-3">
             {cards.map((item) => (
               <OfferPipelineCard
@@ -350,19 +353,6 @@ export const OffersPage = () => {
             ))}
           </div>
 
-          <TablePagination
-            page={data.pageNumber}
-            pageSize={data.pageSize}
-            totalCount={data.totalCount}
-            totalPages={data.totalPages}
-            onPageChange={setPageNumber}
-            onPageSizeChange={(value) => {
-              setPageSize(value);
-              setPageNumber(1);
-            }}
-            pageSizeOptions={[5, 10, 20]}
-            itemLabel="applications"
-          />
         </>
       )}
 

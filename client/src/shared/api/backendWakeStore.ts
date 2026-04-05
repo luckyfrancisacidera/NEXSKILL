@@ -1,3 +1,8 @@
+/* =========================================
+   BACKEND WAKE STORE
+   Minimal shared store for coordinating the ATS backend wake indicator across the app.
+========================================= */
+
 export interface BackendWakeSnapshot {
   isReadinessProbePending: boolean;
   isBackendWarm: boolean;
@@ -16,6 +21,10 @@ let snapshot: BackendWakeSnapshot = {
   lastBackendSuccessAt,
 };
 
+/* =========================================
+   SNAPSHOT SYNCHRONIZATION
+========================================= */
+
 const syncSnapshot = () => {
   snapshot = {
     isReadinessProbePending,
@@ -30,6 +39,8 @@ const notifyListeners = () => {
 
 // The ATS wake UI is driven only by an explicit backend readiness probe.
 export const beginBackendReadinessProbe = () => {
+  // Ignore duplicate probes once one is pending or the backend is already warm,
+  // which keeps the indicator state deterministic for every subscriber.
   if (isBackendWarm || isReadinessProbePending) {
     return false;
   }

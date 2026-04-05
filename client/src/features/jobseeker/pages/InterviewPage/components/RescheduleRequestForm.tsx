@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Button } from "@shared/components/Button";
-import { RichTextField } from "@shared/components/RichTextField";
+import { Button } from "@shared/components/actions/Button";
+import { RichTextField } from "@shared/components/form/RichTextField";
 import { sanitizeRichText, stripRichText } from "@shared/utils/richText";
 
 interface RescheduleRequestFormProps {
@@ -77,3 +77,4 @@ export const RescheduleRequestForm = ({
     </form>
   );
 };
+

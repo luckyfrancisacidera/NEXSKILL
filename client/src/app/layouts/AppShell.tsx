@@ -4,9 +4,9 @@ import { Outlet, useLocation, useNavigation } from 'react-router-dom';
 
 import { useAuth } from '@app/providers/AuthProvider';
 import { AtsWakeLoaderSurface } from '@shared/pages/AtsWakeLoaderSurface';
-import { RouteNavigationFeedback } from '@shared/components/RouteNavigationFeedback';
-import { Sidebar } from '@shared/components/Sidebar';
-import { Topbar } from '@shared/components/Topbar';
+import { RouteNavigationFeedback } from '@shared/components/feedback/RouteNavigationFeedback';
+import { Sidebar } from '@shared/components/navigation/Sidebar';
+import { Topbar } from '@shared/components/navigation/Topbar';
 import { isAtsWakeRoute } from '@shared/config/backendWakeRoutes';
 import { useBackendWakeIndicator } from '@shared/hooks/useBackendWakeIndicator';
 import { usePermissions } from '@shared/hooks/usePermissions';
@@ -73,7 +73,7 @@ export const AppShell = () => {
         onDesktopHoverChange={setIsDesktopSidebarHovered}
       />
 
-      <div className="relative min-h-screen min-w-0 lg:pl-20">
+      <div className="relative min-h-screen min-w-0 overflow-hidden lg:pl-20">
         <div className="min-w-0 flex min-h-screen flex-col">
           <Topbar onMenuToggle={() => setIsMobileSidebarOpen(true)} pageTitle={pageTitle} />
           <main className="min-w-0 flex-1 bg-zinc-50 p-4 transition-colors duration-300 sm:p-6 lg:p-8 dark:bg-zinc-950">
@@ -86,3 +86,4 @@ export const AppShell = () => {
     </div>
   );
 };
+

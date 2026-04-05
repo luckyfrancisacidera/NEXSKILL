@@ -1,4 +1,4 @@
-import { SkeletonBlock } from "@shared/components/skeletons/SkeletonBlock";
+import { SkeletonBlock } from "@shared/components/feedback/skeletons/SkeletonBlock";
 
 export const RecruiterDashboardSkeleton = () => (
   <div className="space-y-6">
@@ -64,3 +64,4 @@ export const RecruiterDashboardSkeleton = () => (
     </section>
   </div>
 );
+

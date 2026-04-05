@@ -2,15 +2,15 @@ import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { ArrowRight, Bookmark, BriefcaseBusiness, Check, Clock3, Loader2, MapPin } from "lucide-react";
 import { useToast } from "@app/providers/ToastProvider";
-import { Card } from "@shared/components/Card";
-import { DetailBlock } from "@shared/components/DetailBlock";
-import { RichTextContent } from "@shared/components/RichTextContent";
+import { Card } from "@shared/components/data-display/Card";
+import { DetailBlock } from "@shared/components/data-display/DetailBlock";
+import { RichTextContent } from "@shared/components/data-display/RichTextContent";
 import { formatCurrencyAmount } from "@shared/data/currency";
 import { splitToBullets, toList } from "@shared/utils/formatText";
 import { formatJobLabel } from "@shared/utils/jobLabels";
 import { formatPostedDateLabel, getPostedDateValue } from "@shared/utils/jobPostingDate";
 import { ApplyModalWizard } from "@features/jobseeker/pages/JobDetailPage/components/ApplyModalWizard";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import type { JobDetailLoaderData, JobseekerApplicationInput } from "@features/jobseeker/types";
 import { ApiError } from "@shared/api/http";
 
@@ -372,3 +372,4 @@ export const JobDetailPage = () => {
     </div>
   );
 };
+

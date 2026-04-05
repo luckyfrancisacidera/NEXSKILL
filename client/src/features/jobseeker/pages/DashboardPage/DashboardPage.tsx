@@ -13,8 +13,8 @@ import {
   Building2,
 } from "lucide-react";
 
-import { DashboardAreaChart } from "@shared/components/DashboardAreaChart";
-import { DashboardGreeting } from "@shared/components/DashboardGreeting";
+import { DashboardAreaChart } from "@shared/components/data-display/DashboardAreaChart";
+import { DashboardGreeting } from "@shared/components/layout/DashboardGreeting";
 import { useAuth } from "@app/providers/AuthProvider";
 import { SavedJobsEmptyState } from "@features/jobseeker/components";
 import {
@@ -22,14 +22,14 @@ import {
   DashboardListLink,
   DashboardSectionCard,
   DashboardStatCard,
-} from "@shared/components/DashboardPrimitives";
-import Dropdown, { type DropdownOption } from "@shared/components/Dropdown";
+} from "@shared/components/layout/DashboardPrimitives";
+import Dropdown, { type DropdownOption } from "@shared/components/form/Dropdown";
 import { interviewStatusChipClassName } from "@shared/utils/interviewStatus";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
 import { jobseekerInterviewService } from "@features/jobseeker/services/interview.service";
 import { useDashboardData } from "@features/jobseeker/hooks";
 import { DashboardStatsSkeleton } from "@features/jobseeker/pages/DashboardPage/components/DashboardStatsSkeleton";
-import { SkeletonBlock } from "@shared/components/skeletons/SkeletonBlock";
+import { SkeletonBlock } from "@shared/components/feedback/skeletons/SkeletonBlock";
 import type { DashboardLoaderData, JobseekerInterview } from "@features/jobseeker/types";
 
 const ranges: DropdownOption[] = [
@@ -424,3 +424,4 @@ export const DashboardPage = () => {
     </div>
   );
 };
+

@@ -3,7 +3,7 @@ import { RescheduleRequestModal } from "./RescheduleRequestModal";
 import { useState } from "react";
 import { downloadInterviewICS } from "@shared/utils/calendar";
 import { emitNotification } from "@shared/utils/notifications";
-import { RichTextContent } from "@shared/components/RichTextContent";
+import { RichTextContent } from "@shared/components/data-display/RichTextContent";
 import {
   interviewStatusChipClassName,
   isTerminalInterviewStatus,
@@ -196,3 +196,4 @@ export const JobseekerInterviewCard = ({
     </>
   );
 };
+

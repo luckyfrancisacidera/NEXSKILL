@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Contracts.Scoring.Response;
@@ -188,6 +188,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         });
     }
 
+    // Computes strong match boost.
     private float ComputeStrongMatchBoost(
         float workScore,
         float skillsScore,
@@ -220,6 +221,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Clamp(workBoost + skillsBoost + responsibilityBoost + summaryBoost + combinedBoost + coverageBoost + implementationBoost, 0f, _config.MaxBoost);
     }
 
+    // Computes penalty.
     private PenaltyBreakdown ComputePenalty(
         float educationScore,
         float yearsScore,
@@ -238,6 +240,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return new PenaltyBreakdown(totalPenalty, educationPenalty, baseYearsPenalty, reliefApplied);
     }
 
+    // Handles soften years penalty.
     private float SoftenYearsPenalty(
         float baseYearsPenalty,
         int minimumYearsExperience,
@@ -282,6 +285,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Min(baseYearsPenalty, baseYearsPenalty * _config.YearsPenaltyMaxRelief * reliefSignal);
     }
 
+    // Computes implementation evidence.
     private ImplementationEvidenceBreakdown ComputeImplementationEvidence(
         IReadOnlyCollection<MatchEvidence> requiredMatches,
         IReadOnlyCollection<MatchEvidence> responsibilityMatches,
@@ -348,6 +352,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             SupportingMatchCount: supportingMatches.Count);
     }
 
+    // Computes evidence bucket score.
     private float ComputeEvidenceBucketScore(IReadOnlyCollection<MatchEvidence> matches)
     {
         if (matches.Count == 0)
@@ -395,6 +400,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             1f);
     }
 
+    // Determines whether implementation evidence value.
     private bool HasImplementationEvidenceValue(MatchEvidence evidence)
     {
         if (evidence is null
@@ -416,6 +422,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         };
     }
 
+    // Aggregates skill score.
     private float AggregateSkillScore(
         IReadOnlyCollection<MatchEvidence> matches,
         int expectedCount,
@@ -469,6 +476,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             1f);
     }
 
+    // Aggregates responsibility score.
     private float AggregateResponsibilityScore(IReadOnlyCollection<MatchEvidence> responsibilityMatches, int expectedCount)
     {
         if (expectedCount <= 0)
@@ -514,6 +522,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             1f);
     }
 
+    // Aggregates description score.
     private float AggregateDescriptionScore(IReadOnlyCollection<MatchEvidence> descriptionMatches)
     {
         if (descriptionMatches.Count == 0)
@@ -560,9 +569,11 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             1f);
     }
 
+    // Handles calibrate base score.
     private float CalibrateBaseScore(float weightedBaseScore)
         => Math.Clamp(1f - MathF.Pow(1f - Math.Clamp(weightedBaseScore, 0f, 1f), _config.BaseScoreExponent), 0f, 1f);
 
+    // Scores evidence confidence.
     private float ScoreEvidenceConfidence(MatchEvidence evidence)
     {
         var sourceBonus = evidence.Source.StartsWith("work_experience", StringComparison.OrdinalIgnoreCase)
@@ -583,6 +594,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Clamp(baseConfidence + sourceBonus, 0f, 1f);
     }
 
+    // Loads match type signal.
     private float GetMatchTypeSignal(string matchType) => matchType switch
     {
         "exact" => 1f,
@@ -604,6 +616,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return items.Where(x => !string.IsNullOrWhiteSpace(x.Item1)).ToList();
     }
 
+    // Builds candidate profiles.
     private static List<CandidateEvidenceProfile> BuildCandidateProfiles(List<(string Text, string Source)> candidates)
     {
         var profiles = new List<CandidateEvidenceProfile>();
@@ -638,6 +651,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return profiles;
     }
 
+    // Builds skill candidate index.
     private static SkillCandidateIndex BuildSkillCandidateIndex(List<CandidateEvidenceProfile> profiles)
     {
         var exact = new Dictionary<string, CandidateEvidenceProfile>(StringComparer.Ordinal);
@@ -668,6 +682,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return new SkillCandidateIndex(exact, canonical);
     }
 
+    // Handles match skills.
     private async Task<List<MatchEvidence>> MatchSkillsAsync(
         List<string> jdSkills,
         List<CandidateEvidenceProfile> candidates,
@@ -756,6 +771,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return results;
     }
 
+    // Handles match responsibilities.
     private async Task<List<MatchEvidence>> MatchResponsibilitiesAsync(List<string> responsibilities, ParsedResume resume, EmbeddingRuntime embeddingRuntime)
     {
         var normalizedResponsibilities = PreprocessResponsibilities(responsibilities);
@@ -768,6 +784,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return (await Task.WhenAll(tasks)).ToList();
     }
 
+    // Handles preprocess responsibilities.
     private static List<ResponsibilityInput> PreprocessResponsibilities(List<string> responsibilities)
     {
         var cleaned = responsibilities
@@ -794,6 +811,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             .ToList();
     }
 
+    // Handles should merge responsibility.
     private static bool ShouldMergeResponsibility(string previous, string current)
     {
         var previousHasTerminalPunctuation = previous.EndsWith('.') || previous.EndsWith(';') || previous.EndsWith(':');
@@ -806,6 +824,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return false;
     }
 
+    // Normalizes responsibility text.
     private static string NormalizeResponsibilityText(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) return string.Empty;
@@ -849,6 +868,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return candidates.Where(x => !string.IsNullOrWhiteSpace(x.Item1)).ToList();
     }
 
+    // Extracts responsibility concepts.
     private static List<ResponsibilityConcept> ExtractResponsibilityConcepts(string responsibility)
     {
         var concepts = new List<ResponsibilityConcept>();
@@ -879,6 +899,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             .ToList();
     }
 
+    // Splits description into chunks.
     private static List<string> SplitDescriptionIntoChunks(string description)
         => description
             .Split(new[] { "\r\n", "\n", ";", "." }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -888,6 +909,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+    // Loads description chunk weight.
     private float GetDescriptionChunkWeight(string chunk)
     {
         var canonicalSignals = ExtractCanonicalSignals(chunk);
@@ -909,6 +931,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return 1f;
     }
 
+    // Handles match description.
     private async Task<List<MatchEvidence>> MatchDescriptionAsync(string jdDescription, ParsedResume resume, EmbeddingRuntime embeddingRuntime)
     {
         var candidates = BuildDescriptionCandidates(resume);
@@ -926,6 +949,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return matches.ToList();
     }
 
+    // Builds responsibility evidence.
     private async Task<MatchEvidence> BuildResponsibilityEvidenceAsync(
         ResponsibilityInput responsibility,
         List<(string Text, string Source)> candidates,
@@ -1066,6 +1090,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return ApplyEvidenceDepth(responsibilityMatch, responsibilitySupports, 1.12f);
     }
 
+    // Builds description chunk evidence.
     private async Task<MatchEvidence> BuildDescriptionChunkEvidenceAsync(
         string chunk,
         List<(string Text, string Source)> candidates,
@@ -1108,6 +1133,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return ApplyEvidenceDepth(chosen, descriptionSupports, 1.10f);
     }
 
+    // Attempts to build related cluster evidence.
     private MatchEvidence? TryBuildRelatedClusterEvidence(
         string jdItem,
         string canonicalJdSkill,
@@ -1184,6 +1210,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return ApplyEvidenceDepth(relatedMatch, relatedSupports, 1.14f);
     }
 
+    // Handles combine responsibility evidence.
     private MatchEvidence CombineResponsibilityEvidence(string jdItem, MatchEvidence? capabilityEvidence, MatchEvidence semanticEvidence)
     {
         if (capabilityEvidence is null)
@@ -1226,6 +1253,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         };
     }
 
+    // Builds many to many semantic evidence.
     private async Task<MatchEvidence> BuildManyToManySemanticEvidenceAsync(string jdItem, List<(string Text, string Source)> candidates, EmbeddingRuntime embeddingRuntime, string? queryOverride = null)
     {
         if (candidates.Count == 0) return new MatchEvidence { JdItem = jdItem, Similarity = 0f, MatchType = "rule", MatchReason = "No candidate evidence available for semantic comparison." };
@@ -1265,6 +1293,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return ApplyEvidenceDepth(semanticMatch, semanticSupports, 1.12f);
     }
 
+    // Aggregates top k similarity.
     private float AggregateTopKSimilarity(List<SemanticCandidateScore> top)
     {
         if (top.Count == 0) return 0f;
@@ -1288,6 +1317,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Clamp(decayWeightedAverage + coverageBonus, 0f, 1f);
     }
 
+    // Handles deduplicate ranked candidates.
     private static List<SemanticCandidateScore> DeduplicateRankedCandidates(List<SemanticCandidateScore> ranked)
     {
         var byEvidence = new Dictionary<string, SemanticCandidateScore>();
@@ -1306,6 +1336,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return byEvidence.Values.OrderByDescending(x => x.Similarity).ToList();
     }
 
+    // Handles rank semantic matches.
     private async Task<List<SemanticCandidateScore>> RankSemanticMatchesAsync(string query, List<(string Text, string Source)> candidates, EmbeddingRuntime embeddingRuntime)
     {
         var queryEmbedding = await embeddingRuntime.GetEmbeddingAsync(query);
@@ -1322,6 +1353,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return ranked.OrderByDescending(x => x.Similarity).ToList();
     }
 
+    // Computes lexical similarity.
     private float ComputeLexicalSimilarity(string left, string right)
     {
         var leftTokens = TokenizeForSemanticComparison(left);
@@ -1340,6 +1372,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return overlap / (float)Math.Max(leftTokens.Count, rightTokens.Count);
     }
 
+    // Tokenizes for semantic comparison.
     private static HashSet<string> TokenizeForSemanticComparison(string value)
     {
         var normalized = NormalizeEvidence(value);
@@ -1349,6 +1382,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
+    // Extracts canonical signals.
     private static HashSet<string> ExtractCanonicalSignals(string value)
     {
         var normalized = NormalizeSkillForCanonicalization(value);
@@ -1374,6 +1408,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return signals;
     }
 
+    // Extracts capability clusters.
     private static HashSet<string> ExtractCapabilityClusters(string value, HashSet<string>? canonicalSignals = null)
     {
         canonicalSignals ??= ExtractCanonicalSignals(value);
@@ -1405,6 +1440,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return clusters;
     }
 
+    // Handles contains normalized phrase.
     private static bool ContainsNormalizedPhrase(string normalizedText, string normalizedPhrase)
     {
         if (string.IsNullOrWhiteSpace(normalizedText) || string.IsNullOrWhiteSpace(normalizedPhrase))
@@ -1420,6 +1456,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return $" {normalizedText} ".Contains($" {normalizedPhrase} ", StringComparison.OrdinalIgnoreCase);
     }
 
+    // Scores related cluster candidate.
     private RelatedClusterCandidateScore ScoreRelatedClusterCandidate(
         HashSet<string> queryCanonicals,
         HashSet<string> queryClusters,
@@ -1452,6 +1489,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return new RelatedClusterCandidateScore(candidate, Math.Clamp(baseScore, 0f, _config.RelatedClusterMaxScore), sharedCanonicals, sharedClusters);
     }
 
+    // Computes support bonus.
     private float ComputeSupportBonus(CandidateEvidenceProfile primary, List<RelatedClusterCandidateScore> secondaryCandidates)
     {
         var seenEvidence = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { primary.NormalizedText };
@@ -1485,6 +1523,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Min(bonus, _config.RelatedClusterSupportCap);
     }
 
+    // Handles apply evidence depth.
     private MatchEvidence ApplyEvidenceDepth(
         MatchEvidence match,
         IReadOnlyCollection<SupportingEvidence> rawSupports,
@@ -1558,6 +1597,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return match;
     }
 
+    // Determines whether concrete evidence type.
     private static bool IsConcreteEvidenceType(string evidenceType) => evidenceType is
         "WorkBullet" or
         "ProjectBullet" or
@@ -1565,6 +1605,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         "ProjectTechnology" or
         "ProjectSummary";
 
+    // Collects supporting evidence.
     private List<SupportingEvidence> CollectSupportingEvidence(
         string queryText,
         string canonicalSkill,
@@ -1629,6 +1670,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return supports;
     }
 
+    // Computes support evidence score.
     private float ComputeSupportEvidenceScore(
         string normalizedQuery,
         HashSet<string> queryCanonicals,
@@ -1669,6 +1711,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return 0f;
     }
 
+    // Loads evidence type.
     private static string GetEvidenceType(string source) => GetSourceCategory(source) switch
     {
         "work_experience.bullets" => "WorkBullet",
@@ -1683,6 +1726,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         _ => "Other"
     };
 
+    // Loads direct skill match base score.
     private static float GetDirectSkillMatchBaseScore(string source, string matchType)
     {
         var sourceCategory = GetSourceCategory(source);
@@ -1702,6 +1746,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             : sourceBase;
     }
 
+    // Loads evidence context key.
     private static string GetEvidenceContextKey(string source)
     {
         if (string.IsNullOrWhiteSpace(source))
@@ -1713,6 +1758,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return dotIndex >= 0 ? source[..dotIndex] : source;
     }
 
+    // Loads source category.
     private static string GetSourceCategory(string source)
     {
         if (string.IsNullOrWhiteSpace(source))
@@ -1742,6 +1788,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return source;
     }
 
+    // Loads depth source weight.
     private static float GetDepthSourceWeight(string source) => GetSourceCategory(source) switch
     {
         "work_experience.bullets" => 1f,
@@ -1756,6 +1803,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         _ => 0.55f
     };
 
+    // Loads source strength.
     private static float GetSourceStrength(string source) => source switch
     {
         var s when GetSourceCategory(s) == "work_experience.technologies" => 1f,
@@ -1769,8 +1817,10 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         _ => 0.75f
     };
 
+    // Normalizes skill.
     private static string NormalizeSkill(string skill) => skill.Trim().ToLowerInvariant().Replace(".", string.Empty).Replace(" ", string.Empty);
 
+    // Determines whether onicalize skill.
     private static string CanonicalizeSkill(string value)
     {
         var normalized = NormalizeSkillForCanonicalization(value);
@@ -1784,6 +1834,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return normalized;
     }
 
+    // Normalizes skill for canonicalization.
     private static string NormalizeSkillForCanonicalization(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) return string.Empty;
@@ -1808,6 +1859,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return string.Join(' ', normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
+    // Handles load skill alias map.
     private static Dictionary<string, string> LoadSkillAliasMap()
     {
         var map = BuildBaseSkillAliasMap();
@@ -1852,6 +1904,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             .OrderByDescending(x => x.Phrase.Length)
             .ToList();
 
+    // Resolves skill alias files.
     private static IEnumerable<string> ResolveSkillAliasFiles()
     {
         var cwd = Directory.GetCurrentDirectory();
@@ -1865,6 +1918,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return candidates.Where(File.Exists).Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
+    // Builds base skill alias map.
     private static Dictionary<string, string> BuildBaseSkillAliasMap()
     {
         var pairs = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -1941,6 +1995,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return normalized;
     }
 
+    // Builds capability cluster lookup.
     private static Dictionary<string, string[]> BuildCapabilityClusterLookup()
     {
         var map = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
@@ -1980,6 +2035,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return map;
     }
 
+    // Builds capability cluster names.
     private static Dictionary<string, string> BuildCapabilityClusterNames()
         => new(StringComparer.OrdinalIgnoreCase)
         {
@@ -1991,9 +2047,11 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             ["devops_versioning"] = "versioning and delivery"
         };
 
+    // Determines whether higher quality evidence.
     private static bool IsHigherQualityEvidence(CandidateEvidenceProfile candidate, CandidateEvidenceProfile existing)
         => GetSourceStrength(candidate.Source) > GetSourceStrength(existing.Source);
 
+    // Normalizes evidence.
     private static string NormalizeEvidence(string text)
     {
         var chars = text.Trim().ToLowerInvariant().ToCharArray();
@@ -2010,6 +2068,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return string.Join(' ', sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
+    // Scores education.
     private static float ScoreEducation(string required, ParsedResume resume)
     {
         if (string.IsNullOrWhiteSpace(required)) return 1f;
@@ -2018,6 +2077,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return best >= requiredRank ? 1f : 0f;
     }
 
+    // Handles education rank.
     private static int EducationRank(string value)
     {
         var v = value.ToLowerInvariant();
@@ -2028,6 +2088,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return 0;
     }
 
+    // Scores years.
     private float ScoreYears(int minYears, ParsedResume resume)
     {
         if (minYears <= 0) return 1f;
@@ -2051,6 +2112,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return Math.Clamp(softened, 0f, 1f);
     }
 
+    // Loads candidate years.
     private static float GetCandidateYears(ParsedResume resume)
     {
         var months = resume.Derived.TotalExperienceMonths > 0
@@ -2059,6 +2121,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         return months / 12f;
     }
 
+    // Handles calibrate semantic similarity.
     private float CalibrateSemanticSimilarity(
         float rawSimilarity,
         float threshold,
@@ -2151,6 +2214,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyList<float>>>> _cache = new(StringComparer.Ordinal);
         private readonly SemaphoreSlim _gate = new(Math.Max(1, Environment.ProcessorCount / 2));
 
+        // Loads embedding.
         public Task<IReadOnlyList<float>> GetEmbeddingAsync(string text)
         {
             var key = text ?? string.Empty;
@@ -2164,6 +2228,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             return lazy.Value;
         }
 
+        // Handles run embedding.
         private async Task<IReadOnlyList<float>> RunEmbeddingAsync(string text)
         {
             await _gate.WaitAsync(cancellationToken);
@@ -2177,6 +2242,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             }
         }
 
+        // Handles dispose.
         public void Dispose() => _gate.Dispose();
     }
 
@@ -2327,6 +2393,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
         public float YearsPenaltyExistingScoreWeight { get; init; } = 0.08f;
         public float BaseScoreExponent { get; init; } = 1.08f;
 
+        // Builds configuration values from the current application settings.
         public static AtsScoringConfig FromConfiguration(IConfiguration? configuration)
         {
             var section = configuration?.GetSection("AtsScoring");
@@ -2480,6 +2547,7 @@ public sealed class ResumeEmbeddingScoringOrchestrator(ITextEmbeddingService emb
             };
         }
 
+        // Loads normalized section weights.
         public Dictionary<string, float> GetNormalizedSectionWeights()
         {
             var raw = new Dictionary<string, float>

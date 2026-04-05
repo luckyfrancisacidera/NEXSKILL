@@ -3,7 +3,7 @@ import {
   getApiErrorMessage,
   getString,
 } from "@features/recruiter/actions/utils";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 
 /**
  * updateCandidateAction

@@ -1,6 +1,6 @@
 import { useNavigate, useLoaderData, useRevalidator, useSearchParams } from 'react-router-dom';
-import { Card } from '@shared/components/Card';
-import { DashboardPageHeader } from '@shared/components/DashboardPrimitives';
+import { Card } from '@shared/components/data-display/Card';
+import { DashboardPageHeader } from '@shared/components/layout/DashboardPrimitives';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { AdminMetricCard } from '@features/admin/components/AdminMetricCard';
 import { AdminRecruitersTableCard } from '@features/admin/components/AdminRecruitersTableCard';
@@ -67,3 +67,4 @@ export const SuperAdminRecruitersPage = () => {
     </div>
   );
 };
+

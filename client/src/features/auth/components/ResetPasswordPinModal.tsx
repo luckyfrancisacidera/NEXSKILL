@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, RefreshCcw, X } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, RefreshCcw } from "lucide-react";
 
 import { authService } from "@features/auth/services/auth.service";
 import { ApiError } from "@shared/api/http";
-import { Button } from "@shared/components/Button";
-import { ModalOverlay } from "@shared/components/ModalOverlay";
+import { Button } from "@shared/components/actions/Button";
+import { ModalFrame } from "@shared/components/overlay/ModalFrame";
 
 interface ResetPasswordPinModalProps {
   open: boolean;
@@ -207,182 +207,176 @@ export const ResetPasswordPinModal = ({
   };
 
   return (
-    <ModalOverlay onClose={onClose}>
-      <div className="scrollbar-thin-stable flex max-h-[90vh] w-full min-w-0 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden rounded-[30px] border border-zinc-200 bg-white px-4 py-4 font-inter shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:border-zinc-800 dark:bg-zinc-950 sm:w-[90%] sm:p-7 md:w-[80%] md:px-6 md:py-6 lg:w-full lg:max-w-lg">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900">
-              {step === 3 ? <CheckCircle2 className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200">
-                Reset your password
-              </h2>
-              <p className="mt-1 break-words text-sm text-zinc-500 dark:text-zinc-400">
-                {step === 1 && "Enter your email to receive a one-time PIN."}
-                {step === 2 && "Enter the PIN from your email, then choose a new password."}
-                {step === 3 && "Your password has been updated."}
-              </p>
-              {step !== 1 ? (
-                <p className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 shadow-sm dark:bg-zinc-950 dark:text-zinc-300">
-                  <Mail className="h-3.5 w-3.5" />
-                  <span className="truncate">{trimmedEmail}</span>
-                </p>
-              ) : null}
-            </div>
+    <ModalFrame
+      onClose={onClose}
+      containerClassName="max-w-lg"
+      contentClassName="font-inter shadow-[0_30px_80px_rgba(15,23,42,0.2)] dark:bg-zinc-950"
+      bodyClassName="space-y-5"
+      showCloseButton
+      closeLabel="Close reset password modal"
+      headerContent={
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900">
+            {step === 3 ? <CheckCircle2 className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-            aria-label="Close reset password modal"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-200">
+              Reset your password
+            </h2>
+            <p className="mt-1 break-words text-sm text-zinc-500 dark:text-zinc-400">
+              {step === 1 && "Enter your email to receive a one-time PIN."}
+              {step === 2 && "Enter the PIN from your email, then choose a new password."}
+              {step === 3 && "Your password has been updated."}
+            </p>
+            {step !== 1 ? (
+              <p className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 shadow-sm dark:bg-zinc-950 dark:text-zinc-300">
+                <Mail className="h-3.5 w-3.5" />
+                <span className="truncate">{trimmedEmail}</span>
+              </p>
+            ) : null}
+          </div>
         </div>
+      }
+    >
+      {step === 1 ? (
+        <>
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Email address
+            </span>
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className={inputClassName}
+              placeholder="you@example.com"
+            />
+          </label>
 
-        <div className="mt-6 space-y-5">
-          {step === 1 ? (
-            <>
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Email address
-                </span>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className={inputClassName}
-                  placeholder="you@example.com"
-                />
-              </label>
-
-              {error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  className="h-11 w-full min-w-0 justify-center rounded-xl"
-                  disabled={isRequesting}
-                  onClick={() => void requestPin()}
-                >
-                  {isRequesting ? "Sending PIN..." : "Send PIN"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="h-11 w-full min-w-0 justify-center rounded-xl"
-                  onClick={onClose}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </>
+          {error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              {error}
+            </div>
           ) : null}
 
-          {step === 2 ? (
-            <>
-              {message ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                  {message}
-                </div>
-              ) : null}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              className="h-11 w-full min-w-0 justify-center rounded-xl"
+              disabled={isRequesting}
+              onClick={() => void requestPin()}
+            >
+              {isRequesting ? "Sending PIN..." : "Send PIN"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11 w-full min-w-0 justify-center rounded-xl"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+          </div>
+        </>
+      ) : null}
 
-              <label className="block space-y-2">
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  Verification PIN
-                </span>
-                <input
-                  className={pinInputClassName}
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="123456"
-                />
-              </label>
-
-              <PasswordInput
-                id="reset-password-modal-new"
-                label="New password"
-                value={newPassword}
-                visible={showNewPassword}
-                onChange={setNewPassword}
-                onToggle={() => setShowNewPassword((current) => !current)}
-              />
-
-              <PasswordInput
-                id="reset-password-modal-confirm"
-                label="Confirm new password"
-                value={confirmPassword}
-                visible={showConfirmPassword}
-                error={passwordsMismatch ? "Your password confirmation does not match." : undefined}
-                onChange={setConfirmPassword}
-                onToggle={() => setShowConfirmPassword((current) => !current)}
-              />
-
-              {error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  type="button"
-                  className="h-11 w-full min-w-0 justify-center rounded-xl"
-                  disabled={isVerifying}
-                  onClick={() => void verifyPin()}
-                >
-                  {isVerifying ? "Updating password..." : "Save new password"}
-                </Button>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-11 w-full min-w-0 justify-center rounded-xl"
-                    disabled={isResending}
-                    onClick={() => void requestPin(true)}
-                  >
-                    <RefreshCcw className="h-4 w-4" />
-                    {isResending ? "Sending..." : "Resend PIN"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="h-11 w-full min-w-0 justify-center rounded-xl"
-                    onClick={onClose}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </>
+      {step === 2 ? (
+        <>
+          {message ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {message}
+            </div>
           ) : null}
 
-          {step === 3 ? (
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                {message}
-              </div>
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Verification PIN
+            </span>
+            <input
+              className={pinInputClassName}
+              inputMode="numeric"
+              maxLength={6}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="123456"
+            />
+          </label>
 
+          <PasswordInput
+            id="reset-password-modal-new"
+            label="New password"
+            value={newPassword}
+            visible={showNewPassword}
+            onChange={setNewPassword}
+            onToggle={() => setShowNewPassword((current) => !current)}
+          />
+
+          <PasswordInput
+            id="reset-password-modal-confirm"
+            label="Confirm new password"
+            value={confirmPassword}
+            visible={showConfirmPassword}
+            error={passwordsMismatch ? "Your password confirmation does not match." : undefined}
+            onChange={setConfirmPassword}
+            onToggle={() => setShowConfirmPassword((current) => !current)}
+          />
+
+          {error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-3">
+            <Button
+              type="button"
+              className="h-11 w-full min-w-0 justify-center rounded-xl"
+              disabled={isVerifying}
+              onClick={() => void verifyPin()}
+            >
+              {isVerifying ? "Updating password..." : "Save new password"}
+            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
+                variant="secondary"
+                className="h-11 w-full min-w-0 justify-center rounded-xl"
+                disabled={isResending}
+                onClick={() => void requestPin(true)}
+              >
+                <RefreshCcw className="h-4 w-4" />
+                {isResending ? "Sending..." : "Resend PIN"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
                 className="h-11 w-full min-w-0 justify-center rounded-xl"
                 onClick={onClose}
               >
-                Back to sign in
+                Cancel
               </Button>
             </div>
-          ) : null}
+          </div>
+        </>
+      ) : null}
+
+      {step === 3 ? (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+            {message}
+          </div>
+
+          <Button
+            type="button"
+            className="h-11 w-full min-w-0 justify-center rounded-xl"
+            onClick={onClose}
+          >
+            Back to sign in
+          </Button>
         </div>
-      </div>
-    </ModalOverlay>
+      ) : null}
+    </ModalFrame>
   );
 };
+

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+// Use to delay reactions to fast-changing values such as search text or filter input.
 export const useDebounce = <T>(value: T, delay = 300) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 

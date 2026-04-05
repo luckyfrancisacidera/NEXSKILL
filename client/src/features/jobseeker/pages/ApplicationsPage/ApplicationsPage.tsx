@@ -2,15 +2,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { Search } from "lucide-react";
-import { Card } from "@shared/components/Card";
-import { SearchField } from "@features/jobseeker/components";
+import { Card } from "@shared/components/data-display/Card";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
 import { ApplicationsEmptyState } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsEmptyState";
 import { ApplicationListSkeleton } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationListSkeleton";
 import { ApplicationsTable } from "@features/jobseeker/pages/ApplicationsPage/components/ApplicationsTable";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { AppSelect, SearchInput } from "@shared/components/form";
+import { useConfirmation } from "@shared/hooks/useConfirmation";
+import {
+  getApplicationActionConfirmation,
+  hasExistingActiveOffer,
+  type ApplicationActionType,
+} from "@features/jobseeker/utils/applicationActionConfirmation";
 
 const statusOptions = [
   { value: "", label: "All statuses" },
@@ -30,6 +36,7 @@ export const ApplicationsPage = () => {
   const [status, setStatus] = useState("");
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
+  const confirm = useConfirmation();
   const { data, error, isLoading, withdrawingId, archivingId, deletingHistoryId, withdraw, archiveHistory, deleteHistory } = useApplications({
     initialData,
     pageNumber,
@@ -61,8 +68,32 @@ export const ApplicationsPage = () => {
     setPageNumber(1);
   };
 
+  const handleApplicationAction = async (
+    type: ApplicationActionType,
+    applicationId: string,
+  ) => {
+    const application = data.items.find((item) => item.id === applicationId);
+    if (!application) {
+      return;
+    }
+
+    const hasOffer = hasExistingActiveOffer(application);
+    const isConfirmed = await confirm(getApplicationActionConfirmation(type, hasOffer));
+    if (!isConfirmed) {
+      return;
+    }
+
+    if (type === "withdraw") {
+      await withdraw(applicationId);
+    } else if (type === "archive") {
+      await archiveHistory(applicationId);
+    } else {
+      await deleteHistory(applicationId);
+    }
+  };
+
   return (
-    <Card className="min-h-screen rounded-none border-0 bg-transparent p-0 shadow-none">
+    <Card className="border-0 bg-transparent p-0 shadow-none dark:border-0 dark:bg-transparent">
       <div className="space-y-6">
         <div className="space-y-2">
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
@@ -81,101 +112,85 @@ export const ApplicationsPage = () => {
 
         <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-              <SearchField
-                ariaLabel="Search applications"
-                placeholder="Search job title or company"
-                value={search}
-                onChange={handleSearchChange}
-                className="h-11 w-full min-w-0 border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 xl:col-span-4"
-              />
-            </div>
+            <SearchInput
+              label="Search"
+              icon={<Search className="h-4 w-4" />}
+              ariaLabel="Search applications"
+              placeholder="Search job title or company"
+              value={search}
+              onValueChange={handleSearchChange}
+            />
           </div>
 
           <div className="min-w-0 xl:col-span-1">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
-              Status
-            </label>
-            <select
+            <AppSelect
+              label="Status"
               name="status"
               value={status}
-              className="h-11 w-full border border-zinc-200 bg-white px-3.5 text-sm text-zinc-700 outline-none transition hover:border-zinc-300 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:focus:border-zinc-500"
+              options={currentStatusOptions}
               onChange={(event) => handleStatusChange(event.target.value)}
-            >
-              {currentStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-[28px] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
-            <div>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                Application history
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {data.totalCount} total applications
-              </p>
-            </div>
-            {isLoading ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Updating results...
-              </p>
-            ) : null}
-            <TablePageSizeControl value={data.pageSize} onChange={handlePageSizeChange} className="ml-auto" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Application history
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {data.totalCount} total applications
+            </p>
           </div>
-
-          {error ? (
-            <div className="border-b border-zinc-200 px-4 py-3 text-sm text-rose-600 dark:border-zinc-800 dark:text-rose-400">
-              {error}
-            </div>
-          ) : null}
-
           {isLoading ? (
-            <div className="p-4">
-              <ApplicationListSkeleton />
-            </div>
-          ) : data.items.length === 0 ? (
-            <ApplicationsEmptyState hasFilters={hasFilters} />
-          ) : (
-            <>
-              <ApplicationsTable
-                items={data.items}
-                withdrawingId={withdrawingId}
-                archivingId={archivingId}
-                deletingHistoryId={deletingHistoryId}
-                onWithdraw={(applicationId) => {
-                  void withdraw(applicationId);
-                }}
-                onArchiveHistory={(applicationId) => {
-                  void archiveHistory(applicationId);
-                }}
-                onDeleteHistory={(applicationId) => {
-                  void deleteHistory(applicationId);
-                }}
-                loading={isLoading}
-              />
-              <TablePagination
-                page={data.pageNumber}
-                pageSize={data.pageSize}
-                totalCount={data.totalCount}
-                totalPages={data.totalPages}
-                onPageChange={setPageNumber}
-                itemLabel="applications"
-                showPageSizeSelector={false}
-              />
-            </>
-          )}
-        </section>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Updating results...
+            </p>
+          ) : null}
+          <TablePageSizeControl value={data.pageSize} onChange={handlePageSizeChange} className="ml-auto" />
+        </div>
+
+        {error ? (
+          <div className="text-sm text-rose-600 dark:text-rose-400">
+            {error}
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <ApplicationListSkeleton />
+        ) : data.items.length === 0 ? (
+          <ApplicationsEmptyState hasFilters={hasFilters} />
+        ) : (
+          <>
+            <ApplicationsTable
+              items={data.items}
+              withdrawingId={withdrawingId}
+              archivingId={archivingId}
+              deletingHistoryId={deletingHistoryId}
+              onWithdraw={(applicationId) => {
+                void handleApplicationAction("withdraw", applicationId);
+              }}
+              onArchiveHistory={(applicationId) => {
+                void handleApplicationAction("archive", applicationId);
+              }}
+              onDeleteHistory={(applicationId) => {
+                void handleApplicationAction("delete", applicationId);
+              }}
+              loading={isLoading}
+            />
+            <TablePagination
+              page={data.pageNumber}
+              pageSize={data.pageSize}
+              totalCount={data.totalCount}
+              totalPages={data.totalPages}
+              onPageChange={setPageNumber}
+              itemLabel="applications"
+              showPageSizeSelector={false}
+            />
+          </>
+        )}
       </div>
     </Card>
   );
 };
+

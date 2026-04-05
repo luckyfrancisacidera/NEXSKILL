@@ -3,13 +3,13 @@ import { Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { ApplicantScoreItemDto } from '@features/recruiter/types';
-import { actionButtonClassName } from '@shared/components/ActionButton';
-import { Checkbox } from '@shared/components/Checkbox';
-import { JobTitleCell } from '@shared/components/JobTitleCell';
-import { DataTable } from '@shared/components/ui/data-table/DataTable';
-import { IdentityCell } from '@shared/components/ui/data-table/IdentityCell';
-import type { DataTableColumn } from '@shared/components/ui/data-table/table-types';
-import { StatusBadge } from '@shared/components/StatusBadge';
+import { actionButtonClassName } from '@shared/components/actions/ActionButton';
+import { Checkbox } from '@shared/components/form/Checkbox';
+import { JobTitleCell } from '@shared/components/data-display/JobTitleCell';
+import { DataTable } from '@shared/components/data-display/data-table/DataTable';
+import { IdentityCell } from '@shared/components/data-display/data-table/IdentityCell';
+import type { DataTableColumn } from '@shared/components/data-display/data-table/table-types';
+import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 
 type CandidateTableStage = 'all' | 'applied' | 'recommended' | 'shortlisted' | 'interview' | 'offer' | 'hire' | 'hired' | 'rejected';
 
@@ -71,6 +71,7 @@ export const CandidatesTable = ({
   loading = false,
 }: CandidatesTableProps) => {
   const normalizedStage = normalizeStage(stage);
+  const compactCellClassName = 'min-w-0 max-w-full overflow-hidden whitespace-nowrap';
   const columns: Array<DataTableColumn<ApplicantScoreItemDto>> = [
     {
       id: 'select',
@@ -118,18 +119,18 @@ export const CandidatesTable = ({
       accessor: (candidate) => candidate.applicant_name,
       sortable: true,
       sortType: 'string',
-      widthClassName: 'min-w-[260px]',
+      cellClassName: 'min-w-0',
     },
     {
       id: 'job',
       header: 'Job',
       cell: (candidate) => (
-        <JobTitleCell title={candidate.job_title} />
+        <JobTitleCell title={candidate.job_title} className="min-w-0 max-w-full" />
       ),
       accessor: (candidate) => candidate.job_title,
       sortable: true,
       sortType: 'string',
-      widthClassName: 'min-w-[180px]',
+      cellClassName: 'min-w-0',
     },
   ];
 
@@ -142,17 +143,19 @@ export const CandidatesTable = ({
         accessor: (candidate) => candidate.latest_interview_status ?? 'Pending',
         sortable: true,
         sortType: 'string',
+        cellClassName: 'min-w-0 max-w-full whitespace-nowrap',
       },
       {
         id: 'interview-date',
         header: 'Interview Date',
-        cell: (candidate) => <span className="text-[12px] leading-5">{formatDate(candidate.latest_interview_scheduled_date_time_utc)}</span>,
+        cell: (candidate) => <span className="block min-w-0 max-w-full truncate text-[12px] leading-5">{formatDate(candidate.latest_interview_scheduled_date_time_utc)}</span>,
         accessor: (candidate) =>
           candidate.latest_interview_scheduled_date_time_utc
             ? new Date(candidate.latest_interview_scheduled_date_time_utc)
             : null,
         sortable: true,
         sortType: 'date',
+        cellClassName: compactCellClassName,
       },
     );
   } else if (normalizedStage === 'offer') {
@@ -166,17 +169,19 @@ export const CandidatesTable = ({
         accessor: (candidate) => candidate.offer_status ?? candidate.offer?.status ?? 'Pending',
         sortable: true,
         sortType: 'string',
+        cellClassName: 'min-w-0 max-w-full whitespace-nowrap',
       },
       {
         id: 'offered',
         header: 'Offered',
-        cell: (candidate) => <span className="text-[12px] leading-5">{formatDate(candidate.offer_sent_at_utc ?? candidate.offer?.sent_at_utc)}</span>,
+        cell: (candidate) => <span className="block min-w-0 max-w-full truncate text-[12px] leading-5">{formatDate(candidate.offer_sent_at_utc ?? candidate.offer?.sent_at_utc)}</span>,
         accessor: (candidate) =>
           candidate.offer_sent_at_utc ?? candidate.offer?.sent_at_utc
             ? new Date(candidate.offer_sent_at_utc ?? candidate.offer?.sent_at_utc ?? '')
             : null,
         sortable: true,
         sortType: 'date',
+        cellClassName: compactCellClassName,
       },
     );
   } else {
@@ -188,6 +193,7 @@ export const CandidatesTable = ({
         accessor: (candidate) => candidate.submission_status,
         sortable: true,
         sortType: 'string',
+        cellClassName: 'min-w-0 max-w-full whitespace-nowrap',
       },
       {
         id: 'score',
@@ -198,14 +204,17 @@ export const CandidatesTable = ({
         accessor: (candidate) => candidate.score,
         sortable: true,
         sortType: 'number',
+        widthClassName: 'w-[56px]',
+        cellClassName: 'whitespace-nowrap',
       },
       {
         id: 'applied',
         header: 'Applied',
-        cell: (candidate) => <span className="text-[12px] leading-5">{formatDate(candidate.created_at_utc)}</span>,
+        cell: (candidate) => <span className="block min-w-0 max-w-full truncate text-[12px] leading-5">{formatDate(candidate.created_at_utc)}</span>,
         accessor: (candidate) => new Date(candidate.created_at_utc),
         sortable: true,
         sortType: 'date',
+        cellClassName: compactCellClassName,
       },
     );
   }
@@ -214,11 +223,11 @@ export const CandidatesTable = ({
     id: 'actions',
     header: 'Actions',
     align: 'right',
-      cell: (candidate) => (
-        <div className="flex items-center justify-end" onClick={stopRowToggle}>
-          <Link
-            to={`/recruiter/candidates/${candidate.resume_submission_id}`}
-            className={actionButtonClassName({ iconOnly: true })}
+    cell: (candidate) => (
+      <div className="flex min-w-0 max-w-full items-center justify-end whitespace-nowrap" onClick={stopRowToggle}>
+        <Link
+          to={`/recruiter/candidates/${candidate.resume_submission_id}`}
+          className={actionButtonClassName({ iconOnly: true })}
           title="View candidate"
           aria-label={`View ${candidate.applicant_name}`}
           onClick={stopRowToggle}
@@ -226,10 +235,11 @@ export const CandidatesTable = ({
           <Eye size={16} />
           <span className="sr-only">{`View ${candidate.applicant_name}`}</span>
         </Link>
-        </div>
-      ),
-    headerClassName: 'w-[96px]',
-    cellClassName: 'w-[96px]',
+      </div>
+    ),
+    widthClassName: 'w-[56px]',
+    headerClassName: 'whitespace-nowrap',
+    cellClassName: 'min-w-0 whitespace-nowrap',
   });
 
   return (
@@ -245,12 +255,11 @@ export const CandidatesTable = ({
 
         return {
           className: isSelected
-            ? 'bg-zinc-100/80 hover:[&>td]:bg-zinc-100 dark:bg-zinc-900 dark:hover:[&>td]:bg-zinc-900'
-            : 'hover:[&>td]:bg-zinc-50 dark:hover:[&>td]:bg-zinc-900/60',
+            ? 'cursor-pointer bg-zinc-100/80 hover:[&>td]:bg-zinc-100 focus-visible:outline-none dark:bg-zinc-900 dark:hover:[&>td]:bg-zinc-900'
+            : 'cursor-pointer hover:[&>td]:bg-zinc-50 focus-visible:outline-none dark:hover:[&>td]:bg-zinc-900/60',
           props: {
             tabIndex: 0,
             'aria-selected': isSelected,
-            className: 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-inset',
             onClick: () => onToggleSingleRow(candidateId),
             onKeyDown: onRowKeyDown(candidateId, onToggleSingleRow),
           },

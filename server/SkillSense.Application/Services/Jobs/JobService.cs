@@ -14,6 +14,7 @@ public sealed class JobService(
     ITextEmbeddingService embeddingService,
     IMapper mapper) : IJobService
 {
+    // Handles create.
     public async Task<JobResponse> CreateAsync(CreateJobRequest request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
@@ -38,6 +39,7 @@ public sealed class JobService(
         return mapper.Map<JobResponse>(job);
     }
 
+    // Parses status or default.
     private static JobStatus ParseStatusOrDefault(string? status)
     {
         if (string.IsNullOrWhiteSpace(status))

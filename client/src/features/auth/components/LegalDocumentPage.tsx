@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-import { Card } from "@shared/components/Card";
+import { Card } from "@shared/components/data-display/Card";
 import { runViewTransition } from "@shared/utils/viewTransition";
 import { AuthRouteTransition } from "@features/auth/components/AuthRouteTransition";
 
@@ -95,3 +95,4 @@ export const LegalDocumentPage = ({
     </div>
   );
 };
+

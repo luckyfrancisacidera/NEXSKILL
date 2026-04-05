@@ -8,12 +8,12 @@ import type {
   RescheduleInterviewInput,
 } from "@features/recruiter/types/interview.types";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
-import { Card } from "@shared/components/Card";
+import { Card } from "@shared/components/data-display/Card";
 import {
   InterviewModal,
   type InterviewFormValues,
 } from "@features/recruiter/pages/CandidateDetailPage/components/InterviewModal";
-import { SideDrawer } from "@shared/components/SideDrawer";
+import { SideDrawer } from "@shared/components/overlay/SideDrawer";
 import { sanitizeRichText } from "@shared/utils/richText";
 import { InterviewCalendar } from "./components/InterviewCalendar";
 import { InterviewSchedulerForm } from "./components/InterviewSchedulerForm";
@@ -415,3 +415,4 @@ export const InterviewFormPage = () => {
     </div>
   );
 };
+

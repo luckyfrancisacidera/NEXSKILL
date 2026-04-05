@@ -2,15 +2,16 @@ import { Eye, Search } from "lucide-react";
 import { Link, useLoaderData, useSubmit } from "react-router-dom";
 
 import type { HiredEmployeesLoaderData } from "@features/recruiter/types";
-import { Card } from "@shared/components/Card";
-import { actionButtonClassName } from "@shared/components/ActionButton";
-import { DepartmentCell } from "@shared/components/DepartmentCell";
-import { JobTitleCell } from "@shared/components/JobTitleCell";
-import { DataTable } from "@shared/components/ui/data-table/DataTable";
-import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
+import { Card } from "@shared/components/data-display/Card";
+import { actionButtonClassName } from "@shared/components/actions/ActionButton";
+import { DepartmentCell } from "@shared/components/data-display/DepartmentCell";
+import { JobTitleCell } from "@shared/components/data-display/JobTitleCell";
+import { DataTable } from "@shared/components/data-display/data-table/DataTable";
+import { IdentityCell } from "@shared/components/data-display/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import { SearchInput } from "@shared/components/form";
+import type { DataTableColumn } from "@shared/components/data-display/data-table/table-types";
 
 export const HiredEmployeesPage = () => {
   const { employees, pagination, filters } = useLoaderData() as HiredEmployeesLoaderData;
@@ -117,13 +118,13 @@ export const HiredEmployeesPage = () => {
         }}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="relative w-full max-w-md flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-            <input
+          <div className="w-full max-w-md flex-1">
+            <SearchInput
+              label="Search"
+              icon={<Search className="h-4 w-4" />}
               name="search"
               defaultValue={filters.search}
               placeholder="Search hires by name, job, or department"
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3.5 text-sm text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
             />
           </div>
           <TablePageSizeControl
@@ -158,3 +159,4 @@ export const HiredEmployeesPage = () => {
     </Card>
   );
 };
+

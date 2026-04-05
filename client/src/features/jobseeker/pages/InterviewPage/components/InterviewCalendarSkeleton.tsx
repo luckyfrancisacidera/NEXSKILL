@@ -1,4 +1,4 @@
-import { SkeletonBlock } from "@shared/components/skeletons/SkeletonBlock";
+import { SkeletonBlock } from "@shared/components/feedback/skeletons/SkeletonBlock";
 
 export const InterviewCalendarSkeleton = () => (
   <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
@@ -46,3 +46,4 @@ export const InterviewCalendarSkeleton = () => (
     </div>
   </div>
 );
+

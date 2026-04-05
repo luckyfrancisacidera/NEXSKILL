@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card } from "@shared/components/Card";
+import { Card } from "@shared/components/data-display/Card";
 import type { JobseekerInterview } from "@features/jobseeker/types";
 import { JobseekerInterviewCard } from "./JobseekerInterviewCard";
 import { interviewStatusCalendarPillClassName } from "@shared/utils/interviewStatus";
@@ -176,3 +176,4 @@ export const JobseekerInterviewList = ({
     </Card>
   );
 };
+

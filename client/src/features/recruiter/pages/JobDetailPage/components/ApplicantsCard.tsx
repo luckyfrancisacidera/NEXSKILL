@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
 import type { JobApplicantListItem } from '@features/recruiter/types';
-import { Card } from '@shared/components/Card';
-import { StatusBadge } from '@shared/components/StatusBadge';
+import { Card } from '@shared/components/data-display/Card';
+import { StatusBadge } from '@shared/components/data-display/StatusBadge';
 
 export interface ApplicantsCardProps {
   applicants: JobApplicantListItem[];
@@ -30,3 +30,4 @@ export const ApplicantsCard = ({ applicants }: ApplicantsCardProps) => (
     )}
   </Card>
 );
+

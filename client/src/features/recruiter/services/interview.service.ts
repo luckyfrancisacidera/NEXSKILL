@@ -35,6 +35,7 @@ interface ShortlistedCandidateOptionDto {
   candidateEmail: string;
 }
 
+// Maps recruiter interview payloads into the richer UI model expected by recruiter screens.
 const mapInterview = (dto: RecruiterInterviewDto): Interview => {
   const value = dto.locationOrMeetingLink?.trim() ?? "";
 
@@ -60,17 +61,21 @@ const mapInterview = (dto: RecruiterInterviewDto): Interview => {
   };
 };
 
+// Handles recruiter interview scheduling, retrieval, and archive mutations.
 export const recruiterInterviewService = {
+  // Use to load the recruiter interview list before rendering calendars, tables, or detail links.
   async getRecruiterInterviews(): Promise<Interview[]> {
     const response = await http.get<RecruiterInterviewDto[]>("/api/recruiter/interviews");
     return response.data.map(mapInterview);
   },
 
+  // Use to fetch a single interview record for the recruiter interview detail route.
   async getRecruiterInterview(interviewId: string): Promise<Interview> {
     const response = await http.get<RecruiterInterviewDto>(`/api/recruiter/interviews/${interviewId}`);
     return mapInterview(response.data);
   },
 
+  // Handles scheduling a new recruiter interview from the interview creation flow.
   async scheduleInterview(
     data: ScheduleInterviewInput,
   ): Promise<Interview> {
@@ -85,6 +90,7 @@ export const recruiterInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Use to fetch shortlisted candidates that can be scheduled for interviews on a specific job.
   async getShortlistedCandidates(jobId: string, department?: string): Promise<ShortlistedCandidateOption[]> {
     const response = await http.get<ShortlistedCandidateOptionDto[]>(`/api/recruiter/jobs/${jobId}/shortlisted-candidates`, {
       params: {
@@ -99,6 +105,7 @@ export const recruiterInterviewService = {
     }));
   },
 
+  // Handles updating the schedule, venue, and message for an existing recruiter interview.
   async rescheduleInterview(
     interviewId: string,
     data: RescheduleInterviewInput,
@@ -116,6 +123,7 @@ export const recruiterInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles canceling an interview and storing the recruiter-provided cancellation reason.
   async cancelInterview(interviewId: string, data: CancelInterviewInput): Promise<Interview> {
     const response = await http.post<RecruiterInterviewDto>(
       `/api/recruiter/interviews/${interviewId}/cancel`,
@@ -124,6 +132,7 @@ export const recruiterInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles marking an interview as completed once the meeting has finished.
   async completeInterview(interviewId: string): Promise<Interview> {
     const response = await http.post<RecruiterInterviewDto>(
       `/api/recruiter/interviews/${interviewId}/complete`,
@@ -132,6 +141,7 @@ export const recruiterInterviewService = {
     return mapInterview(response.data);
   },
 
+  // Handles archiving a completed or inactive interview out of the recruiter active list.
   async archiveInterview(interviewId: string): Promise<Interview> {
     const response = await http.post<RecruiterInterviewDto>(
       `/api/recruiter/interviews/${interviewId}/archive`,

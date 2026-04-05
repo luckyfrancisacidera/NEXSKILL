@@ -1,3 +1,9 @@
+/* =========================================
+   API CLIENT
+   Shared Axios client with auth-refresh retry logic and active tenant/profile headers.
+   Related: AuthProvider, protectedLoader, recruiter/company context providers
+========================================= */
+
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -19,6 +25,10 @@ export const http = axios.create({
   withCredentials: true,
   timeout: 10_000,
 });
+
+/* =========================================
+   REQUEST CONTEXT
+========================================= */
 
 const requestContext: {
   companyId: string | null;
@@ -94,6 +104,8 @@ const shouldSkipRefresh = (config?: AxiosRequestConfig) => {
 };
 
 const refreshAccessToken = async () => {
+  // Share one in-flight refresh across concurrent 401s so parallel requests do
+  // not stampede the refresh endpoint or race to overwrite cookie state.
   if (!refreshPromise) {
     refreshPromise = http.post("/api/auth/refresh").then(() => undefined).finally(() => {
       refreshPromise = null;
@@ -106,6 +118,8 @@ const refreshAccessToken = async () => {
 http.interceptors.request.use((config) => {
   config.headers = config.headers ?? {};
 
+  // Inject explicit company/profile scope here so feature services stay unaware
+  // of header mechanics and only manage business-level context selection.
   if (requestContext.companyId) {
     config.headers["X-Company-Id"] = requestContext.companyId;
   } else {
@@ -135,6 +149,8 @@ http.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        // Retry once after refresh so callers can treat most expired-session cases
+        // as transparent recovery instead of duplicating retry behavior per request.
         await refreshAccessToken();
         return await http(originalRequest);
       } catch {

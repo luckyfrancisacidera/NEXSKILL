@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
-import { AppToast, type ToastTone } from "@shared/components/Toast";
+import { AppToast, type ToastTone } from "@shared/components/feedback/Toast";
 
 interface ToastRecord {
   id: number;
@@ -72,6 +72,7 @@ export const useToast = () => {
 
   return context;
 };
+
 
 
 

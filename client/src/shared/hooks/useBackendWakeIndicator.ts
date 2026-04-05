@@ -8,6 +8,7 @@ import {
 
 const DEFAULT_WAKE_DELAY_MS = 3500;
 
+// Use to show a delayed wake indicator while the app waits for the backend to become responsive.
 export const useBackendWakeIndicator = (
   enabled: boolean,
   delayMs = DEFAULT_WAKE_DELAY_MS,

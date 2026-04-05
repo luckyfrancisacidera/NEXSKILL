@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 import { recruiterInterviewService } from "@features/recruiter/services/interview.service";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 
+// Use to preload a single recruiter interview detail view from the route param.
 export const recruiterInterviewDetailLoader = async ({
   params,
 }: LoaderFunctionArgs) => {

@@ -4,14 +4,17 @@ import {
   richTextToPlainText,
 } from "@shared/utils/richText";
 
+// Splits comma-delimited form fields into the individual values expected by job payload builders.
 const splitCsv = (value: string) =>
   value
     .split(",")
     .map((item) => item.trim());
 
+// Removes empty strings from job skill arrays before a recruiter create or update request is sent.
 export const normalizeJobStringArray = (values: Array<string | null | undefined>) =>
   normalizeStringArray(values);
 
+// Maps recruiter job form data into the API payload shape used by create and update actions.
 export const getJobPayload = (formData: FormData) => ({
   title: getString(formData, "title"),
   description: richTextToPlainText(getString(formData, "description")),

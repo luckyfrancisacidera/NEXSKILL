@@ -6,6 +6,7 @@ import {
   rethrowAsRouteError,
 } from "@features/jobseeker/loaders/loader.utils";
 
+// Use to preload the archived interviews page with the current route filters.
 export const archivedInterviewsLoader = async ({
   request,
 }: LoaderFunctionArgs): Promise<JobseekerArchivedInterviewsLoaderData> => {

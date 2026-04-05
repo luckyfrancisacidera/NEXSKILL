@@ -25,10 +25,10 @@ import { RecruiterInputField } from '@features/recruiter/components/RecruiterInp
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
 import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import type { JobDto } from '@features/recruiter/types';
-import { Button } from '@shared/components/Button';
-import { Card } from '@shared/components/Card';
-import { PredictiveInput } from '@shared/components/PredictiveInput';
-import { RichTextField } from '@shared/components/RichTextField';
+import { Button } from '@shared/components/actions/Button';
+import { Card } from '@shared/components/data-display/Card';
+import { PredictiveInput } from '@shared/components/form/PredictiveInput';
+import { RichTextField } from '@shared/components/form/RichTextField';
 import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
 
 const departments = ['Engineering', 'Product', 'Design', 'Marketing', 'Operations', 'Sales'];
@@ -257,3 +257,4 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
     </div>
   );
 };
+

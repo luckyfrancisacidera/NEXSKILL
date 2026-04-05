@@ -35,5 +35,6 @@ export const interviewStatusCalendarPillClassName: Record<DisplayInterviewStatus
   Completed: "bg-blue-50 text-blue-700",
 };
 
+// Use to branch interview actions once a status can no longer move forward in the workflow.
 export const isTerminalInterviewStatus = (status: DisplayInterviewStatus) =>
   status === "Declined" || status === "Cancelled" || status === "Completed";

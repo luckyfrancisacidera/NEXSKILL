@@ -17,6 +17,7 @@ export interface RecruiterJobMutationPayload {
 
 const isBrowser = () => typeof window !== 'undefined' && typeof sessionStorage !== 'undefined';
 
+// Maps full job payloads into the smaller list item shape used by recruiter job tables.
 export const toJobListItem = (job: JobDto | JobListItem): JobListItem => ({
   id: job.id,
   title: job.title,
@@ -26,6 +27,7 @@ export const toJobListItem = (job: JobDto | JobListItem): JobListItem => ({
   status: job.status,
 });
 
+// Publishes recruiter job mutations so list pages can stay current after create, edit, or delete flows.
 export const publishRecruiterJobMutation = (payload: Omit<RecruiterJobMutationPayload, 'mutationId' | 'occurredAt'>) => {
   if (!isBrowser()) {
     return;
@@ -42,6 +44,7 @@ export const publishRecruiterJobMutation = (payload: Omit<RecruiterJobMutationPa
   window.dispatchEvent(new CustomEvent<RecruiterJobMutationPayload>(JOB_MUTATION_EVENT_NAME, { detail: mutation }));
 };
 
+// Use to recover a recent job mutation after navigation back to the listing screen.
 export const readLatestRecruiterJobMutation = (): RecruiterJobMutationPayload | null => {
   if (!isBrowser()) {
     return null;
@@ -64,6 +67,7 @@ export const readLatestRecruiterJobMutation = (): RecruiterJobMutationPayload | 
   }
 };
 
+// Subscribes recruiter pages to in-app job mutations without relying on a server push channel.
 export const subscribeRecruiterJobMutations = (
   handler: (payload: RecruiterJobMutationPayload) => void,
 ) => {
@@ -80,6 +84,7 @@ export const subscribeRecruiterJobMutations = (
   return () => window.removeEventListener(JOB_MUTATION_EVENT_NAME, listener);
 };
 
+// Checks whether a mutated job still belongs in the recruiter list under the current filters.
 export const jobMatchesCurrentFilters = (job: JobListItem, filters: JobListFilters) => {
   const normalizedDepartment = filters.department?.trim().toLowerCase();
   if (normalizedDepartment && normalizedDepartment !== 'all') {
@@ -100,6 +105,7 @@ export const jobMatchesCurrentFilters = (job: JobListItem, filters: JobListFilte
   );
 };
 
+// Applies a single job mutation to the current list so recruiter pages can update optimistically.
 export const applyRecruiterJobMutation = (
   jobs: JobListItem[],
   mutation: RecruiterJobMutationPayload,

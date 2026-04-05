@@ -1,6 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from 'lucide-react';
 
-import { Card } from '@shared/components/Card';
+import { Card } from '@shared/components/data-display/Card';
 
 export interface MetricCardProps {
   icon: LucideIcon;
@@ -38,3 +38,4 @@ export const MetricCard = ({ icon: Icon, label, value, comparisonPercent, valueD
     </Card>
   );
 };
+

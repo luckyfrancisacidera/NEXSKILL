@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 
-import { Card } from '@shared/components/Card';
+import { Card } from '@shared/components/data-display/Card';
 
 export interface RecruiterSectionCardProps {
   title: string;
@@ -42,3 +42,4 @@ export const RecruiterSectionCard = ({
     </section>
   );
 };
+

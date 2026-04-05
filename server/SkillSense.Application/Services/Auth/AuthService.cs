@@ -199,6 +199,7 @@ public sealed class AuthService(
         return await CreateSuccessAuthResultAsync(user, "Token refreshed.", refreshTokenValidation.IsPersistent, cancellationToken);
     }
 
+    // Determines whether session active.
     public async Task<bool> IsSessionActiveAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -310,6 +311,7 @@ public sealed class AuthService(
         }
     }
 
+    // Requests password reset pin.
     public async Task RequestPasswordResetPinAsync(RequestPasswordResetPinRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -406,6 +408,7 @@ public sealed class AuthService(
         }
     }
 
+    // Loads current user.
     public async Task<CurrentUserResponse> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -414,6 +417,7 @@ public sealed class AuthService(
         return AuthUserProfileMapper.ToCurrentUserResponse(user, roles);
     }
 
+    // Loads profile.
     public async Task<AccountProfileResponse> GetProfileAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -422,6 +426,7 @@ public sealed class AuthService(
         return AuthUserProfileMapper.ToAccountProfileResponse(user, roles);
     }
 
+    // Updates profile.
     public async Task<AccountProfileResponse> UpdateProfileAsync(Guid userId, UpdateAccountProfileRequest request, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -441,6 +446,7 @@ public sealed class AuthService(
         return AuthUserProfileMapper.ToAccountProfileResponse(user, roles);
     }
 
+    // Requests email change pin.
     public async Task RequestEmailChangePinAsync(Guid userId, RequestEmailChangePinRequest request, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -487,6 +493,7 @@ public sealed class AuthService(
         }
     }
 
+    // Verifies email change pin.
     public async Task VerifyEmailChangePinAsync(Guid userId, VerifyEmailChangePinRequest request, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -521,6 +528,7 @@ public sealed class AuthService(
         }
     }
 
+    // Finalizes email change.
     public async Task<AccountProfileResponse> FinalizeEmailChangeAsync(Guid userId, FinalizeEmailChangeRequest request, CancellationToken cancellationToken)
     {
         var user = await LoadUserForProfileAsync(userId, cancellationToken);
@@ -634,6 +642,7 @@ public sealed class AuthService(
         }
     }
 
+    // Verifies reset pin.
     public async Task VerifyResetPinAsync(VerifyResetPinRequest request, CancellationToken cancellationToken)
     {
         var email = _sanitizer.SanitizeEmail(request.Email);
@@ -734,6 +743,7 @@ public sealed class AuthService(
         }
     }
 
+    // Creates success auth result.
     private async Task<AuthResult> CreateSuccessAuthResultAsync(AppUser user, string message, bool isPersistent, CancellationToken cancellationToken)
     {
         var roles = await _userManager.GetRolesAsync(user);
@@ -753,6 +763,7 @@ public sealed class AuthService(
             roles.ToArray());
     }
 
+    // Loads blocked authentication result.
     private async Task<AuthResult?> GetBlockedAuthenticationResultAsync(AppUser user, CancellationToken cancellationToken)
     {
         var prePasswordBlockResult = await GetPrePasswordAuthenticationBlockResultAsync(user);
@@ -781,6 +792,7 @@ public sealed class AuthService(
         return null;
     }
 
+    // Loads pre password authentication block result.
     private async Task<AuthResult?> GetPrePasswordAuthenticationBlockResultAsync(AppUser user)
     {
         if (!user.IsActive)
@@ -803,6 +815,7 @@ public sealed class AuthService(
         return null;
     }
 
+    // Validates password.
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)
     {
         var errors = new List<string>();
@@ -815,11 +828,13 @@ public sealed class AuthService(
         return errors.Distinct().ToArray();
     }
 
+    // Ensures role exists.
     private async Task EnsureRoleExistsAsync(string role)
     {
         if (!await _roleManager.RoleExistsAsync(role)) await _roleManager.CreateAsync(new IdentityRole<Guid>(role));
     }
 
+    // Handles decode password reset token.
     private static string? DecodePasswordResetToken(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
@@ -838,6 +853,7 @@ public sealed class AuthService(
         }
     }
 
+    // Builds password reset link.
     private static string BuildPasswordResetLink(string frontendBaseUrl, string email, string encodedToken)
     {
         var query = new Dictionary<string, string?>
@@ -850,6 +866,7 @@ public sealed class AuthService(
         return QueryHelpers.AddQueryString($"{normalizedBaseUrl}/reset-password", query);
     }
 
+    // Builds password reset email html.
     private static string BuildPasswordResetEmailHtml(string resetLink)
     {
         var encodedLink = WebUtility.HtmlEncode(resetLink);
@@ -861,6 +878,7 @@ public sealed class AuthService(
             """;
     }
 
+    // Normalizes frontend base URL.
     private static string NormalizeFrontendBaseUrl(string frontendBaseUrl)
     {
         if (string.IsNullOrWhiteSpace(frontendBaseUrl))
@@ -871,6 +889,7 @@ public sealed class AuthService(
         return frontendBaseUrl.Trim().TrimEnd('/');
     }
 
+    // Handles load user for profile.
     private async Task<AppUser> LoadUserForProfileAsync(Guid userId, CancellationToken cancellationToken)
         => await _userManager.Users
             .Include(user => user.JobSeekerProfile)
@@ -878,6 +897,7 @@ public sealed class AuthService(
             .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken)
            ?? throw new ArgumentException("Unable to find the current account.");
 
+    // Handles load user by email with pins.
     private Task<AppUser?> LoadUserByEmailWithPinsAsync(string email, CancellationToken cancellationToken)
         => _userManager.Users
             .Include(user => user.PasswordResetPins)
@@ -885,9 +905,11 @@ public sealed class AuthService(
                 user => user.NormalizedEmail == email.ToUpperInvariant(),
                 cancellationToken);
 
+    // Handles null if empty.
     private static string? NullIfEmpty(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    // Validates requested email change.
     private static void ValidateRequestedEmailChange(AppUser user, string newEmail, string confirmEmail)
     {
         if (string.IsNullOrWhiteSpace(newEmail))
@@ -911,6 +933,7 @@ public sealed class AuthService(
         }
     }
 
+    // Ensures email available.
     private async Task EnsureEmailAvailableAsync(string email, Guid currentUserId)
     {
         var existing = await _userManager.FindByEmailAsync(email);
@@ -920,6 +943,7 @@ public sealed class AuthService(
         }
     }
 
+    // Creates verification pin.
     private static PasswordResetPinEntity CreateVerificationPin(
         Guid userId,
         VerificationPinPurpose purpose,
@@ -942,6 +966,7 @@ public sealed class AuthService(
         };
     }
 
+    // Invalidates active pins.
     private static void InvalidateActivePins(AppUser user, VerificationPinPurpose purpose)
     {
         foreach (var existingPin in user.PasswordResetPins.Where(pin => !pin.Used && pin.Purpose == purpose))
@@ -950,9 +975,11 @@ public sealed class AuthService(
         }
     }
 
+    // Handles generate pin.
     private static string GeneratePin()
         => RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
 
+    // Handles find latest matching pin.
     private static PasswordResetPinEntity? FindLatestMatchingPin(
         AppUser user,
         VerificationPinPurpose purpose,
@@ -966,6 +993,7 @@ public sealed class AuthService(
             .OrderByDescending(existingPin => existingPin.CreatedAtUtc)
             .FirstOrDefault();
 
+    // Verifies pin.
     private static bool VerifyPin(PasswordResetPinEntity storedPin, string candidatePin)
     {
         if (string.IsNullOrWhiteSpace(candidatePin) || string.IsNullOrWhiteSpace(storedPin.PinHash) || string.IsNullOrWhiteSpace(storedPin.PinSalt))
@@ -989,12 +1017,14 @@ public sealed class AuthService(
             Encoding.UTF8.GetBytes(storedPin.PinHash));
     }
 
+    // Determines whether h pin.
     private static string HashPin(string pin, byte[] saltBytes)
     {
         var hashBytes = Rfc2898DeriveBytes.Pbkdf2(pin, saltBytes, 10_000, HashAlgorithmName.SHA256, 32);
         return Convert.ToBase64String(hashBytes);
     }
 
+    // Handles combine name.
     private static string? CombineName(string? firstName, string? lastName)
     {
         var parts = new[] { NullIfEmpty(firstName), NullIfEmpty(lastName) }
@@ -1004,6 +1034,7 @@ public sealed class AuthService(
         return string.IsNullOrWhiteSpace(combined) ? null : combined;
     }
 
+    // Builds email change pin html.
     private static string BuildEmailChangePinHtml(string pin)
         => $"""
             <p>We received a request to update your Nexskill email address.</p>
@@ -1011,6 +1042,7 @@ public sealed class AuthService(
             <p>This PIN expires in 10 minutes. If you did not request this change, you can ignore this email.</p>
             """;
 
+    // Builds password reset pin html.
     private static string BuildPasswordResetPinHtml(string pin, int expiresInMinutes)
         => $"""
             <p>We received a request to reset your Nexskill password.</p>
@@ -1018,6 +1050,7 @@ public sealed class AuthService(
             <p>This PIN expires in {expiresInMinutes} minutes. If you did not request this change, you can ignore this email.</p>
             """;
 
+    // Synchronizes job seeker profile.
     private static void SyncJobSeekerProfile(AppUser user, IEnumerable<string> roles)
     {
         var isJobSeeker = roles.Any(role => role.Equals("JobSeeker", StringComparison.OrdinalIgnoreCase));
@@ -1037,6 +1070,7 @@ public sealed class AuthService(
         user.JobSeekerProfile.UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // Ensures stored name parts.
     private async Task EnsureStoredNamePartsAsync(AppUser user)
     {
         var profileFullName = NullIfEmpty(user.JobSeekerProfile?.FullName);
@@ -1095,6 +1129,7 @@ public sealed class AuthService(
         return (parts[0], string.Join(' ', parts.Skip(1)));
     }
 
+    // Maps change password error.
     private static string MapChangePasswordError(IdentityResult result)
     {
         var invalidCurrentPasswordError = result.Errors.FirstOrDefault(error =>

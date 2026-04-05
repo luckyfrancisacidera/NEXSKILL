@@ -62,6 +62,7 @@ public sealed class RecruiterService(
         "USD",
     };
 
+    // Loads profile.
     public async Task<RecruiterProfileResponse> GetProfileAsync(Guid recruiterId, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
@@ -70,6 +71,7 @@ public sealed class RecruiterService(
         return mapper.Map<RecruiterProfileResponse>(profile);
     }
 
+    // Handles upsert profile.
     public async Task<RecruiterProfileResponse> UpsertProfileAsync(Guid recruiterId, RecruiterProfileRequest request, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
@@ -88,12 +90,14 @@ public sealed class RecruiterService(
         return mapper.Map<RecruiterProfileResponse>(profile);
     }
 
+    // Creates job.
     public async Task<JobListItemResponse> CreateJobAsync(Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await CreateJobAsync(profile.CompanyId, recruiterId, request, ct);
     }
 
+    // Creates job.
     public async Task<JobListItemResponse> CreateJobAsync(Guid companyId, Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -124,12 +128,14 @@ public sealed class RecruiterService(
         return MapJob(job, job.NumberOfVacancies);
     }
 
+    // Handles duplicate job.
     public async Task<JobListItemResponse> DuplicateJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await DuplicateJobAsync(profile.CompanyId, recruiterId, jobId, ct);
     }
 
+    // Handles duplicate job.
     public async Task<JobListItemResponse> DuplicateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -168,12 +174,14 @@ public sealed class RecruiterService(
         return MapJob(duplicate, duplicate.NumberOfVacancies);
     }
 
+    // Updates job.
     public async Task<JobListItemResponse> UpdateJobAsync(Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await UpdateJobAsync(profile.CompanyId, recruiterId, jobId, request, ct);
     }
 
+    // Updates job.
     public async Task<JobListItemResponse> UpdateJobAsync(Guid companyId, Guid recruiterId, Guid jobId, UpdateJobRequest request, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -210,12 +218,14 @@ public sealed class RecruiterService(
         return MapJob(job, remainingVacancies);
     }
 
+    // Updates job status.
     public async Task<JobListItemResponse> UpdateJobStatusAsync(Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await UpdateJobStatusAsync(profile.CompanyId, recruiterId, jobId, request, ct);
     }
 
+    // Updates job status.
     public async Task<JobListItemResponse> UpdateJobStatusAsync(Guid companyId, Guid recruiterId, Guid jobId, UpdateJobStatusRequest request, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -243,12 +253,14 @@ public sealed class RecruiterService(
         return MapJob(job, remainingVacancies);
     }
 
+    // Loads jobs.
     public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetJobsAsync(profile.CompanyId, recruiterId, pageNumber, pageSize, search, department, sortBy, sortDir, ct);
     }
 
+    // Loads jobs.
     public async Task<PagedResult<JobListItemResponse>> GetJobsAsync(Guid companyId, Guid recruiterId, int pageNumber, int pageSize, string? search, string? department, string? sortBy, string? sortDir, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -275,12 +287,14 @@ public sealed class RecruiterService(
         });
     }
 
+    // Loads job.
     public async Task<JobListItemResponse?> GetJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetJobAsync(profile.CompanyId, recruiterId, jobId, ct);
     }
 
+    // Loads job.
     public async Task<JobListItemResponse?> GetJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -294,12 +308,14 @@ public sealed class RecruiterService(
         return MapJob(job, remainingVacancies);
     }
 
+    // Deletes job.
     public async Task DeleteJobAsync(Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         await DeleteJobAsync(profile.CompanyId, recruiterId, jobId, ct);
     }
 
+    // Deletes job.
     public async Task DeleteJobAsync(Guid companyId, Guid recruiterId, Guid jobId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -313,6 +329,7 @@ public sealed class RecruiterService(
         InvalidateAfterJobMutation(recruiterId, jobId);
     }
 
+    // Loads dashboard.
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct);
@@ -324,6 +341,7 @@ public sealed class RecruiterService(
         return await GetDashboardCoreAsync(profile!.CompanyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
     }
 
+    // Loads dashboard.
     public async Task<RecruiterDashboardResponse> GetDashboardAsync(Guid companyId, Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct = default)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct);
@@ -340,6 +358,7 @@ public sealed class RecruiterService(
         return await GetDashboardCoreAsync(companyId, recruiterId, startDate, endDate, department, jobRole, groupBy, ct);
     }
 
+    // Loads dashboard core.
     private async Task<RecruiterDashboardResponse> GetDashboardCoreAsync(Guid companyId, Guid recruiterId, DateTime? startDate, DateTime? endDate, string? department, string? jobRole, string? groupBy, CancellationToken ct)
     {
         var normalizedStartDate = startDate?.Date;
@@ -413,12 +432,14 @@ public sealed class RecruiterService(
         });
     }
 
+    // Loads applicant scores.
     public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetApplicantScoresAsync(profile.CompanyId, recruiterId, jobId, department, stage, search, recommendedTopPercent, pageNumber, pageSize, ct);
     }
 
+    // Loads applicant scores.
     public async Task<ApplicantScoresResponse> GetApplicantScoresAsync(Guid companyId, Guid recruiterId, Guid? jobId, string? department, string? stage, string? search, int? recommendedTopPercent, int pageNumber, int pageSize, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -517,12 +538,14 @@ public sealed class RecruiterService(
         };
     }
 
+    // Loads applicant by submission ID.
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetApplicantBySubmissionIdAsync(profile.CompanyId, recruiterId, submissionId, ct);
     }
 
+    // Loads applicant by submission ID.
     public async Task<ApplicantDetailResponse?> GetApplicantBySubmissionIdAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -552,12 +575,14 @@ public sealed class RecruiterService(
         return detail;
     }
 
+    // Loads applicant resume access.
     public async Task<ApplicantResumeAccessResult> GetApplicantResumeAccessAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetApplicantResumeAccessAsync(profile.CompanyId, recruiterId, submissionId, ct);
     }
 
+    // Loads applicant resume access.
     public async Task<ApplicantResumeAccessResult> GetApplicantResumeAccessAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -588,6 +613,7 @@ public sealed class RecruiterService(
         };
     }
 
+    // Loads shortlisted candidates by job.
     public async Task<IReadOnlyList<ShortlistedCandidateOptionDto>> GetShortlistedCandidatesByJobAsync(Guid companyId, Guid recruiterId, Guid jobId, string? department = null, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -617,12 +643,14 @@ public sealed class RecruiterService(
             .ToList();
     }
 
+    // Updates applicant status.
     public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await UpdateApplicantStatusAsync(profile.CompanyId, recruiterId, submissionId, request, ct);
     }
 
+    // Updates applicant status.
     public async Task<ApplicantScoreItemResponse> UpdateApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, UpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var action = ApplicantStageTransitionPolicy.ResolveAction(request.Action, request.Status);
@@ -630,12 +658,14 @@ public sealed class RecruiterService(
         return await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, nextStatus, ct);
     }
 
+    // Creates offer.
     public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await CreateOfferAsync(profile.CompanyId, recruiterId, submissionId, request, ct);
     }
 
+    // Creates offer.
     public async Task<ApplicantScoreItemResponse> CreateOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, SendOfferRequest request, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -695,12 +725,14 @@ public sealed class RecruiterService(
         return updated;
     }
 
+    // Loads offer.
     public async Task<OfferResponse?> GetOfferAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetOfferAsync(profile.CompanyId, recruiterId, submissionId, ct);
     }
 
+    // Loads offer.
     public async Task<OfferResponse?> GetOfferAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -710,12 +742,14 @@ public sealed class RecruiterService(
         return latestOffer is null ? null : MapOffer(latestOffer);
     }
 
+    // Loads hired employees.
     public async Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await GetHiredEmployeesAsync(profile.CompanyId, recruiterId, pageNumber, pageSize, search, ct);
     }
 
+    // Loads hired employees.
     public async Task<PagedResult<EmployeeRecordResponse>> GetHiredEmployeesAsync(Guid companyId, Guid recruiterId, int pageNumber, int pageSize, string? search, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -731,12 +765,14 @@ public sealed class RecruiterService(
         };
     }
 
+    // Marks hired.
     public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await MarkHiredAsync(profile.CompanyId, recruiterId, submissionId, ct);
     }
 
+    // Marks hired.
     public async Task<ApplicantScoreItemResponse> MarkHiredAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct = default)
     {
         var updated = await ApplyApplicantStatusAsync(companyId, recruiterId, submissionId, ResumeSubmissionStatus.Hired, ct);
@@ -746,12 +782,14 @@ public sealed class RecruiterService(
         return updated;
     }
 
+    // Updates applicant statuses.
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
         return await UpdateApplicantStatusesAsync(profile.CompanyId, recruiterId, request, ct);
     }
 
+    // Updates applicant statuses.
     public async Task<BulkUpdateApplicantStageResponse> UpdateApplicantStatusesAsync(Guid companyId, Guid recruiterId, BulkUpdateApplicantStageRequest request, CancellationToken ct = default)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -923,6 +961,7 @@ public sealed class RecruiterService(
         }
     }
 
+    // Builds bulk failure response.
     private static BulkUpdateApplicantStageResponse BuildBulkFailureResponse(string action, IReadOnlyList<Guid> submissionIds, string message)
     {
         var results = submissionIds
@@ -945,9 +984,11 @@ public sealed class RecruiterService(
         };
     }
 
+    // Resolves next status.
     private static ResumeSubmissionStatus ResolveNextStatus(ResumeSubmissionStatus currentStatus, string action)
         => ApplicantStageTransitionPolicy.ResolveNextStatus(currentStatus, action);
 
+    // Resolves transition status.
     private async Task<ResumeSubmissionStatus> ResolveTransitionStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, string action, CancellationToken ct)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -966,10 +1007,12 @@ public sealed class RecruiterService(
         }
     }
 
+    // Loads applicant stage context for company.
     private async Task<ApplicantStageContextData> GetApplicantStageContextForCompanyAsync(Guid companyId, Guid recruiterId, Guid submissionId, CancellationToken ct)
         => await recruiterRepository.GetApplicantStageContextAsync(recruiterId, companyId, submissionId, ct)
             ?? throw new KeyNotFoundException("Submission not found.");
 
+    // Handles apply applicant status.
     private async Task<ApplicantScoreItemResponse> ApplyApplicantStatusAsync(Guid companyId, Guid recruiterId, Guid submissionId, ResumeSubmissionStatus nextStatus, CancellationToken ct)
     {
         await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
@@ -1020,6 +1063,7 @@ public sealed class RecruiterService(
         return updated;
     }
 
+    // Validates offer request.
     private void ValidateOfferRequest(SendOfferRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Title))
@@ -1095,6 +1139,7 @@ public sealed class RecruiterService(
         }
     }
 
+    // Determines whether send offer.
     private bool CanSendOffer(ApplicantStageContextData context, JobOfferEntity? latestOffer)
     {
         if (!HasCompletedInterview(context))
@@ -1112,6 +1157,7 @@ public sealed class RecruiterService(
             && latestOffer.Status is JobOfferStatus.Declined or JobOfferStatus.Expired or JobOfferStatus.Cancelled;
     }
 
+    // Ensures interview flow allows transition.
     private void EnsureInterviewFlowAllowsTransition(ApplicantStageContextData context, ResumeSubmissionStatus nextStatus, string action)
     {
         if (nextStatus == ResumeSubmissionStatus.Offer)
@@ -1137,9 +1183,11 @@ public sealed class RecruiterService(
         }
     }
 
+    // Determines whether completed interview.
     private static bool HasCompletedInterview(ApplicantStageContextData context)
         => context.LatestInterview?.Status == InterviewStatus.Completed;
 
+    // Maps interview summary.
     private static CandidateInterviewSummaryDto? MapInterviewSummary(ApplicantStageContextData context)
         => context.LatestInterview is null
             ? null
@@ -1150,6 +1198,7 @@ public sealed class RecruiterService(
                 Status = context.LatestInterview.Status,
             };
 
+    // Ensures offer expiration state.
     private async Task<JobOfferEntity?> EnsureOfferExpirationStateAsync(JobOfferEntity? offer, CancellationToken ct)
     {
         if (offer is null || offer.Status != JobOfferStatus.Pending || !offer.ExpirationDate.HasValue)
@@ -1169,6 +1218,7 @@ public sealed class RecruiterService(
         return offer;
     }
 
+    // Maps offer.
     private OfferResponse MapOffer(JobOfferEntity offer)
     {
         var effectiveStatus = ResolveOfferStatus(offer);
@@ -1202,6 +1252,7 @@ public sealed class RecruiterService(
         };
     }
 
+    // Resolves offer status.
     private JobOfferStatus ResolveOfferStatus(JobOfferEntity offer)
     {
         if (offer.Status == JobOfferStatus.Pending && offer.ExpirationDate.HasValue && offer.ExpirationDate.Value < DateOnly.FromDateTime(dateTimeProvider.UtcNow))
@@ -1212,14 +1263,17 @@ public sealed class RecruiterService(
         return offer.Status;
     }
 
+    // Handles requires offer end date.
     private static bool RequiresOfferEndDate(string employmentType)
         => employmentType.Trim().Equals("Contract", StringComparison.OrdinalIgnoreCase)
             || employmentType.Trim().Equals("Internship", StringComparison.OrdinalIgnoreCase)
             || employmentType.Trim().Equals("Temporary", StringComparison.OrdinalIgnoreCase);
 
+    // Normalizes offer option.
     private static string NormalizeOfferOption(string value, IReadOnlySet<string> allowedValues)
         => allowedValues.First(option => option.Equals(value.Trim(), StringComparison.OrdinalIgnoreCase));
 
+    // Builds salary text.
     private static string BuildSalaryText(decimal amount, string currency, string salaryType)
     {
         var normalizedCurrency = NormalizeOfferOption(currency, AllowedCurrencies);
@@ -1227,6 +1281,7 @@ public sealed class RecruiterService(
         return $"{normalizedCurrency} {amount.ToString("N2", global::System.Globalization.CultureInfo.InvariantCulture)} / {normalizedSalaryType.ToLowerInvariant()}";
     }
 
+    // Handles notify offer sent.
     private async Task NotifyOfferSentAsync(ResumeSubmissionEntity submission, string jobTitle, JobOfferEntity offer, CancellationToken ct)
     {
         if (!submission.JobSeekerUserId.HasValue)
@@ -1244,6 +1299,7 @@ public sealed class RecruiterService(
         }, ct);
     }
 
+    // Handles notify candidate hired.
     private async Task NotifyCandidateHiredAsync(ResumeSubmissionEntity submission, string jobTitle, CancellationToken ct)
     {
         if (!submission.JobSeekerUserId.HasValue)
@@ -1261,15 +1317,18 @@ public sealed class RecruiterService(
         }, ct);
     }
 
+    // Determines whether dashboard company context.
     private static bool HasDashboardCompanyContext(RecruiterProfileEntity? profile)
         => profile is not null
             && profile.CompanyId != Guid.Empty
             && profile.Company is not null
             && !string.IsNullOrWhiteSpace(profile.Company.Name);
 
+    // Creates empty dashboard response.
     private static RecruiterDashboardResponse CreateEmptyDashboardResponse()
         => new();
 
+    // Ensures profile complete.
     private async Task<RecruiterProfileEntity> EnsureProfileCompleteAsync(Guid recruiterId, CancellationToken ct)
     {
         var profile = await recruiterRepository.GetProfileByUserIdAsync(recruiterId, ct)
@@ -1282,6 +1341,7 @@ public sealed class RecruiterService(
         return profile;
     }
 
+    // Ensures profile in company.
     private async Task<RecruiterProfileEntity> EnsureProfileInCompanyAsync(Guid companyId, Guid recruiterId, CancellationToken ct)
     {
         var profile = await EnsureProfileCompleteAsync(recruiterId, ct);
@@ -1293,6 +1353,7 @@ public sealed class RecruiterService(
         return profile;
     }
 
+    // Builds duplicate job request.
     private static CreateJobRequest BuildDuplicateJobRequest(JobEntity original)
     {
         var requiredSkills = JsonSerializer.Deserialize<List<string>>(original.RequiredSkillsJson) ?? [];
@@ -1323,6 +1384,7 @@ public sealed class RecruiterService(
         };
     }
 
+    // Builds duplicate title.
     private static string BuildDuplicateTitle(string title)
     {
         var trimmedTitle = title.Trim();
@@ -1334,6 +1396,7 @@ public sealed class RecruiterService(
         return $"Copy of {trimmedTitle}";
     }
 
+    // Normalizes bullets.
     private static string? NormalizeBullets(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -1346,17 +1409,19 @@ public sealed class RecruiterService(
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => LeadingBulletPattern.Replace(line.Trim(), string.Empty).Trim())
             .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => $"• {line}");
+            .Select(line => $"â€¢ {line}");
 
         return string.Join(Environment.NewLine, lines);
     }
 
+    // Parses status or default.
     private static JobStatus ParseStatusOrDefault(string? status)
     {
         if (string.IsNullOrWhiteSpace(status)) return JobStatus.Draft;
         return Enum.TryParse<JobStatus>(status, true, out var parsed) ? parsed : JobStatus.Draft;
     }
 
+    // Attempts to parse updatable status.
     private static bool TryParseUpdatableStatus(string? status, out JobStatus parsedStatus)
     {
         if (Enum.TryParse<JobStatus>(status, true, out parsedStatus) && parsedStatus is JobStatus.Draft or JobStatus.Published or JobStatus.Closed)
@@ -1368,6 +1433,7 @@ public sealed class RecruiterService(
         return false;
     }
 
+    // Maps job.
     private JobListItemResponse MapJob(JobEntity job, int remainingVacancies)
     {
         var dto = mapper.Map<JobListItemResponse>(job);
@@ -1375,6 +1441,7 @@ public sealed class RecruiterService(
         return dto;
     }
 
+    // Maps employee.
     private static EmployeeRecordResponse MapEmployee(EmployeeRecordData employee)
         => new()
         {
@@ -1396,6 +1463,7 @@ public sealed class RecruiterService(
             HireDateUtc = employee.HireDateUtc,
         };
 
+    // Builds projected applicants.
     private List<ApplicantScoreItemResponse> BuildProjectedApplicants(List<ApplicantScoreData> sourceItems, int topPercent)
     {
         var recommendedIds = BuildRecommendedIds(sourceItems, topPercent);
@@ -1404,6 +1472,7 @@ public sealed class RecruiterService(
             .ToList();
     }
 
+    // Builds recommended IDs.
     private static IReadOnlySet<Guid> BuildRecommendedIds(List<ApplicantScoreData> sourceItems, int topPercent)
     {
         var recommendedCount = sourceItems.Count == 0
@@ -1417,6 +1486,7 @@ public sealed class RecruiterService(
             .ToHashSet();
     }
 
+    // Builds applicant projection.
     private async Task<ApplicantScoreItemResponse?> BuildApplicantProjectionAsync(Guid recruiterId, Guid companyId, Guid submissionId, IReadOnlySet<Guid>? recommendedIds, CancellationToken ct)
     {
         var source = await recruiterRepository.GetApplicantScoreBySubmissionIdAsync(recruiterId, companyId, submissionId, ct);
@@ -1433,6 +1503,7 @@ public sealed class RecruiterService(
         return item;
     }
 
+    // Resolves displayed status.
     private async Task<string?> ResolveDisplayedStatusAsync(Guid recruiterId, Guid companyId, Guid submissionId, CancellationToken ct)
     {
         var items = await recruiterRepository.GetApplicantScoreDataAsync(recruiterId, companyId, null, null, ct);
@@ -1446,6 +1517,7 @@ public sealed class RecruiterService(
         return mapper.Map<ApplicantScoreItemResponse>(source, opt => opt.Items["recommendedIds"] = recommendedIds).SubmissionStatus;
     }
 
+    // Builds remaining vacancies lookup.
     private async Task<Dictionary<Guid, int>> BuildRemainingVacanciesLookupAsync(IReadOnlyCollection<JobEntity> jobs, CancellationToken ct)
     {
         var hiredCounts = await recruiterRepository.GetHiredCountsByJobIdsAsync(jobs.Select(x => x.Id).Distinct().ToList(), ct);
@@ -1454,21 +1526,25 @@ public sealed class RecruiterService(
             job => Math.Max(0, job.NumberOfVacancies - hiredCounts.GetValueOrDefault(job.Id)));
     }
 
+    // Loads remaining vacancies by job ID.
     private async Task<int> GetRemainingVacanciesByJobIdAsync(Guid jobId, int numberOfVacancies, CancellationToken ct)
     {
         var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(jobId, ct);
         return Math.Max(0, numberOfVacancies - hiredCount);
     }
 
+    // Handles to UTC start of day.
     private static DateTime ToUtcStartOfDay(DateTime date)
         => DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 
+    // Invalidates recruiter caches.
     private void InvalidateRecruiterCaches(Guid recruiterId)
     {
         cacheService.RemoveByPrefix($"jobs:recruiter:list:{recruiterId}:");
         cacheService.RemoveByPrefix($"dashboard:recruiter:{recruiterId}:");
     }
 
+    // Invalidates after job mutation.
     private void InvalidateAfterJobMutation(Guid recruiterId, Guid jobId)
     {
         logger.LogDebug("Invalidating recruiter job caches for recruiter {RecruiterId} after job mutation {JobId}", recruiterId, jobId);

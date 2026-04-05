@@ -49,6 +49,7 @@ public sealed class ResumeProcessingService(
         return processedCount;
     }
 
+    // Processes submission.
     private async Task ProcessSubmissionAsync(ResumeSubmissionEntity submission, CancellationToken ct)
     {
         var totalTimer = global::System.Diagnostics.Stopwatch.StartNew();
@@ -150,9 +151,11 @@ public sealed class ResumeProcessingService(
         }
     }
 
+    // Saves score.
     private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
         => await resumeScoreRepository.AddAsync(ResumeScoreEntityFactory.Create(submission, jobDescriptionText, score), saveChanges: false, ct);
 
+    // Loads normalized job description.
     private Task<NormalizedJobDescription> GetNormalizedJobDescriptionAsync(JobEntity job, string appliedJobPosition, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -163,6 +166,7 @@ public sealed class ResumeProcessingService(
             () => Task.FromResult(NormalizedJobDescriptionFactory.Create(job, appliedJobPosition)));
     }
 
+    // Builds normalized job cache key.
     private static string BuildNormalizedJobCacheKey(JobEntity job, string appliedJobPosition)
     {
         var payload = string.Join(

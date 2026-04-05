@@ -12,7 +12,7 @@ export interface BulkActionsBarProps {
  * Action bar that renders the available bulk actions for the active pipeline stage.
  */
 export const BulkActionsBar = ({ actions, selectedCount, isSubmittingAction, onQueueAction }: BulkActionsBarProps) => (
-  <div className="flex flex-wrap items-center gap-2">
+  <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
     {actions.map((action) => {
       const isSecondary = action.accent === 'violet';
       const isDanger = action.accent === 'red';

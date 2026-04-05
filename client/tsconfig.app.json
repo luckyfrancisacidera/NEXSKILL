@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
-     "baseUrl": ".",
     "paths": {
-      "@*": ["src/*"],
-      "@features/*": ["src/features/*"],
-      "@shared/*" : ["src/shared/*"],
-      "@app/*" : ["src/app/*"],
-      "recharts" : ["src/shared/vendor/recharts"],
-      "axios": ["src/shared/vendor/axios"]
+      "@*": ["./src/*"],
+      "@features/*": ["./src/features/*"],
+      "@shared/*" : ["./src/shared/*"],
+      "@app/*" : ["./src/app/*"],
+      "recharts" : ["./src/shared/vendor/recharts"],
+      "axios": ["./src/shared/vendor/axios"]
     },
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2022",

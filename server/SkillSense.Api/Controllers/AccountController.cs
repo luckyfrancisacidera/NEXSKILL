@@ -2,48 +2,56 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SkillSense.Api.Security;
+using SkillSense.Application.Contracts.Auth;
 using SkillSense.Persistence.Data;
 
 namespace SkillSense.Api.Controllers;
+
+/* =========================================
+   ACCOUNT SETUP
+========================================= */
 
 [Route("api/account")]
 [ApiController]
 [Authorize]
 public sealed class AccountController(SkillSenseDbContext dbContext) : ControllerBase
 {
+    private Guid CurrentUserId => CurrentUserContext.GetUserId(User);
+
+    // Loads setup status.
     [HttpGet("setup-status")]
     public async Task<IActionResult> GetSetupStatus(CancellationToken ct)
     {
-        var userId = CurrentUserContext.GetUserId(User);
+        var userId = CurrentUserId;
         var roles = User.Claims
             .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
             .Select(c => c.Value)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        // Recruiter takes precedence when user has multiple roles
-            if (roles.Any(r => string.Equals(r, "Recruiter", StringComparison.OrdinalIgnoreCase)))
+        // Recruiter takes precedence when user has multiple roles.
+        if (roles.Any(r => string.Equals(r, "Recruiter", StringComparison.OrdinalIgnoreCase)))
         {
-                var profile = await dbContext.RecruiterProfiles
-                    .FirstOrDefaultAsync(x => x.UserId == userId, ct);
-                var requiresSetup = profile is null || profile.CompanyId == Guid.Empty;
-                Domain.Entities.CompanyEntity? company = null;
-                if (!requiresSetup)
-                {
-                    company = await dbContext.Companies.FindAsync(new object[] { profile!.CompanyId }, ct);
-                }
+            var profile = await dbContext.RecruiterProfiles
+                .FirstOrDefaultAsync(x => x.UserId == userId, ct);
+            var requiresSetup = profile is null || profile.CompanyId == Guid.Empty;
+            Domain.Entities.CompanyEntity? company = null;
+            if (!requiresSetup)
+            {
+                company = await dbContext.Companies.FindAsync(new object[] { profile!.CompanyId }, ct);
+            }
 
-                return Ok(new
-                {
-                    requiresSetup,
-                    type = "recruiter",
-                    missingFields = requiresSetup ? new[] { "company" } : Array.Empty<string>(),
-                    activeCompanyId = requiresSetup ? (Guid?)null : profile!.CompanyId,
-                    recruiterProfileIds = profile is null ? Array.Empty<Guid>() : new[] { profile.Id },
-                    company = company is null
-                        ? null
-                        : new { company.Id, company.Name, company.PrimaryEmail }
-                });
+            return Ok(new
+            {
+                requiresSetup,
+                type = "recruiter",
+                missingFields = requiresSetup ? new[] { "company" } : Array.Empty<string>(),
+                activeCompanyId = requiresSetup ? (Guid?)null : profile!.CompanyId,
+                recruiterProfileIds = profile is null ? Array.Empty<Guid>() : new[] { profile.Id },
+                company = company is null
+                    ? null
+                    : new { company.Id, company.Name, company.PrimaryEmail }
+            });
         }
 
         if (roles.Any(r => string.Equals(r, "CompanyAdmin", StringComparison.OrdinalIgnoreCase)))
@@ -90,18 +98,14 @@ public sealed class AccountController(SkillSenseDbContext dbContext) : Controlle
         });
     }
 
-    public sealed record CompleteRecruiterSetupRequest(
-        string CompanyName,
-        string CompanyEmail,
-        string? Location);
-
+    // Completes recruiter setup.
     [HttpPost("setup/recruiter")]
     [Authorize(Roles = "Recruiter")]
     public async Task<IActionResult> CompleteRecruiterSetup(
         [FromBody] CompleteRecruiterSetupRequest request,
         CancellationToken ct)
     {
-        var userId = CurrentUserContext.GetUserId(User);
+        var userId = CurrentUserId;
 
         var profile = await dbContext.RecruiterProfiles
             .FirstOrDefaultAsync(x => x.UserId == userId, ct);
@@ -138,20 +142,14 @@ public sealed class AccountController(SkillSenseDbContext dbContext) : Controlle
         return Ok(new { message = "Recruiter setup completed." });
     }
 
-    public sealed record CompleteCompanyAdminSetupRequest(
-        string CompanyName,
-        string CompanyEmail,
-        string? Location,
-        string AdminName,
-        string AdminEmail);
-
+    // Completes company admin setup.
     [HttpPost("setup/company-admin")]
     [Authorize(Roles = "CompanyAdmin")]
     public async Task<IActionResult> CompleteCompanyAdminSetup(
         [FromBody] CompleteCompanyAdminSetupRequest request,
         CancellationToken ct)
     {
-        var userId = CurrentUserContext.GetUserId(User);
+        var userId = CurrentUserId;
 
         var adminProfile = await dbContext.AdminProfiles
             .FirstOrDefaultAsync(x => x.UserId == userId, ct);
@@ -201,4 +199,3 @@ public sealed class AccountController(SkillSenseDbContext dbContext) : Controlle
         return Ok(new { message = "Company admin setup completed." });
     }
 }
-

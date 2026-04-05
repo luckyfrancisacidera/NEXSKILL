@@ -1,19 +1,23 @@
-import { Search } from "lucide-react";
+import { useState } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Link, useLoaderData, useSubmit } from "react-router-dom";
 
 import type { CompanyAdminEmployeesDto } from "@features/admin/types/admin.type";
-import { Card } from "@shared/components/Card";
-import { actionButtonClassName } from "@shared/components/ActionButton";
-import { DepartmentCell } from "@shared/components/DepartmentCell";
-import { DataTable } from "@shared/components/ui/data-table/DataTable";
-import { IdentityCell } from "@shared/components/ui/data-table/IdentityCell";
-import { TablePagination } from "@shared/components/ui/data-table/TablePagination";
-import { TablePageSizeControl } from "@shared/components/ui/data-table/TablePageSizeControl";
-import type { DataTableColumn } from "@shared/components/ui/data-table/table-types";
+import { Card } from "@shared/components/data-display/Card";
+import { actionButtonClassName } from "@shared/components/actions/ActionButton";
+import { DepartmentCell } from "@shared/components/data-display/DepartmentCell";
+import { DataTable } from "@shared/components/data-display/data-table/DataTable";
+import { IdentityCell } from "@shared/components/data-display/data-table/IdentityCell";
+import { TablePagination } from "@shared/components/data-display/data-table/TablePagination";
+import { TablePageSizeControl } from "@shared/components/data-display/data-table/TablePageSizeControl";
+import { FilterSnapSheet } from "@shared/components/overlay/FilterSnapSheet";
+import type { DataTableColumn } from "@shared/components/data-display/data-table/table-types";
 
 export const CompanyAdminEmployeesPage = () => {
   const data = useLoaderData() as CompanyAdminEmployeesDto & { filters: { search: string } };
   const submit = useSubmit();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [draftPageSize, setDraftPageSize] = useState(String(data.pageSize));
 
   const submitFilters = (searchValue: string, pageSizeValue: number | string) => {
     const formData = new FormData();
@@ -117,7 +121,7 @@ export const CompanyAdminEmployeesPage = () => {
             submitSearch(event.currentTarget);
           }}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-3">
             <div className="relative w-full max-w-md flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
@@ -127,7 +131,29 @@ export const CompanyAdminEmployeesPage = () => {
                 className="h-10 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-[13px] text-zinc-700 outline-none transition placeholder:text-zinc-400 hover:border-zinc-300 focus:border-zinc-500 sm:h-11 sm:pr-3.5 sm:text-sm dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
               />
             </div>
+
+            <div className="flex justify-end lg:hidden">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                aria-label="Open employee filters"
+                aria-expanded={isDrawerOpen}
+                aria-controls="employee-filter-drawer"
+                onClick={() => {
+                  setDraftPageSize(String(data.pageSize));
+                  setIsDrawerOpen(true);
+                }}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span>Filters</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-zinc-900 px-1.5 py-0.5 text-xs font-semibold text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900">
+                  {Number(data.pageSize !== 10)}
+                </span>
+              </button>
+            </div>
+
             <TablePageSizeControl
+              className="hidden lg:inline-flex"
               value={data.pageSize}
               onChange={(pageSize) => submitFilters(data.filters.search, pageSize)}
             />
@@ -135,6 +161,52 @@ export const CompanyAdminEmployeesPage = () => {
           </div>
         </form>
       </div>
+
+      <FilterSnapSheet
+        id="employee-filter-drawer"
+        title="Filter employees"
+        description="Adjust the employee list, then apply the changes."
+        isOpen={isDrawerOpen}
+        footer={
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <button
+              type="button"
+              className="h-11 rounded-xl bg-zinc-100 px-4 text-sm font-medium text-zinc-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+              onClick={() => {
+                submitFilters(data.filters.search, draftPageSize);
+                setIsDrawerOpen(false);
+              }}
+            >
+              Apply Filters
+            </button>
+            <button
+              type="button"
+              className="h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
+              onClick={() => setDraftPageSize("10")}
+            >
+              Reset
+            </button>
+          </div>
+        }
+        onClose={() => setIsDrawerOpen(false)}
+      >
+        <div>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-[0.16em] text-zinc-400">
+            Page Size
+          </label>
+          <select
+            value={draftPageSize}
+            onChange={(event) => setDraftPageSize(event.target.value)}
+            className="h-11 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3.5 text-sm text-zinc-100 outline-none transition hover:border-zinc-600 focus:border-zinc-500 focus:ring-4 focus:ring-zinc-500/20"
+          >
+            {["10", "20", "50"].map((value) => (
+              <option key={value} value={value}>
+                {value} per page
+              </option>
+            ))}
+          </select>
+        </div>
+      </FilterSnapSheet>
 
       {data.items.length === 0 ? (
         <div className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No employees yet.</div>
@@ -160,3 +232,4 @@ export const CompanyAdminEmployeesPage = () => {
     </Card>
   );
 };
+

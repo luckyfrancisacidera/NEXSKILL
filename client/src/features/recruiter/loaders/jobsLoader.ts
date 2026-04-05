@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { recruiterService } from "@features/recruiter/service/recruiter.service";
+import { recruiterService } from "@features/recruiter/services/recruiter.service";
 import { rethrowAsRouteError } from "@features/recruiter/loaders/utils";
 
 /**

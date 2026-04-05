@@ -1,11 +1,12 @@
 import { useState } from "react";
 
-import { SavedJobsEmptyState, SearchField } from "@features/jobseeker/components";
+import { SavedJobsEmptyState } from "@features/jobseeker/components";
 import { useSavedJobs } from "@features/jobseeker/hooks";
-import { jobseekerService } from "@features/jobseeker/service/jobseeker.service";
-import { Card } from "@shared/components/Card";
-import { JobCard } from "@shared/components/JobCard";
-import { JobListSkeleton } from "@shared/components/skeletons/JobListSkeleton";
+import { jobseekerService } from "@features/jobseeker/services/jobseeker.service";
+import { Card } from "@shared/components/data-display/Card";
+import { JobCard } from "@shared/components/data-display/JobCard";
+import { JobListSkeleton } from "@shared/components/feedback/skeletons/JobListSkeleton";
+import { SearchInput } from "@shared/components/form";
 import type { Job } from "@shared/types";
 
 export const SavedJobsPage = () => {
@@ -22,12 +23,13 @@ export const SavedJobsPage = () => {
               Revisit bookmarked roles and jump back into applications quickly.
             </p>
           </div>
-          <SearchField
+          <SearchInput
+            label="Search"
             ariaLabel="Search saved jobs"
-            className="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-500 hover:border-zinc-400 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 md:max-w-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:hover:border-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-zinc-800"
+            wrapperClassName="md:max-w-xs"
             placeholder="Search saved jobs"
             value={search}
-            onChange={setSearch}
+            onValueChange={setSearch}
           />
         </div>
       </Card>
