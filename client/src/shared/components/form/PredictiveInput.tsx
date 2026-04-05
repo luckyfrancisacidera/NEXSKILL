@@ -9,6 +9,7 @@ export interface PredictiveInputProps {
   name?: string;
   placeholder: string;
   options: string[];
+  className?: string;
   value?: string;
   defaultValue?: string;
   required?: boolean;
@@ -36,6 +37,7 @@ export const PredictiveInput = ({
   name,
   placeholder,
   options,
+  className,
   value,
   defaultValue = '',
   required = false,
@@ -182,7 +184,7 @@ export const PredictiveInput = ({
           }
         }}
         placeholder={placeholder}
-        className={recruiterInputClassName}
+        className={className ?? recruiterInputClassName}
       />
 
       {showDropdown && position

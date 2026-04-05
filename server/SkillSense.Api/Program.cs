@@ -120,7 +120,7 @@ builder.Services.AddHttpClient("resume-parser-health", http =>
 builder.Services
     .AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", failureStatus: HealthStatus.Unhealthy, tags: ["ready"])
-    .AddCheck<ResumeParserHealthCheck>("resume_parser", failureStatus: HealthStatus.Degraded, tags: ["ready"])
+    .AddCheck<ResumeParserHealthCheck>("resume_parser", failureStatus: HealthStatus.Unhealthy, tags: ["ready"])
     .AddCheck<ResumeProcessingHealthCheck>("resume_processing", failureStatus: HealthStatus.Unhealthy, tags: ["ready"]);
 
 builder.Services.AddRateLimiter(options =>
@@ -270,6 +270,12 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+    },
     ResponseWriter = WriteHealthResponseAsync,
 });
 app.MapControllers();

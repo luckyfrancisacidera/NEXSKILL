@@ -42,7 +42,7 @@ services:
       GROQ_API_KEY: ${PARSER_GROQ_API_KEY:-}
       GROQ_MODEL: ${PARSER_GROQ_MODEL:-llama-3.3-70b-versatile}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready').read()"]
       interval: 20s
       timeout: 5s
       retries: 5

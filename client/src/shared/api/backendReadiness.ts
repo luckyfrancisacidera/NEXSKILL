@@ -50,6 +50,11 @@ export const ensureBackendReadiness = () => {
       if (!response.ok) {
         throw new Error(`Backend readiness probe failed with status ${response.status}`);
       }
+
+      const payload = (await response.json()) as { status?: string };
+      if (payload.status !== "Healthy") {
+        throw new Error(`Backend readiness probe returned status ${payload.status ?? "unknown"}`);
+      }
     })
     .then(() => {
       completeBackendReadinessProbe({ wasSuccessful: true });

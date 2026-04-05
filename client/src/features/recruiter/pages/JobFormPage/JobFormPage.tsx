@@ -23,10 +23,10 @@ import {
 import { RecruiterFieldLabel } from '@features/recruiter/components/RecruiterFieldLabel';
 import { RecruiterInputField } from '@features/recruiter/components/RecruiterInputField';
 import { RecruiterSectionCard } from '@features/recruiter/components/RecruiterSectionCard';
-import { RecruiterSelectField } from '@features/recruiter/components/RecruiterSelectField';
 import type { JobDto } from '@features/recruiter/types';
 import { Button } from '@shared/components/actions/Button';
 import { Card } from '@shared/components/data-display/Card';
+import { Dropdown, type DropdownOption } from '@shared/components/form';
 import { PredictiveInput } from '@shared/components/form/PredictiveInput';
 import { RichTextField } from '@shared/components/form/RichTextField';
 import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
@@ -51,6 +51,50 @@ interface JobFormLoaderData {
   job?: Partial<JobDto>;
 }
 
+const jobFormInputClassName =
+  'w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:focus:ring-white/15';
+
+const workSetupOptions: DropdownOption[] = [
+  { value: '0', label: 'Onsite' },
+  { value: '1', label: 'Hybrid' },
+  { value: '2', label: 'Remote' },
+];
+
+const employmentTypeOptions: DropdownOption[] = [
+  { value: '0', label: 'Full Time' },
+  { value: '1', label: 'Part Time' },
+  { value: '2', label: 'Contract' },
+  { value: '3', label: 'Internship' },
+  { value: '4', label: 'Temporary' },
+];
+
+const currencyOptions: DropdownOption[] = currencies.map((currency) => ({
+  value: currency,
+  label: currency,
+}));
+
+const experienceLevelOptions: DropdownOption[] = [
+  { value: '', label: 'Select level' },
+  ...experienceLevels.map((level) => ({
+    value: level,
+    label: level,
+  })),
+];
+
+const educationOptions: DropdownOption[] = [
+  { value: '', label: 'Select education' },
+  ...educationLevels.map((level) => ({
+    value: level,
+    label: level,
+  })),
+];
+
+const statusOptions: DropdownOption[] = [
+  { value: 'Draft', label: 'Draft' },
+  { value: 'Published', label: 'Published' },
+  { value: 'Closed', label: 'Closed' },
+];
+
 const getEditorValue = (value?: string | string[] | null, asList = false) => {
   if (asList || Array.isArray(value)) {
     return arrayToRichTextList(value);
@@ -71,14 +115,28 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   const [description, setDescription] = useState(getEditorValue(job?.description));
   const [responsibilities, setResponsibilities] = useState(getEditorValue(job?.responsibilities, true));
   const [benefits, setBenefits] = useState(getEditorValue(job?.benefits));
+  const [workSetup, setWorkSetup] = useState(String(job?.work_setup ?? 0));
+  const [employmentType, setEmploymentType] = useState(String(job?.employment_type ?? 0));
+  const [currency, setCurrency] = useState(String(job?.currency ?? 'PHP'));
+  const [experienceLevel, setExperienceLevel] = useState(String(job?.experience_level ?? ''));
+  const [education, setEducation] = useState(String(job?.education ?? ''));
+  const [minimumEducation, setMinimumEducation] = useState(String(job?.min_education ?? ''));
+  const [status, setStatus] = useState(String(job?.status ?? 'Draft'));
   const [editorErrors, setEditorErrors] = useState<{ description?: string; responsibilities?: string }>({});
 
   useEffect(() => {
     setDescription(getEditorValue(job?.description));
     setResponsibilities(getEditorValue(job?.responsibilities, true));
     setBenefits(getEditorValue(job?.benefits));
+    setWorkSetup(String(job?.work_setup ?? 0));
+    setEmploymentType(String(job?.employment_type ?? 0));
+    setCurrency(String(job?.currency ?? 'PHP'));
+    setExperienceLevel(String(job?.experience_level ?? ''));
+    setEducation(String(job?.education ?? ''));
+    setMinimumEducation(String(job?.min_education ?? ''));
+    setStatus(String(job?.status ?? 'Draft'));
     setEditorErrors({});
-  }, [job?.benefits, job?.description, job?.responsibilities]);
+  }, [job?.benefits, job?.currency, job?.description, job?.education, job?.employment_type, job?.experience_level, job?.min_education, job?.responsibilities, job?.status, job?.work_setup]);
 
   return (
     <div className="space-y-6">
@@ -133,41 +191,69 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <RecruiterFieldLabel htmlFor="job-title">Job Title *</RecruiterFieldLabel>
-                <PredictiveInput name="title" placeholder="e.g. Software Engineer" isRequired options={titles} defaultValue={String(job?.title ?? '')} />
+                <PredictiveInput
+                  name="title"
+                  placeholder="e.g. Software Engineer"
+                  isRequired
+                  options={titles}
+                  defaultValue={String(job?.title ?? '')}
+                  className={jobFormInputClassName}
+                />
               </div>
               <div>
                 <RecruiterFieldLabel htmlFor="department">Department</RecruiterFieldLabel>
-                <PredictiveInput name="department" placeholder="Type a department" isRequired options={departments} defaultValue={String(job?.department ?? '')} />
+                <PredictiveInput
+                  name="department"
+                  placeholder="Type a department"
+                  isRequired
+                  options={departments}
+                  defaultValue={String(job?.department ?? '')}
+                  className={jobFormInputClassName}
+                />
               </div>
-              <RecruiterInputField id="location" autoComplete="off" name="location" required defaultValue={String(job?.location ?? '')} placeholder="City, Country" label="Location *" icon={MapPin} />
-              <RecruiterSelectField id="work-setup" name="work_setup" defaultValue={String(job?.work_setup ?? 0)} label="Work Setup">
-                <option value="0">Onsite</option>
-                <option value="1">Hybrid</option>
-                <option value="2">Remote</option>
-              </RecruiterSelectField>
+              <RecruiterInputField id="location" autoComplete="off" name="location" required defaultValue={String(job?.location ?? '')} placeholder="City, Country" label="Location *" icon={MapPin} className={jobFormInputClassName} />
+              <Dropdown
+                id="work-setup"
+                name="work_setup"
+                label="Work Setup"
+                value={workSetup}
+                options={workSetupOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setWorkSetup(event.target.value)}
+              />
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <RecruiterSelectField id="employment-type" name="employment_type" defaultValue={String(job?.employment_type ?? 0)} label="Employment Type">
-                <option value="0">Full Time</option>
-                <option value="1">Part Time</option>
-                <option value="2">Contract</option>
-                <option value="3">Internship</option>
-                <option value="4">Temporary</option>
-              </RecruiterSelectField>
-              <RecruiterInputField id="schedule" autoComplete="off" name="schedule" defaultValue={String(job?.schedule ?? '')} placeholder="Mon-Fri, 9AM-6PM" label="Schedule" />
-              <RecruiterInputField id="vacancies" type="number" min={0} name="number_of_vacancies" defaultValue={String(job?.number_of_vacancies ?? 1)} label="Vacancies" />
+              <Dropdown
+                id="employment-type"
+                name="employment_type"
+                label="Employment Type"
+                value={employmentType}
+                options={employmentTypeOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setEmploymentType(event.target.value)}
+              />
+              <RecruiterInputField id="schedule" autoComplete="off" name="schedule" defaultValue={String(job?.schedule ?? '')} placeholder="Mon-Fri, 9AM-6PM" label="Schedule" className={jobFormInputClassName} />
+              <RecruiterInputField id="vacancies" type="number" min={0} name="number_of_vacancies" defaultValue={String(job?.number_of_vacancies ?? 1)} label="Vacancies" className={jobFormInputClassName} />
             </div>
           </RecruiterSectionCard>
 
           <RecruiterSectionCard title="Compensation" description="Keep salary inputs in the existing annualized format expected by the backend." icon={CircleDollarSign}>
             <div className="grid gap-4 md:grid-cols-3">
-              <RecruiterInputField id="salary-min" type="number" min="0" step="1000" name="salary_min_per_annum" defaultValue={String(job?.salary_min_per_annum ?? '')} label="Minimum Salary (Annual)" />
-              <RecruiterInputField id="salary-max" type="number" min="0" step="1000" name="salary_max_per_annum" defaultValue={String(job?.salary_max_per_annum ?? '')} label="Maximum Salary (Annual)" />
-              <div>
-                <RecruiterFieldLabel htmlFor="currency">Currency</RecruiterFieldLabel>
-                <PredictiveInput name="currency" placeholder="Currency" options={currencies} defaultValue={String(job?.currency ?? 'PHP')} />
-              </div>
+              <RecruiterInputField id="salary-min" type="number" min="0" step="1000" name="salary_min_per_annum" defaultValue={String(job?.salary_min_per_annum ?? '')} label="Minimum Salary (Annual)" className={jobFormInputClassName} />
+              <RecruiterInputField id="salary-max" type="number" min="0" step="1000" name="salary_max_per_annum" defaultValue={String(job?.salary_max_per_annum ?? '')} label="Maximum Salary (Annual)" className={jobFormInputClassName} />
+              <Dropdown
+                id="currency"
+                name="currency"
+                label="Currency"
+                value={currency}
+                options={currencyOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setCurrency(event.target.value)}
+              />
             </div>
           </RecruiterSectionCard>
 
@@ -205,25 +291,39 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
           <RecruiterSectionCard title="Skills & Qualifications" description="These inputs drive both the recruiter workflow and matching features.">
             <div className="grid gap-4 md:grid-cols-2">
-              <RecruiterInputField id="required-skills" autoComplete="off" required name="required_skills" defaultValue={String((job?.required_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="React, TypeScript, Node.js" label="Required Skills" />
-              <RecruiterInputField id="preferred-skills" autoComplete="off" required name="preferred_skills" defaultValue={String((job?.preferred_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="GraphQL, Docker" label="Preferred Skills" />
-              <RecruiterSelectField id="experience-level" name="experience_level" defaultValue={String(job?.experience_level ?? '')} label="Experience Level">
-                <option value="">Select level</option>
-                {experienceLevels.map((level) => (
-                  <option key={level}>{level}</option>
-                ))}
-              </RecruiterSelectField>
-              <RecruiterInputField id="minimum-years" type="number" name="min_years" defaultValue={String(job?.min_years ?? '')} label="Minimum Years" />
-              <div>
-                <RecruiterFieldLabel htmlFor="education">Education</RecruiterFieldLabel>
-                <PredictiveInput name="education" placeholder="Type education level" options={educationLevels} defaultValue={String(job?.education ?? '')} />
-              </div>
-              <RecruiterSelectField id="minimum-education" name="min_education" defaultValue={String(job?.min_education ?? '')} label="Minimum Education">
-                <option value="">Select minimum education</option>
-                {educationLevels.map((level) => (
-                  <option key={level}>{level}</option>
-                ))}
-              </RecruiterSelectField>
+              <RecruiterInputField id="required-skills" autoComplete="off" required name="required_skills" defaultValue={String((job?.required_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="React, TypeScript, Node.js" label="Required Skills" className={jobFormInputClassName} />
+              <RecruiterInputField id="preferred-skills" autoComplete="off" required name="preferred_skills" defaultValue={String((job?.preferred_skills as string[] | undefined)?.join(', ') ?? '')} placeholder="GraphQL, Docker" label="Preferred Skills" className={jobFormInputClassName} />
+              <Dropdown
+                id="experience-level"
+                name="experience_level"
+                label="Experience Level"
+                value={experienceLevel}
+                options={experienceLevelOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setExperienceLevel(event.target.value)}
+              />
+              <RecruiterInputField id="minimum-years" type="number" name="min_years" defaultValue={String(job?.min_years ?? '')} label="Minimum Years" className={jobFormInputClassName} />
+              <Dropdown
+                id="education"
+                name="education"
+                label="Education"
+                value={education}
+                options={educationOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setEducation(event.target.value)}
+              />
+              <Dropdown
+                id="minimum-education"
+                name="min_education"
+                label="Minimum Education"
+                value={minimumEducation}
+                options={educationOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setMinimumEducation(event.target.value)}
+              />
             </div>
           </RecruiterSectionCard>
 
@@ -238,11 +338,16 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                 helperText="Add a short list of benefits or perks candidates should notice quickly."
                 minHeightClassName="min-h-[150px]"
               />
-              <RecruiterSelectField id="status" name="status" defaultValue={String(job?.status ?? 'Draft')} label="Job Status">
-                <option value="Draft">Draft</option>
-                <option value="Published">Published</option>
-                <option value="Closed">Closed</option>
-              </RecruiterSelectField>
+              <Dropdown
+                id="status"
+                name="status"
+                label="Job Status"
+                value={status}
+                options={statusOptions}
+                compactOnMobile={false}
+                buttonClassName="h-11"
+                onChange={(event) => setStatus(event.target.value)}
+              />
             </div>
           </RecruiterSectionCard>
 
