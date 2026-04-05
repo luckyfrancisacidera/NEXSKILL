@@ -9,18 +9,18 @@ public sealed class ResumeParserHealthCheck(IHttpClientFactory httpClientFactory
         try
         {
             using var client = httpClientFactory.CreateClient("resume-parser-health");
-            using var response = await client.GetAsync("health", cancellationToken);
+            using var response = await client.GetAsync("ready", cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                return HealthCheckResult.Healthy("Resume parser is reachable.");
+                return HealthCheckResult.Healthy("Resume parser is fully ready.");
             }
 
-            return HealthCheckResult.Degraded($"Resume parser returned {(int)response.StatusCode}.");
+            return HealthCheckResult.Unhealthy($"Resume parser readiness returned {(int)response.StatusCode}.");
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Degraded("Resume parser health probe failed.", ex);
+            return HealthCheckResult.Unhealthy("Resume parser readiness probe failed.", ex);
         }
     }
 }
