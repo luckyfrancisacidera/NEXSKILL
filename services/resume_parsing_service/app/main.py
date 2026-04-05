@@ -4,7 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 import spacy
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Response, UploadFile
 from dotenv import load_dotenv
 
 from app.resources import (
@@ -33,6 +33,16 @@ load_dotenv()
 
 state = AppState()
 
+
+def is_parser_ready() -> bool:
+    return (
+        state.nlp is not None
+        and state.skill_matcher is not None
+        and state.title_matcher is not None
+        and bool(state.exp_titles)
+        and bool(state.edu_programs)
+    )
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     resource_paths = resolve_parser_resource_paths()
@@ -58,8 +68,20 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/ready")
+def ready(response: Response):
+    if not is_parser_ready():
+        response.status_code = 503
+        return {"status": "loading"}
+
+    return {"status": "ready"}
+
+
 @app.post("/parse")
 async def parse(file: UploadFile = File(...), parser_version: str = Query(default="v2")):
+    if not is_parser_ready():
+        raise HTTPException(status_code=503, detail="Parser is still initializing")
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
 
