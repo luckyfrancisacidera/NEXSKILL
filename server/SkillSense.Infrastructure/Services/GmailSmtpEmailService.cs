@@ -37,7 +37,7 @@ public sealed class GmailSmtpEmailService(
         {
             DeliveryMethod = SmtpDeliveryMethod.Network,
             EnableSsl = _settings.EnableSsl,
-            Credentials = new NetworkCredential(_settings.Email.Trim(), _settings.AppPassword.Trim()),
+            Credentials = new NetworkCredential(_settings.Email.Trim(), _settings.NormalizedAppPassword),
         };
 
         try
@@ -50,7 +50,13 @@ public sealed class GmailSmtpEmailService(
         }
         catch (Exception ex) when (ex is SmtpException or InvalidOperationException or FormatException)
         {
-            logger.LogError(ex, "Gmail SMTP email delivery failed for {Email}.", message.ToEmail);
+            logger.LogError(
+                ex,
+                "Gmail SMTP email delivery failed. To={Email} Host={Host} Port={Port} Sender={Sender}.",
+                message.ToEmail,
+                _settings.Host.Trim(),
+                _settings.Port,
+                _settings.Email.Trim());
             throw new InvalidOperationException("Email delivery failed.", ex);
         }
     }

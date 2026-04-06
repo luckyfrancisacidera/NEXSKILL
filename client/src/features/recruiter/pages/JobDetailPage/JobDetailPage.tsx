@@ -242,6 +242,7 @@ export const JobDetailPage = () => {
               >
                 <RichTextContent
                   html={job.description}
+                  className="text-justify"
                   emptyFallback="No description provided."
                 />
               </DetailBlock>
@@ -297,7 +298,7 @@ export const JobDetailPage = () => {
                     </span>
                   }
                 >
-                  <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
+                  <ul className="list-disc space-y-2 pl-5 text-justify text-zinc-700 dark:text-zinc-300">
                     <li>{job.min_years ? `${job.min_years}+ years of experience` : 'Experience not specified'}</li>
                     <li>{job.education || job.min_education || 'Education not specified'}</li>
                     <li>{job.experience_level || 'Role level not specified'}</li>
@@ -311,7 +312,7 @@ export const JobDetailPage = () => {
                     </span>
                   }
                 >
-                  <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
+                  <ul className="space-y-2 text-justify text-zinc-700 dark:text-zinc-300">
                     <li>
                       <span className="font-medium text-zinc-900 dark:text-zinc-100">Schedule:</span> {job.schedule || 'Not specified'}
                     </li>

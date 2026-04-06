@@ -204,12 +204,13 @@ export const JobDetailPage = () => {
               <DetailBlock title={renderDetailTitle("About the Role", FileText)}>
                 <RichTextContent
                   html={job.description}
+                  className="text-justify"
                   emptyFallback="No description provided."
                 />
               </DetailBlock>
 
               <DetailBlock title={renderDetailTitle("Responsibilities", SquareChartGantt)}>
-                <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
+                <ul className="list-disc space-y-2 pl-5 text-justify text-zinc-700 dark:text-zinc-300">
                   {responsibilities.length > 0 ? (
                     responsibilities.map((item) => <li key={item}>{item}</li>)
                   ) : (
@@ -260,7 +261,7 @@ export const JobDetailPage = () => {
 
               <div className="grid gap-4 lg:grid-cols-2">
                 <DetailBlock title={renderDetailTitle("Qualifications", GraduationCap)}>
-                  <ul className="list-disc space-y-2 pl-5 text-zinc-700 dark:text-zinc-300">
+                  <ul className="list-disc space-y-2 pl-5 text-justify text-zinc-700 dark:text-zinc-300">
                     <li>
                       {job.min_years
                         ? `${job.min_years}+ years of experience`
@@ -276,7 +277,7 @@ export const JobDetailPage = () => {
                 </DetailBlock>
 
                 <DetailBlock title={renderDetailTitle("Work Details", MapPin)}>
-                  <ul className="space-y-2 text-zinc-700 dark:text-zinc-300">
+                  <ul className="space-y-2 text-justify text-zinc-700 dark:text-zinc-300">
                     <li>
                       <span className="font-medium text-zinc-900 dark:text-zinc-100">
                         Schedule:

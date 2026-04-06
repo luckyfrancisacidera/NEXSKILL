@@ -7,6 +7,7 @@ import {
   GraduationCap,
   Mail,
   MapPin,
+  SquarePen,
   ReceiptText,
   Phone,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ import type {
 import { ApiError } from '@shared/api/http';
 import { Card } from '@shared/components/data-display/Card';
 import { StatusBadge } from '@shared/components/data-display/StatusBadge';
+import { FilterSnapSheet } from '@shared/components/overlay';
 import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { usePermissions } from '@shared/hooks/usePermissions';
 import { formatJobLabel } from '@shared/utils/jobLabels';
@@ -212,6 +214,7 @@ export const CandidateDetailPage = () => {
   const [isDownloadingResume, setIsDownloadingResume] = useState(false);
   const [isInterviewOpen, setIsInterviewOpen] = useState(false);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
+  const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
   const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [isCompletingInterview, setIsCompletingInterview] = useState(false);
   const [isSendingOffer, setIsSendingOffer] = useState(false);
@@ -314,17 +317,20 @@ export const CandidateDetailPage = () => {
   const closeCandidateModals = () => {
     setIsInterviewOpen(false);
     setIsOfferOpen(false);
+    setIsMobileDetailsOpen(false);
     setInterviewErrors({});
     setOfferErrors({});
   };
 
   const openInterviewModal = () => {
+    setIsMobileDetailsOpen(false);
     setIsOfferOpen(false);
     setInterviewErrors({});
     setIsInterviewOpen(true);
   };
 
   const openOfferModal = () => {
+    setIsMobileDetailsOpen(false);
     setIsInterviewOpen(false);
     setOfferErrors({});
     setIsOfferOpen(true);
@@ -649,17 +655,370 @@ export const CandidateDetailPage = () => {
     }
   };
 
+  const applicationInfoSection = (
+    <RecruiterSectionCard title="Application Info" variant="compact">
+      <div className="space-y-2 text-[13px] sm:text-sm">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/60 sm:grid-cols-1 sm:gap-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
+          <div className="space-y-1 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:text-[13px] sm:normal-case sm:tracking-normal">
+              Applied
+            </p>
+            <p className="font-semibold text-zinc-800 dark:text-zinc-100">
+              {new Date(candidate.created_at_utc).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="space-y-1 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:text-[13px] sm:normal-case sm:tracking-normal">
+              Stage
+            </p>
+            <div className="sm:text-right">
+              <StatusBadge status={candidate.submission_status} />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/60 sm:grid-cols-1 sm:gap-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
+          <div className="space-y-1 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:text-[13px] sm:normal-case sm:tracking-normal">
+              Latest Interview
+            </p>
+            <div className="sm:text-right">
+              {latestInterview ? (
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[latestInterview.status]}`}>
+                  {latestInterview.status}
+                </span>
+              ) : (
+                <span className="text-zinc-500 dark:text-zinc-400">Not scheduled</span>
+              )}
+            </div>
+          </div>
+          <div className="space-y-1 sm:flex sm:items-center sm:justify-between sm:space-y-0">
+            <p className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:text-[13px] sm:normal-case sm:tracking-normal">
+              Date
+            </p>
+            <p className="text-zinc-800 dark:text-zinc-100 sm:text-right">
+              {latestInterview ? new Date(latestInterview.scheduled_date_time_utc).toLocaleString() : 'Not available'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </RecruiterSectionCard>
+  );
+
+  const offerStatusSection = (
+    <RecruiterSectionCard title="Offer Status" variant="compact">
+      {candidate.offer ? (
+        <div className="space-y-3 text-[13px] sm:text-sm">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-zinc-500 dark:text-zinc-400">Current offer</span>
+            <StatusBadge status={candidate.offer.status} />
+          </div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/70">
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100">{candidate.offer.title}</p>
+            <p className="mt-1 text-zinc-600 dark:text-zinc-400">{candidate.offer.salary_text}</p>
+            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+              {formatJobLabel(candidate.offer.employment_type)}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                {candidate.offer.work_setup}
+              </span>
+              <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                {candidate.offer.currency} / {candidate.offer.salary_type}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+            <p className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+              <CalendarDays className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              Start date: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.start_date)}</span>
+            </p>
+            {candidate.offer.end_date ? (
+              <p className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                <CalendarDays className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                End date: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.end_date)}</span>
+              </p>
+            ) : null}
+            <p className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+              <ReceiptText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+              Expires: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.expiration_date)}</span>
+            </p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
+              Compensation: {formatCurrencyAmount(candidate.offer.salary_amount, candidate.offer.currency)} / {candidate.offer.salary_type.toLowerCase()}
+            </p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
+              {formatRelativeExpiration(candidate.offer.expiration_date) || 'Expiration date not set'}
+            </p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
+              Sent {new Date(candidate.offer.sent_at_utc).toLocaleString()}
+              {candidate.offer.responded_at_utc ? ` • Responded ${new Date(candidate.offer.responded_at_utc).toLocaleString()}` : ''}
+            </p>
+          </div>
+          {candidate.offer.benefits ? (
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-[13px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300 sm:text-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400 sm:text-xs">Benefits</p>
+              <p className="mt-2 whitespace-pre-wrap [text-align:justify]">{candidate.offer.benefits}</p>
+            </div>
+          ) : null}
+          {candidate.offer.message ? (
+            <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-[13px] text-zinc-600 [text-align:justify] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 sm:text-sm">
+              {candidate.offer.message}
+            </div>
+          ) : null}
+          {!isReadOnly && canSendOffers && latestInterviewStatus === 'Completed' && candidate.submission_status !== 'Hired' && candidate.offer.status !== 'Accepted' && candidate.offer.status !== 'Pending' ? (
+            <button
+              type="button"
+              onClick={openOfferModal}
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-[13px] font-semibold text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 sm:text-sm"
+            >
+              Send new offer
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-[13px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-400 sm:text-sm">
+          {isReadOnly
+            ? 'No offer has been recorded for this candidate yet.'
+            : 'No offer has been sent yet. Once the candidate is ready, send an offer from this page.'}
+        </div>
+      )}
+    </RecruiterSectionCard>
+  );
+
+  const resumeInformationSection = (
+    <RecruiterSectionCard title="Resume Information" variant="compact">
+      <div className="space-y-2 text-[13px] sm:text-sm">
+        <p className="text-zinc-600 dark:text-zinc-400">
+          Resume ID: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.resume_submission_id.slice(0, 8)}</span>
+        </p>
+        {candidate.resume_file_name ? (
+          <p className="flex min-w-0 items-center gap-1 text-zinc-600 dark:text-zinc-400">
+            <span className="shrink-0">File:</span>
+            <span className="min-w-0 truncate font-semibold text-zinc-800 dark:text-zinc-100">
+              {candidate.resume_file_name}
+            </span>
+          </p>
+        ) : null}
+        <p className="text-zinc-600 dark:text-zinc-400">
+          Parsed: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Successfully</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void downloadResume();
+          }}
+          disabled={!hasResume || isDownloadingResume}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 sm:text-sm"
+        >
+          <Download className="h-4 w-4" /> {isDownloadingResume ? 'Preparing...' : 'Download Resume'}
+        </button>
+      </div>
+    </RecruiterSectionCard>
+  );
+
+  const recruiterActionsSection = (
+    <RecruiterSectionCard title={isReadOnly ? 'Profile Status' : 'Recruiter Actions'} variant="compact">
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400 sm:text-sm">
+          <BriefcaseBusiness className="h-4 w-4 dark:text-zinc-500" /> {candidate.job_title}
+        </p>
+        {!isReadOnly && candidate.submission_status !== 'Rejected' && candidate.submission_status !== 'Hired' ? (
+          <>
+            {candidate.submission_status === 'Interview' ? (
+              <button
+                type="button"
+                disabled={shortlistDisabled}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (shortlistDisabled) {
+                    showToast({
+                      title: 'Shortlist unavailable',
+                      description: 'This candidate is already shortlisted or in a later stage.',
+                      tone: 'warning',
+                    });
+                    return;
+                  }
+                  void requestCandidateAction({
+                    action: 'shortlist',
+                    status: 'Shortlisted',
+                    label: 'Shortlist',
+                    title: 'Shortlist candidate',
+                    message: (name) => `Move ${name} back to Shortlisted stage?`,
+                    accent: 'violet',
+                  });
+                }}
+                title={shortlistDisabled ? 'This candidate is already shortlisted or in a later stage.' : undefined}
+                className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
+                  shortlistDisabled
+                    ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+                    : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800'
+                }`}
+              >
+                Shortlist
+              </button>
+            ) : null}
+
+            {candidate.submission_status === 'Shortlisted' ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void requestCandidateAction({
+                    action: 'remove-shortlist',
+                    status: 'Applied',
+                    label: 'Remove from Shortlist',
+                    title: 'Remove from shortlist',
+                    message: (name) =>
+                      `Remove shortlist status for ${name}? Candidate will remain active in the pipeline.`,
+                    accent: 'violet',
+                  });
+                }}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 sm:text-sm"
+              >
+                Remove from Shortlist
+              </button>
+            ) : null}
+
+            {candidate.submission_status === 'Interview' ? (
+              <button
+                type="button"
+                disabled={!canMarkInterviewDone || isCompletingInterview}
+                onClick={async (event) => {
+                  event.stopPropagation();
+
+                  if (!canMarkInterviewDone) {
+                    showToast({
+                      title: 'Interview not ready',
+                      description: interviewProgressHint ?? 'Only accepted interviews can be marked as done.',
+                      tone: 'warning',
+                    });
+                    return;
+                  }
+
+                  setIsCompletingInterview(true);
+                  try {
+                    const updatedInterview = await completeInterview();
+                    showToast({
+                      title: 'Interview marked done',
+                      description: `${updatedInterview.candidateName} can now be rejected or moved to offer stage.`,
+                      tone: 'success',
+                    });
+                  } catch (error) {
+                    const description =
+                      error instanceof ApiError
+                        ? ((error.data as { message?: string } | null)?.message ?? error.message)
+                        : error instanceof Error
+                          ? error.message
+                          : 'Unable to mark the interview as done.';
+
+                    showToast({ title: 'Completion failed', description, tone: 'error' });
+                  } finally {
+                    setIsCompletingInterview(false);
+                  }
+                }}
+                className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
+                  canMarkInterviewDone && !isCompletingInterview
+                    ? 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800'
+                    : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+                }`}
+              >
+                {isCompletingInterview ? 'Marking Done...' : 'Mark Interview Done'}
+              </button>
+            ) : null}
+
+            {candidate.submission_status === 'Interview' ? (
+              <button
+                type="button"
+                disabled={!canOpenOfferModal}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (!canOpenOfferModal) {
+                    showToast({
+                      title: 'Offer unavailable',
+                      description: interviewProgressHint ?? 'Complete the accepted interview before sending an offer.',
+                      tone: 'warning',
+                    });
+                    return;
+                  }
+
+                  openOfferModal();
+                }}
+                className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
+                  canOpenOfferModal
+                    ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-700 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white'
+                    : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+                }`}
+              >
+                Send Offer
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              disabled={!canRejectCandidate}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!canRejectCandidate) {
+                  showToast({
+                    title: 'Reject unavailable',
+                    description: interviewProgressHint ?? 'Complete the accepted interview before rejecting this candidate.',
+                    tone: 'warning',
+                  });
+                  return;
+                }
+                void requestCandidateAction({
+                  action: 'reject',
+                  status: 'Rejected',
+                  label: 'Reject',
+                  title: 'Reject candidate',
+                  message: (name) => `Are you sure you want to reject ${name}?`,
+                  accent: 'red',
+                });
+              }}
+              className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
+                canRejectCandidate
+                  ? 'border-rose-300 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-600 dark:bg-rose-600 dark:text-white dark:hover:bg-rose-500'
+                  : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
+              }`}
+            >
+              Reject Candidate
+            </button>
+          </>
+        ) : (
+          <StatusBadge
+            status={candidate.submission_status}
+            label={
+              candidate.submission_status === 'Hired'
+                ? 'Candidate hired'
+                : candidate.submission_status === 'Rejected'
+                  ? 'Candidate rejected'
+                  : 'View only'
+            }
+            size="md"
+          />
+        )}
+      </div>
+    </RecruiterSectionCard>
+  );
+
   return (
-    <div className="grid gap-4 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 xl:grid-cols-[minmax(300px,350px)_minmax(0,1fr)]">
+    <div className="grid gap-3 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 sm:gap-4 xl:grid-cols-[minmax(300px,350px)_minmax(0,1fr)]">
       <Card className="h-fit overflow-hidden p-0">
-        <div className="bg-linear-to-b from-slate-50 to-white px-4 py-5 dark:from-zinc-900 dark:to-zinc-950 sm:px-5 sm:py-6">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-3xl font-bold text-white shadow-md">
+        <div className="relative bg-linear-to-b from-slate-50 to-white px-3.5 py-4 dark:from-zinc-900 dark:to-zinc-950 sm:px-5 sm:py-6">
+          <button
+            type="button"
+            aria-label="Open candidate details"
+            onClick={() => setIsMobileDetailsOpen(true)}
+            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 sm:hidden"
+          >
+            <SquarePen className="h-4 w-4" />
+          </button>
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-slate-400 to-slate-600 text-2xl font-bold text-white shadow-md sm:h-20 sm:w-20 sm:text-3xl">
             {getInitials(candidate.applicant_name)}
           </div>
-          <h2 className="mt-4 text-center text-lg font-bold text-zinc-900 dark:text-zinc-100">{candidate.applicant_name}</h2>
-          <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">{personalInfo?.job_target || candidate.job_title}</p>
+          <h2 className="mt-4 text-center text-base font-bold text-zinc-900 dark:text-zinc-100 sm:text-lg">{candidate.applicant_name}</h2>
+          <p className="text-center text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">{personalInfo?.job_target || candidate.job_title}</p>
 
-          <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
+          <div className="mt-4 space-y-2 border-t border-zinc-200 pt-4 text-[13px] text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 sm:text-sm">
             <p className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-zinc-400 dark:text-zinc-500" /> {candidate.applicant_email}
             </p>
@@ -672,7 +1031,7 @@ export const CandidateDetailPage = () => {
           </div>
 
           <div className="mt-4 space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-[13px] sm:text-sm">
               <span className="text-zinc-500 dark:text-zinc-400">ATS Score</span>
               <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.score}%</span>
             </div>
@@ -682,7 +1041,7 @@ export const CandidateDetailPage = () => {
                 style={{ width: `${Math.max(10, Math.min(100, candidate.score))}%` }}
               />
             </div>
-            <p className="text-xs text-zinc-500 capitalize dark:text-zinc-400">
+            <p className="text-[11px] text-zinc-500 capitalize dark:text-zinc-400 sm:text-xs">
               {parsedResume?.derived?.education_max_level || 'Education level unknown'} -{' '}
               {monthsToText(parsedResume?.derived?.total_experience_months)} experience
             </p>
@@ -714,58 +1073,31 @@ export const CandidateDetailPage = () => {
                 }
               }}
               disabled={candidate.submission_status === 'Interview' && !canSendOffers}
-              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
+              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 sm:text-sm"
             >
               {primaryAction.label}
             </button>
           ) : null}
           {!isReadOnly && candidate.submission_status === 'Offer' ? (
-            <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-3 text-center text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
               Once the latest offer is accepted, this candidate moves to My Hires automatically.
             </p>
           ) : null}
           {!isReadOnly && interviewProgressHint ? (
-            <p className="mt-3 text-center text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-3 text-center text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
               {interviewProgressHint}
             </p>
           ) : null}
         </div>
 
-        <RecruiterSectionCard title="Application Info" variant="compact">
-          <ul className="space-y-2 text-sm">
-            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-zinc-500 dark:text-zinc-400">Applied:</span>
-              <span className="font-semibold text-zinc-800 dark:text-zinc-100">
-                {new Date(candidate.created_at_utc).toLocaleDateString()}
-              </span>
-            </li>
-            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-zinc-500 dark:text-zinc-400">Stage:</span>
-              <StatusBadge status={candidate.submission_status} />
-            </li>
-            <li className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-zinc-500 dark:text-zinc-400">ATS Score:</span>
-              <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.score}</span>
-            </li>
-            {latestInterview ? (
-              <li className="space-y-2">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Latest interview:</span>
-                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${interviewStatusChipClassName[latestInterview.status]}`}>
-                    {latestInterview.status}
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">
-                  {new Date(latestInterview.scheduled_date_time_utc).toLocaleString()}
-                </p>
-              </li>
-            ) : null}
-          </ul>
-        </RecruiterSectionCard>
+        {applicationInfoSection}
 
+        <div className="hidden sm:block">{offerStatusSection}</div>
+        {false && (
+        <div className="hidden sm:block">
         <RecruiterSectionCard title="Offer Status" variant="compact">
           {candidate.offer ? (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-[13px] sm:text-sm">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-zinc-500 dark:text-zinc-400">Current offer</span>
                 <StatusBadge status={candidate.offer.status} />
@@ -800,25 +1132,25 @@ export const CandidateDetailPage = () => {
                   <ReceiptText className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                   Expires: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{formatDateLabel(candidate.offer.expiration_date)}</span>
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
                   Compensation: {formatCurrencyAmount(candidate.offer.salary_amount, candidate.offer.currency)} / {candidate.offer.salary_type.toLowerCase()}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
                   {formatRelativeExpiration(candidate.offer.expiration_date) || 'Expiration date not set'}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">
                   Sent {new Date(candidate.offer.sent_at_utc).toLocaleString()}
                   {candidate.offer.responded_at_utc ? ` • Responded ${new Date(candidate.offer.responded_at_utc).toLocaleString()}` : ''}
                 </p>
               </div>
               {candidate.offer.benefits ? (
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">Benefits</p>
-                  <p className="mt-2 whitespace-pre-wrap">{candidate.offer.benefits}</p>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-[13px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300 sm:text-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400 sm:text-xs">Benefits</p>
+                  <p className="mt-2 whitespace-pre-wrap [text-align:justify]">{candidate.offer.benefits}</p>
                 </div>
               ) : null}
               {candidate.offer.message ? (
-                <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                <div className="rounded-2xl border border-zinc-200 bg-white p-3 text-[13px] text-zinc-600 [text-align:justify] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 sm:text-sm">
                   {candidate.offer.message}
                 </div>
               ) : null}
@@ -826,23 +1158,26 @@ export const CandidateDetailPage = () => {
                 <button
                   type="button"
                   onClick={openOfferModal}
-                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-[13px] font-semibold text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 sm:text-sm"
                 >
                   Send new offer
                 </button>
               ) : null}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-400">
+            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-4 text-[13px] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900/60 dark:text-zinc-400 sm:text-sm">
               {isReadOnly
                 ? 'No offer has been recorded for this candidate yet.'
                 : 'No offer has been sent yet. Once the candidate is ready, send an offer from this page.'}
             </div>
           )}
         </RecruiterSectionCard>
+        </div>
+        )}
 
+        <div className="hidden sm:block">
         <RecruiterSectionCard title="Resume Information" variant="compact">
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-[13px] sm:text-sm">
             <p className="text-zinc-600 dark:text-zinc-400">
               Resume ID: <span className="font-semibold text-zinc-800 dark:text-zinc-100">{candidate.resume_submission_id.slice(0, 8)}</span>
             </p>
@@ -863,16 +1198,18 @@ export const CandidateDetailPage = () => {
                 void downloadResume();
               }}
               disabled={!hasResume || isDownloadingResume}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:ring-zinc-500 dark:focus-visible:ring-offset-zinc-950 sm:text-sm"
             >
               <Download className="h-4 w-4" /> {isDownloadingResume ? 'Preparing...' : 'Download Resume'}
             </button>
           </div>
         </RecruiterSectionCard>
+        </div>
 
+        <div className="hidden sm:block">
         <RecruiterSectionCard title={isReadOnly ? "Profile Status" : "Recruiter Actions"} variant="compact">
           <div className="space-y-2">
-            <p className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="flex items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400 sm:text-sm">
               <BriefcaseBusiness className="h-4 w-4 dark:text-zinc-500" /> {candidate.job_title}
             </p>
             {!isReadOnly && candidate.submission_status !== 'Rejected' && candidate.submission_status !== 'Hired' ? (
@@ -902,7 +1239,7 @@ export const CandidateDetailPage = () => {
                       });
                     }}
                     title={shortlistDisabled ? 'This candidate is already shortlisted or in a later stage.' : undefined}
-                    className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                    className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
                       shortlistDisabled
                         ? 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
                         : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800'
@@ -928,7 +1265,7 @@ export const CandidateDetailPage = () => {
                         accent: 'violet',
                       });
                     }}
-                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 sm:text-sm"
                   >
                     Remove from Shortlist
                   </button>
@@ -971,7 +1308,7 @@ export const CandidateDetailPage = () => {
                         setIsCompletingInterview(false);
                       }
                     }}
-                    className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                    className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
                       canMarkInterviewDone && !isCompletingInterview
                         ? 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800'
                         : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
@@ -998,7 +1335,7 @@ export const CandidateDetailPage = () => {
 
                       openOfferModal();
                     }}
-                    className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                    className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
                       canOpenOfferModal
                         ? 'border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-700 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white'
                         : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
@@ -1031,7 +1368,7 @@ export const CandidateDetailPage = () => {
                       accent: 'red',
                     });
                   }}
-                  className={`w-full rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                  className={`w-full rounded-lg border px-4 py-2 text-[13px] font-semibold transition sm:text-sm ${
                     canRejectCandidate
                       ? 'border-rose-300 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-600 dark:bg-rose-600 dark:text-white dark:hover:bg-rose-500'
                       : 'cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500'
@@ -1055,10 +1392,11 @@ export const CandidateDetailPage = () => {
             )}
           </div>
         </RecruiterSectionCard>
+        </div>
 
         <RecruiterSectionCard title="Education" variant="compact">
           {parsedResume?.education?.length ? (
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-[13px] sm:text-sm">
               {parsedResume.education.map((item, index) => (
                 <div key={`${item.degree}-${index}`} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 dark:bg-zinc-900/60">
                   <p className="flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-100">
@@ -1071,7 +1409,7 @@ export const CandidateDetailPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No education extracted.</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No education extracted.</p>
           )}
         </RecruiterSectionCard>
       </Card>
@@ -1081,26 +1419,26 @@ export const CandidateDetailPage = () => {
           <RecruiterSectionCard title="Fit explanation" variant="compact">
             {hasCandidateExplanation(candidate) && candidateExplanation ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-500/10">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300">AI-assisted insight</p>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Why this candidate is a good fit</p>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 sm:text-xs">AI-assisted insight</p>
+                <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">Why this candidate is a good fit</p>
                 {candidateExplanation.summary ? (
-                  <p className="mt-1 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  <p className="mt-1 text-[13px] leading-6 text-zinc-700 [text-align:justify] dark:text-zinc-300 sm:text-sm">
                     {candidateExplanation.summary}
                   </p>
                 ) : null}
                 {candidateExplanation.strengths.length ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
                     {candidateExplanation.strengths.map((item, index) => (
                       <li key={`${item}-${index}`}>{item}</li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">No key strengths were extracted.</p>
+                  <p className="mt-2 text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No key strengths were extracted.</p>
                 )}
                 {candidateExplanation.gaps?.length ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Possible gaps</p>
-                    <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Possible gaps</p>
+                    <ul className="list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
                       {candidateExplanation.gaps.map((item, index) => (
                         <li key={`${item}-${index}`}>{item}</li>
                       ))}
@@ -1109,14 +1447,14 @@ export const CandidateDetailPage = () => {
                 ) : null}
                 {candidateExplanation.recommendation ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Notes</p>
-                    <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">{candidateExplanation.recommendation}</p>
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Notes</p>
+                    <p className="text-[13px] leading-6 text-zinc-700 [text-align:justify] dark:text-zinc-300 sm:text-sm">{candidateExplanation.recommendation}</p>
                   </div>
                 ) : null}
               </div>
             ) : (
               <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/60">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">Explanation not available yet.</p>
+                <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">Explanation not available yet.</p>
               </div>
             )}
           </RecruiterSectionCard>
@@ -1124,9 +1462,9 @@ export const CandidateDetailPage = () => {
 
         <RecruiterSectionCard title="Professional Summary" variant="compact">
           {parsedResume?.summary?.length ? (
-            <p className="text-sm leading-7 text-zinc-700 dark:text-zinc-300">{parsedResume.summary.join(' ')}</p>
+            <p className="text-[13px] leading-6 text-zinc-700 [text-align:justify] dark:text-zinc-300 sm:text-sm sm:leading-7">{parsedResume.summary.join(' ')}</p>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No summary extracted from parsed resume.</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No summary extracted from parsed resume.</p>
           )}
         </RecruiterSectionCard>
 
@@ -1136,14 +1474,14 @@ export const CandidateDetailPage = () => {
               {parsedResume.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-1 text-[11px] font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 sm:text-xs"
                 >
                   {skill}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No skills extracted.</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No skills extracted.</p>
           )}
         </RecruiterSectionCard>
 
@@ -1155,7 +1493,7 @@ export const CandidateDetailPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No work experience extracted.</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No work experience extracted.</p>
           )}
         </RecruiterSectionCard>
 
@@ -1167,10 +1505,25 @@ export const CandidateDetailPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">No projects extracted.</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No projects extracted.</p>
           )}
         </RecruiterSectionCard>
       </div>
+
+      <FilterSnapSheet
+        id="candidate-detail-mobile-actions"
+        title="Candidate details"
+        description="Resume details, offer status, and recruiter actions."
+        isOpen={isMobileDetailsOpen}
+        onClose={() => setIsMobileDetailsOpen(false)}
+        sheetDefaultHeightClassName="h-[72vh]"
+        sheetExpandedHeightClassName="h-[92vh]"
+        contentClassName="space-y-4 bg-zinc-50/90"
+      >
+        {offerStatusSection}
+        {resumeInformationSection}
+        {recruiterActionsSection}
+      </FilterSnapSheet>
 
       {!isReadOnly && isInterviewOpen ? (
         <InterviewModal
