@@ -7,19 +7,24 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
     private readonly Lock _sync = new();
     private readonly DateTimeOffset _startedAtUtc = DateTimeOffset.UtcNow;
     private DateTimeOffset? _lastWorkerHeartbeatUtc;
+    private bool _isProcessing;
+    private Guid? _currentSubmissionId;
+    private string? _currentStage;
+    private DateTimeOffset? _currentStageStartedUtc;
     private DateTimeOffset? _lastSuccessfulSubmissionUtc;
+    private Guid? _lastSuccessfulSubmissionId;
     private DateTimeOffset? _lastFailureUtc;
-    private Guid? _lastSubmissionId;
-    private string? _lastStage;
+    private Guid? _lastFailedSubmissionId;
+    private string? _lastFailureStage;
     private string? _lastFailureMessage;
-    private int _consecutiveWorkerFailures;
+    private bool _hasActiveFailure;
+    private int _consecutiveFailureCount;
 
     public void RecordWorkerStarted()
     {
         lock (_sync)
         {
             _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            _lastStage = "worker_started";
         }
     }
 
@@ -28,10 +33,10 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
         lock (_sync)
         {
             _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            if (_consecutiveWorkerFailures > 0)
+            if (_hasActiveFailure && _lastFailedSubmissionId is null)
             {
-                _consecutiveWorkerFailures = 0;
-                _lastFailureMessage = null;
+                _hasActiveFailure = false;
+                _consecutiveFailureCount = 0;
             }
         }
     }
@@ -40,11 +45,24 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
     {
         lock (_sync)
         {
-            _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            _lastFailureUtc = DateTimeOffset.UtcNow;
-            _lastFailureMessage = exception.Message;
-            _lastStage ??= "worker";
-            _consecutiveWorkerFailures++;
+            var now = DateTimeOffset.UtcNow;
+            _lastWorkerHeartbeatUtc = now;
+
+            if (_hasActiveFailure && _lastFailedSubmissionId is not null)
+            {
+                return;
+            }
+
+            _isProcessing = false;
+            _currentSubmissionId = null;
+            _currentStage = null;
+            _currentStageStartedUtc = null;
+            _lastFailureUtc = now;
+            _lastFailedSubmissionId = null;
+            _lastFailureStage = "worker";
+            _lastFailureMessage = NormalizeFailureMessage(exception);
+            _hasActiveFailure = true;
+            _consecutiveFailureCount++;
         }
     }
 
@@ -52,9 +70,13 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
     {
         lock (_sync)
         {
-            _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            _lastSubmissionId = submissionId;
-            _lastStage = stage;
+            var now = DateTimeOffset.UtcNow;
+            _lastWorkerHeartbeatUtc = now;
+            _isProcessing = true;
+            _currentSubmissionId = submissionId;
+            _currentStage = stage;
+            _currentStageStartedUtc = now;
+            _hasActiveFailure = false;
         }
     }
 
@@ -62,12 +84,16 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
     {
         lock (_sync)
         {
-            _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            _lastSuccessfulSubmissionUtc = DateTimeOffset.UtcNow;
-            _lastSubmissionId = submissionId;
-            _lastStage = "completed";
-            _lastFailureMessage = null;
-            _consecutiveWorkerFailures = 0;
+            var now = DateTimeOffset.UtcNow;
+            _lastWorkerHeartbeatUtc = now;
+            _isProcessing = false;
+            _currentSubmissionId = null;
+            _currentStage = null;
+            _currentStageStartedUtc = null;
+            _lastSuccessfulSubmissionUtc = now;
+            _lastSuccessfulSubmissionId = submissionId;
+            _hasActiveFailure = false;
+            _consecutiveFailureCount = 0;
         }
     }
 
@@ -75,12 +101,18 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
     {
         lock (_sync)
         {
-            _lastWorkerHeartbeatUtc = DateTimeOffset.UtcNow;
-            _lastFailureUtc = DateTimeOffset.UtcNow;
-            _lastSubmissionId = submissionId;
-            _lastStage = stage;
-            _lastFailureMessage = exception.Message;
-            _consecutiveWorkerFailures++;
+            var now = DateTimeOffset.UtcNow;
+            _lastWorkerHeartbeatUtc = now;
+            _isProcessing = false;
+            _currentSubmissionId = null;
+            _currentStage = null;
+            _currentStageStartedUtc = null;
+            _lastFailureUtc = now;
+            _lastFailedSubmissionId = submissionId;
+            _lastFailureStage = stage;
+            _lastFailureMessage = NormalizeFailureMessage(exception);
+            _hasActiveFailure = true;
+            _consecutiveFailureCount++;
         }
     }
 
@@ -91,12 +123,37 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
             return new ResumeProcessingMonitorSnapshot(
                 _startedAtUtc,
                 _lastWorkerHeartbeatUtc,
+                _isProcessing,
+                _currentSubmissionId,
+                _currentStage,
+                _currentStageStartedUtc,
                 _lastSuccessfulSubmissionUtc,
+                _lastSuccessfulSubmissionId,
                 _lastFailureUtc,
-                _lastSubmissionId,
-                _lastStage,
+                _lastFailedSubmissionId,
+                _lastFailureStage,
                 _lastFailureMessage,
-                _consecutiveWorkerFailures);
+                _hasActiveFailure,
+                _consecutiveFailureCount);
         }
+    }
+
+    private static string NormalizeFailureMessage(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        var message = exception.Message?.Trim();
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            return message;
+        }
+
+        var innerMessage = exception.InnerException?.Message?.Trim();
+        if (!string.IsNullOrWhiteSpace(innerMessage))
+        {
+            return $"{exception.GetType().Name}: {innerMessage}";
+        }
+
+        return $"{exception.GetType().Name}: No error message provided";
     }
 }
