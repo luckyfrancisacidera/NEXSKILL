@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   BookOpenText,
@@ -85,10 +85,16 @@ export const JobDetailPage = () => {
     [job.title, showToast],
   );
 
+  const cleanupToastSearchParam = useCallback((_value: string) => {
+    const cleaned = new URLSearchParams(searchParams);
+    cleaned.delete('toast');
+    setSearchParams(cleaned, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   useSearchParamToast({
     searchParams,
     handlers: toastHandlers,
-    onCleanup: () => setSearchParams({}, { replace: true }),
+    onCleanup: cleanupToastSearchParam,
   });
 
   const updateStatus = async (status: 'Draft' | 'Published' | 'Closed') => {

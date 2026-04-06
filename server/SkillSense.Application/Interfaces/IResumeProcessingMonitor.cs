@@ -14,9 +14,15 @@ public interface IResumeProcessingMonitor
 public sealed record ResumeProcessingMonitorSnapshot(
     DateTimeOffset StartedAtUtc,
     DateTimeOffset? LastWorkerHeartbeatUtc,
+    bool IsProcessing,
+    Guid? CurrentSubmissionId,
+    string? CurrentStage,
+    DateTimeOffset? CurrentStageStartedUtc,
     DateTimeOffset? LastSuccessfulSubmissionUtc,
+    Guid? LastSuccessfulSubmissionId,
     DateTimeOffset? LastFailureUtc,
-    Guid? LastSubmissionId,
-    string? LastStage,
+    Guid? LastFailedSubmissionId,
+    string? LastFailureStage,
     string? LastFailureMessage,
-    int ConsecutiveWorkerFailures);
+    bool HasActiveFailure,
+    int ConsecutiveFailureCount);
