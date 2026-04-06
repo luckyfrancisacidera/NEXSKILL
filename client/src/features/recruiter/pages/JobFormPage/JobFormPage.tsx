@@ -52,7 +52,7 @@ interface JobFormLoaderData {
 }
 
 const jobFormInputClassName =
-  'w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:focus:ring-white/15';
+  'w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs text-zinc-900 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:focus:border-zinc-400 dark:focus:ring-white/15 sm:py-2.5 sm:text-sm';
 
 const workSetupOptions: DropdownOption[] = [
   { value: '0', label: 'Onsite' },
@@ -141,16 +141,16 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   return (
     <div className="space-y-6">
       <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-zinc-950/20 dark:to-zinc-950 p-0 shadow-sm">
-        <div className="border-b border-zinc-200 dark:border-zinc-800 px-4 py-5 sm:px-6">
+        <div className="border-b border-zinc-200 px-3 py-4 dark:border-zinc-800 sm:px-4 sm:py-5 lg:px-5">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-400">
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 sm:text-2xl">
                 {mode === 'create' ? 'Create Job' : 'Edit Job'}
               </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-100">
+              <p className="text-xs text-zinc-600 dark:text-zinc-100 sm:text-sm">
                 Use a clean and structured post so candidates can understand your role quickly.
               </p>
             </div>
@@ -159,7 +159,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
         <Form
           method="post"
-          className="space-y-6 px-4 py-6 sm:px-6"
+          className="space-y-6 px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6"
           onSubmit={(event) => {
             const nextErrors: { description?: string; responsibilities?: string } = {};
 
@@ -189,7 +189,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
             icon={BriefcaseBusiness}
           >
             <div className="grid gap-4 md:grid-cols-2">
-              <div>
+              <div className="min-w-0">
                 <RecruiterFieldLabel htmlFor="job-title">Job Title *</RecruiterFieldLabel>
                 <PredictiveInput
                   name="title"
@@ -200,7 +200,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                   className={jobFormInputClassName}
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <RecruiterFieldLabel htmlFor="department">Department</RecruiterFieldLabel>
                 <PredictiveInput
                   name="department"
@@ -258,7 +258,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
           </RecruiterSectionCard>
 
           <RecruiterSectionCard title="Role Details" description="Describe the work clearly so applicants can self-select accurately.">
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               <RichTextField
                 label="Description"
                 name="description"
@@ -328,7 +328,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
           </RecruiterSectionCard>
 
           <RecruiterSectionCard title="Benefits & Status" description="These fields influence how the posting appears and behaves in the recruiter workspace." icon={Building2}>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.75fr)] md:items-start">
               <RichTextField
                 label="Benefits"
                 name="benefits"
@@ -353,7 +353,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
 
           <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <Link to="/recruiter/job-posts" className="inline-flex items-center justify-center rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Link>
-            <Button className="rounded-xl bg-violet-700 px-4 py-2 font-semibold text-white hover:bg-violet-800 dark:bg-violet-600 dark:hover:bg-violet-700" type="submit" loading={isSaving} loadingText="Saving">
+            <Button className="rounded-xl bg-zinc-800 px-4 py-2 font-semibold text-white hover:bg-zinc-700 focus-visible:ring-zinc-400 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-300" type="submit" loading={isSaving} loadingText="Saving">
               Save
             </Button>
           </div>

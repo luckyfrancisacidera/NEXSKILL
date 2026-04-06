@@ -42,7 +42,7 @@ type DropdownPosition = {
 };
 
 const baseButtonClassName =
-  'flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white font-inter text-left text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-zinc-400 dark:focus:ring-white/15';
+  'flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white font-inter text-left text-xs text-zinc-700 shadow-sm outline-none transition hover:border-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/80 dark:focus:border-zinc-400 dark:focus:ring-white/15 sm:text-sm';
 
 const defaultBadgeClassName = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300';
 
@@ -282,8 +282,8 @@ export function AppSelect({
               : size === 'compact'
                 ? 'h-9 px-2.5 text-xs sm:h-10 sm:px-3 sm:text-sm'
                 : compactOnMobile
-                  ? 'h-10 px-3 text-sm md:h-11 md:px-3.5'
-                  : 'h-11 px-3.5 text-sm',
+                  ? 'h-[38px] px-3 text-xs sm:h-10 sm:text-sm md:h-11 md:px-3.5'
+                  : 'h-[38px] px-3 text-xs sm:h-11 sm:px-3.5 sm:text-sm',
             buttonClassName,
           )}
         >

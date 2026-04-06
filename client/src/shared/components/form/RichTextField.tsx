@@ -35,27 +35,27 @@ export const RichTextField = ({
   const describedBy = [helperId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-  <div>
-    <label htmlFor={fieldId} className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-      {label}
-      {required ? " *" : ""}
-    </label>
-    {helperText ? (
-      <p id={helperId} className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">{helperText}</p>
-    ) : null}
-    <RichTextEditor
-      id={fieldId}
-      label={label}
-      describedBy={describedBy}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      error={error}
-      minHeightClassName={minHeightClassName}
-    />
-    {error ? <p id={errorId} className="sr-only">{error}</p> : null}
-    {name ? <input id={`${fieldId}-value`} type="hidden" name={name} value={sanitizeRichText(value)} /> : null}
-  </div>
+    <div className="w-full min-w-0 max-w-full">
+      <label htmlFor={fieldId} className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {label}
+        {required ? " *" : ""}
+      </label>
+      {helperText ? (
+        <p id={helperId} className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">{helperText}</p>
+      ) : null}
+      <RichTextEditor
+        id={fieldId}
+        label={label}
+        describedBy={describedBy}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        error={error}
+        minHeightClassName={minHeightClassName}
+      />
+      {error ? <p id={errorId} className="sr-only">{error}</p> : null}
+      {name ? <input id={`${fieldId}-value`} type="hidden" name={name} value={sanitizeRichText(value)} /> : null}
+    </div>
   );
 };
 
