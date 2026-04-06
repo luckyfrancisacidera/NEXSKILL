@@ -22,10 +22,13 @@ public sealed class GmailSmtpOptions
 
     public bool EnableSsl { get; set; } = true;
 
+    public string NormalizedAppPassword
+        => string.Concat((AppPassword ?? string.Empty).Where(character => !char.IsWhiteSpace(character)));
+
     public bool IsConfigured()
         => !string.IsNullOrWhiteSpace(Host)
             && Port > 0
             && !string.IsNullOrWhiteSpace(Email)
-            && !string.IsNullOrWhiteSpace(AppPassword)
+            && !string.IsNullOrWhiteSpace(NormalizedAppPassword)
             && (!string.IsNullOrWhiteSpace(FromEmail) || !string.IsNullOrWhiteSpace(Email));
 }
