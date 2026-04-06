@@ -10,7 +10,8 @@
  * - The caller owns navigation or search-param cleanup so the hook stays reusable
  *   across routes that need different cleanup behavior.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 type ToastHandlerMap = Partial<Record<string, () => void>>;
 
@@ -44,13 +45,29 @@ export const useSearchParamToast = ({
   onCleanup,
   paramName = 'toast',
 }: UseSearchParamToastOptions) => {
+  const location = useLocation();
+  const handlersRef = useRef(handlers);
+  const cleanupRef = useRef(onCleanup);
+  const processedKeyRef = useRef<string | null>(null);
+  const value = searchParams.get(paramName);
+
+  handlersRef.current = handlers;
+  cleanupRef.current = onCleanup;
+
   useEffect(() => {
-    const value = searchParams.get(paramName);
     if (!value) {
+      processedKeyRef.current = null;
       return;
     }
 
-    handlers[value]?.();
-    onCleanup(value);
-  }, [handlers, onCleanup, paramName, searchParams]);
+    const effectKey = `${location.pathname}${location.search}|${paramName}=${value}`;
+
+    if (processedKeyRef.current === effectKey) {
+      return;
+    }
+
+    processedKeyRef.current = effectKey;
+    handlersRef.current[value]?.();
+    cleanupRef.current(value);
+  }, [location.pathname, location.search, paramName, value]);
 };
