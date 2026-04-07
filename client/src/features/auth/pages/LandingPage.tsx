@@ -1,5 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 
+type IconProps = {
+  d: string;
+  size?: number;
+};
+
+type Plan = {
+  name: string;
+  price: string;
+  period: string;
+  badge: string | null;
+  description: string;
+  features: string[];
+  variant: "basic" | "standard" | "premium";
+  cta: string;
+};
+
 /* ─── Google Fonts injected via style tag ─── */
 const FontInjector = () => (
   <style>{`
@@ -94,6 +110,26 @@ const FontInjector = () => (
     }
     .nav-link:hover::after { width: 100%; }
 
+    /* pricing card hover */
+    .pricing-card-light {
+      transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+    }
+    .pricing-card-light:hover {
+      box-shadow: 0 16px 48px rgba(0,0,0,0.09);
+      transform: translateY(-4px);
+    }
+    .pricing-card-dark {
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .pricing-card-dark:hover {
+      box-shadow: 0 20px 56px rgba(39,39,42,0.32);
+      transform: translateY(-4px);
+    }
+
+    /* hide scrollbar but keep scrolling */
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
     /* scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #fafafa; }
@@ -103,7 +139,7 @@ const FontInjector = () => (
 
 /* ─── Reveal hook ─── */
 function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -117,8 +153,8 @@ function useReveal() {
   return ref;
 }
 
-/* ─── Icons (inline SVG, zero dependencies) ─── */
-const Icon = ({ d, size = 20 }: { d: string; size?: number }) => (
+/* ─── Icons ─── */
+const Icon = ({ d, size = 20 }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
@@ -138,7 +174,212 @@ const ICONS = {
   menu:      "M3 12h18M3 6h18M3 18h18",
   x:         "M18 6 6 18M6 6l12 12",
   star:      "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+  zap:       "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+  infinite:  "M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.739-8z",
+  user:      "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
 };
+
+/* ─── Plans data ─── */
+const PLANS: Plan[] = [
+  {
+    name: "Basic",
+    price: "₱500",
+    period: "/ month",
+    badge: null,
+    description: "A solid starting point for individuals actively job hunting.",
+    features: [
+      "120 resume screenings / month",
+      "2 active job applications",
+      "Core semantic matching + explanation",
+      "Full ATS pipeline + analytics",
+    ],
+    variant: "basic",
+    cta: "Get Started",
+  },
+  {
+    name: "Standard",
+    price: "₱1,200",
+    period: "/ month",
+    badge: "Most Popular",
+    description: "For dedicated jobseekers managing multiple opportunities at once.",
+    features: [
+      "300–400 screenings / month",
+      "10 active job applications",
+      "Core semantic matching + explanation",
+      "Full ATS pipeline + analytics",
+    ],
+    variant: "standard",
+    cta: "Get Started",
+  },
+  {
+    name: "Premium",
+    price: "₱2,500",
+    period: "/ month",
+    badge: "Best Value",
+    description: "Unrestricted access for high-volume, high-intent job seekers.",
+    features: [
+      "Unlimited resume screenings",
+      "Unlimited job applications",
+      "Core semantic matching + explanation",
+      "Full ATS pipeline + analytics",
+    ],
+    variant: "premium",
+    cta: "Go Premium",
+  },
+];
+
+/* ─── PricingCard ─── */
+function PricingCard({ name, price, period, badge, description, features, variant, cta }: Plan) {
+  const isDark = variant === "premium";
+  const isMid = variant === "standard";
+
+  const cardBase = `
+    relative flex flex-col rounded-2xl p-7 h-full
+    ${isDark
+      ? "pricing-card-dark text-white"
+      : "pricing-card-light border"
+    }
+  `;
+
+  const cardStyle = isDark
+    ? { background: "linear-gradient(145deg, #3f3f46 0%, #27272a 45%, #18181b 100%)", borderColor: "transparent" }
+    : isMid
+      ? { background: "linear-gradient(145deg, #fafafa 0%, #f4f4f5 100%)", borderColor: "#e4e4e7" }
+      : { background: "#ffffff", borderColor: "#e4e4e7" };
+
+  const shadowStyle = isDark
+    ? { boxShadow: "0 8px 40px rgba(39,39,42,0.22)" }
+    : isMid
+      ? { boxShadow: "0 4px 20px rgba(0,0,0,0.07)" }
+      : { boxShadow: "0 2px 12px rgba(0,0,0,0.04)" };
+
+  return (
+    <div className={cardBase} style={{ ...cardStyle, ...shadowStyle }}>
+      {/* Badge */}
+      {badge && (
+        <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-widest whitespace-nowrap
+          ${isDark ? "bg-white text-zinc-800" : "bg-zinc-800 text-white"}`}>
+          {badge}
+        </div>
+      )}
+
+      {/* Plan name */}
+      <p className={`text-xs font-semibold uppercase tracking-widest mb-4
+        ${isDark ? "text-zinc-400" : "text-zinc-400"}`}>
+        {name}
+      </p>
+
+      {/* Price */}
+      <div className="flex items-end gap-1 mb-2">
+        <span className={`font-display text-4xl leading-none ${isDark ? "text-white" : "text-zinc-800"}`}>
+          {price}
+        </span>
+        <span className={`text-sm mb-0.5 ${isDark ? "text-zinc-400" : "text-zinc-400"}`}>{period}</span>
+      </div>
+
+      {/* Description */}
+      <p className={`text-sm leading-relaxed mb-6 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+        {description}
+      </p>
+
+      {/* Divider */}
+      <div className={`h-px mb-6 ${isDark ? "bg-zinc-700" : "bg-zinc-100"}`} />
+
+      {/* Features */}
+      <ul className="space-y-3 flex-1 mb-7">
+        {features.map((f: string) => (
+          <li key={f} className="flex items-start gap-2.5">
+            <span className={`mt-0.5 flex-shrink-0 ${isDark ? "text-zinc-300" : "text-zinc-500"}`}>
+              <Icon d={ICONS.check} size={14} />
+            </span>
+            <span className={`text-sm leading-relaxed ${isDark ? "text-zinc-300" : "text-zinc-500"}`}>
+              {f}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {/* CTA */}
+      <button className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200
+        ${isDark
+          ? "bg-white text-zinc-800 hover:bg-zinc-100 hover:shadow-lg"
+          : isMid
+            ? "bg-zinc-800 text-white hover:bg-zinc-900 hover:shadow-[0_8px_24px_rgba(39,39,42,0.22)]"
+            : "border border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+        }`}>
+        {cta}
+      </button>
+    </div>
+  );
+}
+
+/* ─── SubscriptionSection ─── */
+function SubscriptionSection() {
+  const headerRef = useReveal();
+  const noteRef = useReveal();
+
+  return (
+    <section id="pricing" className="font-body py-28 bg-white border-t border-zinc-100">
+      <div className="max-w-6xl mx-auto px-6">
+
+        {/* Header */}
+        <div ref={headerRef} className="reveal text-center mb-4 space-y-3">
+          <p className="text-xs uppercase tracking-widest text-zinc-400 font-semibold">
+            Plans for Jobseekers
+          </p>
+          <h2 className="font-display text-4xl sm:text-5xl text-zinc-800 leading-tight">
+            Simple, transparent<br />
+            <em className="italic text-zinc-400">pricing for job hunters.</em>
+          </h2>
+          <p className="text-zinc-400 text-base max-w-md mx-auto pt-1 leading-relaxed">
+            Choose the plan that fits your search. Upgrade or cancel anytime.
+          </p>
+        </div>
+
+        {/* Jobseeker clarification */}
+        <div ref={noteRef} className="reveal flex justify-center mb-12">
+          <div className="inline-flex items-center gap-2.5 bg-zinc-50 border border-zinc-200 rounded-xl px-5 py-3">
+            <span className="text-zinc-500 flex-shrink-0">
+              <Icon d={ICONS.user} size={15} />
+            </span>
+            <p className="text-zinc-500 text-sm leading-snug">
+              These subscription plans are intended for jobseekers.{" "}
+              <span className="text-zinc-400">Recruiter / company access is handled separately.</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Cards: horizontal scroll on mobile, grid on desktop */}
+        <div className="relative">
+          <div
+            className="
+              flex gap-5 overflow-x-auto scrollbar-hide px-6
+              snap-x snap-mandatory scroll-smooth
+              md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:px-0
+            "
+          >
+            {PLANS.map((plan) => (
+              <div
+                key={plan.name}
+                className="min-w-[85%] snap-center flex-shrink-0 md:min-w-0 md:flex-shrink"
+              >
+                <PricingCard {...plan} />
+              </div>
+            ))}
+          </div>
+
+          {/* Fade hint for mobile */}
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-white to-transparent md:hidden" />
+        </div>
+
+        {/* Swipe hint — mobile only */}
+        <p className="text-center text-zinc-300 text-xs mt-5 md:hidden tracking-wide select-none">
+          Swipe to explore →
+        </p>
+      </div>
+    </section>
+  );
+}
 
 /* ─── Nav ─── */
 function Nav() {
@@ -154,7 +395,6 @@ function Nav() {
     <nav className={`font-body fixed top-0 left-0 right-0 z-50 transition-all duration-300
       ${scrolled ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-zinc-100" : "bg-transparent"}`}>
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
             <span className="text-white text-xs font-semibold tracking-tight">SS</span>
@@ -162,9 +402,8 @@ function Nav() {
           <span className="text-zinc-800 font-semibold text-[15px] tracking-tight">SkillSense</span>
         </div>
 
-        {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
-          {["Features", "How it Works", "Why SkillSense"].map(l => (
+          {["Features", "How it Works", "Why SkillSense", "Pricing"].map(l => (
             <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
               className="nav-link text-zinc-500 hover:text-zinc-800 text-sm font-medium transition-colors">
               {l}
@@ -172,7 +411,6 @@ function Nav() {
           ))}
         </div>
 
-        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <a href="#" className="text-sm text-zinc-600 font-medium hover:text-zinc-800 transition-colors px-3 py-2">
             Sign In
@@ -182,16 +420,14 @@ function Nav() {
           </a>
         </div>
 
-        {/* Mobile toggle */}
         <button className="md:hidden text-zinc-700" onClick={() => setOpen(!open)}>
           <Icon d={open ? ICONS.x : ICONS.menu} size={22} />
         </button>
       </div>
 
-      {/* Mobile menu */}
       {open && (
         <div className="md:hidden bg-white border-t border-zinc-100 px-6 py-4 flex flex-col gap-4">
-          {["Features", "How it Works", "Why SkillSense"].map(l => (
+          {["Features", "How it Works", "Why SkillSense", "Pricing"].map(l => (
             <a key={l} href={`#${l.toLowerCase().replace(/ /g, "-")}`}
               className="text-zinc-600 text-sm font-medium" onClick={() => setOpen(false)}>
               {l}
@@ -211,7 +447,6 @@ function Nav() {
 function Hero() {
   return (
     <section className="hero-bg font-body relative overflow-hidden min-h-screen flex items-center pt-20">
-      {/* Decorative blobs */}
       <div className="absolute top-32 right-0 w-[520px] h-[520px] rounded-full"
         style={{ background: "radial-gradient(circle, rgba(161,161,170,0.12) 0%, transparent 70%)" }} />
       <div className="absolute bottom-0 left-0 w-[380px] h-[380px] rounded-full"
@@ -219,10 +454,7 @@ function Hero() {
 
       <div className="max-w-6xl mx-auto px-6 py-20 w-full">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-
-          {/* Left: copy */}
           <div className="space-y-7 relative z-10">
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 border border-zinc-200 rounded-full px-4 py-1.5
               bg-white/80 backdrop-blur-sm shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" />
@@ -231,21 +463,18 @@ function Hero() {
               </span>
             </div>
 
-            {/* Headline */}
             <h1 className="font-display text-[3.2rem] sm:text-[3.8rem] leading-[1.08] text-zinc-800">
               Hiring that<br />
               <em className="italic font-display text-zinc-500">understands</em>{" "}
               your candidates.
             </h1>
 
-            {/* Sub */}
             <p className="text-zinc-500 text-lg leading-relaxed max-w-md font-light">
               SkillSense moves beyond keyword filtering. Our semantic engine reads
               resumes the way humans do — understanding context, skills, and fit —
               so your pipeline surfaces the right candidates, faster.
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-wrap gap-3 pt-1">
               <a href="#" className="btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold">
                 Start Screening
@@ -258,7 +487,6 @@ function Hero() {
               </a>
             </div>
 
-            {/* Social proof line */}
             <div className="flex items-center gap-4 pt-2">
               <div className="flex -space-x-2">
                 {["#a1a1aa","#71717a","#52525b","#3f3f46"].map((c, i) => (
@@ -272,7 +500,6 @@ function Hero() {
             </div>
           </div>
 
-          {/* Right: hero image with fade */}
           <div className="relative lg:h-[520px] h-[340px] hidden sm:block">
             <div className="hero-image-wrap w-full h-full">
               <img
@@ -281,7 +508,6 @@ function Hero() {
                 className="w-full h-full object-cover object-center rounded-2xl"
               />
             </div>
-            {/* Floating stat card */}
             <div className="absolute bottom-8 left-4 bg-white rounded-xl shadow-lg px-4 py-3
               border border-zinc-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-600">
@@ -292,7 +518,6 @@ function Hero() {
                 <p className="text-zinc-800 text-sm font-semibold">Semantically ranked results</p>
               </div>
             </div>
-            {/* Floating insight card */}
             <div className="absolute top-8 right-2 bg-white rounded-xl shadow-lg px-4 py-3
               border border-zinc-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center text-white">
@@ -414,7 +639,6 @@ function HowItWorks() {
               <div key={s.n} ref={ref2}
                 className={`reveal delay-${i * 100 + 100} relative bg-white border border-zinc-100
                   rounded-2xl p-7 space-y-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]`}>
-                {/* Step number */}
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-white">
                     <Icon d={s.icon} size={18} />
@@ -563,6 +787,7 @@ export default function SkillSenseLanding() {
         <Features />
         <HowItWorks />
         <WhySkillSense />
+        <SubscriptionSection />
         <FinalCTA />
         <Footer />
       </div>
