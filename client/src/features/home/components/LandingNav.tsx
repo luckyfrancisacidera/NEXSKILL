@@ -110,7 +110,7 @@ export const LandingNav = () => {
                     Sign Up as Jobseeker
                   </Link>
                   <Link
-                    to="/signup?account=company"
+                    to="/company-account-request"
                     className="rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-white/10"
                     onClick={() => setIsGetStartedOpen(false)}
                   >
@@ -156,7 +156,7 @@ export const LandingNav = () => {
             <Link to="/signup" className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100" onClick={() => setIsOpen(false)}>
               Sign Up as Jobseeker
             </Link>
-            <Link to="/signup?account=company" className="btn-primary rounded-lg px-4 py-2 text-sm font-medium" onClick={() => setIsOpen(false)}>
+            <Link to="/company-account-request" className="btn-primary rounded-lg px-4 py-2 text-sm font-medium" onClick={() => setIsOpen(false)}>
               Request Company Account
             </Link>
           </div>

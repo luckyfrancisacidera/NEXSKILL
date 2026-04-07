@@ -13,13 +13,15 @@ export type IconName =
   | "x";
 
 export type LandingPlan = {
+  id: string;
   name: string;
   price: string;
   period: string;
   badge: string | null;
   description: string;
+  tagline?: string;
   features: string[];
-  variant: "basic" | "standard" | "premium";
+  variant: "trial" | "basic" | "standard" | "premium";
   cta: string;
   ctaTo: string;
 };

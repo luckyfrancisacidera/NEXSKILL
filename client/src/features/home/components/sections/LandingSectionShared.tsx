@@ -75,11 +75,13 @@ export const PricingCard = ({
   period,
   badge,
   description,
+  tagline,
   features,
   variant,
   cta,
   ctaTo,
 }: LandingPlan) => {
+  const isTrial = variant === "trial";
   const isPremium = variant === "premium";
   const isStandard = variant === "standard";
   const { theme } = useTheme();
@@ -108,6 +110,18 @@ export const PricingCard = ({
             borderColor: "#e4e4e7",
             boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
           }
+      : isTrial
+        ? theme === "dark"
+          ? {
+              background: "linear-gradient(145deg, #111827 0%, #09090b 100%)",
+              borderColor: "rgba(255,255,255,0.10)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.24)",
+            }
+          : {
+              background: "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
+              borderColor: "#e4e4e7",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+            }
       : theme === "dark"
         ? {
             background: "#09090b",
@@ -146,6 +160,11 @@ export const PricingCard = ({
         </span>
         <span className="mb-0.5 text-sm text-zinc-400 dark:text-zinc-500">{period}</span>
       </div>
+      {tagline ? (
+        <p className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] ${isPremium ? "text-zinc-500" : "text-zinc-400 dark:text-zinc-500"}`}>
+          {tagline}
+        </p>
+      ) : null}
       <p className={`mb-6 text-sm leading-relaxed ${isPremium ? "text-zinc-400" : "text-zinc-500 dark:text-zinc-400"}`}>
         {description}
       </p>
@@ -171,6 +190,8 @@ export const PricingCard = ({
             ? "bg-white text-zinc-800 hover:bg-zinc-100 hover:shadow-lg"
             : isStandard
               ? "bg-zinc-800 text-white hover:bg-zinc-900 hover:shadow-[0_8px_24px_rgba(39,39,42,0.22)] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              : isTrial
+                ? "border border-zinc-300 bg-zinc-100 text-zinc-800 hover:border-zinc-400 hover:bg-zinc-50 dark:border-white/10 dark:bg-white/10 dark:text-zinc-100 dark:hover:bg-white/15"
               : "border border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-100 dark:hover:bg-white/10"
         }`}
       >
