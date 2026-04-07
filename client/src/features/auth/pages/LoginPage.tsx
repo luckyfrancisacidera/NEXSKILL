@@ -29,7 +29,7 @@ const LoginPage = () => {
 
   const openRegister = () => {
     runViewTransition(() => {
-      navigate("/register", { state: { from: "/login" } });
+      navigate("/signup", { state: { from: "/login" } });
     });
   };
 
@@ -212,4 +212,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-

@@ -213,6 +213,31 @@ export const OffersPage = () => {
     }
   };
 
+  const handleDeleteHistory = async (applicationId: string) => {
+    const application = data.items.find((item) => item.id === applicationId);
+    if (!application) {
+      return;
+    }
+
+    try {
+      await deleteHistory(applicationId);
+      showToast({
+        title: "History deleted",
+        description: `${application.job_title} was removed from your application history.`,
+        tone: "success",
+      });
+    } catch (nextError) {
+      showToast({
+        title: "Delete failed",
+        description:
+          nextError instanceof Error
+            ? nextError.message
+            : "Unable to remove this item from your history right now.",
+        tone: "error",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl bg-[radial-gradient(circle_at_top_right,rgba(82,82,91,0.18),transparent_35%),linear-gradient(135deg,#18181b_0%,#3f3f46_100%)] px-4 py-5 text-white sm:px-5 md:px-6 md:py-6">
@@ -342,7 +367,7 @@ export const OffersPage = () => {
                 key={item.id}
                 item={item}
                 onDeleteHistory={(applicationId) => {
-                  void deleteHistory(applicationId);
+                  void handleDeleteHistory(applicationId);
                 }}
                 onViewOffer={(card) => {
                   setSelectedOfferCard(card);

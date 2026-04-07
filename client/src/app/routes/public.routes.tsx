@@ -6,11 +6,21 @@ import { lazyRouteElement, publicOnlyElement, publicRoute, type AppRoute } from 
 
 export const publicRoutes: AppRoute[] = [
   publicRoute(
+    "/",
+    lazyRouteElement(() => import("@features/home/pages/LandingPage"), "default"),
+  ),
+  publicRoute(
     "/not-authorized",
     lazyRouteElement(() => import("@shared/pages/NotAuthorized"), "NotAuthorized"),
   ),
   publicRoute(
     "/register",
+    publicOnlyElement(
+      lazyRouteElement(() => import("@features/auth/pages/RegisterPage"), "default"),
+    ),
+  ),
+  publicRoute(
+    "/signup",
     publicOnlyElement(
       lazyRouteElement(() => import("@features/auth/pages/RegisterPage"), "default"),
     ),

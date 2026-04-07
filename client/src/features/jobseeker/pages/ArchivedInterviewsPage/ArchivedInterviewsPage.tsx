@@ -230,7 +230,7 @@ export const ArchivedInterviewsPage = () => {
           </p>
           <Link
             to="/jobseeker/interviews"
-            className="inline-flex text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+            className="inline-flex items-center rounded-full border border-zinc-300 bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
           >
             Back to active interviews
           </Link>
@@ -439,4 +439,3 @@ export const ArchivedInterviewsPage = () => {
     </Card>
   );
 };
-
