@@ -101,6 +101,7 @@ export const useApplications = ({
           ? nextError.message
           : "Unable to withdraw this application right now.",
       );
+      throw nextError;
     } finally {
       setWithdrawingId(null);
     }
@@ -119,6 +120,7 @@ export const useApplications = ({
           ? nextError.message
           : "Unable to archive this history entry right now.",
       );
+      throw nextError;
     } finally {
       setArchivingId(null);
     }
@@ -137,6 +139,7 @@ export const useApplications = ({
           ? nextError.message
           : "Unable to restore this history entry right now.",
       );
+      throw nextError;
     } finally {
       setUnarchivingId(null);
     }
@@ -156,6 +159,7 @@ export const useApplications = ({
           ? nextError.message
           : "Unable to remove this item from your history right now.",
       );
+      throw nextError;
     } finally {
       setDeletingHistoryId(null);
     }

@@ -13,7 +13,6 @@ import { superAdminIndexRoute, superAdminRoutes } from "@app/routes/superAdmin.r
 import { RouteErrorPage } from "@shared/pages/RouteErrorPage";
 
 export const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/dashboard" replace /> },
   ...publicRoutes,
   {
     path: "/",

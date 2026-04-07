@@ -23,8 +23,10 @@ import { useSetup } from '@app/providers/SetupProvider';
 import { SkeletonTheme } from 'react-loading-skeleton';
 
 const PUBLIC_ROUTES = new Set([
+  '/',
   '/login',
   '/register',
+  '/signup',
   '/terms',
   '/privacy',
   '/forgot-password',
@@ -106,4 +108,3 @@ const App = () => (
 );
 
 export default App;
-

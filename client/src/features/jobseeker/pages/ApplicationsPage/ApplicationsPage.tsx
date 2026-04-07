@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { Search } from "lucide-react";
+import { useToast } from "@app/providers/ToastProvider";
 import { Card } from "@shared/components/data-display/Card";
 import { useApplications } from "@features/jobseeker/hooks";
 import type { ApplicationsLoaderData } from "@features/jobseeker/types";
@@ -37,6 +38,7 @@ export const ApplicationsPage = () => {
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
   const confirm = useConfirmation();
+  const { showToast } = useToast();
   const { data, error, isLoading, withdrawingId, archivingId, deletingHistoryId, withdraw, archiveHistory, deleteHistory } = useApplications({
     initialData,
     pageNumber,
@@ -83,12 +85,49 @@ export const ApplicationsPage = () => {
       return;
     }
 
-    if (type === "withdraw") {
-      await withdraw(applicationId);
-    } else if (type === "archive") {
-      await archiveHistory(applicationId);
-    } else {
-      await deleteHistory(applicationId);
+    try {
+      if (type === "withdraw") {
+        await withdraw(applicationId);
+        showToast({
+          title: "Application withdrawn",
+          description: `${application.job_title} has been withdrawn successfully.`,
+          tone: "success",
+        });
+      } else if (type === "archive") {
+        await archiveHistory(applicationId);
+        showToast({
+          title: "History archived",
+          description: `${application.job_title} was moved to your archived histories.`,
+          tone: "success",
+        });
+      } else {
+        await deleteHistory(applicationId);
+        showToast({
+          title: "History deleted",
+          description: `${application.job_title} was removed from your application history.`,
+          tone: "success",
+        });
+      }
+    } catch (nextError) {
+      const description =
+        nextError instanceof Error
+          ? nextError.message
+          : type === "withdraw"
+            ? "Unable to withdraw this application right now."
+            : type === "archive"
+              ? "Unable to archive this history entry right now."
+              : "Unable to remove this item from your history right now.";
+
+      showToast({
+        title:
+          type === "withdraw"
+            ? "Withdraw failed"
+            : type === "archive"
+              ? "Archive failed"
+              : "Delete failed",
+        description,
+        tone: "error",
+      });
     }
   };
 
@@ -104,7 +143,7 @@ export const ApplicationsPage = () => {
           </p>
           <Link
             to="/applications/archived"
-            className="inline-flex text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+            className="inline-flex items-center rounded-full border border-zinc-300 bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
           >
             View archived histories
           </Link>
@@ -193,4 +232,3 @@ export const ApplicationsPage = () => {
     </Card>
   );
 };
-

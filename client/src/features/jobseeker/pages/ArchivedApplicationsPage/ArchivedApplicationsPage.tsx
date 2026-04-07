@@ -2,6 +2,7 @@
 import { ArchiveRestore, Loader2, Search, Trash2 } from "lucide-react";
 import { Link, useLoaderData } from "react-router-dom";
 
+import { useToast } from "@app/providers/ToastProvider";
 import { Card } from "@shared/components/data-display/Card";
 import { ActionButton } from "@shared/components/actions/ActionButton";
 import { JobTitleCell } from "@shared/components/data-display/JobTitleCell";
@@ -26,6 +27,7 @@ export const ArchivedApplicationsPage = () => {
   const [pageNumber, setPageNumber] = useState(initialData.pageNumber);
   const [pageSize, setPageSize] = useState(initialData.pageSize);
   const confirm = useConfirmation();
+  const { showToast } = useToast();
   const {
     data,
     error,
@@ -60,7 +62,48 @@ export const ArchivedApplicationsPage = () => {
       return;
     }
 
-    await deleteHistory(applicationId);
+    try {
+      await deleteHistory(applicationId);
+      showToast({
+        title: "History deleted",
+        description: `${application.job_title} was removed from your archived history.`,
+        tone: "success",
+      });
+    } catch (nextError) {
+      showToast({
+        title: "Delete failed",
+        description:
+          nextError instanceof Error
+            ? nextError.message
+            : "Unable to remove this item from your history right now.",
+        tone: "error",
+      });
+    }
+  };
+
+  const handleRestoreHistory = async (applicationId: string) => {
+    const application = data.items.find((item) => item.id === applicationId);
+    if (!application) {
+      return;
+    }
+
+    try {
+      await unarchiveHistory(applicationId);
+      showToast({
+        title: "History restored",
+        description: `${application.job_title} is back in your active applications.`,
+        tone: "success",
+      });
+    } catch (nextError) {
+      showToast({
+        title: "Restore failed",
+        description:
+          nextError instanceof Error
+            ? nextError.message
+            : "Unable to restore this history entry right now.",
+        tone: "error",
+      });
+    }
   };
 
   const columns: Array<DataTableColumn<ApplicationsLoaderData["items"][number]>> = [
@@ -112,7 +155,7 @@ export const ArchivedApplicationsPage = () => {
               iconOnly
               disabled={isRestoring || isDeleting}
               onClick={() => {
-                void unarchiveHistory(itemId);
+                void handleRestoreHistory(itemId);
               }}
             />
             <ActionButton
@@ -145,7 +188,7 @@ export const ArchivedApplicationsPage = () => {
           </p>
           <Link
             to="/applications"
-            className="inline-flex text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+            className="inline-flex items-center rounded-full border border-zinc-300 bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
           >
             Back to application history
           </Link>
@@ -255,4 +298,3 @@ export const ArchivedApplicationsPage = () => {
     </Card>
   );
 };
-
