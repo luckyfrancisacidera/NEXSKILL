@@ -30,7 +30,7 @@ export const FinalCtaSection = () => {
               Sign Up as Jobseeker
             </Link>
             <Link
-              to="/signup?account=company"
+              to="/company-account-request"
               className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-7 py-3.5 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-400 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
             >
               Request Company Account

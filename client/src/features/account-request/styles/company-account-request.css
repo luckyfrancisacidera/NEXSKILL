@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+.account-request-page {
+  font-family: 'Outfit', sans-serif;
+}
+
+.account-request-page .font-display {
+  font-family: 'Instrument Serif', serif;
+}
+
+.account-request-scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.account-request-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

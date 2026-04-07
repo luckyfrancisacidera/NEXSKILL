@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = new Set([
   '/login',
   '/register',
   '/signup',
+  '/company-account-request',
   '/terms',
   '/privacy',
   '/forgot-password',
