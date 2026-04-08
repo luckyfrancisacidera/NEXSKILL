@@ -7,6 +7,8 @@ import { useAuth } from "@app/providers/AuthProvider";
 import { getDefaultRouteByRole } from "@app/routes/routes.guard";
 import { lazyRouteElement, protectedRoute, type AppRoute } from "@app/routes/route.helpers";
 import {
+  superAdminCompanyRequestDetailLoader,
+  superAdminCompanyRequestsLoader,
   superAdminCompanyAdminsLoader,
   superAdminDashboardLoader,
   superAdminRecruitersLoader,
@@ -41,6 +43,24 @@ export const superAdminRoutes: AppRoute[] = [
     element: lazyRouteElement(
       () => import("@features/admin/pages/SuperAdminCompanyAdminsPage"),
       "SuperAdminCompanyAdminsPage",
+    ),
+  }),
+  protectedRoute({
+    path: "super/company-requests",
+    access: "superAdminCompanyRequests",
+    loader: superAdminCompanyRequestsLoader,
+    element: lazyRouteElement(
+      () => import("@features/admin/pages/SuperAdminCompanyRequestsPage"),
+      "SuperAdminCompanyRequestsPage",
+    ),
+  }),
+  protectedRoute({
+    path: "super/company-requests/:requestId",
+    access: "superAdminCompanyRequests",
+    loader: superAdminCompanyRequestDetailLoader,
+    element: lazyRouteElement(
+      () => import("@features/admin/pages/SuperAdminCompanyRequestDetailsPage"),
+      "SuperAdminCompanyRequestDetailsPage",
     ),
   }),
   protectedRoute({

@@ -6,7 +6,6 @@ import type {
   FormErrors,
   SubscriptionPlanForm,
 } from "@features/account-request/types/accountRequest.types";
-import { PaymentMethodSelector } from "./PaymentMethodSelector";
 
 export const SubscriptionStep = ({
   data,
@@ -29,8 +28,6 @@ export const SubscriptionStep = ({
 
     if (planId === "free-trial") {
       onChange("billingCycle", "monthly");
-      onChange("paymentMethod", "");
-      onChange("paymentDetails", {});
     }
   };
 
@@ -94,8 +91,8 @@ export const SubscriptionStep = ({
       >
         {ACCOUNT_REQUEST_PLANS.map((plan) => {
           const selected = data.planId === plan.id;
-          const price = data.billingCycle === "annual" && plan.supportsAnnual ? plan.priceAnnual : plan.price;
-          const period = plan.supportsAnnual ? plan.period : "/14 days";
+          const price = plan.price;
+          const period = plan.period;
 
           return (
             <button
@@ -131,7 +128,7 @@ export const SubscriptionStep = ({
                   </span>
                 </div>
                 <p className={`mt-1.5 text-xs leading-relaxed ${selected ? "text-zinc-300 dark:text-zinc-700" : "text-zinc-400 dark:text-zinc-500"}`}>
-                  {plan.tagline}
+                  {plan.description}
                 </p>
               </div>
 
@@ -179,15 +176,7 @@ export const SubscriptionStep = ({
             </div>
           </div>
         </div>
-      ) : (
-        <PaymentMethodSelector
-          value={data.paymentMethod}
-          error={errors.paymentMethod}
-          details={data.paymentDetails ?? {}}
-          onMethodChange={(v) => onChange("paymentMethod", v)}
-          onDetailsChange={(d) => onChange("paymentDetails", d)}
-        />
-      )}
+      ) : null}
     </div>
   );
 };
