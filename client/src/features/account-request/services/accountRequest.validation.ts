@@ -35,17 +35,12 @@ export const validateAccountRequestStep = (
     if (!admin.phone.trim()) errors.phone = "Phone number is required.";
     else if (!phoneRegex.test(admin.phone)) errors.phone = "Please enter a valid phone number.";
     if (!admin.position.trim()) errors.position = "Position / role is required.";
-    if (!admin.password) errors.password = "Password is required.";
-    else if (admin.password.length < 8) errors.password = "Password must be at least 8 characters.";
-    if (!admin.confirmPassword) errors.confirmPassword = "Please confirm your password.";
-    else if (admin.password !== admin.confirmPassword) errors.confirmPassword = "Passwords do not match.";
   }
 
   if (step === 3) {
-    const selectedPlan = data.subscription.planId;
     if (!data.subscription.planId) errors.planId = "Please select a subscription plan.";
-    if (selectedPlan && selectedPlan !== "free-trial" && !data.subscription.paymentMethod) {
-      errors.paymentMethod = "Please select a payment method.";
+    if (data.subscription.planId !== "free-trial" && !data.subscription.billingCycle) {
+      errors.billingCycle = "Please select a billing cycle.";
     }
   }
 

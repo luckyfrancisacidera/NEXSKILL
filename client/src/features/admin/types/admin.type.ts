@@ -54,6 +54,100 @@ export interface CompanyAdminDashboardDto {
   recruiters: Paged<AdminRecruiterOverviewDto>;
 }
 
+export interface CompanyRequestListItemDto {
+  id: string;
+  companyName: string;
+  primaryAdminEmail: string;
+  requestedPlanId: string;
+  requestedPlanName?: string | null;
+  billingCycle?: string | null;
+  status: string;
+  submittedAtUtc: string;
+}
+
+export interface SuperAdminCompanyRequestsPageDto {
+  requests: Paged<CompanyRequestListItemDto>;
+  filters: {
+    status: string;
+  };
+}
+
+export interface CompanyRequestDocumentDto {
+  id: string;
+  documentType: string;
+  originalFileName: string;
+  contentType: string;
+  canInlinePreview: boolean;
+}
+
+export interface CompanyRequestDetailDto {
+  id: string;
+  companyName: string;
+  businessName: string;
+  industry: string;
+  companySize: string;
+  websiteUrl?: string | null;
+  description: string;
+  country: string;
+  cityProvince: string;
+  fullAddress: string;
+  primaryAdminFullName: string;
+  primaryAdminEmail: string;
+  primaryAdminPhone: string;
+  primaryAdminRole: string;
+  requestedPlanId: string;
+  requestedPlanName: string;
+  billingCycle?: string | null;
+  status: string;
+  reviewNotes?: string | null;
+  submittedAtUtc: string;
+  reviewedAtUtc?: string | null;
+  documents: CompanyRequestDocumentDto[];
+}
+
+export interface CompanySubscriptionSummaryDto {
+  planId: string;
+  planName: string;
+  billingCycle?: string | null;
+  status: string;
+  startsAtUtc?: string | null;
+  endsAtUtc?: string | null;
+  daysRemaining: number;
+  activeJobPostsUsed: number;
+  activeJobPostsMax?: number | null;
+  screeningsUsed: number;
+  screeningsMax?: number | null;
+  remainingJobPosts?: number | null;
+  remainingScreenings?: number | null;
+  isTrial: boolean;
+  canUpgrade: boolean;
+  isExpired: boolean;
+  analyticsEnabled: boolean;
+  restrictionMessage?: string | null;
+  usageSharedNoteJobPosts: string;
+  usageSharedNoteScreenings: string;
+}
+
+export interface CompanyInvitationViewDto {
+  companyName: string;
+  businessName?: string | null;
+  industry?: string | null;
+  companySize?: string | null;
+  fullAddress?: string | null;
+  primaryAdminFullName: string;
+  primaryAdminEmail: string;
+  role: string;
+  planId: string;
+  planName: string;
+  billingLabel: string;
+  reviewNotes?: string | null;
+  isTrial: boolean;
+  expiresAtUtc: string;
+  isExpired: boolean;
+  isAccepted: boolean;
+  email: string;
+}
+
 export interface CompanyEmployeeDto {
   resume_submission_id: string;
   job_id: string;

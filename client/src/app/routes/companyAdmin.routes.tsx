@@ -7,6 +7,7 @@ import {
   companyAdminCandidateDetailLoader,
   companyAdminDashboardLoader,
   companyAdminEmployeesLoader,
+  companyAdminSubscriptionLoader,
 } from "@features/admin/loaders/admin.loaders";
 
 export const companyAdminRoutes: AppRoute[] = [
@@ -26,6 +27,15 @@ export const companyAdminRoutes: AppRoute[] = [
     element: lazyRouteElement(
       () => import("@features/admin/pages/CompanyAdminEmployeesPage"),
       "CompanyAdminEmployeesPage",
+    ),
+  }),
+  protectedRoute({
+    path: "company/billing",
+    access: "companyAdminBilling",
+    loader: companyAdminSubscriptionLoader,
+    element: lazyRouteElement(
+      () => import("@features/admin/pages/CompanyAdminBillingPage"),
+      "CompanyAdminBillingPage",
     ),
   }),
   protectedRoute({

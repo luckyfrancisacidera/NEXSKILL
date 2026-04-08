@@ -5,6 +5,9 @@ import type {
   CompanyAdminCandidateDetailLoaderData,
   CompanyAdminDashboardDto,
   CompanyAdminEmployeesDto,
+  CompanyRequestDetailDto,
+  CompanySubscriptionSummaryDto,
+  SuperAdminCompanyRequestsPageDto,
   SuperAdminCompanyAdminsPageDto,
   SuperAdminDashboardDto,
   SuperAdminRecruitersPageDto,
@@ -166,4 +169,73 @@ export const companyAdminCandidateDetailLoader = async ({ params }: LoaderFuncti
 
   const candidate = await adminService.getCompanyApplicantBySubmissionId(submissionId);
   return { candidate };
+};
+
+export const superAdminCompanyRequestsLoader = async ({ request }: LoaderFunctionArgs): Promise<SuperAdminCompanyRequestsPageDto> => {
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status") ?? "";
+  const page = getPositiveNumber(url.searchParams.get("page"), 1);
+  const pageSize = getPositiveNumber(url.searchParams.get("pageSize"), 10);
+  const items = await adminService.getCompanyRequests(status || undefined);
+  const totalCount = items.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const normalizedPage = Math.min(page, totalPages);
+  const start = (normalizedPage - 1) * pageSize;
+
+  return {
+    requests: {
+      items: items.slice(start, start + pageSize),
+      pageNumber: normalizedPage,
+      pageSize,
+      totalCount,
+      totalPages,
+    },
+    filters: {
+      status,
+    },
+  };
+};
+
+export const superAdminCompanyRequestDetailLoader = async ({ params }: LoaderFunctionArgs): Promise<CompanyRequestDetailDto> => {
+  const requestId = params.requestId;
+  if (!requestId) {
+    throw new Response("Request not found", { status: 404 });
+  }
+
+  return adminService.getCompanyRequestDetail(requestId);
+};
+
+export const companyAdminSubscriptionLoader = async (): Promise<CompanySubscriptionSummaryDto> => {
+  const guard = await guardProtectedLoader({
+    allowedRoles: ["companyadmin"],
+    fallback: () => ({
+      planId: "",
+      planName: "",
+      billingCycle: null,
+      status: "Unknown",
+      startsAtUtc: null,
+      endsAtUtc: null,
+      daysRemaining: 0,
+      activeJobPostsUsed: 0,
+      activeJobPostsMax: null,
+      screeningsUsed: 0,
+      screeningsMax: null,
+      remainingJobPosts: null,
+      remainingScreenings: null,
+      isTrial: false,
+      canUpgrade: false,
+      isExpired: false,
+      analyticsEnabled: false,
+      restrictionMessage: null,
+      usageSharedNoteJobPosts: "",
+      usageSharedNoteScreenings: "",
+    }),
+    requireCompany: true,
+  });
+
+  if (!guard.shouldLoad) {
+    return guard.data;
+  }
+
+  return adminService.getCompanySubscriptionSummary();
 };

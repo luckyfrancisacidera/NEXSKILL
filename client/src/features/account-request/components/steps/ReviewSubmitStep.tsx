@@ -29,7 +29,6 @@ export const ReviewSubmitStep = ({
   onChange: (field: keyof Agreements, value: boolean) => void;
 }) => {
   const plan = ACCOUNT_REQUEST_PLANS.find((item) => item.id === data.subscription.planId);
-  const price = data.subscription.billingCycle === "annual" ? plan?.priceAnnual : plan?.price;
 
   return (
     <div className="space-y-5">
@@ -63,17 +62,15 @@ export const ReviewSubmitStep = ({
         <ReviewRow label="Email" value={data.admin.email} />
         <ReviewRow label="Phone" value={data.admin.phone} />
         <ReviewRow label="Position" value={data.admin.position} />
-        <ReviewRow label="Password" value="••••••••" />
       </ReviewSection>
 
       <ReviewSection title="Subscription Plan" icon={<CreditCard size={15} />}>
         <ReviewRow label="Plan" value={plan?.name ?? "-"} />
-        <ReviewRow label="Price" value={plan ? `${price}/month` : "-"} />
+        <ReviewRow label="Price" value={plan ? `${plan.price}${plan.period}` : "-"} />
         <ReviewRow
           label="Billing Cycle"
-          value={data.subscription.billingCycle === "annual" ? "Annual (10% off)" : "Monthly"}
+          value={data.subscription.planId === "free-trial" ? "Trial" : data.subscription.billingCycle === "annual" ? "Annual" : "Monthly"}
         />
-        <ReviewRow label="Payment Method" value={data.subscription.paymentMethod} />
       </ReviewSection>
 
       <ReviewSection title="Verification Documents" icon={<FileText size={15} />}>

@@ -21,6 +21,7 @@ export default function CompanyAccountRequest() {
     formData,
     errors,
     isSubmitting,
+    isValidatingAdminEmail,
     submitted,
     referenceNumber,
     setCompany,
@@ -114,16 +115,30 @@ export default function CompanyAccountRequest() {
               {step < 5 ? (
                 <button
                   type="button"
-                  onClick={goNext}
+                  onClick={() => {
+                    void goNext();
+                  }}
+                  disabled={isValidatingAdminEmail}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-medium text-white transition-all active:scale-95 hover:bg-zinc-900 hover:shadow-lg hover:shadow-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:hover:shadow-none sm:w-auto"
                 >
-                  Continue
-                  <ChevronRight size={16} />
+                  {isValidatingAdminEmail ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Checking email...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ChevronRight size={16} />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={submit}
+                  onClick={() => {
+                    void submit();
+                  }}
                   disabled={isSubmitting}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-800 px-6 py-2.5 text-sm font-medium text-white transition-all active:scale-95 hover:bg-zinc-900 hover:shadow-lg hover:shadow-zinc-200 disabled:pointer-events-none disabled:opacity-70 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:hover:shadow-none sm:w-auto"
                 >

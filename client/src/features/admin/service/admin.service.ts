@@ -4,6 +4,10 @@ import type {
   CompanyAdminCandidateDetailLoaderData,
   CompanyAdminDashboardDto,
   CompanyAdminEmployeesDto,
+  CompanyInvitationViewDto,
+  CompanyRequestDetailDto,
+  CompanyRequestListItemDto,
+  CompanySubscriptionSummaryDto,
   CreateCompanyAccountPayload,
   CreateManagedRecruiterPayload,
   SuperAdminDashboardDto,
@@ -31,6 +35,41 @@ export const adminService = {
       params,
     });
     return response.data;
+  },
+
+  async getCompanyRequests(status?: string): Promise<CompanyRequestListItemDto[]> {
+    const response = await http.get<CompanyRequestListItemDto[]>("/api/company-requests", {
+      params: status ? { status } : undefined,
+    });
+    return response.data;
+  },
+
+  async getCompanyRequestDetail(requestId: string): Promise<CompanyRequestDetailDto> {
+    const response = await http.get<CompanyRequestDetailDto>(`/api/company-requests/${requestId}`);
+    return response.data;
+  },
+
+  async reviewCompanyRequest(requestId: string, payload: { approve: boolean; reviewNotes?: string }) {
+    const response = await http.post<CompanyRequestDetailDto>(`/api/company-requests/${requestId}/review`, payload);
+    return response.data;
+  },
+
+  async getCompanySubscriptionSummary(): Promise<CompanySubscriptionSummaryDto> {
+    const response = await http.get<CompanySubscriptionSummaryDto>("/api/company/subscription/summary");
+    return response.data;
+  },
+
+  async getInvitation(token: string): Promise<CompanyInvitationViewDto> {
+    const response = await http.get<CompanyInvitationViewDto>("/api/company-requests/invitations/view", {
+      params: { token },
+    });
+    return response.data;
+  },
+
+  async acceptInvitation(token: string, payload: { password: string; confirmPassword: string }) {
+    await http.post("/api/company-requests/invitations/accept", payload, {
+      params: { token },
+    });
   },
 
   // Use to load the super-admin user directory with the current page settings.

@@ -17,15 +17,11 @@ export interface AdminContact {
   email: string;
   phone: string;
   position: string;
-  password: string;
-  confirmPassword: string;
 }
 
 export interface SubscriptionPlanForm {
   planId: string;
   billingCycle: "monthly" | "annual";
-  paymentMethod: string;
-  paymentDetails: PaymentDetails;
 }
 
 export interface VerificationDocs {
@@ -61,38 +57,24 @@ export interface AccountRequestPlan {
   id: string;
   name: string;
   price: string;
-  priceAnnual?: string;
   period: string;
+  description: string;
   tagline: string;
-  badge?: string;
+  badge?: string | null;
   supportsAnnual: boolean;
   features: string[];
+  variant: string;
+  cta: string;
+  ctaTo: string;
 }
 
-export interface CardDetails {
-  cardName: string;
-  cardNumber: string;
-  cardExpiry: string;
-  cardCvv: string;
+export interface CompanyAccountRequestSubmissionResult {
+  requestId: string;
+  status: string;
 }
-export interface WalletDetails {
-  phone: string;
-  accountName: string;
-}
-export interface BankDetails {
-  accountName: string;
-  bankName: string;
-  accountNumber: string;
-  referenceNumber: string;
-}
-export interface PaypalDetails {
+
+export interface CompanyAdminEmailAvailabilityResult {
   email: string;
-}
-
-export interface PaymentDetails {
-  card?: Partial<CardDetails>;
-  gcash?: Partial<WalletDetails>;
-  maya?: Partial<WalletDetails>;
-  bank?: Partial<BankDetails>;
-  paypal?: Partial<PaypalDetails>;
+  isAvailable: boolean;
+  message?: string | null;
 }

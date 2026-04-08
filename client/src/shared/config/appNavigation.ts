@@ -1,6 +1,7 @@
 import {
   BriefcaseBusiness,
   CalendarClock,
+  ClipboardList,
   FileCheck2,
   LayoutDashboard,
   Users,
@@ -42,6 +43,7 @@ const recruiterItems: AppNavigationItem[] = [
 
 const superAdminItems: AppNavigationItem[] = [
   { label: "Platform Overview", to: "/admin/super", icon: LayoutDashboard },
+  { label: "Company Requests", to: "/admin/super/company-requests", icon: ClipboardList },
   { label: "Users", to: "/admin/super/users", icon: Users },
   { label: "Company Admins", to: "/admin/super/company-admins", icon: Users },
   { label: "Recruiters", to: "/admin/super/recruiters", icon: BriefcaseBusiness },

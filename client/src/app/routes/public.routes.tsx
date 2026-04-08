@@ -39,6 +39,20 @@ export const publicRoutes: AppRoute[] = [
     ),
   ),
   publicRoute(
+    "/company-invitation",
+    lazyRouteElement(
+      () => import("@features/admin/pages/CompanyInvitationPage"),
+      "CompanyInvitationPage",
+    ),
+  ),
+  publicRoute(
+    "/company-invitation/success",
+    lazyRouteElement(
+      () => import("@features/admin/pages/CompanyInvitationSuccessPage"),
+      "CompanyInvitationSuccessPage",
+    ),
+  ),
+  publicRoute(
     "/terms",
     lazyRouteElement(() => import("@features/auth/pages/TermsOfServicePage"), "default"),
   ),
