@@ -16,6 +16,10 @@ namespace SkillSense.Persistence.Data
 
         #region DbSets
         public DbSet<CompanyEntity> Companies => Set<CompanyEntity>();
+        public DbSet<CompanyAccountRequestEntity> CompanyAccountRequests => Set<CompanyAccountRequestEntity>();
+        public DbSet<CompanyRequestDocumentEntity> CompanyRequestDocuments => Set<CompanyRequestDocumentEntity>();
+        public DbSet<CompanySubscriptionEntity> CompanySubscriptions => Set<CompanySubscriptionEntity>();
+        public DbSet<CompanyInvitationEntity> CompanyInvitations => Set<CompanyInvitationEntity>();
         public DbSet<JobEntity> Jobs => Set<JobEntity>();
         public DbSet<ResumeSubmissionEntity> ResumeSubmissions => Set<ResumeSubmissionEntity>();
         public DbSet<ResumeScoreEntity> ResumeScores => Set<ResumeScoreEntity>();

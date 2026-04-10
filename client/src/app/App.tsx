@@ -21,6 +21,7 @@ import { AppLoadingScreen } from '@shared/components/feedback/AppLoadingScreen';
 import { useAuth } from '@app/providers/AuthProvider';
 import { useSetup } from '@app/providers/SetupProvider';
 import { SkeletonTheme } from 'react-loading-skeleton';
+import { Analytics } from "@vercel/analytics/react"
 
 const PUBLIC_ROUTES = new Set([
   '/',
@@ -63,7 +64,7 @@ const InitialAtsWakeGate = () => {
 
   useEffect(() => {
     // The wake surface is only meant for the first ATS-sensitive route load;
-    // once the backend is confirmed warm we should not re-show it on this visit.
+    // once the backend is confirmed warm, it does not re-show it on this visit.
     if (isInitialAtsRoute && isBackendWarm) {
       setIsInitialAtsRoute(false);
     }
@@ -96,6 +97,7 @@ const App = () => (
                   <ConfirmationProvider>
                     <InitialAtsWakeGate />
                     <AppLoadingBoundary />
+                    <Analytics />
                     <RouterProvider router={router} />
                   </ConfirmationProvider>
                 </NotificationsProvider>

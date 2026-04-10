@@ -38,13 +38,6 @@ export const validateAccountRequestStep = (
   }
 
   if (step === 3) {
-    if (!data.subscription.planId) errors.planId = "Please select a subscription plan.";
-    if (data.subscription.planId !== "free-trial" && !data.subscription.billingCycle) {
-      errors.billingCycle = "Please select a billing cycle.";
-    }
-  }
-
-  if (step === 4) {
     const docs = data.docs;
     if (!docs.businessRegNumber.trim()) errors.businessRegNumber = "Business registration number is required.";
     if (!docs.taxId.trim()) errors.taxId = "Tax ID / TIN is required.";
@@ -52,7 +45,7 @@ export const validateAccountRequestStep = (
     if (!docs.certificateOfReg) errors.certificateOfReg = "Please upload your certificate of registration.";
   }
 
-  if (step === 5) {
+  if (step === 4) {
     if (!data.agreements.terms) errors.terms = "You must accept the Terms of Service.";
     if (!data.agreements.privacy) errors.privacy = "You must accept the Privacy Policy.";
     if (!data.agreements.dataProcessing) errors.dataProcessing = "You must consent to data processing.";

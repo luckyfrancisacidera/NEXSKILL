@@ -107,7 +107,6 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         setRoles(parsedRoles);
         return parsedRoles;
       }
-
       return refreshMe();
     },
     [refreshMe],

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useToast } from "@app/providers/ToastProvider";
 import {
-  ACCOUNT_REQUEST_PLANS,
   INITIAL_ACCOUNT_REQUEST_FORM,
 } from "@features/account-request/data/accountRequest.data";
 import { validateAccountRequestStep } from "@features/account-request/services/accountRequest.validation";
@@ -12,7 +11,6 @@ import type {
   Agreements,
   CompanyInfo,
   FormErrors,
-  SubscriptionPlanForm,
 } from "@features/account-request/types/accountRequest.types";
 
 export const useCompanyAccountRequestForm = () => {
@@ -37,33 +35,6 @@ export const useCompanyAccountRequestForm = () => {
       ...current,
       admin: { ...current.admin, [field]: value },
     }));
-  };
-
-  const setSubscription = <K extends keyof SubscriptionPlanForm>(
-    field: K,
-    value: SubscriptionPlanForm[K],
-  ) => {
-    setFormData((current) => {
-      if (field === "planId") {
-        const selectedPlan = ACCOUNT_REQUEST_PLANS.find((plan) => plan.id === value);
-
-        if (selectedPlan?.id === "free-trial") {
-          return {
-            ...current,
-            subscription: {
-              ...current.subscription,
-              planId: value as SubscriptionPlanForm["planId"],
-              billingCycle: "monthly",
-            },
-          };
-        }
-      }
-
-      return {
-        ...current,
-        subscription: { ...current.subscription, [field]: value },
-      };
-    });
   };
 
   const setDocumentField = (
@@ -97,7 +68,7 @@ export const useCompanyAccountRequestForm = () => {
     const nextErrors = validateAccountRequestStep(step, formData);
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0 || step >= 5) {
+    if (Object.keys(nextErrors).length > 0 || step >= 4) {
       return;
     }
 
@@ -140,7 +111,7 @@ export const useCompanyAccountRequestForm = () => {
   };
 
   const submit = async () => {
-    const nextErrors = validateAccountRequestStep(5, formData);
+    const nextErrors = validateAccountRequestStep(4, formData);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -190,7 +161,6 @@ export const useCompanyAccountRequestForm = () => {
     referenceNumber,
     setCompany,
     setAdmin,
-    setSubscription,
     setDocumentField,
     setDocumentFile,
     setAgreement,

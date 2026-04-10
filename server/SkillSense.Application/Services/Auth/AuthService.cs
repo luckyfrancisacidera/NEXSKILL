@@ -87,10 +87,10 @@ public sealed class AuthService(
             LastName = lastName
         };
         var passwordValidation = await ValidatePasswordAsync(user, password);
-        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
+        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", [.. passwordValidation]);
 
         var result = await _userManager.CreateAsync(user, password);
-        if (!result.Succeeded) return AuthResult.Failure("Registration failed.", result.Errors.Select(e => e.Description).ToArray());
+        if (!result.Succeeded) return AuthResult.Failure("Registration failed.", [.. result.Errors.Select(e => e.Description)]);
 
         await EnsureRoleExistsAsync("JobSeeker");
         await _userManager.AddToRoleAsync(user, "JobSeeker");
@@ -113,7 +113,10 @@ public sealed class AuthService(
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            _logger.LogInformation("Login failed because no user exists for email {Email}.", email);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Login failed because no user exists for email {Email}.", email);
+            }
             return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
         }
 
@@ -129,10 +132,13 @@ public sealed class AuthService(
             var accessFailedResult = await _userManager.AccessFailedAsync(user);
             if (!accessFailedResult.Succeeded)
             {
+                var accessFailedErrors = _logger.IsEnabled(LogLevel.Warning)
+                    ? string.Join("; ", accessFailedResult.Errors.Select(error => error.Description))
+                    : null;
                 _logger.LogWarning(
                     "Failed to record an invalid login attempt for user {UserId}: {Errors}",
                     user.Id,
-                    string.Join("; ", accessFailedResult.Errors.Select(error => error.Description)));
+                    accessFailedErrors);
             }
 
             if (await _userManager.IsLockedOutAsync(user))
@@ -143,17 +149,23 @@ public sealed class AuthService(
                 return AuthResult.Failure(AuthenticationFailedMessage, LockedOutAccountError);
             }
 
-            _logger.LogInformation("Login failed because credentials were invalid for user {UserId}.", user.Id);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Login failed because credentials were invalid for user {UserId}.", user.Id);
+            }
             return AuthResult.Failure(AuthenticationFailedMessage, InvalidCredentialsError);
         }
 
         var resetAccessFailedCountResult = await _userManager.ResetAccessFailedCountAsync(user);
         if (!resetAccessFailedCountResult.Succeeded)
         {
+            var resetErrors = _logger.IsEnabled(LogLevel.Warning)
+                ? string.Join("; ", resetAccessFailedCountResult.Errors.Select(error => error.Description))
+                : null;
             _logger.LogWarning(
                 "Failed to reset access failed count for user {UserId}: {Errors}",
                 user.Id,
-                string.Join("; ", resetAccessFailedCountResult.Errors.Select(error => error.Description)));
+                resetErrors);
         }
 
         var blockedResult = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
@@ -162,9 +174,12 @@ public sealed class AuthService(
             return blockedResult;
         }
 
-        _logger.LogInformation(
-            "Login succeeded for user {UserId}. Roles and company access will be encoded into a fresh session.",
-            user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Login succeeded for user {UserId}. Roles and company access will be encoded into a fresh session.",
+                user.Id);
+        }
         return await CreateSuccessAuthResultAsync(user, "Login successful.", request.RememberMe, cancellationToken);
     }
 
@@ -183,9 +198,12 @@ public sealed class AuthService(
         var user = await _userManager.FindByIdAsync(refreshTokenValidation.UserId.ToString());
         if (user is null)
         {
-            _logger.LogInformation(
-                "Refresh failed because user {UserId} from the refresh token no longer exists.",
-                refreshTokenValidation.UserId);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Refresh failed because user {UserId} from the refresh token no longer exists.",
+                    refreshTokenValidation.UserId);
+            }
             return AuthResult.Failure("Invalid refresh token.");
         }
 
@@ -195,7 +213,10 @@ public sealed class AuthService(
             return blockedResult;
         }
 
-        _logger.LogInformation("Refresh succeeded for user {UserId}.", user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Refresh succeeded for user {UserId}.", user.Id);
+        }
         return await CreateSuccessAuthResultAsync(user, "Token refreshed.", refreshTokenValidation.IsPersistent, cancellationToken);
     }
 
@@ -205,21 +226,31 @@ public sealed class AuthService(
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
-            _logger.LogInformation("Session validation failed because user {UserId} no longer exists.", userId);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Session validation failed because user {UserId} no longer exists.", userId);
+            }
             return false;
         }
 
         var blocked = await GetBlockedAuthenticationResultAsync(user, cancellationToken);
         if (blocked is null)
         {
-            _logger.LogDebug("Session is active for user {UserId}.", userId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Session is active for user {UserId}.", userId);
+            }
             return true;
         }
 
-        _logger.LogInformation(
-            "Session is inactive for user {UserId}. Reason: {Reason}.",
-            userId,
-            string.Join(" | ", blocked.Errors));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            var blockedReasons = string.Join(" | ", blocked.Errors);
+            _logger.LogInformation(
+                "Session is inactive for user {UserId}. Reason: {Reason}.",
+                userId,
+                blockedReasons);
+        }
         return false;
     }
 
@@ -246,10 +277,10 @@ public sealed class AuthService(
             LockoutEnabled = false,
         };
         var passwordValidation = await ValidatePasswordAsync(user, password);
-        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", passwordValidation.ToArray());
+        if (passwordValidation.Count > 0) return AuthResult.Failure("Validation failed.", [.. passwordValidation]);
 
         var createResult = await _userManager.CreateAsync(user, password);
-        if (!createResult.Succeeded) return AuthResult.Failure("Create user failed.", createResult.Errors.Select(e => e.Description).ToArray());
+        if (!createResult.Succeeded) return AuthResult.Failure("Create user failed.", [.. createResult.Errors.Select(e => e.Description)]);
 
         await EnsureRoleExistsAsync(role);
         await _userManager.AddToRoleAsync(user, role);
@@ -273,7 +304,7 @@ public sealed class AuthService(
 
         await _userManager.UpdateAsync(user);
         var roles = await _userManager.GetRolesAsync(user);
-        return AuthResult.Success("User created successfully.", token: null, refreshToken: null, email: user.Email, userId: user.Id.ToString(), roles: roles.ToArray());
+        return AuthResult.Success("User created successfully.", token: null, refreshToken: null, email: user.Email, userId: user.Id.ToString(), roles: [.. roles]);
     }
 
     /// <summary>
@@ -333,10 +364,13 @@ public sealed class AuthService(
             nowUtc,
             cancellationToken);
 
-        _logger.LogInformation(
-            "Preparing password reset PIN for user {UserId}. Active unused PIN count: {PinCount}.",
-            user.Id,
-            activePins.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Preparing password reset PIN for user {UserId}. Active unused PIN count: {PinCount}.",
+                user.Id,
+                activePins.Count);
+        }
 
         if (activePins.Count > 0)
         {
@@ -760,7 +794,7 @@ public sealed class AuthService(
             profile.FirstName,
             profile.LastName,
             isPersistent,
-            roles.ToArray());
+            [.. roles]);
     }
 
     // Loads blocked authentication result.
@@ -782,13 +816,16 @@ public sealed class AuthService(
             return AuthResult.Failure(AuthenticationFailedMessage, InactiveCompanyError);
         }
 
-        _logger.LogDebug(
-            "Authentication eligibility passed for user {UserId}. IsActive={IsActive}, LockoutEnd={LockoutEndUtc}, HasCompanyAccess={HasCompanyAccess}, CompanyIsActive={CompanyIsActive}.",
-            user.Id,
-            user.IsActive,
-            user.LockoutEnd,
-            companyAccess is not null,
-            companyAccess?.CompanyIsActive);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug(
+                "Authentication eligibility passed for user {UserId}. IsActive={IsActive}, LockoutEnd={LockoutEndUtc}, HasCompanyAccess={HasCompanyAccess}, CompanyIsActive={CompanyIsActive}.",
+                user.Id,
+                user.IsActive,
+                user.LockoutEnd,
+                companyAccess is not null,
+                companyAccess?.CompanyIsActive);
+        }
         return null;
     }
 
@@ -818,14 +855,14 @@ public sealed class AuthService(
     // Validates password.
     private async Task<IReadOnlyList<string>> ValidatePasswordAsync(AppUser user, string password)
     {
-        var errors = new List<string>();
+        List<string> errors = [];
         foreach (var validator in _userManager.PasswordValidators)
         {
             var result = await validator.ValidateAsync(_userManager, user, password);
             if (!result.Succeeded) errors.AddRange(result.Errors.Select(e => e.Description));
         }
 
-        return errors.Distinct().ToArray();
+        return [.. errors.Distinct()];
     }
 
     // Ensures role exists.
@@ -856,7 +893,7 @@ public sealed class AuthService(
     // Builds password reset link.
     private static string BuildPasswordResetLink(string frontendBaseUrl, string email, string encodedToken)
     {
-        var query = new Dictionary<string, string?>
+        Dictionary<string, string?> query = new()
         {
             ["email"] = email,
             ["token"] = encodedToken,
@@ -899,11 +936,14 @@ public sealed class AuthService(
 
     // Handles load user by email with pins.
     private Task<AppUser?> LoadUserByEmailWithPinsAsync(string email, CancellationToken cancellationToken)
-        => _userManager.Users
+    {
+        var normalizedEmail = email.ToUpperInvariant();
+        return _userManager.Users
             .Include(user => user.PasswordResetPins)
             .FirstOrDefaultAsync(
-                user => user.NormalizedEmail == email.ToUpperInvariant(),
+                user => user.NormalizedEmail == normalizedEmail,
                 cancellationToken);
+    }
 
     // Handles null if empty.
     private static string? NullIfEmpty(string? value)
@@ -1027,10 +1067,11 @@ public sealed class AuthService(
     // Handles combine name.
     private static string? CombineName(string? firstName, string? lastName)
     {
-        var parts = new[] { NullIfEmpty(firstName), NullIfEmpty(lastName) }
+        string?[] parts = [NullIfEmpty(firstName), NullIfEmpty(lastName)];
+        var normalizedParts = parts
             .Where(part => !string.IsNullOrWhiteSpace(part));
 
-        var combined = string.Join(' ', parts);
+        var combined = string.Join(' ', normalizedParts);
         return string.IsNullOrWhiteSpace(combined) ? null : combined;
     }
 
@@ -1053,7 +1094,7 @@ public sealed class AuthService(
     // Synchronizes job seeker profile.
     private static void SyncJobSeekerProfile(AppUser user, IEnumerable<string> roles)
     {
-        var isJobSeeker = roles.Any(role => role.Equals("JobSeeker", StringComparison.OrdinalIgnoreCase));
+        var isJobSeeker = roles.Any(role => string.Equals(role, "JobSeeker", StringComparison.OrdinalIgnoreCase));
         if (!isJobSeeker)
         {
             return;

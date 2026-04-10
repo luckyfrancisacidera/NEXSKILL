@@ -6,6 +6,7 @@ using SkillSense.Application.Contracts.Offers;
 using SkillSense.Application.Contracts.Recruiter.Request;
 using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Company;
 using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Application.Services.Jobs;
 using SkillSense.Application.Services.Recruiter;
@@ -47,11 +48,11 @@ public sealed class RecruiterServiceTests
         Assert.NotNull(storedDuplicate);
         Assert.Equal(original.Description, storedDuplicate!.Description);
         Assert.Equal(
-            "• Design APIs\r\n• Review architecture\r\n• Ship backend features",
+            "- Design APIs\r\n- Review architecture\r\n- Ship backend features",
             storedDuplicate.ResponsibilitiesText);
         Assert.Equal(original.RequiredSkillsJson, storedDuplicate.RequiredSkillsJson);
         Assert.Equal(original.PreferredSkillsJson, storedDuplicate.PreferredSkillsJson);
-        Assert.Equal("• Healthcare\r\n• Remote stipend", storedDuplicate.Benefits);
+        Assert.Equal("- Healthcare\r\n- Remote stipend", storedDuplicate.Benefits);
         Assert.Equal(original.SalaryMinPerAnnum, storedDuplicate.SalaryMinPerAnnum);
         Assert.Equal(original.SalaryMaxPerAnnum, storedDuplicate.SalaryMaxPerAnnum);
         Assert.Equal(original.Location, storedDuplicate.Location);
@@ -109,8 +110,8 @@ public sealed class RecruiterServiceTests
         var storedDuplicate = await jobRepository.GetByIdForCompanyAsync(duplicated.Id, companyId, CancellationToken.None);
 
         Assert.NotNull(storedDuplicate);
-        Assert.Equal("• Build APIs\r\n• Optimize queries\r\n• Mentor teammates", storedDuplicate!.ResponsibilitiesText);
-        Assert.Equal("• Remote setup\r\n• Health coverage", storedDuplicate.Benefits);
+        Assert.Equal("- Build APIs\r\n- Optimize queries\r\n- Mentor teammates", storedDuplicate!.ResponsibilitiesText);
+        Assert.Equal("- Remote setup\r\n- Health coverage", storedDuplicate.Benefits);
     }
 
     [Fact]
@@ -163,10 +164,69 @@ public sealed class RecruiterServiceTests
         Assert.Contains(cacheService.RemovedKeys, key => key == $"jobs:public:detail:{originalJobId}");
     }
 
+    [Fact]
+    public async Task CreateJobAsync_RejectsWhenCompanyWideJobPostLimitIsReached()
+    {
+        var companyId = Guid.NewGuid();
+        var recruiterId = Guid.NewGuid();
+        var recruiterRepository = new StubRecruiterRepository(companyId, recruiterId);
+        var jobRepository = new InMemoryJobRepository();
+        var service = CreateService(
+            recruiterRepository,
+            jobRepository,
+            subscriptionAccessService: new BlockingCompanySubscriptionAccessService(
+                createMessage: "You cannot create another job post until one is closed or the plan is upgraded."));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateJobAsync(
+            companyId,
+            recruiterId,
+            new CreateJobRequest
+            {
+                Title = "Backend Engineer",
+                Description = "Build APIs",
+                Responsibilities = "Ship APIs",
+                RequiredSkills = ["C#", "ASP.NET Core"],
+                PreferredSkills = ["PostgreSQL"],
+                Location = "Singapore",
+                NumberOfVacancies = 2,
+            },
+            CancellationToken.None));
+
+        Assert.Equal("You cannot create another job post until one is closed or the plan is upgraded.", exception.Message);
+    }
+
+    [Fact]
+    public async Task UpdateJobStatusAsync_RejectsWhenCompanyWideActivationLimitIsReached()
+    {
+        var companyId = Guid.NewGuid();
+        var recruiterId = Guid.NewGuid();
+        var jobId = Guid.NewGuid();
+        var recruiterRepository = new StubRecruiterRepository(companyId, recruiterId);
+        var draftJob = BuildJob(companyId, recruiterId, jobId);
+        draftJob.Status = JobStatus.Draft;
+        draftJob.PostedDateUtc = null;
+        var jobRepository = new InMemoryJobRepository(draftJob);
+        var service = CreateService(
+            recruiterRepository,
+            jobRepository,
+            subscriptionAccessService: new BlockingCompanySubscriptionAccessService(
+                activateMessage: "You cannot activate another job post because the company-wide active post limit has been reached."));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateJobStatusAsync(
+            companyId,
+            recruiterId,
+            jobId,
+            new UpdateJobStatusRequest { Status = "Published" },
+            CancellationToken.None));
+
+        Assert.Equal("You cannot activate another job post because the company-wide active post limit has been reached.", exception.Message);
+    }
+
     private static RecruiterService CreateService(
         StubRecruiterRepository recruiterRepository,
         InMemoryJobRepository jobRepository,
-        IAppCacheService? cacheService = null)
+        IAppCacheService? cacheService = null,
+        ICompanySubscriptionAccessService? subscriptionAccessService = null)
     {
         var mapper = new MapperConfiguration(config => config.AddProfile<JobsMappingProfile>(), NullLoggerFactory.Instance).CreateMapper();
 
@@ -179,6 +239,7 @@ public sealed class RecruiterServiceTests
             new NoOpCandidateExplanationService(),
             new NoOpObjectStorageService(),
             new NoOpNotificationService(),
+            subscriptionAccessService ?? new AllowingCompanySubscriptionAccessService(),
             new StubDateTimeProvider(new DateTime(2026, 3, 25, 12, 0, 0, DateTimeKind.Utc)),
             mapper,
             NullLogger<RecruiterService>.Instance);
@@ -401,5 +462,46 @@ public sealed class RecruiterServiceTests
     private sealed class StubDateTimeProvider(DateTime utcNow) : IDateTimeProvider
     {
         public DateTime UtcNow { get; } = utcNow;
+    }
+
+    private sealed class AllowingCompanySubscriptionAccessService : ICompanySubscriptionAccessService
+    {
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanCreateJobPostAsync(Guid companyId, CancellationToken ct = default)
+            => Task.FromResult(Allow());
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanActivateJobPostAsync(Guid companyId, Guid? currentJobId = null, CancellationToken ct = default)
+            => Task.FromResult(Allow());
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanRunScreeningAsync(Guid companyId, CancellationToken ct = default)
+            => Task.FromResult(Allow());
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto> GetCompanyAdminSummaryAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult(new SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto());
+
+        private static SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto Allow()
+            => new() { Allowed = true, Summary = new SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto() };
+    }
+
+    private sealed class BlockingCompanySubscriptionAccessService(
+        string? createMessage = null,
+        string? activateMessage = null) : ICompanySubscriptionAccessService
+    {
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanCreateJobPostAsync(Guid companyId, CancellationToken ct = default)
+            => Task.FromResult(string.IsNullOrWhiteSpace(createMessage) ? Allow() : Block(createMessage));
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanActivateJobPostAsync(Guid companyId, Guid? currentJobId = null, CancellationToken ct = default)
+            => Task.FromResult(string.IsNullOrWhiteSpace(activateMessage) ? Allow() : Block(activateMessage));
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto> CanRunScreeningAsync(Guid companyId, CancellationToken ct = default)
+            => Task.FromResult(Allow());
+
+        public Task<SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto> GetCompanyAdminSummaryAsync(Guid userId, CancellationToken ct = default)
+            => Task.FromResult(new SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto());
+
+        private static SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto Allow()
+            => new() { Allowed = true, Summary = new SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto() };
+
+        private static SkillSense.Application.Contracts.Company.CompanySubscriptionGuardResultDto Block(string message)
+            => new() { Allowed = false, RestrictionMessage = message, Summary = new SkillSense.Application.Contracts.Company.CompanySubscriptionSummaryDto() };
     }
 }

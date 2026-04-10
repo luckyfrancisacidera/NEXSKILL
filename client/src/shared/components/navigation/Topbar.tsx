@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Bell, LogOut, Menu, Moon, Search, Sun, UserRound } from "lucide-react";
+import { Bell, LogOut, Menu, Moon, Receipt, Search, Sun, UserRound } from "lucide-react";
 import { Avatar } from "@shared/components/data-display/Avatar";
 import { SideDrawer } from "@shared/components/overlay/SideDrawer";
 import { useAuth } from "@app/providers/AuthProvider";
@@ -27,7 +27,7 @@ interface TopbarProps {
 
 export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isHydrating } = useAuth();
   const { currentCompany } = useCurrentCompany();
   const { theme, toggleTheme } = useTheme();
   const {
@@ -297,6 +297,20 @@ export const Topbar = ({ onMenuToggle, pageTitle }: TopbarProps) => {
                   <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   My Profile
                 </button>
+                {!isHydrating && user?.role === "Company Admin" && (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-700 transition-colors duration-300 hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-700"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigate("/admin/company/billing");
+                    }}
+                  >
+                    <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Biling & Subscription
+                  </button>
+                )}
               </div>
 
               <div className="border-t border-zinc-200 p-2 dark:border-zinc-800">

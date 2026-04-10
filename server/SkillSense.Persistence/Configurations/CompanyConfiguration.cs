@@ -15,6 +15,18 @@ internal sealed class CompanyConfiguration : IEntityTypeConfiguration<CompanyEnt
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(x => x.BusinessName).HasMaxLength(200);
+        builder.Property(x => x.Industry).HasMaxLength(120);
+        builder.Property(x => x.CompanySize).HasMaxLength(80);
+        builder.Property(x => x.WebsiteUrl).HasMaxLength(500);
+        builder.Property(x => x.Description).HasMaxLength(4000);
+        builder.Property(x => x.Country).HasMaxLength(120);
+        builder.Property(x => x.CityProvince).HasMaxLength(120);
+        builder.Property(x => x.FullAddress).HasMaxLength(500);
+        builder.Property(x => x.PrimaryAdminFullName).HasMaxLength(200);
+        builder.Property(x => x.PrimaryAdminPhone).HasMaxLength(64);
+        builder.Property(x => x.PrimaryAdminRole).HasMaxLength(120);
+
         builder.Property(x => x.PrimaryEmail)
             .HasMaxLength(320);
 
@@ -32,4 +44,3 @@ internal sealed class CompanyConfiguration : IEntityTypeConfiguration<CompanyEnt
         builder.HasIndex(x => x.IsActive);
     }
 }
-
