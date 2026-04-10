@@ -169,6 +169,8 @@ namespace SkillSense.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompanyId");
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
@@ -341,14 +343,153 @@ namespace SkillSense.Persistence.Migrations
                     b.ToTable("candidate_explanations", (string)null);
                 });
 
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyAccountRequestEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BillingCycle")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("BusinessRegistrationNumber")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("CityProvince")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CompanySize")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("FullAddress")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Industry")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PrimaryAdminEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<string>("PrimaryAdminFullName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PrimaryAdminPhone")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("PrimaryAdminRole")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("RequestedPlanId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TaxId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedAtUtc");
+
+                    b.ToTable("company_account_requests", (string)null);
+                });
+
             modelBuilder.Entity("SkillSense.Domain.Entities.CompanyEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("BusinessName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CityProvince")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("CompanySize")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("FullAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Industry")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -364,12 +505,28 @@ namespace SkillSense.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("PrimaryAdminFullName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PrimaryAdminPhone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("PrimaryAdminRole")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<string>("PrimaryEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
 
@@ -378,6 +535,151 @@ namespace SkillSense.Persistence.Migrations
                     b.HasIndex("Name");
 
                     b.ToTable("companies", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyInvitationEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("company_invitations", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyRequestDocumentEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyAccountRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("DocumentType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("StorageProvider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyAccountRequestId");
+
+                    b.ToTable("company_request_documents", (string)null);
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanySubscriptionEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutoRenews")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("BillingCycle")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastEnforcedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MockPaymentMethod")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("PlanId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("TrialEndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "CreatedAtUtc");
+
+                    b.ToTable("company_subscriptions", (string)null);
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.HireEntity", b =>
@@ -1204,13 +1506,53 @@ namespace SkillSense.Persistence.Migrations
 
             modelBuilder.Entity("SkillSense.Domain.Entities.AdminProfileEntity", b =>
                 {
+                    b.HasOne("SkillSense.Domain.Entities.CompanyEntity", "Company")
+                        .WithMany("AdminProfiles")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SkillSense.Domain.Entities.AppUser", "User")
                         .WithOne("AdminProfile")
                         .HasForeignKey("SkillSense.Domain.Entities.AdminProfileEntity", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Company");
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyInvitationEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.CompanyEntity", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyRequestDocumentEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.CompanyAccountRequestEntity", "CompanyAccountRequest")
+                        .WithMany("Documents")
+                        .HasForeignKey("CompanyAccountRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompanyAccountRequest");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanySubscriptionEntity", b =>
+                {
+                    b.HasOne("SkillSense.Domain.Entities.CompanyEntity", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.HireEntity", b =>
@@ -1421,6 +1763,16 @@ namespace SkillSense.Persistence.Migrations
                     b.Navigation("RecruiterProfile");
 
                     b.Navigation("SavedJobs");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyAccountRequestEntity", b =>
+                {
+                    b.Navigation("Documents");
+                });
+
+            modelBuilder.Entity("SkillSense.Domain.Entities.CompanyEntity", b =>
+                {
+                    b.Navigation("AdminProfiles");
                 });
 
             modelBuilder.Entity("SkillSense.Domain.Entities.InterviewEntity", b =>

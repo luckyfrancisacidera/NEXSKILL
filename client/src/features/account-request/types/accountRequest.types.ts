@@ -19,11 +19,6 @@ export interface AdminContact {
   position: string;
 }
 
-export interface SubscriptionPlanForm {
-  planId: string;
-  billingCycle: "monthly" | "annual";
-}
-
 export interface VerificationDocs {
   businessRegNumber: string;
   taxId: string;
@@ -40,7 +35,6 @@ export interface Agreements {
 export interface CompanyAccountRequestFormData {
   company: CompanyInfo;
   admin: AdminContact;
-  subscription: SubscriptionPlanForm;
   docs: VerificationDocs;
   agreements: Agreements;
 }
@@ -77,4 +71,38 @@ export interface CompanyAdminEmailAvailabilityResult {
   email: string;
   isAvailable: boolean;
   message?: string | null;
+}
+export interface CardDetails {
+  cardName: string;
+  cardNumber: string;
+  cardExpiry: string;
+  cardCvv: string;
+}
+export interface WalletDetails {
+  phone: string;
+  accountName: string;
+}
+export interface BankDetails {
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  referenceNumber: string;
+}
+export interface PaypalDetails {
+  email: string;
+}
+
+export interface PaymentDetails {
+  card?: Partial<CardDetails>;
+  gcash?: Partial<WalletDetails>;
+  maya?: Partial<WalletDetails>;
+  bank?: Partial<BankDetails>;
+  paypal?: Partial<PaypalDetails>;
+}
+
+export interface SubscriptionPlanForm {
+  planId: string;
+  billingCycle: "monthly" | "annual";
+  paymentMethod: string;
+  paymentDetails: PaymentDetails;
 }

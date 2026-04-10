@@ -8,7 +8,6 @@ import {
   AdminContactStep,
   CompanyInfoStep,
   ReviewSubmitStep,
-  SubscriptionStep,
   VerificationStep,
 } from "@features/account-request/components/steps";
 import { useCompanyAccountRequestForm } from "@features/account-request/hooks/useCompanyAccountRequestForm";
@@ -26,7 +25,6 @@ export default function CompanyAccountRequest() {
     referenceNumber,
     setCompany,
     setAdmin,
-    setSubscription,
     setDocumentField,
     setDocumentFile,
     setAgreement,
@@ -68,9 +66,6 @@ export default function CompanyAccountRequest() {
                   <AdminContactStep data={formData.admin} errors={errors} onChange={setAdmin} />
                 ) : null}
                 {step === 3 ? (
-                  <SubscriptionStep data={formData.subscription} errors={errors} onChange={setSubscription} />
-                ) : null}
-                {step === 4 ? (
                   <VerificationStep
                     data={formData.docs}
                     errors={errors}
@@ -78,7 +73,7 @@ export default function CompanyAccountRequest() {
                     onFile={setDocumentFile}
                   />
                 ) : null}
-                {step === 5 ? (
+                {step === 4 ? (
                   <ReviewSubmitStep data={formData} errors={errors} onChange={setAgreement} />
                 ) : null}
               </>
@@ -112,7 +107,7 @@ export default function CompanyAccountRequest() {
                 ))}
               </div>
 
-              {step < 5 ? (
+              {step < 4 ? (
                 <button
                   type="button"
                   onClick={() => {

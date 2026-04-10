@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Jobseeker;
+using SkillSense.Persistence.Data;
 using System.ComponentModel.DataAnnotations;
 using SkillSense.Application.Validators;
 
@@ -16,17 +18,20 @@ namespace SkillSense.Api.Controllers
         private readonly IResumeReadService _readService;
         private readonly IResumeScoringService _scoringService;
         private readonly IResumeParserClient _parserClient;
+        private readonly SkillSenseDbContext _dbContext;
 
         public ResumeController(
           IResumeUploadService uploadService,
           IResumeReadService readService,
           IResumeScoringService scoringService,
-          IResumeParserClient parserClient)
+          IResumeParserClient parserClient,
+          SkillSenseDbContext dbContext)
         {
             _uploadService = uploadService;
             _readService = readService;
             _scoringService = scoringService;
             _parserClient = parserClient;
+            _dbContext = dbContext;
         }
 
         // Uploads the requested file payload.
@@ -36,8 +41,18 @@ namespace SkillSense.Api.Controllers
             var (isValid, error) = ResumeFileValidator.Validate(file?.FileName ?? "", file?.ContentType ?? "", file?.Length ?? 0);
             if (!isValid) return BadRequest(error);
 
+            var companyId = await _dbContext.Jobs
+                .AsNoTracking()
+                .Where(x => x.Id == jobId)
+                .Select(x => x.CompanyId)
+                .FirstOrDefaultAsync(ct);
+            if (companyId == Guid.Empty)
+            {
+                return NotFound("Job was not found.");
+            }
+
             await using var stream = file!.OpenReadStream();
-            var result = await _uploadService.EnqueueUploadAsync(stream, file.FileName, file.ContentType, jobId, appliedJobPosition, ct: ct);
+            var result = await _uploadService.EnqueueUploadAsync(stream, file.FileName, file.ContentType, jobId, appliedJobPosition, companyId, ct: ct);
             return Accepted(result);
         }
 

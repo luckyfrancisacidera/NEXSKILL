@@ -50,5 +50,11 @@ internal sealed class AdminProfileConfiguration : IEntityTypeConfiguration<Admin
         builder.HasKey(x => x.Id);
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
+        builder.HasIndex(x => x.CompanyId);
+        builder
+            .HasOne(x => x.Company)
+            .WithMany(x => x.AdminProfiles)
+            .HasForeignKey(x => x.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

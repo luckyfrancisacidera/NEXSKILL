@@ -28,11 +28,6 @@ export const accountRequestService = {
     formData.append("primaryAdminEmail", data.admin.email);
     formData.append("primaryAdminPhone", data.admin.phone);
     formData.append("primaryAdminRole", data.admin.position);
-    formData.append("requestedPlanId", data.subscription.planId);
-    if (data.subscription.planId !== "free-trial") {
-      formData.append("billingCycle", data.subscription.billingCycle);
-    }
-
     formData.append("businessRegistrationNumber", data.docs.businessRegNumber);
     formData.append("taxId", data.docs.taxId);
 

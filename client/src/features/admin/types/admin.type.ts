@@ -1,3 +1,5 @@
+import type { PaymentDetails } from "@features/account-request/types/accountRequest.types";
+
 export interface Paged<T> {
   items: T[];
   pageNumber: number;
@@ -140,12 +142,31 @@ export interface CompanyInvitationViewDto {
   planId: string;
   planName: string;
   billingLabel: string;
+  billingCycle?: string | null;
+  mockPaymentMethod?: string | null;
   reviewNotes?: string | null;
   isTrial: boolean;
   expiresAtUtc: string;
   isExpired: boolean;
   isAccepted: boolean;
   email: string;
+}
+
+export type PaymentMethod =
+  | "gcash"
+  | "maya"
+  | "card"
+  | "bank-transfer"
+  | "paypal"
+  | "cash";
+
+export interface AcceptCompanyInvitationPayload {
+  password: string;
+  confirmPassword: string;
+  planId: string;
+  billingCycle?: string;
+  paymentMethod: PaymentMethod;
+  paymentDetails: PaymentDetails;
 }
 
 export interface CompanyEmployeeDto {

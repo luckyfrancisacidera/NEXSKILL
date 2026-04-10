@@ -1,6 +1,7 @@
 import { http } from '@shared/api/http';
 import type {
   AdminCompanyAccountDto,
+  AcceptCompanyInvitationPayload,
   CompanyAdminCandidateDetailLoaderData,
   CompanyAdminDashboardDto,
   CompanyAdminEmployeesDto,
@@ -66,7 +67,7 @@ export const adminService = {
     return response.data;
   },
 
-  async acceptInvitation(token: string, payload: { password: string; confirmPassword: string }) {
+  async acceptInvitation(token: string, payload: AcceptCompanyInvitationPayload) {
     await http.post("/api/company-requests/invitations/accept", payload, {
       params: { token },
     });

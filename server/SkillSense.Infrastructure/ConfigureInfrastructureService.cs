@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SkillSense.Application.Interfaces;
 using SkillSense.Application.Interfaces.Auth;
+using SkillSense.Application.Interfaces.Company;
 using Microsoft.Extensions.Options;
 using SkillSense.Infrastructure.Auth;
 using SkillSense.Infrastructure.BackgroundJobs;
@@ -90,6 +91,7 @@ public static class ConfigureInfrastructureService
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IInterviewCalendarService, InterviewCalendarService>();
         services.AddScoped<IEmailService, GmailSmtpEmailService>();
+        services.AddScoped<IRequestDocumentStorageService, RequestDocumentStorageService>();
         services.AddScoped<IInterviewInviteEmailSender, InterviewInviteEmailSender>();
 
         services

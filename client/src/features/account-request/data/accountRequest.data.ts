@@ -1,7 +1,6 @@
 import {
   Building2,
   ClipboardCheck,
-  CreditCard,
   FileText,
   User,
 } from "lucide-react";
@@ -14,9 +13,8 @@ import type {
 export const ACCOUNT_REQUEST_STEPS: AccountRequestStepMeta[] = [
   { id: 1, label: "Company Info", icon: Building2 },
   { id: 2, label: "Admin Contact", icon: User },
-  { id: 3, label: "Subscription", icon: CreditCard },
-  { id: 4, label: "Verification", icon: FileText },
-  { id: 5, label: "Review & Submit", icon: ClipboardCheck },
+  { id: 3, label: "Verification", icon: FileText },
+  { id: 4, label: "Review & Submit", icon: ClipboardCheck },
 ];
 
 export const ACCOUNT_REQUEST_PLANS: AccountRequestPlan[] = [
@@ -153,10 +151,6 @@ export const INITIAL_ACCOUNT_REQUEST_FORM: CompanyAccountRequestFormData = {
     email: "",
     phone: "",
     position: "",
-  },
-  subscription: {
-    planId: "free-trial",
-    billingCycle: "monthly",
   },
   docs: {
     businessRegNumber: "",

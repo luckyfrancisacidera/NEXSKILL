@@ -14,6 +14,7 @@ using SkillSense.Application.Contracts.Recruiter.Response;
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Company;
 using SkillSense.Application.Interfaces.Recruiter;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
@@ -30,6 +31,7 @@ public sealed class RecruiterService(
     ICandidateExplanationService candidateExplanationService,
     IObjectStorageService objectStorageService,
     INotificationService notificationService,
+    ICompanySubscriptionAccessService companySubscriptionAccessService,
     IDateTimeProvider dateTimeProvider,
     IMapper mapper,
     ILogger<RecruiterService> logger) : IRecruiterService
@@ -101,6 +103,7 @@ public sealed class RecruiterService(
     public async Task<JobListItemResponse> CreateJobAsync(Guid companyId, Guid recruiterId, CreateJobRequest request, CancellationToken ct = default)
     {
         var profile = await EnsureProfileInCompanyAsync(companyId, recruiterId, ct);
+        await EnsureJobCreationAllowedAsync(companyId, ct);
         if (string.IsNullOrWhiteSpace(request.Location)) throw new ArgumentException("location is required");
         if (request.NumberOfVacancies < 0) throw new ArgumentException("number_of_vacancies cannot be negative");
 
@@ -239,6 +242,11 @@ public sealed class RecruiterService(
         {
             logger.LogWarning("Recruiter {RecruiterId} requested invalid job status {Status} for job {JobId}", recruiterId, request.Status, jobId);
             throw new ArgumentException("Invalid job status. Allowed values are Draft, Published, and Closed.");
+        }
+
+        if (status == JobStatus.Published && job.Status != JobStatus.Published)
+        {
+            await EnsureJobActivationAllowedAsync(companyId, ct);
         }
 
         job.Status = status;
@@ -1419,7 +1427,7 @@ public sealed class RecruiterService(
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => LeadingBulletPattern.Replace(line.Trim(), string.Empty).Trim())
             .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => $"â€¢ {line}");
+            .Select(line => $"- {line}");
 
         return string.Join(Environment.NewLine, lines);
     }
@@ -1522,6 +1530,24 @@ public sealed class RecruiterService(
     {
         var hiredCount = await recruiterRepository.GetHiredCountByJobIdAsync(jobId, ct);
         return Math.Max(0, numberOfVacancies - hiredCount);
+    }
+
+    private async Task EnsureJobCreationAllowedAsync(Guid companyId, CancellationToken ct)
+    {
+        var guard = await companySubscriptionAccessService.CanCreateJobPostAsync(companyId, ct);
+        if (!guard.Allowed)
+        {
+            throw new InvalidOperationException(guard.RestrictionMessage ?? "Company subscription does not allow creating job posts right now.");
+        }
+    }
+
+    private async Task EnsureJobActivationAllowedAsync(Guid companyId, CancellationToken ct)
+    {
+        var guard = await companySubscriptionAccessService.CanActivateJobPostAsync(companyId, null, ct);
+        if (!guard.Allowed)
+        {
+            throw new InvalidOperationException(guard.RestrictionMessage ?? "Company subscription does not allow activating another job post right now.");
+        }
     }
 
     // Handles to UTC start of day.

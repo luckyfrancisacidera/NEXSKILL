@@ -42,6 +42,28 @@ public static class RateLimitingExtensions
                         AutoReplenishment = true,
                     }));
 
+            options.AddPolicy("invitation-view", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(5),
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    }));
+
+            options.AddPolicy("invitation-accept", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(5),
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    }));
+
             options.OnRejected = async (context, token) =>
             {
                 context.HttpContext.Response.ContentType = "application/json";

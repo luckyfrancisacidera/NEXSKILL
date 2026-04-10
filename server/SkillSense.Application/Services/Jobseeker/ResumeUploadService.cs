@@ -1,5 +1,6 @@
 using SkillSense.Application.Contracts.Response;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Interfaces.Company;
 using SkillSense.Application.Interfaces.Jobseeker;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
@@ -8,6 +9,7 @@ namespace SkillSense.Application.Services.Jobseeker;
 
 public sealed class ResumeUploadService(
     IObjectStorageService objectStorageService,
+    ICompanySubscriptionAccessService companySubscriptionAccessService,
     IResumeSubmissionRepository resumeSubmissionRepository) : IResumeUploadService
 {
     // Handles enqueue upload.
@@ -25,6 +27,15 @@ public sealed class ResumeUploadService(
         Guid? jobSeekerUserId = null,
         CancellationToken ct = default)
     {
+        if (companyId != Guid.Empty)
+        {
+            var guard = await companySubscriptionAccessService.CanRunScreeningAsync(companyId, ct);
+            if (!guard.Allowed)
+            {
+                throw new InvalidOperationException(guard.RestrictionMessage ?? "Company subscription does not allow more screenings right now.");
+            }
+        }
+
         var blobKey = await objectStorageService.UploadAsync(fileStream, fileName, contentType, ct);
 
         var submission = new ResumeSubmissionEntity

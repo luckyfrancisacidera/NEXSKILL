@@ -3,11 +3,9 @@ import {
   Building2,
   Check,
   ClipboardCheck,
-  CreditCard,
   FileText,
   User,
 } from "lucide-react";
-import { ACCOUNT_REQUEST_PLANS } from "@features/account-request/data/accountRequest.data";
 import {
   ReviewRow,
   ReviewSection,
@@ -27,10 +25,7 @@ export const ReviewSubmitStep = ({
   data: CompanyAccountRequestFormData;
   errors: FormErrors;
   onChange: (field: keyof Agreements, value: boolean) => void;
-}) => {
-  const plan = ACCOUNT_REQUEST_PLANS.find((item) => item.id === data.subscription.planId);
-
-  return (
+}) => (
     <div className="space-y-5">
       <SectionTitle
         icon={<ClipboardCheck size={18} />}
@@ -62,15 +57,6 @@ export const ReviewSubmitStep = ({
         <ReviewRow label="Email" value={data.admin.email} />
         <ReviewRow label="Phone" value={data.admin.phone} />
         <ReviewRow label="Position" value={data.admin.position} />
-      </ReviewSection>
-
-      <ReviewSection title="Subscription Plan" icon={<CreditCard size={15} />}>
-        <ReviewRow label="Plan" value={plan?.name ?? "-"} />
-        <ReviewRow label="Price" value={plan ? `${plan.price}${plan.period}` : "-"} />
-        <ReviewRow
-          label="Billing Cycle"
-          value={data.subscription.planId === "free-trial" ? "Trial" : data.subscription.billingCycle === "annual" ? "Annual" : "Monthly"}
-        />
       </ReviewSection>
 
       <ReviewSection title="Verification Documents" icon={<FileText size={15} />}>
@@ -134,5 +120,4 @@ export const ReviewSubmitStep = ({
         ))}
       </div>
     </div>
-  );
-};
+);

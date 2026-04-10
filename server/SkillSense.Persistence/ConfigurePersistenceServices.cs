@@ -48,6 +48,7 @@ public static class ConfigurePersistenceServices
 
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IAdminManagementRepository, AdminManagementRepository>();
+        services.AddScoped<ICompanyLifecycleRepository, CompanyLifecycleRepository>();
         services.AddScoped<ICandidateExplanationRepository, CandidateExplanationRepository>();
         services.AddScoped<IInterviewRepository, InterviewRepository>();
         services.AddScoped<IJobRepository, JobRepository>();
