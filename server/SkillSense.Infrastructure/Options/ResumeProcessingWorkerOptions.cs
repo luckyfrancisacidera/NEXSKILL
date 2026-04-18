@@ -6,6 +6,7 @@ public sealed class ResumeProcessingWorkerOptions
 
     public int BatchSize { get; set; } = 5;
     public int MaxParallelResumes { get; set; } = 5;
+    public TimeSpan AutoTuneWindow { get; set; } = TimeSpan.FromSeconds(8);
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
     public TimeSpan InitialBackoff { get; set; } = TimeSpan.FromSeconds(1);
     public TimeSpan MaxBackoff { get; set; } = TimeSpan.FromSeconds(30);
@@ -20,6 +21,11 @@ public sealed class ResumeProcessingWorkerOptions
         if (MaxParallelResumes <= 0)
         {
             throw new InvalidOperationException($"{SectionName}:MaxParallelResumes must be greater than 0.");
+        }
+
+        if (AutoTuneWindow <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException($"{SectionName}:AutoTuneWindow must be greater than 0.");
         }
 
         if (IdleTimeout <= TimeSpan.Zero)

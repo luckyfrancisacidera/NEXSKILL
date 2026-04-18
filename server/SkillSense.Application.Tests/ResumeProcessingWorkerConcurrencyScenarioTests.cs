@@ -34,6 +34,7 @@ public sealed partial class ResumeProcessingWorkerConcurrencyScenarioTests
             builder.AddProvider(logCollector);
         });
         services.AddSingleton<IResumeProcessingMonitor, ResumeProcessingMonitor>();
+        services.AddSingleton<IResumeProcessingTelemetry, ResumeProcessingTelemetry>();
         services.AddScoped<IResumeSubmissionRepository, ScenarioResumeSubmissionRepository>();
         services.AddScoped<IResumeProcessingService, ScenarioResumeProcessingService>();
 
@@ -56,6 +57,7 @@ public sealed partial class ResumeProcessingWorkerConcurrencyScenarioTests
                 MaxRetryDelay = TimeSpan.FromSeconds(5),
             }),
             provider.GetRequiredService<IResumeProcessingMonitor>(),
+            provider.GetRequiredService<IResumeProcessingTelemetry>(),
             provider.GetRequiredService<ILogger<ResumeProcessingWorker>>());
 
         using var runCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));

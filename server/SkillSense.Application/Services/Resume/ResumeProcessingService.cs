@@ -30,7 +30,8 @@ public sealed class ResumeProcessingService(
     IAppCacheService cacheService,
     IResumeProcessingMonitor processingMonitor,
     IOptions<ResumeProcessingOptions> processingOptions,
-    ILogger<ResumeProcessingService> logger) : IResumeProcessingService
+    ILogger<ResumeProcessingService> logger,
+    IResumeProcessingTelemetry? processingTelemetry = null) : IResumeProcessingService
 {
     private readonly ResumeProcessingOptions _processingOptions = processingOptions.Value;
 
@@ -82,6 +83,8 @@ public sealed class ResumeProcessingService(
         var pipelineThreadId = Environment.CurrentManagedThreadId;
         var pipelineTaskId = Task.CurrentId;
         var totalTimer = global::System.Diagnostics.Stopwatch.StartNew();
+        long parseElapsedMs = 0;
+        long scoreElapsedMs = 0;
         var stage = "claim";
         processingMonitor.RecordSubmissionStage(submission.Id, stage);
         if (logger.IsEnabled(LogLevel.Information))
@@ -128,6 +131,7 @@ public sealed class ResumeProcessingService(
             var parsed = parsedEnvelope.ParsedResume;
             submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
             parseTimer.Stop();
+            parseElapsedMs = parseTimer.ElapsedMilliseconds;
             if (logger.IsEnabled(LogLevel.Information))
             {
                 logger.LogInformation(
@@ -147,6 +151,7 @@ public sealed class ResumeProcessingService(
             var scoreTimer = global::System.Diagnostics.Stopwatch.StartNew();
             var (embeddings, score) = await scoringOrchestrator.BuildAsync(submission.Id, parsed, normalizedJob, ct);
             scoreTimer.Stop();
+            scoreElapsedMs = scoreTimer.ElapsedMilliseconds;
             if (logger.IsEnabled(LogLevel.Information))
             {
                 logger.LogInformation(
@@ -181,6 +186,7 @@ public sealed class ResumeProcessingService(
             persistTimer.Stop();
             totalTimer.Stop();
             processingMonitor.RecordSubmissionSucceeded(submission.Id);
+            processingTelemetry?.RecordSubmissionSucceeded(parseElapsedMs, scoreElapsedMs);
 
             if (logger.IsEnabled(LogLevel.Information))
             {
@@ -206,6 +212,7 @@ public sealed class ResumeProcessingService(
         {
             await ScheduleRetryAsync(submission, stage, ex, ct);
             totalTimer.Stop();
+            processingTelemetry?.RecordSubmissionFailed(parseElapsedMs, scoreElapsedMs, isTimeout: false);
             logger.LogWarning(
                 ex,
                 "Resume submission {SubmissionId} was rate limited at stage {Stage}. RetryCount={RetryCount} NextRetryAtUtc={NextRetryAtUtc}",
@@ -223,6 +230,10 @@ public sealed class ResumeProcessingService(
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             totalTimer.Stop();
             processingMonitor.RecordSubmissionFailed(submission.Id, stage, ex);
+            processingTelemetry?.RecordSubmissionFailed(
+                parseElapsedMs,
+                scoreElapsedMs,
+                ex is TimeoutException or TaskCanceledException);
             logger.LogError(
                 ex,
                 "Resume submission {SubmissionId} failed at stage {Stage} after {ElapsedMs} ms. JobId={JobId} BlobKey={BlobObjectKey}",
