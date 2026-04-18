@@ -46,6 +46,7 @@ public static class ConfigureInfrastructureService
 
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(gmailSmtpOptions));
         services.AddSingleton<IResumeProcessingMonitor, ResumeProcessingMonitor>();
+        services.AddSingleton<IResumeProcessingTelemetry, ResumeProcessingTelemetry>();
 
         services.Configure<GroqOptions>(options =>
         {
