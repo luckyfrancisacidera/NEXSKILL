@@ -5,6 +5,7 @@ public sealed class ResumeProcessingWorkerOptions
     public const string SectionName = "ResumeProcessingWorker";
 
     public int BatchSize { get; set; } = 5;
+    public int MaxParallelResumes { get; set; } = 5;
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
     public TimeSpan InitialBackoff { get; set; } = TimeSpan.FromSeconds(1);
     public TimeSpan MaxBackoff { get; set; } = TimeSpan.FromSeconds(30);
@@ -14,6 +15,11 @@ public sealed class ResumeProcessingWorkerOptions
         if (BatchSize <= 0)
         {
             throw new InvalidOperationException($"{SectionName}:BatchSize must be greater than 0.");
+        }
+
+        if (MaxParallelResumes <= 0)
+        {
+            throw new InvalidOperationException($"{SectionName}:MaxParallelResumes must be greater than 0.");
         }
 
         if (IdleTimeout <= TimeSpan.Zero)

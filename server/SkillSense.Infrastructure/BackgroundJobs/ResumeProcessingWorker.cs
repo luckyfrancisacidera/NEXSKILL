@@ -3,26 +3,36 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Options;
 using SkillSense.Infrastructure.Options;
+using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Infrastructure.BackgroundJobs;
 
 public sealed class ResumeProcessingWorker(
     IServiceScopeFactory scopeFactory,
     IOptions<ResumeProcessingWorkerOptions> workerOptions,
+    IOptions<ResumeProcessingOptions> processingOptions,
     IResumeProcessingMonitor processingMonitor,
     ILogger<ResumeProcessingWorker> logger) : BackgroundService
 {
     private readonly ResumeProcessingWorkerOptions _options = workerOptions.Value;
+    private readonly ResumeProcessingOptions _processingOptions = processingOptions.Value;
+    private readonly string _workerInstanceId = Guid.NewGuid().ToString("N");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _options.Validate();
-        logger.LogInformation(
-            "ResumeProcessingWorker started. BatchSize={BatchSize}, InitialBackoff={InitialBackoff}, MaxBackoff={MaxBackoff}",
-            _options.BatchSize,
-            _options.InitialBackoff,
-            _options.MaxBackoff);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "ResumeProcessingWorker started. WorkerInstanceId={WorkerInstanceId} BatchSize={BatchSize}, MaxParallelResumes={MaxParallelResumes}, InitialBackoff={InitialBackoff}, MaxBackoff={MaxBackoff}",
+                _workerInstanceId,
+                _options.BatchSize,
+                _options.MaxParallelResumes,
+                _options.InitialBackoff,
+                _options.MaxBackoff);
+        }
         processingMonitor.RecordWorkerStarted();
 
         var currentBackoff = _options.InitialBackoff;
@@ -34,9 +44,7 @@ public sealed class ResumeProcessingWorker(
                 processingMonitor.RecordWorkerHeartbeat();
                 logger.LogDebug("Polling for pending resume submissions.");
 
-                using var scope = scopeFactory.CreateScope();
-                var processingService = scope.ServiceProvider.GetRequiredService<IResumeProcessingService>();
-                var processedCount = await processingService.ProcessPendingBatchAsync(_options.BatchSize, stoppingToken);
+                var processedCount = await ProcessClaimedBatchWithConcurrencyAsync(stoppingToken);
 
                 if (processedCount > 0)
                 {
@@ -46,13 +54,19 @@ public sealed class ResumeProcessingWorker(
                     continue;
                 }
 
-                logger.LogDebug("No pending resume submissions found. Sleeping for {Delay}.", currentBackoff);
+                if (logger.IsEnabled(LogLevel.Debug))
+                {
+                    logger.LogDebug("No pending resume submissions found. Sleeping for {Delay}.", currentBackoff);
+                }
                 await Task.Delay(currentBackoff, stoppingToken);
                 currentBackoff = DoubleBackoff(currentBackoff, _options.MaxBackoff);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("ResumeProcessingWorker stop requested.");
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("ResumeProcessingWorker stop requested.");
+                }
                 break;
             }
             catch (Exception ex)
@@ -81,5 +95,66 @@ public sealed class ResumeProcessingWorker(
         var doubledTicks = value.Ticks > long.MaxValue / 2 ? long.MaxValue : value.Ticks * 2;
         var doubled = TimeSpan.FromTicks(doubledTicks);
         return doubled <= max ? doubled : max;
+    }
+
+    private async Task<int> ProcessClaimedBatchWithConcurrencyAsync(CancellationToken stoppingToken)
+    {
+        Guid[] submissionIds;
+        using (var claimScope = scopeFactory.CreateScope())
+        {
+            var submissionRepository = claimScope.ServiceProvider.GetRequiredService<IResumeSubmissionRepository>();
+            var claimedBatch = await submissionRepository.ClaimProcessableBatchAsync(
+                _options.BatchSize,
+                DateTime.UtcNow,
+                _processingOptions.MaxRetryAttempts,
+                stoppingToken);
+
+            submissionIds = [.. claimedBatch.Select(x => x.Id)];
+        }
+
+        if (submissionIds.Length == 0)
+        {
+            return 0;
+        }
+
+        var maxConcurrency = Math.Min(_options.MaxParallelResumes, submissionIds.Length);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "WorkerInstanceId={WorkerInstanceId} claimed {ClaimedCount} submission(s). Processing with max concurrency {MaxConcurrency}.",
+                _workerInstanceId,
+                submissionIds.Length,
+                maxConcurrency);
+        }
+
+        using var gate = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+        var tasks = submissionIds.Select(id => ProcessSubmissionInIsolatedScopeAsync(id, gate, stoppingToken));
+        var outcomes = await Task.WhenAll(tasks);
+        return outcomes.Count(x => x);
+    }
+
+    private async Task<bool> ProcessSubmissionInIsolatedScopeAsync(Guid submissionId, SemaphoreSlim gate, CancellationToken stoppingToken)
+    {
+        await gate.WaitAsync(stoppingToken);
+        try
+        {
+            using var submissionScope = scopeFactory.CreateScope();
+            var processingService = submissionScope.ServiceProvider.GetRequiredService<IResumeProcessingService>();
+            return await processingService.ProcessClaimedSubmissionAsync(submissionId, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            processingMonitor.RecordWorkerFailure(ex);
+            logger.LogError(ex, "WorkerInstanceId={WorkerInstanceId} failed to process claimed resume submission {SubmissionId}.", _workerInstanceId, submissionId);
+            return false;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 }
