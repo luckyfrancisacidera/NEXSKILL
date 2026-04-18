@@ -7,6 +7,7 @@ public interface IResumeProcessingMonitor
     void RecordWorkerFailure(Exception exception);
     void RecordSubmissionStage(Guid submissionId, string stage);
     void RecordSubmissionSucceeded(Guid submissionId);
+    void RecordSubmissionRetryScheduled(Guid submissionId, string stage, Exception exception);
     void RecordSubmissionFailed(Guid submissionId, string stage, Exception exception);
     ResumeProcessingMonitorSnapshot GetSnapshot();
 }

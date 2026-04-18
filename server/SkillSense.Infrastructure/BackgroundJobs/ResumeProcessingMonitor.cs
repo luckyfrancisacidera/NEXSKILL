@@ -97,6 +97,24 @@ public sealed class ResumeProcessingMonitor : IResumeProcessingMonitor
         }
     }
 
+    public void RecordSubmissionRetryScheduled(Guid submissionId, string stage, Exception exception)
+    {
+        lock (_sync)
+        {
+            var now = DateTimeOffset.UtcNow;
+            _lastWorkerHeartbeatUtc = now;
+            _isProcessing = false;
+            _currentSubmissionId = null;
+            _currentStage = null;
+            _currentStageStartedUtc = null;
+            _lastFailureUtc = now;
+            _lastFailedSubmissionId = submissionId;
+            _lastFailureStage = stage;
+            _lastFailureMessage = NormalizeFailureMessage(exception);
+            _hasActiveFailure = false;
+        }
+    }
+
     public void RecordSubmissionFailed(Guid submissionId, string stage, Exception exception)
     {
         lock (_sync)

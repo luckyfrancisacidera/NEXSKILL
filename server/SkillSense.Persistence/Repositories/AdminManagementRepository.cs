@@ -235,7 +235,9 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
                         ? $"{recruiterUser.FirstName} {recruiterUser.LastName}".Trim()
                         : recruiterUser.Email ?? recruiterUser.UserName ?? "Unknown Recruiter")
                     : "Unknown Recruiter",
-                RecruiterEmail = recruiterUser != null ? recruiterUser.Email : null,
+#pragma warning disable IDE0031 // Expression tree projections cannot use null-propagation here.
+                RecruiterEmail = recruiterUser == null ? null : recruiterUser.Email,
+#pragma warning restore IDE0031
                 JobTitle = job.Title,
                 Department = job.Department ?? "Unassigned",
                 OfferTitle = dbContext.JobOffers
@@ -251,13 +253,13 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var normalizedSearch = search.Trim().ToLowerInvariant();
+            var searchPattern = $"%{search.Trim()}%";
             query = query.Where(x =>
-                x.EmployeeName.ToLower().Contains(normalizedSearch)
-                || x.EmployeeEmail.ToLower().Contains(normalizedSearch)
-                || x.RecruiterName.ToLower().Contains(normalizedSearch)
-                || x.JobTitle.ToLower().Contains(normalizedSearch)
-                || x.Department.ToLower().Contains(normalizedSearch));
+                EF.Functions.ILike(x.EmployeeName, searchPattern)
+                || EF.Functions.ILike(x.EmployeeEmail, searchPattern)
+                || EF.Functions.ILike(x.RecruiterName, searchPattern)
+                || EF.Functions.ILike(x.JobTitle, searchPattern)
+                || EF.Functions.ILike(x.Department, searchPattern));
         }
 
         return await CreatePagedDataAsync(
@@ -410,12 +412,12 @@ public sealed class AdminManagementRepository(SkillSenseDbContext dbContext) : I
 
     public Task<bool> CompanyNameExistsAsync(string companyName, CancellationToken ct = default)
     {
-        var normalizedName = companyName.Trim().ToLower();
-        return dbContext.Companies.AnyAsync(company => company.Name.ToLower() == normalizedName, ct);
+        var normalizedName = companyName.Trim();
+        return dbContext.Companies.AnyAsync(company => EF.Functions.ILike(company.Name, normalizedName), ct);
     }
 
-    public async Task AddCompanyAsync(CompanyEntity company, CancellationToken ct = default)
-        => await dbContext.Companies.AddAsync(company, ct);
+    public Task AddCompanyAsync(CompanyEntity company, CancellationToken ct = default)
+        => dbContext.Companies.AddAsync(company, ct).AsTask();
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => dbContext.SaveChangesAsync(ct);

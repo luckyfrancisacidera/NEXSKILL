@@ -58,4 +58,22 @@ public sealed class ResumeProcessingMonitorTests
         Assert.Equal(0, snapshot.ConsecutiveFailureCount);
         Assert.Equal(failedSubmissionId, snapshot.LastFailedSubmissionId);
     }
+
+    [Fact]
+    public void RecordSubmissionRetryScheduled_TracksFailureWithoutMarkingWorkerUnhealthy()
+    {
+        var monitor = new ResumeProcessingMonitor();
+        var submissionId = Guid.NewGuid();
+
+        monitor.RecordSubmissionStage(submissionId, "parse");
+        monitor.RecordSubmissionRetryScheduled(submissionId, "parse", new InvalidOperationException("rate limited"));
+
+        var snapshot = monitor.GetSnapshot();
+
+        Assert.False(snapshot.IsProcessing);
+        Assert.False(snapshot.HasActiveFailure);
+        Assert.Equal(submissionId, snapshot.LastFailedSubmissionId);
+        Assert.Equal("parse", snapshot.LastFailureStage);
+        Assert.Equal("rate limited", snapshot.LastFailureMessage);
+    }
 }

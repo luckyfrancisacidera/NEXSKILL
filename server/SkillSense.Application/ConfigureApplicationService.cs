@@ -27,6 +27,9 @@ public static class ApplicationServiceRegistration
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddAutoMapper(_ => { }, typeof(ApplicationServiceRegistration).Assembly);
+        services.AddOptions<ResumeProcessingOptions>()
+            .Bind(configuration.GetSection(ResumeProcessingOptions.SectionName))
+            .ValidateOnStart();
         services.AddOptions<PasswordResetOptions>()
             .Bind(configuration.GetSection(PasswordResetOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.FrontendBaseUrl), "PasswordReset:FrontendBaseUrl is required.")

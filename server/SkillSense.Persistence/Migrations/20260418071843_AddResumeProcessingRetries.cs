@@ -1,0 +1,49 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace SkillSense.Persistence.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddResumeProcessingRetries : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<DateTime>(
+                name: "NextRetryAtUtc",
+                table: "resume_submissions",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "RetryCount",
+                table: "resume_submissions",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_resume_submissions_NextRetryAtUtc",
+                table: "resume_submissions",
+                column: "NextRetryAtUtc");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropIndex(
+                name: "IX_resume_submissions_NextRetryAtUtc",
+                table: "resume_submissions");
+
+            migrationBuilder.DropColumn(
+                name: "NextRetryAtUtc",
+                table: "resume_submissions");
+
+            migrationBuilder.DropColumn(
+                name: "RetryCount",
+                table: "resume_submissions");
+        }
+    }
+}

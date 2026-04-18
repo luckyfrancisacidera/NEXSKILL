@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces;
 
 namespace SkillSense.Infrastructure.Services;
@@ -31,6 +32,8 @@ public sealed class ResumeParserClient : IResumeParserClient
         {
             if ((int)resp.StatusCode == 400)
                 throw new ArgumentException($"Invalid parser version or parse request: {body}");
+            if ((int)resp.StatusCode == 429)
+                throw new ResumeParserRateLimitException($"Resume parser rate limited the request: {body}");
             throw new Exception($"Resume parser failed ({(int)resp.StatusCode}): {body}");
         }
 

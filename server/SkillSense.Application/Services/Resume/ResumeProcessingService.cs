@@ -3,10 +3,13 @@ using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Common.Scoring;
 using SkillSense.Application.Contracts.Request;
 using SkillSense.Application.Contracts.Response;
+using SkillSense.Application.Exceptions;
 using SkillSense.Application.Interfaces;
+using SkillSense.Application.Options;
 using SkillSense.Domain.Entities;
 using SkillSense.Persistence.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -26,8 +29,11 @@ public sealed class ResumeProcessingService(
     IResumeScoringOrchestrator scoringOrchestrator,
     IAppCacheService cacheService,
     IResumeProcessingMonitor processingMonitor,
+    IOptions<ResumeProcessingOptions> processingOptions,
     ILogger<ResumeProcessingService> logger) : IResumeProcessingService
 {
+    private readonly ResumeProcessingOptions _processingOptions = processingOptions.Value;
+
     /// <summary>
     /// Processes the next pending submissions up to the requested batch size.
     /// </summary>
@@ -38,7 +44,13 @@ public sealed class ResumeProcessingService(
             throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size must be greater than zero.");
         }
 
-        var pendingBatch = await resumeSubmissionRepository.GetPendingBatchAsync(batchSize, ct);
+        _processingOptions.Validate();
+
+        var pendingBatch = await resumeSubmissionRepository.ClaimProcessableBatchAsync(
+            batchSize,
+            DateTime.UtcNow,
+            _processingOptions.MaxRetryAttempts,
+            ct);
         var processedCount = 0;
         foreach (var submission in pendingBatch)
         {
@@ -56,12 +68,15 @@ public sealed class ResumeProcessingService(
         var totalTimer = global::System.Diagnostics.Stopwatch.StartNew();
         var stage = "claim";
         processingMonitor.RecordSubmissionStage(submission.Id, stage);
-        logger.LogInformation(
-            "Resume submission {SubmissionId} entering pipeline. JobId={JobId} BlobKey={BlobObjectKey} FileName={FileName}",
-            submission.Id,
-            submission.JobId,
-            submission.BlobObjectKey,
-            submission.FileName);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Resume submission {SubmissionId} entering pipeline. JobId={JobId} BlobKey={BlobObjectKey} FileName={FileName}",
+                submission.Id,
+                submission.JobId,
+                submission.BlobObjectKey,
+                submission.FileName);
+        }
         submission.Status = ResumeSubmissionStatus.Processing;
         submission.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -78,7 +93,10 @@ public sealed class ResumeProcessingService(
                 ?? throw new InvalidOperationException($"Job '{submission.JobId}' not found.");
             var normalizedJob = await GetNormalizedJobDescriptionAsync(job, submission.AppliedJobPosition, ct);
             jobTimer.Stop();
-            logger.LogInformation("Resume submission {SubmissionId} loaded job context in {ElapsedMs} ms.", submission.Id, jobTimer.ElapsedMilliseconds);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Resume submission {SubmissionId} loaded job context in {ElapsedMs} ms.", submission.Id, jobTimer.ElapsedMilliseconds);
+            }
 
             stage = "parse";
             processingMonitor.RecordSubmissionStage(submission.Id, stage);
@@ -89,55 +107,80 @@ public sealed class ResumeProcessingService(
             var parsed = parsedEnvelope.ParsedResume;
             submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
             parseTimer.Stop();
-            logger.LogInformation(
-                "Resume submission {SubmissionId} parsed successfully in {ElapsedMs} ms. ParserVersion={ParserVersion}",
-                submission.Id,
-                parseTimer.ElapsedMilliseconds,
-                parsedEnvelope.ParserVersion);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Resume submission {SubmissionId} parsed successfully in {ElapsedMs} ms. ParserVersion={ParserVersion}",
+                    submission.Id,
+                    parseTimer.ElapsedMilliseconds,
+                    parsedEnvelope.ParserVersion);
+            }
 
             stage = "score";
             processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var scoreTimer = global::System.Diagnostics.Stopwatch.StartNew();
-            var result = await scoringOrchestrator.BuildAsync(submission.Id, parsed, normalizedJob, ct);
+            var (embeddings, score) = await scoringOrchestrator.BuildAsync(submission.Id, parsed, normalizedJob, ct);
             scoreTimer.Stop();
-            logger.LogInformation(
-                "Resume submission {SubmissionId} scored successfully in {ElapsedMs} ms. FinalScore={FinalScore}",
-                submission.Id,
-                scoreTimer.ElapsedMilliseconds,
-                result.Score.FinalScore);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Resume submission {SubmissionId} scored successfully in {ElapsedMs} ms. FinalScore={FinalScore}",
+                    submission.Id,
+                    scoreTimer.ElapsedMilliseconds,
+                    score.FinalScore);
+            }
 
             stage = "persist";
             processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var persistTimer = global::System.Diagnostics.Stopwatch.StartNew();
-            if (result.Embeddings.Count > 0)
+            if (embeddings.Count > 0)
             {
-                await resumeEmbeddingRepository.AddRangeAsync(result.Embeddings, saveChanges: false, ct);
+                await resumeEmbeddingRepository.AddRangeAsync(embeddings, saveChanges: false, ct);
             }
 
-            await SaveScoreAsync(submission, normalizedJob.Description, result.Score, ct);
+            await SaveScoreAsync(submission, normalizedJob.Description, score, ct);
 
+            submission.RetryCount = 0;
+            submission.NextRetryAtUtc = null;
             submission.Status = ApplicantRecommendationPolicy.ResolveInitialStage(
                 ResumeSubmissionStatus.Completed,
-                result.Score.FinalScore);
+                score.FinalScore);
             submission.UpdatedAtUtc = DateTime.UtcNow;
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             persistTimer.Stop();
             totalTimer.Stop();
             processingMonitor.RecordSubmissionSucceeded(submission.Id);
 
-            logger.LogInformation(
-                "Resume submission {SubmissionId} processed in {TotalMs} ms (claim={ClaimMs} ms, job={JobMs} ms, parse={ParseMs} ms, score={ScoreMs} ms, persist={PersistMs} ms).",
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Resume submission {SubmissionId} processed in {TotalMs} ms (claim={ClaimMs} ms, job={JobMs} ms, parse={ParseMs} ms, score={ScoreMs} ms, persist={PersistMs} ms).",
+                    submission.Id,
+                    totalTimer.ElapsedMilliseconds,
+                    claimTimer.ElapsedMilliseconds,
+                    jobTimer.ElapsedMilliseconds,
+                    parseTimer.ElapsedMilliseconds,
+                    scoreTimer.ElapsedMilliseconds,
+                    persistTimer.ElapsedMilliseconds);
+            }
+        }
+        catch (ResumeParserRateLimitException ex)
+        {
+            await ScheduleRetryAsync(submission, stage, ex, ct);
+            totalTimer.Stop();
+            logger.LogWarning(
+                ex,
+                "Resume submission {SubmissionId} was rate limited at stage {Stage}. RetryCount={RetryCount} NextRetryAtUtc={NextRetryAtUtc}",
                 submission.Id,
-                totalTimer.ElapsedMilliseconds,
-                claimTimer.ElapsedMilliseconds,
-                jobTimer.ElapsedMilliseconds,
-                parseTimer.ElapsedMilliseconds,
-                scoreTimer.ElapsedMilliseconds,
-                persistTimer.ElapsedMilliseconds);
+                stage,
+                submission.RetryCount,
+                submission.NextRetryAtUtc);
         }
         catch (Exception ex)
         {
             submission.Status = ResumeSubmissionStatus.Failed;
+            submission.RetryCount = _processingOptions.MaxRetryAttempts;
+            submission.NextRetryAtUtc = null;
             submission.UpdatedAtUtc = DateTime.UtcNow;
             await resumeSubmissionRepository.SaveChangesAsync(ct);
             totalTimer.Stop();
@@ -150,13 +193,48 @@ public sealed class ResumeProcessingService(
                 totalTimer.ElapsedMilliseconds,
                 submission.JobId,
                 submission.BlobObjectKey);
-            throw;
         }
     }
 
+    private async Task ScheduleRetryAsync(
+        ResumeSubmissionEntity submission,
+        string stage,
+        ResumeParserRateLimitException exception,
+        CancellationToken ct)
+    {
+        var retryCount = submission.RetryCount + 1;
+        var isExhausted = retryCount >= _processingOptions.MaxRetryAttempts;
+        var now = DateTime.UtcNow;
+
+        submission.RetryCount = retryCount;
+        submission.Status = ResumeSubmissionStatus.Failed;
+        submission.NextRetryAtUtc = isExhausted ? null : now.Add(GetRetryDelay(retryCount));
+        submission.UpdatedAtUtc = now;
+
+        await resumeSubmissionRepository.SaveChangesAsync(ct);
+
+        if (isExhausted)
+        {
+            processingMonitor.RecordSubmissionFailed(submission.Id, stage, exception);
+            return;
+        }
+
+        processingMonitor.RecordSubmissionRetryScheduled(submission.Id, stage, exception);
+    }
+
+    private TimeSpan GetRetryDelay(int retryCount)
+    {
+        var exponentialFactor = Math.Pow(2, Math.Max(0, retryCount - 1));
+        var delayTicks = (long)Math.Min(
+            _processingOptions.MaxRetryDelay.Ticks,
+            _processingOptions.BaseRetryDelay.Ticks * exponentialFactor);
+
+        return TimeSpan.FromTicks(delayTicks);
+    }
+
     // Saves score.
-    private async Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
-        => await resumeScoreRepository.AddAsync(ResumeScoreEntityFactory.Create(submission, jobDescriptionText, score), saveChanges: false, ct);
+    private Task SaveScoreAsync(ResumeSubmissionEntity submission, string jobDescriptionText, FinalMatchScore score, CancellationToken ct)
+        => resumeScoreRepository.AddAsync(ResumeScoreEntityFactory.Create(submission, jobDescriptionText, score), saveChanges: false, ct);
 
     // Loads normalized job description.
     private Task<NormalizedJobDescription> GetNormalizedJobDescriptionAsync(JobEntity job, string appliedJobPosition, CancellationToken ct)

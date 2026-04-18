@@ -46,6 +46,10 @@ namespace SkillSense.Persistence.Configurations
             builder.Property(x => x.JobSeekerHistoryDeletedAtUtc);
 
             builder.Property(x => x.HireDateUtc);
+            builder.Property(x => x.RetryCount)
+                .HasDefaultValue(0)
+                .IsRequired();
+            builder.Property(x => x.NextRetryAtUtc);
 
             builder.HasIndex(x => x.HiredByRecruiterId);
             builder.HasIndex(x => x.AcceptedOfferId);
@@ -56,6 +60,7 @@ namespace SkillSense.Persistence.Configurations
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasIndex(x => x.Status);
+            builder.HasIndex(x => x.NextRetryAtUtc);
             builder.HasIndex(x => x.JobId);
             builder.HasIndex(x => x.JobSeekerUserId);
         }
