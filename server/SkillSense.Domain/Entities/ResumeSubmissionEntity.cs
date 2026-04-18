@@ -24,6 +24,8 @@ public sealed class ResumeSubmissionEntity
     public DateTime? HireDateUtc { get; set; }
     public Guid? HiredByRecruiterId { get; set; }
     public Guid? AcceptedOfferId { get; set; }
+    public int RetryCount { get; set; }
+    public DateTime? NextRetryAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 

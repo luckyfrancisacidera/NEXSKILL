@@ -1,23 +1,16 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SkillSense.Api.Health;
 using SkillSense.Application.Interfaces;
-using SkillSense.Domain.Entities;
 using SkillSense.Infrastructure.Options;
-using SkillSense.Persistence.Data;
 
 namespace SkillSense.Application.Tests;
 
 public sealed class ResumeProcessingHealthCheckTests
 {
     [Fact]
-    public async Task PreviousFailure_WhileNewSubmissionIsScoring_IsNotReportedAsUnhealthy()
+    public async Task PreviousFailure_WhileNewSubmissionIsScoring_IsReportedAsHealthy()
     {
-        await using var dbContext = CreateDbContext();
         var previousFailureId = Guid.NewGuid();
-        dbContext.ResumeSubmissions.Add(CreateFailedSubmission(previousFailureId, DateTime.UtcNow.AddMinutes(-1)));
-        await dbContext.SaveChangesAsync();
-
         var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
             StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
             LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow.AddSeconds(-5),
@@ -34,23 +27,19 @@ public sealed class ResumeProcessingHealthCheckTests
             HasActiveFailure: false,
             ConsecutiveFailureCount: 1));
 
-        var healthCheck = CreateHealthCheck(dbContext, monitor);
+        var healthCheck = CreateHealthCheck(monitor);
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
-        Assert.Equal(HealthStatus.Degraded, result.Status);
-        Assert.Contains("actively progressing", result.Description);
+        Assert.Equal(HealthStatus.Healthy, result.Status);
+        Assert.Contains("actively processing", result.Description, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("active failure", result.Description, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public async Task SubmissionFailureAtParse_IsUnhealthyWithNonEmptyErrorMessage()
     {
-        await using var dbContext = CreateDbContext();
         var submissionId = Guid.NewGuid();
-        dbContext.ResumeSubmissions.Add(CreateFailedSubmission(submissionId, DateTime.UtcNow));
-        await dbContext.SaveChangesAsync();
-
         var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
             StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
             LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow,
@@ -67,7 +56,7 @@ public sealed class ResumeProcessingHealthCheckTests
             HasActiveFailure: true,
             ConsecutiveFailureCount: 1));
 
-        var healthCheck = CreateHealthCheck(dbContext, monitor);
+        var healthCheck = CreateHealthCheck(monitor);
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
@@ -79,11 +68,7 @@ public sealed class ResumeProcessingHealthCheckTests
     [Fact]
     public async Task SubmissionLaterSucceeds_HealthRecovers()
     {
-        await using var dbContext = CreateDbContext();
         var failedSubmissionId = Guid.NewGuid();
-        dbContext.ResumeSubmissions.Add(CreateFailedSubmission(failedSubmissionId, DateTime.UtcNow.AddMinutes(-10)));
-        await dbContext.SaveChangesAsync();
-
         var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
             StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
             LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow,
@@ -100,7 +85,7 @@ public sealed class ResumeProcessingHealthCheckTests
             HasActiveFailure: false,
             ConsecutiveFailureCount: 0));
 
-        var healthCheck = CreateHealthCheck(dbContext, monitor);
+        var healthCheck = CreateHealthCheck(monitor);
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
@@ -111,7 +96,6 @@ public sealed class ResumeProcessingHealthCheckTests
     [Fact]
     public async Task LongRunningScoreStepWithinTimeout_IsHealthy()
     {
-        await using var dbContext = CreateDbContext();
         var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
             StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
             LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow.AddMinutes(-5),
@@ -128,7 +112,7 @@ public sealed class ResumeProcessingHealthCheckTests
             HasActiveFailure: false,
             ConsecutiveFailureCount: 0));
 
-        var healthCheck = CreateHealthCheck(dbContext, monitor);
+        var healthCheck = CreateHealthCheck(monitor);
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
@@ -139,7 +123,6 @@ public sealed class ResumeProcessingHealthCheckTests
     [Fact]
     public async Task LongRunningScoreStepBeyondTimeout_IsUnhealthy()
     {
-        await using var dbContext = CreateDbContext();
         var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
             StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
             LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow.AddMinutes(-12),
@@ -156,7 +139,7 @@ public sealed class ResumeProcessingHealthCheckTests
             HasActiveFailure: false,
             ConsecutiveFailureCount: 0));
 
-        var healthCheck = CreateHealthCheck(dbContext, monitor);
+        var healthCheck = CreateHealthCheck(monitor);
 
         var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
 
@@ -164,11 +147,8 @@ public sealed class ResumeProcessingHealthCheckTests
         Assert.Contains("appears stuck", result.Description, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static ResumeProcessingHealthCheck CreateHealthCheck(
-        SkillSenseDbContext dbContext,
-        IResumeProcessingMonitor monitor)
+    private static ResumeProcessingHealthCheck CreateHealthCheck(IResumeProcessingMonitor monitor)
         => new(
-            dbContext,
             monitor,
             Microsoft.Extensions.Options.Options.Create(new ResumeProcessingWorkerOptions
             {
@@ -178,30 +158,6 @@ public sealed class ResumeProcessingHealthCheckTests
                 MaxBackoff = TimeSpan.FromSeconds(30),
             }));
 
-    private static SkillSenseDbContext CreateDbContext()
-    {
-        var options = new DbContextOptionsBuilder<SkillSenseDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
-        return new SkillSenseDbContext(options);
-    }
-
-    private static ResumeSubmissionEntity CreateFailedSubmission(Guid id, DateTime updatedAtUtc)
-        => new()
-        {
-            Id = id,
-            CompanyId = Guid.NewGuid(),
-            JobId = Guid.NewGuid(),
-            FileName = "resume.pdf",
-            ContentType = "application/pdf",
-            BlobObjectKey = "resume/blob",
-            AppliedJobPosition = "Engineer",
-            Status = ResumeSubmissionStatus.Failed,
-            CreatedAtUtc = updatedAtUtc.AddMinutes(-1),
-            UpdatedAtUtc = updatedAtUtc,
-        };
-
     private sealed class StubResumeProcessingMonitor(ResumeProcessingMonitorSnapshot snapshot) : IResumeProcessingMonitor
     {
         public void RecordWorkerStarted() => throw new NotSupportedException();
@@ -209,6 +165,7 @@ public sealed class ResumeProcessingHealthCheckTests
         public void RecordWorkerFailure(Exception exception) => throw new NotSupportedException();
         public void RecordSubmissionStage(Guid submissionId, string stage) => throw new NotSupportedException();
         public void RecordSubmissionSucceeded(Guid submissionId) => throw new NotSupportedException();
+        public void RecordSubmissionRetryScheduled(Guid submissionId, string stage, Exception exception) => throw new NotSupportedException();
         public void RecordSubmissionFailed(Guid submissionId, string stage, Exception exception) => throw new NotSupportedException();
         public ResumeProcessingMonitorSnapshot GetSnapshot() => snapshot;
     }

@@ -12,7 +12,7 @@ using SkillSense.Persistence.Interfaces;
 
 namespace SkillSense.Application.Services.Recruiter;
 
-public sealed class CandidateExplanationService(
+public sealed partial class CandidateExplanationService(
     ICandidateExplanationRepository candidateExplanationRepository,
     IGenerativeExplanationProvider explanationProvider,
     ILogger<CandidateExplanationService> logger) : ICandidateExplanationService
@@ -56,7 +56,7 @@ public sealed class CandidateExplanationService(
     {
         var existing = await candidateExplanationRepository.GetBySubmissionIdAsync(submissionId, ct);
 
-        if (existing is not null && existing.Status is ExplanationStatus.Pending or ExplanationStatus.Succeeded)
+        if (existing?.Status is ExplanationStatus.Pending or ExplanationStatus.Succeeded)
         {
             return;
         }
@@ -178,11 +178,13 @@ public sealed class CandidateExplanationService(
                 PreferredSkills = preferredSkills,
                 Strengths = BuildStrengthSignals(requiredSkills, preferredSkills, highlights, experienceAssessment),
                 WeakSignals = BuildWeakSignals(requiredSkills, responsibilityDetails, descriptionDetails),
-                MissingSkills = requiredSkills
-                    .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Missing)
-                    .Select(signal => signal.Name)
-                    .Take(3)
-                    .ToList(),
+                MissingSkills =
+                [
+                    .. requiredSkills
+                        .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Missing)
+                        .Select(signal => signal.Name)
+                        .Take(3)
+                ],
                 Highlights = highlights,
                 ExperienceAssessment = experienceAssessment,
                 EducationAssessment = educationAssessment,
@@ -256,16 +258,18 @@ public sealed class CandidateExplanationService(
             }
         }
 
-        return signals.Values
-            .OrderByDescending(signal => GetSignalRank(signal.Level))
-            .ThenBy(signal => signal.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        return
+        [
+            .. signals.Values
+                .OrderByDescending(signal => GetSignalRank(signal.Level))
+                .ThenBy(signal => signal.Name, StringComparer.OrdinalIgnoreCase)
+        ];
     }
 
     // Builds highlights.
     private static List<string> BuildHighlights(params IEnumerable<CandidateExplanationMatchItem>[] groups)
     {
-        var highlights = new List<string>();
+        List<string> highlights = [];
 
         foreach (var item in groups.SelectMany(group => group)
                      .Where(item => item.MatchState != CandidateExplanationMatchStates.NotFound))
@@ -273,7 +277,7 @@ public sealed class CandidateExplanationService(
             AddPhrase(highlights, NormalizeCapabilityPhrase(item.JdItem, item.BestResumeEvidence));
         }
 
-        return highlights.Take(4).ToList();
+        return [.. highlights.Take(4)];
     }
 
     // Builds strength signals.
@@ -283,7 +287,7 @@ public sealed class CandidateExplanationService(
         IReadOnlyList<string> highlights,
         string experienceAssessment)
     {
-        var strengths = new List<string>();
+        List<string> strengths = [];
 
         foreach (var skill in requiredSkills.Where(skill => skill.Level == CandidateEvaluationSignalLevels.Strong).Take(3))
         {
@@ -305,7 +309,7 @@ public sealed class CandidateExplanationService(
             AddPhrase(strengths, "Required experience level");
         }
 
-        return strengths.Take(4).ToList();
+        return [.. strengths.Take(4)];
     }
 
     // Builds weak signals.
@@ -314,7 +318,7 @@ public sealed class CandidateExplanationService(
         IEnumerable<CandidateExplanationMatchItem> responsibilityDetails,
         IEnumerable<CandidateExplanationMatchItem> descriptionDetails)
     {
-        var weakSignals = new List<string>();
+        List<string> weakSignals = [];
 
         foreach (var skill in requiredSkills.Where(skill => skill.Level == CandidateEvaluationSignalLevels.Related).Take(3))
         {
@@ -329,19 +333,21 @@ public sealed class CandidateExplanationService(
             AddPhrase(weakSignals, NormalizeCapabilityPhrase(item.JdItem, item.BestResumeEvidence));
         }
 
-        return weakSignals.Take(3).ToList();
+        return [.. weakSignals.Take(3)];
     }
 
     // Builds deterministic strengths.
     private static List<string> BuildDeterministicStrengths(CandidateEvaluationContext context)
     {
-        var strengths = new List<string>();
+        List<string> strengths = [];
 
-        var strongRequired = context.Evaluation.RequiredSkills
-            .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
-            .Select(signal => signal.Name)
-            .Take(3)
-            .ToList();
+        List<string> strongRequired =
+        [
+            .. context.Evaluation.RequiredSkills
+                .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
+                .Select(signal => signal.Name)
+                .Take(3)
+        ];
 
         if (strongRequired.Count > 0)
         {
@@ -369,13 +375,13 @@ public sealed class CandidateExplanationService(
             AddInsight(strengths, "Meets the required years of experience.");
         }
 
-        return strengths.Take(4).ToList();
+        return [.. strengths.Take(4)];
     }
 
     // Builds deterministic gaps.
     private static List<string> BuildDeterministicGaps(CandidateEvaluationContext context)
     {
-        var gaps = new List<string>();
+        List<string> gaps = [];
 
         var firstRelatedRequired = context.Evaluation.RequiredSkills
             .FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
@@ -413,14 +419,14 @@ public sealed class CandidateExplanationService(
             AddInsight(gaps, "May not meet the stated education requirement.");
         }
 
-        return gaps.Take(3).ToList();
+        return [.. gaps.Take(3)];
     }
 
     // Builds deterministic summary.
     private static string BuildDeterministicSummary(
         CandidateEvaluationContext context,
-        IReadOnlyList<string> strengths,
-        IReadOnlyList<string> gaps)
+        List<string> strengths,
+        List<string> gaps)
     {
         var strongRequired = context.Evaluation.RequiredSkills
             .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
@@ -442,7 +448,7 @@ public sealed class CandidateExplanationService(
         if (context.Evaluation.WeakSignals.Count > 0)
         {
             var relatedSkill = context.Evaluation.RequiredSkills.FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
-            summary.Append($" One area to verify is {(relatedSkill?.Name ?? context.Evaluation.WeakSignals[0])}.");
+            summary.Append($" One area to verify is {relatedSkill?.Name ?? context.Evaluation.WeakSignals[0]}.");
         }
         else if (gaps.Count > 0)
         {
@@ -468,7 +474,7 @@ public sealed class CandidateExplanationService(
     // Builds deterministic recommendation.
     private static string BuildDeterministicRecommendation(CandidateEvaluationContext context)
     {
-        var focusAreas = new List<string>();
+        List<string> focusAreas = [];
 
         if (context.Evaluation.WeakSignals.Count > 0)
         {
@@ -503,11 +509,13 @@ public sealed class CandidateExplanationService(
     // Builds match details.
     private static List<CandidateExplanationMatchItem> BuildMatchDetails(IEnumerable<MatchEvidence> matches)
     {
-        return matches
-            .Select(BuildMatchDetail)
-            .OrderByDescending(item => item.FinalMatchConfidence)
-            .ThenByDescending(item => item.EvidenceCountDistinct)
-            .ToList();
+        return
+        [
+            .. matches
+                .Select(BuildMatchDetail)
+                .OrderByDescending(item => item.FinalMatchConfidence)
+                .ThenByDescending(item => item.EvidenceCountDistinct)
+        ];
     }
 
     // Builds match detail.
@@ -631,11 +639,13 @@ public sealed class CandidateExplanationService(
     // Normalizes skill list.
     private static List<string> NormalizeSkillList(IEnumerable<string> values)
     {
-        return values
-            .Select(CleanSkillName)
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        return
+        [
+            .. values
+                .Select(CleanSkillName)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+        ];
     }
 
     // Handles clean skill name.
@@ -647,7 +657,7 @@ public sealed class CandidateExplanationService(
         }
 
         var cleaned = value.Trim();
-        cleaned = Regex.Replace(cleaned, @"\s+", " ");
+        cleaned = WhitespaceRegex().Replace(cleaned, " ");
         return cleaned.Trim().TrimEnd('.', ';', ':');
     }
 
@@ -753,8 +763,8 @@ public sealed class CandidateExplanationService(
             return string.Empty;
         }
 
-        var cleaned = Regex.Replace(source, @"[\r\n]+", " ");
-        cleaned = Regex.Replace(cleaned, @"[^A-Za-z0-9\+#\. ]+", " ");
+        var cleaned = NewlineRegex().Replace(source, " ");
+        cleaned = NonWordSkillRegex().Replace(cleaned, " ");
 
         var tokens = cleaned
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -849,7 +859,7 @@ public sealed class CandidateExplanationService(
     // Handles compose fallback text.
     private static string ComposeFallbackText(CandidateStructuredExplanation explanation)
     {
-        var sections = new List<string>();
+        List<string> sections = [];
 
         if (!string.IsNullOrWhiteSpace(explanation.Summary))
         {
@@ -909,13 +919,13 @@ public sealed class CandidateExplanationService(
             .Replace("These are insights based on the extracted resume", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Trim();
 
-        cleaned = Regex.Replace(cleaned, @"\s+", " ");
+        cleaned = WhitespaceRegex().Replace(cleaned, " ");
 
-        var sentences = Regex.Split(cleaned, @"(?<=[.!?])\s+")
+        var sentences = SentenceSplitRegex().Split(cleaned)
             .Select(sentence => sentence.Trim())
             .Where(sentence => !string.IsNullOrWhiteSpace(sentence));
 
-        var deduped = new List<string>();
+        List<string> deduped = [];
         foreach (var sentence in sentences)
         {
             var normalized = NormalizeForComparison(sentence);
@@ -938,8 +948,8 @@ public sealed class CandidateExplanationService(
         lowered = lowered.Replace("restful", "rest");
         lowered = lowered.Replace("apis", "api");
         lowered = lowered.Replace("frameworks", "framework");
-        lowered = Regex.Replace(lowered, @"[^a-z0-9\+#\. ]+", " ");
-        return Regex.Replace(lowered, @"\s+", " ").Trim();
+        lowered = ComparisonCleanupRegex().Replace(lowered, " ");
+        return WhitespaceRegex().Replace(lowered, " ").Trim();
     }
 
     // Handles evaluate location compatibility.
@@ -1019,4 +1029,19 @@ public sealed class CandidateExplanationService(
         public string? EducationMaxLevel { get; set; }
         public List<string> NormalizedSkills { get; set; } = [];
     }
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"[\r\n]+", RegexOptions.CultureInvariant)]
+    private static partial Regex NewlineRegex();
+
+    [GeneratedRegex(@"[^A-Za-z0-9\+#\. ]+", RegexOptions.CultureInvariant)]
+    private static partial Regex NonWordSkillRegex();
+
+    [GeneratedRegex(@"(?<=[.!?])\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex SentenceSplitRegex();
+
+    [GeneratedRegex(@"[^a-z0-9\+#\. ]+", RegexOptions.CultureInvariant)]
+    private static partial Regex ComparisonCleanupRegex();
 }

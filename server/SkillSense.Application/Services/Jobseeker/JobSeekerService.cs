@@ -29,7 +29,7 @@ namespace SkillSense.Application.Services.Jobseeker
                 var pagedJobs = await jobSeekerRepository.GetPublishedJobsAsync(pageNumber, pageSize, search, sortBy, sortDir, ct);
                 return new PagedResult<JobListItemResponse>
                 {
-                    Items = pagedJobs.Items.Select(Map).ToList(),
+                    Items = [.. pagedJobs.Items.Select(Map)],
                     PageNumber = pagedJobs.PageNumber,
                     PageSize = pagedJobs.PageSize,
                     TotalCount = pagedJobs.TotalCount,
@@ -39,8 +39,8 @@ namespace SkillSense.Application.Services.Jobseeker
         }
 
         // Loads public job.
-        public async Task<JobListItemResponse?> GetPublicJobAsync(Guid id, CancellationToken ct = default)
-            => await cacheService.GetOrCreateAsync($"jobs:public:detail:{id}", TimeSpan.FromSeconds(120), async () =>
+        public Task<JobListItemResponse?> GetPublicJobAsync(Guid id, CancellationToken ct = default)
+            => cacheService.GetOrCreateAsync($"jobs:public:detail:{id}", TimeSpan.FromSeconds(120), async () =>
             {
                 var job = await jobSeekerRepository.GetPublishedJobByIdAsync(id, ct);
                 return job is null ? null : Map(job);
@@ -71,7 +71,7 @@ namespace SkillSense.Application.Services.Jobseeker
             var pagedApplications = await jobSeekerRepository.GetApplicationsByUserAsync(userId, pageNumber, pageSize, search, status, startDate, endDate, archivedOnly, ct);
             return new PagedResult<JobSeekerApplicationResponse>
             {
-                Items = pagedApplications.Items.Select(MapApplication).ToList(),
+                Items = [.. pagedApplications.Items.Select(MapApplication)],
                 PageNumber = pagedApplications.PageNumber,
                 PageSize = pagedApplications.PageSize,
                 TotalCount = pagedApplications.TotalCount,
@@ -108,19 +108,19 @@ namespace SkillSense.Application.Services.Jobseeker
                     currency = x.Currency,
                     job_type = x.EmploymentType,
                     is_saved = true
-                }).ToList(),
-                recent_applications = recentApplicationResponses.Select(x => new
+                }).ToArray(),
+                recent_applications = recentApplicationResponses.ConvertAll(x => new
                 {
                     id = x.Id,
                     job_title = x.JobTitle,
                     company = x.CompanyName,
                     applied_at = x.CreatedAtUtc,
                     status = x.CurrentStage
-                }).ToList(),
+                }),
                 analytics = new
                 {
-                    labels = analytics.Select(x => x.Date.ToString(granularity == "month" ? "MMM yyyy" : "MMM dd")).ToList(),
-                    counts = analytics.Select(x => x.Count).ToList(),
+                    labels = analytics.Select(x => x.Date.ToString(granularity == "month" ? "MMM yyyy" : "MMM dd")).ToArray(),
+                    counts = analytics.Select(x => x.Count).ToArray(),
                     total = analytics.Sum(x => x.Count),
                     range = normalizedRange
                 }
@@ -131,20 +131,23 @@ namespace SkillSense.Application.Services.Jobseeker
         public async Task<IReadOnlyList<object>> GetSavedJobsAsync(Guid userId, string? search, CancellationToken ct = default)
         {
             var items = await jobSeekerRepository.GetSavedJobsAsync(userId, search, ct);
-            return items.Select(x => (object)new
-            {
-                id = x.JobId,
-                title = x.Title,
-                company = x.Company,
-                location = x.Location,
-                description = x.Description,
-                salary_min = x.SalaryMin,
-                salary_max = x.SalaryMax,
-                currency = x.Currency,
-                job_type = x.EmploymentType,
-                is_saved = true,
-                saved_at = x.SavedAtUtc
-            }).ToList();
+            return
+            [
+                .. items.Select(x => (object)new
+                {
+                    id = x.JobId,
+                    title = x.Title,
+                    company = x.Company,
+                    location = x.Location,
+                    description = x.Description,
+                    salary_min = x.SalaryMin,
+                    salary_max = x.SalaryMax,
+                    currency = x.Currency,
+                    job_type = x.EmploymentType,
+                    is_saved = true,
+                    saved_at = x.SavedAtUtc
+                })
+            ];
         }
 
         // Saves job.
@@ -169,11 +172,8 @@ namespace SkillSense.Application.Services.Jobseeker
         // Updates my profile.
         public async Task<object> UpdateMyProfileAsync(Guid userId, JobSeekerProfileRequest request, CancellationToken ct = default)
         {
-            var profile = await jobSeekerRepository.GetProfileAsync(userId, ct);
-            if (profile is null)
-            {
-                profile = new JobSeekerProfileEntity { Id = Guid.NewGuid(), UserId = userId };
-            }
+            var profile = await jobSeekerRepository.GetProfileAsync(userId, ct)
+                ?? new JobSeekerProfileEntity { Id = Guid.NewGuid(), UserId = userId };
 
             profile.FullName = request.FullName?.Trim();
             profile.Phone = request.Phone?.Trim();
@@ -520,7 +520,7 @@ namespace SkillSense.Application.Services.Jobseeker
         }
 
         // Validates pending offer response.
-        private void ValidatePendingOfferResponse(JobOfferEntity offer)
+        private static void ValidatePendingOfferResponse(JobOfferEntity offer)
         {
             if (offer.Status == JobOfferStatus.Accepted || offer.Status == JobOfferStatus.Declined)
             {

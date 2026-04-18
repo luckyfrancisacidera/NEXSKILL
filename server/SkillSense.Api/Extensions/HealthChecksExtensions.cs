@@ -16,7 +16,7 @@ public static class HealthChecksExtensions
         services
             .AddHealthChecks()
             .AddCheck<DatabaseHealthCheck>("database", failureStatus: HealthStatus.Unhealthy, tags: ["ready"])
-            .AddCheck<ResumeParserHealthCheck>("resume_parser", failureStatus: HealthStatus.Unhealthy, tags: ["ready"])
+            .AddCheck<ResumeParserHealthCheck>("resume_parser", failureStatus: HealthStatus.Unhealthy, tags: ["diagnostic"])
             .AddCheck<ResumeProcessingHealthCheck>("resume_processing", failureStatus: HealthStatus.Unhealthy, tags: ["ready"]);
 
         return services;
