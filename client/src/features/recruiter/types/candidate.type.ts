@@ -106,7 +106,11 @@ export interface CandidateExplanationDto {
   provider: string;
   model: string;
   summary?: string;
+  overall_fit?: string;
   strengths: string[];
+  areas_to_validate?: string[];
+  potential_risks?: string[];
+  recommended_interview_focus?: string[];
   gaps: string[];
   risks?: string[];
   recommendation?: string;

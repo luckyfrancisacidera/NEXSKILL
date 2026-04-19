@@ -26,17 +26,25 @@ internal static class GroqCandidateAnalysisParser
                 "Groq response was not valid JSON.");
         }
 
-        var summary = NormalizeText(ReadString(parsed.Value, "summary"), 300) ?? string.Empty;
-        var recommendation = NormalizeText(ReadString(parsed.Value, "recommendation"), 220) ?? string.Empty;
+        var overallFit = NormalizeText(ReadString(parsed.Value, "overall_fit") ?? ReadString(parsed.Value, "summary"), 320) ?? string.Empty;
         var strengths = NormalizeStringList(parsed.Value, ["strengths"], 4);
-        var risks = NormalizeStringList(parsed.Value, ["risks", "gaps"], 2);
+        var areasToValidate = NormalizeStringList(parsed.Value, ["areas_to_validate", "validation_points"], 3);
+        var potentialRisks = NormalizeStringList(parsed.Value, ["potential_risks", "risks", "gaps"], 3);
+        var interviewFocus = NormalizeStringList(parsed.Value, ["recommended_interview_focus", "interview_focus"], 4);
+
+        var recommendation = NormalizeText(ReadString(parsed.Value, "recommendation"), 240);
+        if (!string.IsNullOrWhiteSpace(recommendation) && interviewFocus.Count == 0)
+        {
+            interviewFocus = [recommendation];
+        }
 
         var explanation = new CandidateStructuredExplanation
         {
-            Summary = summary,
+            OverallFit = overallFit,
             Strengths = strengths,
-            Gaps = risks,
-            Recommendation = recommendation,
+            AreasToValidate = areasToValidate,
+            PotentialRisks = potentialRisks,
+            RecommendedInterviewFocus = interviewFocus,
         };
 
         var usedFallback = false;
@@ -48,10 +56,10 @@ internal static class GroqCandidateAnalysisParser
             reasons.Add("Missing strengths.");
         }
 
-        if (!parsed.Value.TryGetProperty("summary", out _) && string.IsNullOrWhiteSpace(summary))
+        if (!parsed.Value.TryGetProperty("overall_fit", out _) && !parsed.Value.TryGetProperty("summary", out _) && string.IsNullOrWhiteSpace(overallFit))
         {
             usedFallback = true;
-            reasons.Add("Missing summary.");
+            reasons.Add("Missing overall fit.");
         }
 
         return new GroqCandidateAnalysisParseResult(
@@ -69,10 +77,11 @@ internal static class GroqCandidateAnalysisParser
 
         return new CandidateStructuredExplanation
         {
-            Summary = summary,
+            OverallFit = summary,
             Strengths = [],
-            Gaps = [],
-            Recommendation = string.Empty,
+            AreasToValidate = [],
+            PotentialRisks = [],
+            RecommendedInterviewFocus = [],
         };
     }
 

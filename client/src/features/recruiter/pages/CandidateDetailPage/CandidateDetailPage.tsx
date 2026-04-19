@@ -199,7 +199,11 @@ const hasCandidateExplanation = (candidate: ApplicantDetailDto) => {
   const explanation = candidate.candidate_explanation;
 
   return Boolean(
-    explanation?.summary?.trim()
+    explanation?.overall_fit?.trim()
+    || explanation?.summary?.trim()
+    || explanation?.areas_to_validate?.length
+    || explanation?.potential_risks?.length
+    || explanation?.recommended_interview_focus?.length
     || explanation?.recommendation?.trim()
     || explanation?.explanation_text?.trim()
     || explanation?.strengths?.length
@@ -1338,35 +1342,59 @@ export const CandidateDetailPage = () => {
             {hasCandidateExplanation(candidate) && candidateExplanation ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-500/10">
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 sm:text-xs">AI-assisted insight</p>
-                <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">Why this candidate is a good fit</p>
-                {candidateExplanation.summary ? (
+                <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 sm:text-sm">Overall Fit</p>
+                {(candidateExplanation.overall_fit || candidateExplanation.summary) ? (
                   <p className="mt-1 text-[13px] leading-6 text-zinc-700 [text-align:justify] dark:text-zinc-300 sm:text-sm">
-                    {candidateExplanation.summary}
+                    {candidateExplanation.overall_fit || candidateExplanation.summary}
                   </p>
                 ) : null}
                 {candidateExplanation.strengths.length ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
-                    {candidateExplanation.strengths.map((item, index) => (
-                      <li key={`${item}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
+                  <>
+                    <p className="mt-4 text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Strengths</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
+                      {candidateExplanation.strengths.map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </>
                 ) : (
                   <p className="mt-2 text-[13px] text-zinc-500 dark:text-zinc-400 sm:text-sm">No key strengths were extracted.</p>
                 )}
-                {candidateExplanation.gaps?.length ? (
+                {candidateExplanation.areas_to_validate?.length ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Possible gaps</p>
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Areas to Validate</p>
                     <ul className="list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
-                      {candidateExplanation.gaps.map((item, index) => (
+                      {candidateExplanation.areas_to_validate.map((item, index) => (
                         <li key={`${item}-${index}`}>{item}</li>
                       ))}
                     </ul>
                   </div>
                 ) : null}
-                {candidateExplanation.recommendation ? (
+                {(candidateExplanation.potential_risks?.length || candidateExplanation.gaps?.length) ? (
                   <div className="mt-4 space-y-1">
-                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Notes</p>
-                    <p className="text-[13px] leading-6 text-zinc-700 [text-align:justify] dark:text-zinc-300 sm:text-sm">{candidateExplanation.recommendation}</p>
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Potential Risks</p>
+                    <ul className="list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
+                      {(candidateExplanation.potential_risks?.length ? candidateExplanation.potential_risks : candidateExplanation.gaps).map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {candidateExplanation.recommended_interview_focus?.length ? (
+                  <div className="mt-4 space-y-1">
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Recommended Interview Focus</p>
+                    <ul className="list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
+                      {candidateExplanation.recommended_interview_focus.map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : candidateExplanation.recommendation ? (
+                  <div className="mt-4 space-y-1">
+                    <p className="text-[13px] font-medium text-zinc-800 dark:text-zinc-100 sm:text-sm">Recommended Interview Focus</p>
+                    <ul className="list-disc space-y-1 pl-5 text-[13px] leading-6 text-zinc-700 dark:text-zinc-300 sm:text-sm">
+                      <li>{candidateExplanation.recommendation}</li>
+                    </ul>
                   </div>
                 ) : null}
               </div>

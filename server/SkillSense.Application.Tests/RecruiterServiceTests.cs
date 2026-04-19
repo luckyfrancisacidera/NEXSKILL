@@ -83,7 +83,7 @@ public sealed class RecruiterServiceTests
         var secondCopy = await service.DuplicateJobAsync(companyId, recruiterId, originalJobId, CancellationToken.None);
 
         Assert.NotEqual(firstCopy.Id, secondCopy.Id);
-        Assert.All(new[] { firstCopy, secondCopy }, copy =>
+        Assert.All([firstCopy, secondCopy], copy =>
         {
             Assert.StartsWith("Copy of ", copy.Title, StringComparison.Ordinal);
             Assert.Equal("Draft", copy.Status);
@@ -279,7 +279,7 @@ public sealed class RecruiterServiceTests
 
     private sealed class InMemoryJobRepository(params JobEntity[] jobs) : IJobRepository
     {
-        private readonly List<JobEntity> _jobs = jobs.ToList();
+        private readonly List<JobEntity> _jobs = [.. jobs];
 
         public Task AddAsync(JobEntity job, CancellationToken ct = default)
         {
@@ -309,7 +309,7 @@ public sealed class RecruiterServiceTests
 
     private sealed class StubRecruiterRepository(Guid companyId, Guid recruiterId) : IRecruiterRepository
     {
-        public Dictionary<Guid, int> HiredCounts { get; } = new();
+        public Dictionary<Guid, int> HiredCounts { get; } = [];
 
         public Task<RecruiterProfileEntity?> GetProfileByUserIdAsync(Guid recruiterIdInput, CancellationToken ct = default)
             => Task.FromResult<RecruiterProfileEntity?>(new RecruiterProfileEntity

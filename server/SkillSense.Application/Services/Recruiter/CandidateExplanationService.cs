@@ -103,12 +103,17 @@ public sealed partial class CandidateExplanationService(
         try
         {
             var result = await explanationProvider.GenerateRecruiterExplanationAsync(context, ct);
-            var normalized = NormalizeStructuredExplanation(result.Explanation, context);
+            var normalized = NormalizeStructuredExplanation(context);
 
-            explanationEntity.Summary = normalized.Summary;
+            explanationEntity.Summary = normalized.OverallFit;
             explanationEntity.StrengthsJson = JsonSerializer.Serialize(normalized.Strengths);
-            explanationEntity.GapsJson = JsonSerializer.Serialize(normalized.Gaps);
+            explanationEntity.GapsJson = JsonSerializer.Serialize(normalized.PotentialRisks);
             explanationEntity.ExplanationText = ComposeFallbackText(normalized);
+            explanationEntity.StructuredDataJson = JsonSerializer.Serialize(new
+            {
+                context,
+                explanation = normalized,
+            });
             explanationEntity.RawProviderResponse = result.RawProviderResponse;
             explanationEntity.Status = ExplanationStatus.Succeeded;
             explanationEntity.GeneratedAtUtc = DateTime.UtcNow;
@@ -193,20 +198,44 @@ public sealed partial class CandidateExplanationService(
     }
 
     // Normalizes structured explanation.
-    private static CandidateStructuredExplanation NormalizeStructuredExplanation(
-        CandidateStructuredExplanation explanation,
-        CandidateEvaluationContext context)
+    private static CandidateStructuredExplanation NormalizeStructuredExplanation(CandidateEvaluationContext context)
     {
         var strengths = BuildDeterministicStrengths(context);
-        var gaps = BuildDeterministicGaps(context);
+        var areasToValidate = BuildDeterministicAreasToValidate(context);
+        var potentialRisks = BuildDeterministicGaps(context);
+        var interviewFocus = BuildDeterministicInterviewFocus(context, areasToValidate, potentialRisks);
+
+        RemoveOverlaps(strengths, areasToValidate);
+        RemoveOverlaps(strengths, potentialRisks);
+        RemoveOverlaps(strengths, interviewFocus);
+        RemoveOverlaps(areasToValidate, potentialRisks);
+        RemoveOverlaps(areasToValidate, interviewFocus);
+
+        var overallFit = BuildDeterministicSummary(context, strengths, potentialRisks);
 
         return new CandidateStructuredExplanation
         {
-            Summary = BuildDeterministicSummary(context, strengths, gaps),
+            OverallFit = overallFit,
             Strengths = strengths,
-            Gaps = gaps,
-            Recommendation = NormalizeRecommendation(explanation.Recommendation, context),
+            AreasToValidate = areasToValidate,
+            PotentialRisks = potentialRisks,
+            RecommendedInterviewFocus = interviewFocus,
         };
+    }
+
+    private static void RemoveOverlaps(List<string> source, List<string> target)
+    {
+        if (source.Count == 0 || target.Count == 0)
+        {
+            return;
+        }
+
+        var normalizedSource = source
+            .Select(NormalizeForComparison)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToHashSet(StringComparer.Ordinal);
+
+        target.RemoveAll(item => normalizedSource.Contains(NormalizeForComparison(item)));
     }
 
     // Builds skill signals.
@@ -438,7 +467,7 @@ public sealed partial class CandidateExplanationService(
 
         if (strongRequired.Count > 0)
         {
-            summary.Append($"Good fit overall, especially for {JoinItems(strongRequired)}.");
+            summary.Append($"Strong alignment with required technologies, particularly {JoinItems(strongRequired)}.");
         }
         else if (strengths.Count > 0)
         {
@@ -448,7 +477,7 @@ public sealed partial class CandidateExplanationService(
         if (context.Evaluation.WeakSignals.Count > 0)
         {
             var relatedSkill = context.Evaluation.RequiredSkills.FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
-            summary.Append($" One area to verify is {relatedSkill?.Name ?? context.Evaluation.WeakSignals[0]}.");
+            summary.Append($" Validate depth in {relatedSkill?.Name ?? context.Evaluation.WeakSignals[0]} during interview.");
         }
         else if (gaps.Count > 0)
         {
@@ -458,40 +487,70 @@ public sealed partial class CandidateExplanationService(
         return CleanupInsightText(summary.ToString());
     }
 
-    // Normalizes recommendation.
-    private static string NormalizeRecommendation(string? recommendation, CandidateEvaluationContext context)
+    // Builds deterministic areas to validate.
+    private static List<string> BuildDeterministicAreasToValidate(CandidateEvaluationContext context)
     {
-        var cleaned = CleanupInsightText(recommendation);
-
-        if (string.IsNullOrWhiteSpace(cleaned) || LooksLikeResumeFragment(cleaned))
-        {
-            return BuildDeterministicRecommendation(context);
-        }
-
-        return cleaned;
-    }
-
-    // Builds deterministic recommendation.
-    private static string BuildDeterministicRecommendation(CandidateEvaluationContext context)
-    {
-        List<string> focusAreas = [];
+        List<string> validations = [];
 
         if (context.Evaluation.WeakSignals.Count > 0)
         {
-            AddPhrase(focusAreas, context.Evaluation.WeakSignals[0]);
+            AddInsight(validations, $"Validate hands-on depth in {context.Evaluation.WeakSignals[0]} with implementation examples.");
         }
 
-        if (focusAreas.Count == 0 && context.Evaluation.MissingSkills.Count > 0)
+        var relatedRequired = context.Evaluation.RequiredSkills
+            .FirstOrDefault(signal => signal.Level == CandidateEvaluationSignalLevels.Related);
+        if (relatedRequired is not null)
         {
-            AddPhrase(focusAreas, context.Evaluation.MissingSkills[0]);
+            AddInsight(validations, $"Probe production-level experience with {relatedRequired.Name} versus adjacent tooling.");
         }
 
-        if (focusAreas.Count == 0)
+        if (context.Job.MinimumYears.HasValue && context.Candidate.TotalExperienceMonths.HasValue)
         {
-            return "Shortlist looks reasonable based on the strongest required-skill alignment.";
+            var requiredMonths = context.Job.MinimumYears.Value * 12;
+            if (context.Candidate.TotalExperienceMonths.Value < requiredMonths)
+            {
+                AddInsight(validations, $"Verify scope and ownership from recent roles because evidence is below the {context.Job.MinimumYears.Value}-year requirement.");
+            }
         }
 
-        return CleanupInsightText($"Worth validating {JoinItems(focusAreas)} during interview.");
+        return [.. validations.Take(3)];
+    }
+
+    // Builds deterministic interview focus.
+    private static List<string> BuildDeterministicInterviewFocus(
+        CandidateEvaluationContext context,
+        IReadOnlyList<string> areasToValidate,
+        IReadOnlyList<string> potentialRisks)
+    {
+        List<string> focus = [];
+
+        var strongRequired = context.Evaluation.RequiredSkills
+            .Where(signal => signal.Level == CandidateEvaluationSignalLevels.Strong)
+            .Select(signal => signal.Name)
+            .Take(2)
+            .ToList();
+
+        if (strongRequired.Count > 0)
+        {
+            AddInsight(focus, $"Run a technical deep dive on {JoinItems(strongRequired)} using one recent project as proof of ownership.");
+        }
+
+        if (areasToValidate.Count > 0)
+        {
+            AddInsight(focus, "Use scenario questions to test architecture choices, trade-offs, and debugging approach in the flagged validation areas.");
+        }
+
+        if (potentialRisks.Count > 0)
+        {
+            AddInsight(focus, "Add a practical exercise to confirm delivery speed and quality in the highest-risk requirement gap.");
+        }
+
+        if (focus.Count == 0)
+        {
+            AddInsight(focus, "Use one end-to-end case study to confirm technical depth, collaboration, and delivery outcomes.");
+        }
+
+        return [.. focus.Take(4)];
     }
 
     // Handles looks like resume fragment.
@@ -859,29 +918,43 @@ public sealed partial class CandidateExplanationService(
     // Handles compose fallback text.
     private static string ComposeFallbackText(CandidateStructuredExplanation explanation)
     {
-        List<string> sections = [];
-
-        if (!string.IsNullOrWhiteSpace(explanation.Summary))
+        static string FormatBullets(IEnumerable<string> values, string emptyState)
         {
-            sections.Add(CleanupInsightText(explanation.Summary));
+            var cleaned = values
+                .Select(CleanupInsightText)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .ToList();
+
+            return cleaned.Count == 0
+                ? $"- {emptyState}"
+                : string.Join(Environment.NewLine, cleaned.Select(value => $"- {value}"));
         }
 
-        if (explanation.Strengths.Count > 0)
+        var overallFit = CleanupInsightText(explanation.OverallFit);
+        if (string.IsNullOrWhiteSpace(overallFit))
         {
-            sections.Add($"Strengths: {string.Join(" | ", explanation.Strengths.Select(CleanupInsightText))}");
+            overallFit = "Insufficient evidence to determine overall fit.";
         }
 
-        if (explanation.Gaps.Count > 0)
+        return string.Join(Environment.NewLine, new[]
         {
-            sections.Add($"Gaps: {string.Join(" | ", explanation.Gaps.Select(CleanupInsightText))}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(explanation.Recommendation))
-        {
-            sections.Add($"Notes: {CleanupInsightText(explanation.Recommendation)}");
-        }
-
-        return CleanupInsightText(string.Join(" ", sections));
+            "AI-Assisted Insight",
+            string.Empty,
+            "Overall Fit:",
+            overallFit,
+            string.Empty,
+            "Strengths:",
+            FormatBullets(explanation.Strengths, "No high-confidence strengths extracted."),
+            string.Empty,
+            "Areas to Validate:",
+            FormatBullets(explanation.AreasToValidate, "No specific validation checkpoints identified."),
+            string.Empty,
+            "Potential Risks:",
+            FormatBullets(explanation.PotentialRisks, "No explicit risk signals identified."),
+            string.Empty,
+            "Recommended Interview Focus:",
+            FormatBullets(explanation.RecommendedInterviewFocus, "Use one end-to-end case discussion to confirm fit.")
+        });
     }
 
     // Handles add insight.

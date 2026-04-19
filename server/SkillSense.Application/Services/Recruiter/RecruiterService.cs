@@ -863,8 +863,6 @@ public sealed class RecruiterService(
 
                         reservedHiresByJobId[context.Job.Id] = hiredCount + 1;
                     }
-
-                   
                     var normalizedNextStatus = NormalizeInitialStage(nextStatus, scoreById.GetValueOrDefault(submissionId));
 
                     context.Submission.Status = normalizedNextStatus;

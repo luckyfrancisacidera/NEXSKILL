@@ -67,33 +67,39 @@ internal static class GroqRequestOptimizer
 
     private static string BuildSystemPrompt() =>
         """
-        You write concise recruiter insights for ATS reviewers.
-        Return ONLY valid JSON with keys summary, strengths, risks, and recommendation.
-        Write like a human HR recruiter, not an AI system.
+        You write concise, decision-oriented recruiter insights for ATS reviewers.
+        Return ONLY valid JSON with keys overall_fit, strengths, areas_to_validate, potential_risks, and recommended_interview_focus.
+        Write in a professional recruiter tone.
         Use only the normalized evaluation data provided.
-        Do not copy or quote resume text.
-        Paraphrase capabilities into recruiter language.
-        strengths and risks must always be arrays, even when empty.
+        Do not copy or quote resume text verbatim.
+        Tie each point to job requirements versus candidate evidence.
+        Mention exact technologies when available (for example: ASP.NET Core, React, EF Core).
+        strengths, areas_to_validate, potential_risks, and recommended_interview_focus must always be arrays, even when empty.
         If no strengths are found, return "strengths": [].
-        If no risks are found, return "risks": [].
+        If no areas need validation, return "areas_to_validate": [].
+        If no risks are found, return "potential_risks": [].
+        If no interview focus is needed, return "recommended_interview_focus": [].
         Do not repeat phrases or restate the same reasoning.
-        Do not use ellipsis.
-        Keep each bullet short and clear.
-        Use at most 4 strengths and 3 risks.
+        Each section must add unique value.
+        Keep each bullet short, specific, and actionable.
+        Phrase gaps as risks, not assumptions.
+        Use at most 4 strengths, 3 areas_to_validate, 3 potential_risks, and 4 recommended_interview_focus bullets.
         Never mention internal scores, match reasons, or source paths.
         """;
 
     private static string BuildUserPrompt(string payloadJson) =>
         $$"""
-        Create a recruiter-friendly fit explanation for a shortlisted candidate.
-        Keep the full response under about 120 to 180 words.
-        Summary: 1 to 2 short sentences.
-        Strengths: 2 to 4 concise bullets.
-        Risks: 0 to 3 concise bullets.
-        Recommendation: 1 short recruiter-facing note.
+        Create a recruiter-friendly candidate insight using this exact structure:
+        - overall_fit: 1 to 2 sentences.
+        - strengths: 2 to 4 bullets tied to required or preferred skills.
+        - areas_to_validate: 1 to 3 bullets describing what to verify in interview.
+        - potential_risks: 0 to 3 bullets for missing skill/experience/education concerns.
+        - recommended_interview_focus: 2 to 4 concrete next-step bullets (questions or practical checks).
+        Keep the full response under about 140 to 210 words.
         Focus on the strongest required-skill evidence first.
         Use weak_signals and missing_skills for gaps.
-        Do not copy candidate wording.
+        Include years-of-experience gaps when minimum_years is not met or evidence is below requirement.
+        Avoid filler and generic statements such as "good fit" without evidence.
         Facts JSON:
         {{payloadJson}}
         """;

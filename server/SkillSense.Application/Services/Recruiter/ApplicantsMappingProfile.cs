@@ -1,4 +1,5 @@
 using AutoMapper;
+using System.Text.Json;
 using SkillSense.Application.Common.Mapping;
 using SkillSense.Application.Common.Recruiter;
 using SkillSense.Application.Contracts.Recruiter.Response;
@@ -32,8 +33,78 @@ public sealed class ApplicantsMappingProfile : Profile
         CreateMap<CandidateExplanationEntity, CandidateExplanationResponse>()
             .ForMember(dest => dest.Strengths, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.StrengthsJson)))
             .ForMember(dest => dest.Gaps, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)))
-            .ForMember(dest => dest.Risks, opt => opt.MapFrom(src => MappingJson.DeserializeStringList(src.GapsJson)))
-            .ForMember(dest => dest.Recommendation, opt => opt.MapFrom(src => src.Summary ?? src.ExplanationText));
+            .ForMember(dest => dest.AreasToValidate, opt => opt.MapFrom(src => CandidateExplanationStructuredMapper.ReadArray(src.StructuredDataJson, "areas_to_validate")))
+            .ForMember(dest => dest.RecommendedInterviewFocus, opt => opt.MapFrom(src => CandidateExplanationStructuredMapper.ReadArray(src.StructuredDataJson, "recommended_interview_focus")))
+            .ForMember(dest => dest.PotentialRisks, opt => opt.MapFrom(src => CandidateExplanationStructuredMapper.BuildPotentialRisks(src)))
+            .ForMember(dest => dest.Risks, opt => opt.MapFrom(src => CandidateExplanationStructuredMapper.BuildPotentialRisks(src)))
+            .ForMember(dest => dest.Recommendation, opt => opt.MapFrom(src => CandidateExplanationStructuredMapper.BuildRecommendation(src)));
+    }
+}
+
+internal static class CandidateExplanationStructuredMapper
+{
+    public static List<string> ReadArray(string? structuredDataJson, string propertyName)
+    {
+        var parsed = MappingJson.ParseJsonElement(structuredDataJson);
+        if (parsed is null)
+        {
+            return [];
+        }
+
+        var root = parsed.Value;
+        if (root.TryGetProperty("explanation", out var explanation)
+            && explanation.ValueKind == JsonValueKind.Object
+            && explanation.TryGetProperty(propertyName, out var nestedValue))
+        {
+            return ReadStringArray(nestedValue);
+        }
+
+        if (root.TryGetProperty(propertyName, out var directValue))
+        {
+            return ReadStringArray(directValue);
+        }
+
+        return [];
+    }
+
+    public static string BuildRecommendation(CandidateExplanationEntity source)
+    {
+        var focus = ReadArray(source.StructuredDataJson, "recommended_interview_focus");
+        if (focus.Count > 0)
+        {
+            return string.Join(" ", focus);
+        }
+
+        return source.Summary ?? source.ExplanationText;
+    }
+
+    public static List<string> BuildPotentialRisks(CandidateExplanationEntity source)
+    {
+        var risks = ReadArray(source.StructuredDataJson, "potential_risks");
+        if (risks.Count > 0)
+        {
+            return risks;
+        }
+
+        return MappingJson.DeserializeStringList(source.GapsJson);
+    }
+
+    private static List<string> ReadStringArray(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return
+        [
+            .. value.EnumerateArray()
+                .Where(item => item.ValueKind == JsonValueKind.String)
+                .Select(item => item.GetString())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Select(item => item!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+        ];
     }
 }
 
