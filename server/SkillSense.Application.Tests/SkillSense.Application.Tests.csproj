@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>CA1859;IDE0305;SYSLIB1045</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

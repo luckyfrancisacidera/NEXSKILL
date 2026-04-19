@@ -58,6 +58,14 @@ public sealed class CandidateExplanationServiceTests
         Assert.DoesNotContain("missing c#", explanationText, StringComparison.Ordinal);
         Assert.DoesNotContain("expertise in sql server", explanationText, StringComparison.Ordinal);
         Assert.DoesNotContain("postgresql and mysql database design for backend services", stored.StructuredDataJson, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ai-assisted insight", explanationText, StringComparison.Ordinal);
+        Assert.Contains("overall fit:", explanationText, StringComparison.Ordinal);
+        Assert.Contains("areas to validate:", explanationText, StringComparison.Ordinal);
+        Assert.Contains("potential risks:", explanationText, StringComparison.Ordinal);
+        Assert.Contains("recommended interview focus:", explanationText, StringComparison.Ordinal);
+        Assert.Contains("\"explanation\"", stored.StructuredDataJson, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"areas_to_validate\"", stored.StructuredDataJson, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"recommended_interview_focus\"", stored.StructuredDataJson, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(strengths, x => x.Contains("C#", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(strengths, x => x.Contains("REST APIs", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(gaps, x => x.Contains("SQL Server", StringComparison.OrdinalIgnoreCase));

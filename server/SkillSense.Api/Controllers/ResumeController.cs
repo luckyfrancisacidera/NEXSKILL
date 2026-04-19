@@ -12,29 +12,21 @@ namespace SkillSense.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ResumeController : ControllerBase
+    public class ResumeController(
+      IResumeUploadService uploadService,
+      IResumeReadService readService,
+      IResumeScoringService scoringService,
+      IResumeParserClient parserClient,
+      SkillSenseDbContext dbContext) : ControllerBase
     {
-        private readonly IResumeUploadService _uploadService;
-        private readonly IResumeReadService _readService;
-        private readonly IResumeScoringService _scoringService;
-        private readonly IResumeParserClient _parserClient;
-        private readonly SkillSenseDbContext _dbContext;
-
-        public ResumeController(
-          IResumeUploadService uploadService,
-          IResumeReadService readService,
-          IResumeScoringService scoringService,
-          IResumeParserClient parserClient,
-          SkillSenseDbContext dbContext)
-        {
-            _uploadService = uploadService;
-            _readService = readService;
-            _scoringService = scoringService;
-            _parserClient = parserClient;
-            _dbContext = dbContext;
-        }
+        private readonly IResumeUploadService _uploadService = uploadService;
+        private readonly IResumeReadService _readService = readService;
+        private readonly IResumeScoringService _scoringService = scoringService;
+        private readonly IResumeParserClient _parserClient = parserClient;
+        private readonly SkillSenseDbContext _dbContext = dbContext;
 
         // Uploads the requested file payload.
+
         [HttpPost("upload")]
         public async Task<ActionResult<ResumeUploadResponse>> Upload([FromForm] IFormFile file, [FromForm] Guid jobId, [FromForm] string appliedJobPosition, CancellationToken ct)
         {

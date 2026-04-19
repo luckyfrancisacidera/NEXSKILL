@@ -11,6 +11,13 @@ namespace SkillSense.Persistence.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Recruiters are represented by AppUser records with the Recruiter role.
+            // Keep IsActive defaulting to true at the DbContext level as a safety net.
+            modelBuilder.Entity<AppUser>()
+                .Property(user => user.IsActive)
+                .HasDefaultValue(true);
+
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
 

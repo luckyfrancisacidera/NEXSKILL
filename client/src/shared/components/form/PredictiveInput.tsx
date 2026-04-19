@@ -4,11 +4,27 @@ import { createPortal } from 'react-dom';
 
 import { recruiterInputClassName } from '@features/recruiter/components/recruiterForm.shared';
 
+const dedupeOptions = (values: string[]) => {
+  const seen = new Set<string>();
+
+  return values.filter((value) => {
+    const key = value.trim().toLowerCase();
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
 export interface PredictiveInputProps {
   id?: string;
   name?: string;
   placeholder: string;
   options: string[];
+  fetchOptions?: (query: string) => Promise<string[]>;
+  debounceMs?: number;
   className?: string;
   value?: string;
   defaultValue?: string;
@@ -37,6 +53,8 @@ export const PredictiveInput = ({
   name,
   placeholder,
   options,
+  fetchOptions,
+  debounceMs = 350,
   className,
   value,
   defaultValue = '',
@@ -55,6 +73,8 @@ export const PredictiveInput = ({
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [remoteOptions, setRemoteOptions] = useState<string[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const [position, setPosition] = useState<DropdownPosition | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const displayValue = isControlled ? value : internalValue;
@@ -65,14 +85,51 @@ export const PredictiveInput = ({
     }
   }, [defaultValue, isControlled]);
 
+  useEffect(() => {
+    if (!fetchOptions) {
+      setRemoteOptions([]);
+      return;
+    }
+
+    let isActive = true;
+    const normalized = displayValue.trim();
+
+    const timeoutId = window.setTimeout(async () => {
+      setIsFetching(true);
+      try {
+        const fetched = await fetchOptions(normalized);
+        if (!isActive) {
+          return;
+        }
+
+        setRemoteOptions(dedupeOptions(Array.isArray(fetched) ? fetched : []));
+      } catch {
+        if (isActive) {
+          setRemoteOptions([]);
+        }
+      } finally {
+        if (isActive) {
+          setIsFetching(false);
+        }
+      }
+    }, Math.max(0, debounceMs));
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [debounceMs, displayValue, fetchOptions]);
+
+  const availableOptions = useMemo(() => dedupeOptions([...options, ...remoteOptions]), [options, remoteOptions]);
+
   const suggestions = useMemo(() => {
     const normalized = displayValue.trim().toLowerCase();
     if (!normalized) {
-      return options;
+      return availableOptions;
     }
 
-    return options.filter((option) => option.toLowerCase().includes(normalized));
-  }, [displayValue, options]);
+    return availableOptions.filter((option) => option.toLowerCase().includes(normalized));
+  }, [availableOptions, displayValue]);
 
   const updateDropdownPosition = () => {
     const input = inputRef.current;
@@ -127,7 +184,8 @@ export const PredictiveInput = ({
     setActiveIndex(-1);
   };
 
-  const showDropdown = isOpen && (loading || suggestions.length > 0 || Boolean(displayValue.trim()));
+  const isLoading = loading || isFetching;
+  const showDropdown = isOpen && (isLoading || suggestions.length > 0 || Boolean(displayValue.trim()));
 
   return (
     <div className="relative mt-1">
@@ -164,7 +222,7 @@ export const PredictiveInput = ({
             return;
           }
 
-          if (!showDropdown || loading || suggestions.length === 0) {
+          if (!showDropdown || isLoading || suggestions.length === 0) {
             return;
           }
 
@@ -200,7 +258,7 @@ export const PredictiveInput = ({
                 width: position.width,
               }}
             >
-              {loading ? (
+              {isLoading ? (
                 <div className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">Loading suggestions...</div>
               ) : suggestions.length > 0 ? (
                 <ul>

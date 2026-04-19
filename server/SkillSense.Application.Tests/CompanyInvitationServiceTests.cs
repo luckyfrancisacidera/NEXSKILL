@@ -122,7 +122,7 @@ public sealed class CompanyInvitationServiceTests
             },
         };
 
-        var token = "plain-text-invitation-token";
+        const string token = "plain-text-invitation-token";
         var invitation = new CompanyInvitationEntity
         {
             Id = Guid.NewGuid(),

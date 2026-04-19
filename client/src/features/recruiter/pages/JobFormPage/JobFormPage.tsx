@@ -10,7 +10,7 @@
  * - Field names are intentionally aligned with the existing action payload contract.
  * - Predictive inputs keep their own local state so the browser submits the visible value.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Form, Link, useActionData, useLoaderData, useNavigation } from 'react-router-dom';
 import {
   BriefcaseBusiness,
@@ -29,13 +29,61 @@ import { Card } from '@shared/components/data-display/Card';
 import { Dropdown, type DropdownOption } from '@shared/components/form';
 import { PredictiveInput } from '@shared/components/form/PredictiveInput';
 import { RichTextField } from '@shared/components/form/RichTextField';
+import { http } from '@shared/api/http';
 import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
 
 const departments = ['Engineering', 'Product', 'Design', 'Marketing', 'Operations', 'Sales'];
 const titles = ['Software Engineer', 'Frontend Engineer', 'Backend Engineer', 'Full Stack Engineer', 'Product Manager'];
 const currencies = ['PHP', 'USD', 'SGD', 'EUR'];
 const experienceLevels = ['Entry', 'Mid', 'Senior', 'Lead'];
-const educationLevels = ['High School', 'Diploma', "Bachelor's Degree", "Master's Degree", 'PhD'];
+const educationLevels = [
+  'High School',
+  'GED',
+  'Diploma',
+  'Vocational Certificate',
+  "Associate's Degree",
+  "Bachelor's Degree",
+  "Master's Degree",
+  'MBA',
+  'PhD',
+  'Doctorate',
+];
+
+const dedupeEducationLevels = (values: string[]) => {
+  const seen = new Set<string>();
+
+  return values.filter((value) => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) {
+      return false;
+    }
+
+    seen.add(normalized);
+    return true;
+  });
+};
+
+const parseEducationLevelsResponse = (payload: unknown): string[] => {
+  if (Array.isArray(payload)) {
+    return payload.filter((item): item is string => typeof item === 'string');
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const record = payload as Record<string, unknown>;
+  const candidateKeys = ['data', 'items', 'results', 'educationLevels', 'education_levels'];
+
+  for (const key of candidateKeys) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value.filter((item): item is string => typeof item === 'string');
+    }
+  }
+
+  return [];
+};
 
 type JobFormMode = 'create' | 'edit';
 
@@ -123,6 +171,28 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   const [minimumEducation, setMinimumEducation] = useState(String(job?.min_education ?? ''));
   const [status, setStatus] = useState(String(job?.status ?? 'Draft'));
   const [editorErrors, setEditorErrors] = useState<{ description?: string; responsibilities?: string }>({});
+
+  const getEducationSuggestions = useCallback(async (query: string) => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const fallbackSuggestions = educationLevels.filter((level) =>
+      level.toLowerCase().includes(normalizedQuery),
+    );
+
+    try {
+      const response = await http.get<unknown>('/api/education-levels', {
+        params: normalizedQuery ? { q: normalizedQuery } : undefined,
+      });
+
+      const apiSuggestions = parseEducationLevelsResponse(response.data);
+      const merged = dedupeEducationLevels([...apiSuggestions, ...fallbackSuggestions, ...educationLevels]);
+
+      return normalizedQuery
+        ? merged.filter((level) => level.toLowerCase().includes(normalizedQuery))
+        : merged;
+    } catch {
+      return fallbackSuggestions.length > 0 ? fallbackSuggestions : educationLevels;
+    }
+  }, []);
 
   useEffect(() => {
     setDescription(getEditorValue(job?.description));
@@ -304,16 +374,21 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                 onChange={(event) => setExperienceLevel(event.target.value)}
               />
               <RecruiterInputField id="minimum-years" type="number" name="min_years" defaultValue={String(job?.min_years ?? '')} label="Minimum Years" className={jobFormInputClassName} />
-              <Dropdown
-                id="education"
-                name="education"
-                label="Education"
-                value={education}
-                options={educationOptions}
-                compactOnMobile={false}
-                buttonClassName="h-11"
-                onChange={(event) => setEducation(event.target.value)}
-              />
+              <div className="min-w-0">
+                <RecruiterFieldLabel htmlFor="education">Education</RecruiterFieldLabel>
+                <PredictiveInput
+                  id="education"
+                  name="education"
+                  placeholder="Type or select education"
+                  options={educationLevels}
+                  fetchOptions={getEducationSuggestions}
+                  debounceMs={400}
+                  value={education}
+                  onChange={setEducation}
+                  emptyState="No matching education found. You can keep typing your own entry."
+                  className={jobFormInputClassName}
+                />
+              </div>
               <Dropdown
                 id="minimum-education"
                 name="min_education"
