@@ -45,7 +45,6 @@ public static class DatabaseStartupExtensions
             }
 
             await SeedIdentityAsync(scope.ServiceProvider, logger, configuration, environment);
-            await RemediateLegacySeedAccountsAsync(scope.ServiceProvider, logger, configuration, environment);
         }
         catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.DuplicateTable || ex.SqlState == PostgresErrorCodes.DuplicateColumn)
         {
@@ -54,7 +53,6 @@ public static class DatabaseStartupExtensions
                 "This usually means the schema already contains objects without matching migration history.");
 
             await SeedIdentityAsync(scope.ServiceProvider, logger, configuration, environment);
-            await RemediateLegacySeedAccountsAsync(scope.ServiceProvider, logger, configuration, environment);
         }
     }
 

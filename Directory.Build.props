@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Avoid NU1900 when nuget.org vulnerability feed is unreachable in restricted/offline environments. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+</Project>
