@@ -1,4 +1,4 @@
-# NEXSKILL Deployment Notes
+# NEXSKILL Deployment Notes for Production
 
 ## Architecture
 - `client`: React 19 + Vite frontend, served as static assets by Nginx in Docker.
