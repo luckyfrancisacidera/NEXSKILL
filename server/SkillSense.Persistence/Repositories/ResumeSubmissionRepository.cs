@@ -75,6 +75,15 @@ public sealed class ResumeSubmissionRepository(SkillSenseDbContext dbContext) : 
                 && (x.Status != ResumeSubmissionStatus.Failed || x.NextRetryAtUtc != null),
             ct);
 
+    public Task<ResumeSubmissionEntity?> GetActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+        => dbContext.ResumeSubmissions
+            .AsNoTracking()
+            .Where(x => x.JobId == jobId
+                && x.JobSeekerUserId == jobSeekerUserId
+                && (x.Status != ResumeSubmissionStatus.Failed || x.NextRetryAtUtc != null))
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => dbContext.SaveChangesAsync(ct);
 

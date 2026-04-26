@@ -12,6 +12,61 @@ namespace SkillSense.Application.Tests;
 public sealed class JobSeekerServiceTests
 {
     [Fact]
+    public async Task ApplyAsync_WhenApplicationAlreadyExists_ReturnsExistingSubmissionWithoutThrowing()
+    {
+        var userId = Guid.NewGuid();
+        var jobId = Guid.NewGuid();
+        var existingSubmissionId = Guid.NewGuid();
+
+        var repository = new StubJobSeekerRepository
+        {
+            PublishedJob = new JobEntity
+            {
+                Id = jobId,
+                CompanyId = Guid.NewGuid(),
+                RecruiterId = Guid.NewGuid(),
+                Title = "Backend Engineer",
+                Description = "Build APIs",
+                ResponsibilitiesText = "Build APIs",
+                RequiredSkillsJson = "[]",
+                PreferredSkillsJson = "[]",
+                CreatedAtUtc = DateTime.UtcNow,
+            },
+        };
+
+        var resumeUploadService = new StubResumeUploadService
+        {
+            HasActiveApplication = true,
+            ExistingResponse = new ResumeUploadResponse
+            {
+                SubmissionId = existingSubmissionId,
+                Status = ResumeSubmissionStatus.Pending.ToString(),
+                Message = "Application already submitted and is being processed.",
+            },
+        };
+
+        var service = CreateService(repository, resumeUploadService: resumeUploadService);
+
+        var response = await service.ApplyAsync(
+            jobId,
+            new SkillSense.Application.Contracts.Jobseeker.Request.ApplyToJobRequest
+            {
+                FullName = "Jane Doe",
+                Email = "jane@example.com",
+                PostalCode = "1000",
+                Location = "Manila",
+            },
+            new MemoryStream([1, 2, 3]),
+            "resume.pdf",
+            "application/pdf",
+            userId,
+            CancellationToken.None);
+
+        Assert.Equal(existingSubmissionId, response.SubmissionId);
+        Assert.Equal(0, resumeUploadService.EnqueueCalls);
+    }
+
+    [Fact]
     public async Task WithdrawApplicationAsync_RejectsHiredApplications()
     {
         var userId = Guid.NewGuid();
@@ -173,16 +228,18 @@ public sealed class JobSeekerServiceTests
 
     private static JobSeekerService CreateService(
         StubJobSeekerRepository repository,
-        DateTime? utcNow = null)
+        DateTime? utcNow = null,
+        IResumeUploadService? resumeUploadService = null)
         => new(
             repository,
-            new NoOpResumeUploadService(),
+            resumeUploadService ?? new NoOpResumeUploadService(),
             new NoOpCacheService(),
             new StubDateTimeProvider(utcNow ?? new DateTime(2026, 3, 26, 0, 0, 0, DateTimeKind.Utc)),
             new NoOpNotificationService());
 
     private sealed class StubJobSeekerRepository : IJobSeekerRepository
     {
+        public JobEntity? PublishedJob { get; set; }
         public ResumeSubmissionEntity? VisibleApplicationEntity { get; set; }
         public ResumeSubmissionEntity? ArchivedApplicationEntity { get; set; }
         public JobOfferEntity? LatestOffer { get; set; }
@@ -194,7 +251,7 @@ public sealed class JobSeekerServiceTests
             => throw new NotImplementedException();
 
         public Task<JobEntity?> GetPublishedJobByIdAsync(Guid id, CancellationToken ct = default)
-            => throw new NotImplementedException();
+            => Task.FromResult(PublishedJob);
 
         public Task<PagedData<ApplicationListItemData>> GetApplicationsByUserAsync(Guid userId, int pageNumber, int pageSize, string? search, string? status, DateTime? startDate, DateTime? endDate, bool archivedOnly = false, CancellationToken ct = default)
             => throw new NotImplementedException();
@@ -267,6 +324,28 @@ public sealed class JobSeekerServiceTests
 
         public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
             => Task.FromResult(false);
+
+        public Task<ResumeUploadResponse?> GetActiveApplicationResponseAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult<ResumeUploadResponse?>(null);
+    }
+
+    private sealed class StubResumeUploadService : IResumeUploadService
+    {
+        public bool HasActiveApplication { get; set; }
+        public ResumeUploadResponse? ExistingResponse { get; set; }
+        public int EnqueueCalls { get; private set; }
+
+        public Task<ResumeUploadResponse> EnqueueUploadAsync(Stream fileStream, string fileName, string contentType, Guid jobId, string appliedJobPosition, Guid companyId = default, string? fullName = null, string? email = null, string? postalCode = null, string? location = null, Guid? jobSeekerUserId = null, CancellationToken ct = default)
+        {
+            EnqueueCalls++;
+            return Task.FromResult(new ResumeUploadResponse { SubmissionId = Guid.NewGuid(), Status = ResumeSubmissionStatus.Pending.ToString(), Message = "queued" });
+        }
+
+        public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult(HasActiveApplication);
+
+        public Task<ResumeUploadResponse?> GetActiveApplicationResponseAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult(ExistingResponse);
     }
 
     private sealed class NoOpCacheService : IAppCacheService

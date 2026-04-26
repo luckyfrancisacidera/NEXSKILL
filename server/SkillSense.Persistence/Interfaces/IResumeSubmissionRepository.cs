@@ -12,6 +12,7 @@ namespace SkillSense.Persistence.Interfaces
         Task<ResumeSubmissionEntity?> GetNextPendingAsync(CancellationToken ct = default);
         Task<List<ResumeSubmissionEntity>> ClaimProcessableBatchAsync(int batchSize, DateTime utcNow, int maxRetryAttempts, CancellationToken ct = default);
         Task<bool> ExistsActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
+        Task<ResumeSubmissionEntity?> GetActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
         Task SaveChangesAsync(CancellationToken ct = default);
     }
 }

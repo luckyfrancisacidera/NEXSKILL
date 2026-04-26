@@ -69,4 +69,20 @@ public sealed class ResumeUploadService(
     // Determines whether active application.
     public Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
         => resumeSubmissionRepository.ExistsActiveApplicationAsync(jobId, jobSeekerUserId, ct);
+
+    public async Task<ResumeUploadResponse?> GetActiveApplicationResponseAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+    {
+        var existing = await resumeSubmissionRepository.GetActiveApplicationAsync(jobId, jobSeekerUserId, ct);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        return new ResumeUploadResponse
+        {
+            SubmissionId = existing.Id,
+            Status = existing.Status.ToString(),
+            Message = "Application already submitted and is being processed.",
+        };
+    }
 }

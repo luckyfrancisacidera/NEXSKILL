@@ -49,6 +49,12 @@ public sealed class ResumeProcessingHealthCheck(
 
         if (snapshot.HasActiveFailure)
         {
+            if (IsRateLimitFailure(snapshot))
+            {
+                return Task.FromResult(HealthCheckResult.Degraded(
+                    $"Resume processing worker is rate limited. SubmissionId={snapshot.LastFailedSubmissionId}, Stage={snapshot.LastFailureStage ?? "unknown"}, LastFailureUtc={snapshot.LastFailureUtc:O}, Error={snapshot.LastFailureMessage ?? "No error message provided"}"));
+            }
+
             return Task.FromResult(HealthCheckResult.Unhealthy(
                 $"Resume processing worker reported an active failure. SubmissionId={snapshot.LastFailedSubmissionId}, Stage={snapshot.LastFailureStage ?? "unknown"}, LastFailureUtc={snapshot.LastFailureUtc:O}, Error={snapshot.LastFailureMessage ?? "No error message provided"}"));
         }
@@ -67,4 +73,18 @@ public sealed class ResumeProcessingHealthCheck(
         => TimeSpan.FromTicks(Math.Max(
             ActiveProcessingTimeoutFloor.Ticks,
             Math.Max(_workerOptions.IdleTimeout.Ticks, heartbeatTolerance.Ticks)));
+
+    private static bool IsRateLimitFailure(ResumeProcessingMonitorSnapshot snapshot)
+    {
+        if (string.IsNullOrWhiteSpace(snapshot.LastFailureMessage))
+        {
+            return false;
+        }
+
+        var message = snapshot.LastFailureMessage;
+        return message.Contains("429", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("too many requests", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("rate limit", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("rate limited", StringComparison.OrdinalIgnoreCase);
+    }
 }

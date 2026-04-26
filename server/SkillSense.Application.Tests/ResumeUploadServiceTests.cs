@@ -72,6 +72,7 @@ public sealed class ResumeUploadServiceTests
         public Task AddAsync(ResumeSubmissionEntity submission, CancellationToken ct = default) => Task.CompletedTask;
         public Task<List<ResumeSubmissionEntity>> ClaimProcessableBatchAsync(int batchSize, DateTime utcNow, int maxRetryAttempts, CancellationToken ct = default) => Task.FromResult(new List<ResumeSubmissionEntity>());
         public Task<bool> ExistsActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default) => Task.FromResult(false);
+        public Task<ResumeSubmissionEntity?> GetActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default) => Task.FromResult<ResumeSubmissionEntity?>(null);
         public Task<ResumeSubmissionEntity?> GetByIdAsync(Guid submissionId, CancellationToken ct = default) => Task.FromResult<ResumeSubmissionEntity?>(null);
         public Task<ResumeSubmissionEntity?> GetNextPendingAsync(CancellationToken ct = default) => Task.FromResult<ResumeSubmissionEntity?>(null);
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;

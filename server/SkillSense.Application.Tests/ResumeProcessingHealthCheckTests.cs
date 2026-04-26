@@ -66,6 +66,34 @@ public sealed class ResumeProcessingHealthCheckTests
     }
 
     [Fact]
+    public async Task RateLimitFailure_IsReportedAsDegraded()
+    {
+        var submissionId = Guid.NewGuid();
+        var monitor = new StubResumeProcessingMonitor(new ResumeProcessingMonitorSnapshot(
+            StartedAtUtc: DateTimeOffset.UtcNow.AddHours(-1),
+            LastWorkerHeartbeatUtc: DateTimeOffset.UtcNow,
+            IsProcessing: false,
+            CurrentSubmissionId: null,
+            CurrentStage: null,
+            CurrentStageStartedUtc: null,
+            LastSuccessfulSubmissionUtc: null,
+            LastSuccessfulSubmissionId: null,
+            LastFailureUtc: DateTimeOffset.UtcNow,
+            LastFailedSubmissionId: submissionId,
+            LastFailureStage: "parse",
+            LastFailureMessage: "Resume parser rate limited the request: 429 Too Many Requests",
+            HasActiveFailure: true,
+            ConsecutiveFailureCount: 1));
+
+        var healthCheck = CreateHealthCheck(monitor);
+
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext());
+
+        Assert.Equal(HealthStatus.Degraded, result.Status);
+        Assert.Contains("rate limited", result.Description, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task SubmissionLaterSucceeds_HealthRecovers()
     {
         var failedSubmissionId = Guid.NewGuid();

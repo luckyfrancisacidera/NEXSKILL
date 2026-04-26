@@ -10,8 +10,8 @@
  * - Field names are intentionally aligned with the existing action payload contract.
  * - Predictive inputs keep their own local state so the browser submits the visible value.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { Form, Link, useActionData, useLoaderData, useNavigation } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Form, Link, useActionData, useBlocker, useLoaderData, useNavigation } from 'react-router-dom';
 import {
   BriefcaseBusiness,
   Building2,
@@ -29,6 +29,7 @@ import { Card } from '@shared/components/data-display/Card';
 import { Dropdown, type DropdownOption } from '@shared/components/form';
 import { PredictiveInput } from '@shared/components/form/PredictiveInput';
 import { RichTextField } from '@shared/components/form/RichTextField';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
 import { http } from '@shared/api/http';
 import { arrayToRichTextList, plainTextToRichText, stripRichText } from '@shared/utils/richText';
 
@@ -159,7 +160,14 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
   const loaderData = useLoaderData() as JobFormLoaderData;
   const job = loaderData.job;
   const navigation = useNavigation();
+  const confirm = useConfirmation();
   const isSaving = navigation.state === 'submitting';
+  const [isDirty, setIsDirty] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const pendingNavigationTargetRef = useRef<string | null>(null);
+  const confirmationInFlightRef = useRef(false);
+  const wasSubmittingRef = useRef(false);
+  const blocker = useBlocker(isDirty && !isSaving);
   const [description, setDescription] = useState(getEditorValue(job?.description));
   const [responsibilities, setResponsibilities] = useState(getEditorValue(job?.responsibilities, true));
   const [benefits, setBenefits] = useState(getEditorValue(job?.benefits));
@@ -208,6 +216,69 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
     setEditorErrors({});
   }, [job?.benefits, job?.currency, job?.description, job?.education, job?.employment_type, job?.experience_level, job?.min_education, job?.responsibilities, job?.status, job?.work_setup]);
 
+  useEffect(() => {
+    if (!isDirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
+
+  useEffect(() => {
+    if (navigation.state === 'submitting') {
+      wasSubmittingRef.current = true;
+      return;
+    }
+
+    if (navigation.state !== 'idle' || !wasSubmittingRef.current) {
+      return;
+    }
+
+    wasSubmittingRef.current = false;
+    if (submitAttempted && !actionData?.error) {
+      setIsDirty(false);
+    }
+    setSubmitAttempted(false);
+  }, [actionData?.error, navigation.state, submitAttempted]);
+
+  useEffect(() => {
+    if (blocker.state !== 'blocked' || confirmationInFlightRef.current) {
+      return;
+    }
+
+    confirmationInFlightRef.current = true;
+    const nextLocation = blocker.location;
+    pendingNavigationTargetRef.current = `${nextLocation.pathname}${nextLocation.search}${nextLocation.hash}`;
+
+    void (async () => {
+      const shouldLeave = await confirm({
+        title: 'Unsaved changes',
+        message: 'You have unsaved changes. Do you really want to leave this page?',
+        confirmLabel: 'Leave',
+        cancelLabel: 'Stay',
+        accent: 'red',
+      });
+
+      if (shouldLeave && pendingNavigationTargetRef.current) {
+        setIsDirty(false);
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+
+      pendingNavigationTargetRef.current = null;
+      confirmationInFlightRef.current = false;
+    })();
+  }, [blocker, confirm]);
+
   return (
     <div className="space-y-6">
       <Card className="border border-zinc-200 dark:border-zinc-800 bg-linear-to-br from-white via-violet-50/30 to-white dark:from-zinc-950 dark:via-zinc-950/20 dark:to-zinc-950 p-0 shadow-sm">
@@ -230,6 +301,11 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
         <Form
           method="post"
           className="space-y-6 px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6"
+          onChangeCapture={() => {
+            if (!isDirty) {
+              setIsDirty(true);
+            }
+          }}
           onSubmit={(event) => {
             const nextErrors: { description?: string; responsibilities?: string } = {};
 
@@ -244,7 +320,10 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
             setEditorErrors(nextErrors);
             if (Object.keys(nextErrors).length > 0) {
               event.preventDefault();
+              return;
             }
+
+            setSubmitAttempted(true);
           }}
         >
           {actionData?.error ? (
@@ -336,6 +415,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                 value={description}
                 onChange={(value) => {
                   setDescription(value);
+                  setIsDirty(true);
                   setEditorErrors((current) => ({ ...current, description: undefined }));
                 }}
                 placeholder="Describe the role, team, and impact."
@@ -349,6 +429,7 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                 value={responsibilities}
                 onChange={(value) => {
                   setResponsibilities(value);
+                  setIsDirty(true);
                   setEditorErrors((current) => ({ ...current, responsibilities: undefined }));
                 }}
                 placeholder="List role responsibilities"
@@ -408,7 +489,10 @@ export const JobFormPage = ({ mode }: JobFormPageProps) => {
                 label="Benefits"
                 name="benefits"
                 value={benefits}
-                onChange={setBenefits}
+                onChange={(value) => {
+                  setBenefits(value);
+                  setIsDirty(true);
+                }}
                 placeholder="Healthcare, flexible hours, leave credits"
                 helperText="Add a short list of benefits or perks candidates should notice quickly."
                 minHeightClassName="min-h-[150px]"
