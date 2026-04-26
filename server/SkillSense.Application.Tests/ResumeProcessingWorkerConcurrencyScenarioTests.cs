@@ -283,6 +283,9 @@ public sealed partial class ResumeProcessingWorkerConcurrencyScenarioTests
         public Task<bool> ExistsActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
             => Task.FromResult(false);
 
+        public Task<ResumeSubmissionEntity?> GetActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult<ResumeSubmissionEntity?>(null);
+
         public Task SaveChangesAsync(CancellationToken ct = default)
             => Task.CompletedTask;
     }

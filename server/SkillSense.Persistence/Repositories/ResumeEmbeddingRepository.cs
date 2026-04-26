@@ -22,6 +22,18 @@ public sealed class ResumeEmbeddingRepository(SkillSenseDbContext dbContext) : I
         }
     }
 
+    public async Task DeleteBySubmissionIdAsync(Guid submissionId, bool saveChanges = true, CancellationToken ct = default)
+    {
+        await dbContext.ResumeEmbeddings
+            .Where(x => x.ResumeSubmissionId == submissionId)
+            .ExecuteDeleteAsync(ct);
+
+        if (saveChanges)
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+    }
+
     public Task<List<ResumeEmbeddingEntity>> GetBySubmissionIdAsync(Guid submissionId, CancellationToken ct = default)
         => dbContext.ResumeEmbeddings
             .Where(x => x.ResumeSubmissionId == submissionId)

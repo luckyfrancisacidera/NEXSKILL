@@ -18,4 +18,5 @@ public interface IResumeUploadService
         Guid? jobSeekerUserId = null,
         CancellationToken ct = default);
     Task<bool> HasActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
+    Task<ResumeUploadResponse?> GetActiveApplicationResponseAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default);
 }

@@ -66,6 +66,46 @@ public sealed class ResumeProcessingServiceTests
         Assert.Equal("parse", snapshot.LastFailureStage);
     }
 
+    [Fact]
+    public async Task ProcessPendingBatchAsync_WhenRetryAfterIsProvided_UsesThatDelay()
+    {
+        var submission = CreateSubmission();
+        var repository = new RecordingResumeSubmissionRepository([submission]);
+        var monitor = new ResumeProcessingMonitor();
+        var service = CreateService(
+            repository,
+            new RateLimitedResumeParserClient(TimeSpan.FromMinutes(10)),
+            monitor,
+            maxRetryAttempts: 5);
+
+        var processedCount = await service.ProcessPendingBatchAsync(1, CancellationToken.None);
+
+        Assert.Equal(1, processedCount);
+        Assert.NotNull(submission.NextRetryAtUtc);
+        Assert.True(submission.NextRetryAtUtc > DateTime.UtcNow.AddMinutes(9));
+    }
+
+    [Fact]
+    public async Task ProcessPendingBatchAsync_AfterThreeFailures_AppliesFiveMinuteMinimumDelay()
+    {
+        var submission = CreateSubmission();
+        submission.RetryCount = 3;
+
+        var repository = new RecordingResumeSubmissionRepository([submission]);
+        var monitor = new ResumeProcessingMonitor();
+        var service = CreateService(
+            repository,
+            new RateLimitedResumeParserClient(),
+            monitor,
+            maxRetryAttempts: 5);
+
+        var processedCount = await service.ProcessPendingBatchAsync(1, CancellationToken.None);
+
+        Assert.Equal(1, processedCount);
+        Assert.NotNull(submission.NextRetryAtUtc);
+        Assert.True(submission.NextRetryAtUtc > DateTime.UtcNow.AddMinutes(4));
+    }
+
     private static ResumeProcessingService CreateService(
         IResumeSubmissionRepository repository,
         IResumeParserClient parserClient,
@@ -114,6 +154,9 @@ public sealed class ResumeProcessingServiceTests
         public Task<bool> ExistsActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
             => Task.FromResult(false);
 
+        public Task<ResumeSubmissionEntity?> GetActiveApplicationAsync(Guid jobId, Guid jobSeekerUserId, CancellationToken ct = default)
+            => Task.FromResult<ResumeSubmissionEntity?>(null);
+
         public Task<ResumeSubmissionEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
             => Task.FromResult(batch.FirstOrDefault(x => x.Id == id));
 
@@ -160,7 +203,7 @@ public sealed class ResumeProcessingServiceTests
         public IQueryable<JobEntity> Query() => Array.Empty<JobEntity>().AsQueryable();
     }
 
-    private sealed class RateLimitedResumeParserClient : IResumeParserClient
+    private sealed class RateLimitedResumeParserClient(TimeSpan? retryAfter = null) : IResumeParserClient
     {
         public Task<SkillSense.Application.Contracts.Response.ResumeParseEnvelope> ParseAsync(
             Stream fileStream,
@@ -168,17 +211,19 @@ public sealed class ResumeProcessingServiceTests
             string contentType,
             string? parserVersion = null,
             CancellationToken ct = default)
-            => throw new ResumeParserRateLimitException("Resume parser rate limited the request: Too Many Requests");
+            => throw new ResumeParserRateLimitException("Resume parser rate limited the request: Too Many Requests", retryAfter);
     }
 
     private sealed class NoOpResumeScoreRepository : IResumeScoreRepository
     {
         public Task AddAsync(ResumeScoreEntity score, bool saveChanges = true, CancellationToken ct = default) => Task.CompletedTask;
+        public Task DeleteBySubmissionIdAsync(Guid submissionId, bool saveChanges = true, CancellationToken ct = default) => Task.CompletedTask;
     }
 
     private sealed class NoOpResumeEmbeddingRepository : IResumeEmbeddingRepository
     {
         public Task AddRangeAsync(IEnumerable<ResumeEmbeddingEntity> embeddings, bool saveChanges = true, CancellationToken ct = default) => Task.CompletedTask;
+        public Task DeleteBySubmissionIdAsync(Guid submissionId, bool saveChanges = true, CancellationToken ct = default) => Task.CompletedTask;
         public Task<List<ResumeEmbeddingEntity>> GetBySubmissionIdAsync(Guid submissionId, CancellationToken ct = default) => Task.FromResult(new List<ResumeEmbeddingEntity>());
     }
 

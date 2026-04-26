@@ -55,7 +55,11 @@ namespace SkillSense.Application.Services.Jobseeker
             if (jobSeekerUserId.HasValue
                 && await resumeUploadService.HasActiveApplicationAsync(jobId, jobSeekerUserId.Value, ct))
             {
-                throw new InvalidOperationException("You have already applied to this job.");
+                var existing = await resumeUploadService.GetActiveApplicationResponseAsync(jobId, jobSeekerUserId.Value, ct);
+                if (existing is not null)
+                {
+                    return existing;
+                }
             }
 
             var response = await resumeUploadService.EnqueueUploadAsync(fileStream, fileName, contentType, jobId, job.Title, companyId: job.CompanyId, fullName: request.FullName, email: request.Email, postalCode: request.PostalCode, location: request.Location, jobSeekerUserId: jobSeekerUserId, ct: ct);

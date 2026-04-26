@@ -19,7 +19,7 @@ public sealed class ResumeParserHealthCheck(IHttpClientFactory httpClientFactory
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                return HealthCheckResult.Healthy("Resume parser readiness is being rate limited, but the service is reachable.");
+                return HealthCheckResult.Degraded("Resume parser readiness is being rate limited (429), but the service is reachable.");
             }
 
             return HealthCheckResult.Unhealthy($"Resume parser readiness returned {(int)response.StatusCode}.");

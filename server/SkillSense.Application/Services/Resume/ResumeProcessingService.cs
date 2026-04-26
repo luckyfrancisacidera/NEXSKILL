@@ -33,6 +33,10 @@ public sealed class ResumeProcessingService(
     ILogger<ResumeProcessingService> logger,
     IResumeProcessingTelemetry? processingTelemetry = null) : IResumeProcessingService
 {
+    private const int SlowLaneRetryThreshold = 4;
+    private static readonly TimeSpan PostThreeFailuresDelay = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan MinimumRetryDelay = TimeSpan.FromSeconds(1);
+
     private readonly ResumeProcessingOptions _processingOptions = processingOptions.Value;
 
     /// <summary>
@@ -79,6 +83,16 @@ public sealed class ResumeProcessingService(
     // Processes submission.
     private async Task ProcessSubmissionAsync(ResumeSubmissionEntity submission, CancellationToken ct)
     {
+        if (IsAlreadyCompletedSubmission(submission.Status))
+        {
+            logger.LogInformation(
+                "Skipping already-processed resume submission {SubmissionId}. CurrentStatus={Status}",
+                submission.Id,
+                submission.Status);
+            processingMonitor.RecordSubmissionSucceeded(submission.Id);
+            return;
+        }
+
         var startedAtUtc = DateTimeOffset.UtcNow;
         var pipelineThreadId = Environment.CurrentManagedThreadId;
         var pipelineTaskId = Task.CurrentId;
@@ -125,11 +139,25 @@ public sealed class ResumeProcessingService(
             processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var parseStartedAtUtc = DateTimeOffset.UtcNow;
             var parseTimer = global::System.Diagnostics.Stopwatch.StartNew();
-            await using var fileStream = await objectStorageService.DownloadAsync(submission.BlobObjectKey, ct);
-            var parserVersion = Environment.GetEnvironmentVariable("DEFAULT_PARSER_VERSION");
-            var parsedEnvelope = await parserClient.ParseAsync(fileStream, submission.FileName, submission.ContentType, parserVersion, ct);
-            var parsed = parsedEnvelope.ParsedResume;
-            submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
+            ParsedResume parsed;
+            string? parsedVersionForLog = null;
+            if (TryDeserializeParsedResume(submission.ParsedResumeJson, out var existingParsedResume))
+            {
+                parsed = existingParsedResume;
+                logger.LogInformation(
+                    "Resume submission {SubmissionId} reusing existing parsed payload for idempotent retry.",
+                    submission.Id);
+            }
+            else
+            {
+                await using var fileStream = await objectStorageService.DownloadAsync(submission.BlobObjectKey, ct);
+                var parserVersion = Environment.GetEnvironmentVariable("DEFAULT_PARSER_VERSION");
+                var parsedEnvelope = await parserClient.ParseAsync(fileStream, submission.FileName, submission.ContentType, parserVersion, ct);
+                parsed = parsedEnvelope.ParsedResume;
+                parsedVersionForLog = parsedEnvelope.ParserVersion;
+                submission.ParsedResumeJson = JsonSerializer.Serialize(parsed);
+            }
+
             parseTimer.Stop();
             parseElapsedMs = parseTimer.ElapsedMilliseconds;
             if (logger.IsEnabled(LogLevel.Information))
@@ -140,7 +168,7 @@ public sealed class ResumeProcessingService(
                     parseTimer.ElapsedMilliseconds,
                     parseStartedAtUtc,
                     DateTimeOffset.UtcNow,
-                    parsedEnvelope.ParserVersion,
+                        parsedVersionForLog,
                     Environment.CurrentManagedThreadId,
                     Task.CurrentId);
             }
@@ -169,6 +197,9 @@ public sealed class ResumeProcessingService(
             processingMonitor.RecordSubmissionStage(submission.Id, stage);
             var persistStartedAtUtc = DateTimeOffset.UtcNow;
             var persistTimer = global::System.Diagnostics.Stopwatch.StartNew();
+            await resumeEmbeddingRepository.DeleteBySubmissionIdAsync(submission.Id, saveChanges: false, ct);
+            await resumeScoreRepository.DeleteBySubmissionIdAsync(submission.Id, saveChanges: false, ct);
+
             if (embeddings.Count > 0)
             {
                 await resumeEmbeddingRepository.AddRangeAsync(embeddings, saveChanges: false, ct);
@@ -254,10 +285,11 @@ public sealed class ResumeProcessingService(
         var retryCount = submission.RetryCount + 1;
         var isExhausted = retryCount >= _processingOptions.MaxRetryAttempts;
         var now = DateTime.UtcNow;
+        TimeSpan? retryDelay = isExhausted ? null : GetRetryDelay(retryCount, exception.RetryAfter);
 
         submission.RetryCount = retryCount;
         submission.Status = ResumeSubmissionStatus.Failed;
-        submission.NextRetryAtUtc = isExhausted ? null : now.Add(GetRetryDelay(retryCount));
+        submission.NextRetryAtUtc = retryDelay is null ? null : now.Add(retryDelay.Value);
         submission.UpdatedAtUtc = now;
 
         await resumeSubmissionRepository.SaveChangesAsync(ct);
@@ -269,16 +301,76 @@ public sealed class ResumeProcessingService(
         }
 
         processingMonitor.RecordSubmissionRetryScheduled(submission.Id, stage, exception);
+        logger.LogWarning(
+            "Scheduled resume submission retry. SubmissionId={SubmissionId} Stage={Stage} RetryCount={RetryCount} RetryAfterHeaderSeconds={RetryAfterHeaderSeconds} NextRetryAtUtc={NextRetryAtUtc}",
+            submission.Id,
+            stage,
+            retryCount,
+            exception.RetryAfter?.TotalSeconds,
+            submission.NextRetryAtUtc);
     }
 
-    private TimeSpan GetRetryDelay(int retryCount)
+    private TimeSpan GetRetryDelay(int retryCount, TimeSpan? retryAfter)
     {
         var exponentialFactor = Math.Pow(2, Math.Max(0, retryCount - 1));
         var delayTicks = (long)Math.Min(
             _processingOptions.MaxRetryDelay.Ticks,
             _processingOptions.BaseRetryDelay.Ticks * exponentialFactor);
+        var exponentialDelay = TimeSpan.FromTicks(delayTicks);
 
-        return TimeSpan.FromTicks(delayTicks);
+        // Jitter avoids synchronized retries across many submissions.
+        var jitterFactor = 0.15d + (Random.Shared.NextDouble() * 0.35d);
+        var jitterDelayTicks = (long)Math.Min(
+            _processingOptions.MaxRetryDelay.Ticks,
+            exponentialDelay.Ticks + (exponentialDelay.Ticks * jitterFactor));
+
+        var delay = TimeSpan.FromTicks(jitterDelayTicks);
+
+        if (retryCount >= SlowLaneRetryThreshold)
+        {
+            delay = delay < PostThreeFailuresDelay ? PostThreeFailuresDelay : delay;
+        }
+
+        if (retryAfter.HasValue)
+        {
+            delay = delay < retryAfter.Value ? retryAfter.Value : delay;
+        }
+
+        return delay < MinimumRetryDelay ? MinimumRetryDelay : delay;
+    }
+
+    private static bool IsAlreadyCompletedSubmission(ResumeSubmissionStatus status)
+        => status is ResumeSubmissionStatus.Completed
+            or ResumeSubmissionStatus.Recommended
+            or ResumeSubmissionStatus.Shortlisted
+            or ResumeSubmissionStatus.Interview
+            or ResumeSubmissionStatus.Offer
+            or ResumeSubmissionStatus.Hired
+            or ResumeSubmissionStatus.Rejected;
+
+    private static bool TryDeserializeParsedResume(string? payload, out ParsedResume parsedResume)
+    {
+        parsedResume = new ParsedResume();
+        if (string.IsNullOrWhiteSpace(payload) || payload == "{}")
+        {
+            return false;
+        }
+
+        try
+        {
+            var deserialized = JsonSerializer.Deserialize<ParsedResume>(payload);
+            if (deserialized is null)
+            {
+                return false;
+            }
+
+            parsedResume = deserialized;
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     // Saves score.
